@@ -300,7 +300,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
   errorBox.innerHTML = "";
 
   try {
-    const res = await fetch(`${API_BASE}/auth/login.js`, {
+    const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -329,6 +329,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 
 </body>
 </html>
+
 
 
 
