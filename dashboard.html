@@ -265,69 +265,63 @@
   <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
 
   <!-- Session-based DOM initialization (runs after all DOM is available) -->
-  <script>
-
+<script type="module">
 import { API_BASE } from "./config.js";
 
 async function loadUser() {
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    credentials: "include"
-  });
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      credentials: "include"
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.success) {
+    if (!data.success) {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    // Fill UI
+    document.getElementById("welcome").textContent =
+      `Welcome, ${data.user.fullname}!`;
+
+    document.getElementById("welcomeName").textContent = data.user.fullname;
+    document.getElementById("profileName").textContent = data.user.fullname;
+    document.getElementById("profileUsername").textContent =
+      "@" + data.user.fullname.replace(/\s+/g, "").toLowerCase();
+
+    const emailInput = document.getElementById("emailInput");
+    if (emailInput) emailInput.value = data.user.email;
+
+    const fullnameInput = document.getElementById("fullnameInput");
+    if (fullnameInput) fullnameInput.value = data.user.fullname;
+
+    // Avatar
+    const avatarUrl = data.user.avatar
+      ? `${API_BASE}/${data.user.avatar}?t=${Date.now()}`
+      : "./img/defaultUser.png";
+
+    const profilePreview = document.getElementById("profilePreview");
+    if (profilePreview) profilePreview.src = avatarUrl;
+
+    const localAvatarImg = document.getElementById("localAvatarImg");
+    if (localAvatarImg) localAvatarImg.src = avatarUrl;
+
+    // Expose globally
+    window.user = data.user;
+    window.user_id = data.user.user_id;
+    window.fullname = data.user.fullname;
+    window.avatar = data.user.avatar;
+
+  } catch (err) {
+    console.error("Auth check failed", err);
     window.location.href = "/login.html";
-    return;
   }
-
-  document.getElementById("welcome").textContent =
-    `Welcome, ${data.user.fullname}!`;
-
-  window.user_id = data.user.user_id;
-  window.fullname = data.user.fullname;
-  window.avatar = data.user.avatar;
 }
 
 loadUser();
+</script>
 
-    
-    document.addEventListener('DOMContentLoaded', async () => {
-      const data = await window._sessionPromise;
-      if (!data) return; // _sessionPromise will have redirected
-
-      // Fill user-related UI
-      const name = data.fullname || 'User';
-      document.getElementById('welcomeName').textContent = name;
-      document.getElementById('profileName').textContent = name;
-      document.getElementById('profileUsername').textContent = '@' + (name.replace(/\s+/g,'').toLowerCase());
-      const emailInput = document.getElementById('emailInput');
-      if (emailInput) emailInput.value = data.email || '';
-
-      const fullnameInput = document.getElementById('fullnameInput');
-      if (fullnameInput) fullnameInput.value = data.fullname || '';
-
-      // Avatar path: server should return a DB path like "uploads/avatars/x.png"
-      function buildDisplayUrl(dbPath) {
-        if (!dbPath) return '/NewApp/img/defaultUser.png';
-        let clean = dbPath.replace(/^\/+/, '');
-        if (!clean.startsWith('NewApp/')) clean = `NewApp/${clean}`;
-        return `/${clean}?t=${Date.now()}`;
-      }
-      const avatarUrl = buildDisplayUrl(data.avatar || null);
-      const profilePreview = document.getElementById('profilePreview');
-      if (profilePreview) profilePreview.src = avatarUrl;
-
-      const localAvatarImg = document.getElementById('localAvatarImg');
-      if (localAvatarImg) localAvatarImg.src = avatarUrl;
-
-      // Expose for other scripts that expect window.user, window.user_id etc.
-      window.user = data;
-      window.user_id = data.user_id ?? null;
-      window.fullname = data.fullname ?? null;
-      window.avatar = data.avatar ?? null;
-    });
-  </script>
 
   <!-- Remaining script imports (unchanged) -->
   <div id="image-viewer-overlay" aria-hidden="true">
@@ -990,4 +984,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
