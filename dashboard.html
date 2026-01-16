@@ -266,6 +266,32 @@
 
   <!-- Session-based DOM initialization (runs after all DOM is available) -->
   <script>
+
+import { API_BASE } from "./config.js";
+
+async function loadUser() {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    credentials: "include"
+  });
+
+  const data = await res.json();
+
+  if (!data.success) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+  document.getElementById("welcome").textContent =
+    `Welcome, ${data.user.fullname}!`;
+
+  window.user_id = data.user.user_id;
+  window.fullname = data.user.fullname;
+  window.avatar = data.user.avatar;
+}
+
+loadUser();
+
+    
     document.addEventListener('DOMContentLoaded', async () => {
       const data = await window._sessionPromise;
       if (!data) return; // _sessionPromise will have redirected
@@ -964,3 +990,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
