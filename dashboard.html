@@ -277,7 +277,8 @@ async function loadUser() {
     const data = await res.json();
 
     if (!data.success) {
-      window.location.href = "/login.html";
+     window.location.href = "login.html";
+
       return;
     }
 
@@ -315,7 +316,8 @@ async function loadUser() {
 
   } catch (err) {
     console.error("Auth check failed", err);
-    window.location.href = "/login.html";
+   window.location.href = "login.html";
+
   }
 }
 
@@ -984,6 +986,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
