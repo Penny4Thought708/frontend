@@ -52,30 +52,29 @@
     })();
 
     // Fetch session info from an API endpoint and expose it to client code
-    window._sessionPromise = (async function() {
-      try {
-        const res = await fetch('/api/session.php', { credentials: 'include' });
-        if (!res.ok) throw new Error('No session');
-        const data = await res.json();
-        if (!data || !data.fullname) throw new Error('Not logged in');
-        // Expose global session
-        window.user = data;
-        window.user_id = data.user_id ?? null;
-        window.fullname = data.fullname ?? null;
-        window.avatar = data.avatar ?? null;
-        if (data.csrf_token) {
-          const meta = document.querySelector('meta[name="csrf-token"]');
-          if (meta) meta.setAttribute('content', data.csrf_token);
-          window.CSRF_TOKEN = data.csrf_token;
-        }
-        return data;
-      } catch (err) {
-        // Redirect to login if no valid session
-        console.warn('Session bootstrap failed:', err);
-        location.href = '/index.html';
-        return null;
-      }
-    })();
+window._sessionPromise = (async function() {
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      credentials: "include"
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error("Not logged in");
+
+    window.user = data.user;
+    window.user_id = data.user.user_id;
+    window.fullname = data.user.fullname;
+    window.avatar = data.user.avatar;
+
+    return data.user;
+
+  } catch (err) {
+    console.warn("Session bootstrap failed:", err);
+    location.href = "login.html"; // relative path for GitHub Pages
+    return null;
+  }
+})();
+
   </script>
 </head>
 
@@ -986,6 +985,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
