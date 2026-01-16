@@ -97,14 +97,7 @@ async function loadUserProfile() {
 document.addEventListener("DOMContentLoaded", loadUserProfile);
 </script>
 
-  
-  
-  
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-
-
- <script type="module" src="/NewApp/public/js/app.js"></script>
+ <script type="module" src="./public/js/app.js"></script>
 
   <script type="module" src="public/components/ContactsMenu.js"></script>
   <script src="https://unpkg.com/wavesurfer.js"></script>
@@ -893,7 +886,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 <script type="module">
-import { socket } from "/NewApp/public/js/socket.js";
+import { socket } from "./public/js/socket.js";
 import {
   updateLocalContact,
   registerPresence
@@ -1523,6 +1516,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
