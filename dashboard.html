@@ -42,40 +42,66 @@
   <script type="module" src="public/components/calendar-overlay.js"></script>
   <link rel="stylesheet" type="text/css" href="calling_style.css"/>
   <link rel="stylesheet" type="text/css" href="offscreenPanels_style.css"/>
+<script type="module">
+import { API_BASE } from "./config.js";
 
-  <!-- Bootstrapping session & canonical for a static HTML page -->
-  <script>
-    // Fill canonical to avoid needing server-side hostname injection
-    (function setCanonical() {
-      const link = document.querySelector('link[rel="canonical"]');
-      if (link) link.href = location.href;
-    })();
-
-    // Fetch session info from an API endpoint and expose it to client code
-window._sessionPromise = (async function() {
+async function loadUser() {
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
       credentials: "include"
     });
 
     const data = await res.json();
-    if (!data.success) throw new Error("Not logged in");
 
+    if (!data.success) {
+     window.location.href = "login.html";
+
+      return;
+    }
+
+    // Fill UI
+    document.getElementById("welcome").textContent =
+      `Welcome, ${data.user.fullname}!`;
+
+    document.getElementById("welcomeName").textContent = data.user.fullname;
+    document.getElementById("profileName").textContent = data.user.fullname;
+    document.getElementById("profileUsername").textContent =
+      "@" + data.user.fullname.replace(/\s+/g, "").toLowerCase();
+
+    const emailInput = document.getElementById("emailInput");
+    if (emailInput) emailInput.value = data.user.email;
+
+    const fullnameInput = document.getElementById("fullnameInput");
+    if (fullnameInput) fullnameInput.value = data.user.fullname;
+
+    // Avatar
+    const avatarUrl = data.user.avatar
+      ? `${API_BASE}/${data.user.avatar}?t=${Date.now()}`
+      : "./img/defaultUser.png";
+
+    const profilePreview = document.getElementById("profilePreview");
+    if (profilePreview) profilePreview.src = avatarUrl;
+
+    const localAvatarImg = document.getElementById("localAvatarImg");
+    if (localAvatarImg) localAvatarImg.src = avatarUrl;
+
+    // Expose globally
     window.user = data.user;
     window.user_id = data.user.user_id;
     window.fullname = data.user.fullname;
     window.avatar = data.user.avatar;
 
-    return data.user;
-
   } catch (err) {
-    console.warn("Session bootstrap failed:", err);
-    location.href = "login.html"; // relative path for GitHub Pages
-    return null;
-  }
-})();
+    console.error("Auth check failed", err);
+   window.location.href = "login.html";
 
-  </script>
+  }
+}
+
+loadUser();
+</script>
+
+ 
 </head>
 
 <body class="dark-mode">
@@ -264,64 +290,6 @@ window._sessionPromise = (async function() {
   <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
 
   <!-- Session-based DOM initialization (runs after all DOM is available) -->
-<script type="module">
-import { API_BASE } from "./config.js";
-
-async function loadUser() {
-  try {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-      credentials: "include"
-    });
-
-    const data = await res.json();
-
-    if (!data.success) {
-     window.location.href = "login.html";
-
-      return;
-    }
-
-    // Fill UI
-    document.getElementById("welcome").textContent =
-      `Welcome, ${data.user.fullname}!`;
-
-    document.getElementById("welcomeName").textContent = data.user.fullname;
-    document.getElementById("profileName").textContent = data.user.fullname;
-    document.getElementById("profileUsername").textContent =
-      "@" + data.user.fullname.replace(/\s+/g, "").toLowerCase();
-
-    const emailInput = document.getElementById("emailInput");
-    if (emailInput) emailInput.value = data.user.email;
-
-    const fullnameInput = document.getElementById("fullnameInput");
-    if (fullnameInput) fullnameInput.value = data.user.fullname;
-
-    // Avatar
-    const avatarUrl = data.user.avatar
-      ? `${API_BASE}/${data.user.avatar}?t=${Date.now()}`
-      : "./img/defaultUser.png";
-
-    const profilePreview = document.getElementById("profilePreview");
-    if (profilePreview) profilePreview.src = avatarUrl;
-
-    const localAvatarImg = document.getElementById("localAvatarImg");
-    if (localAvatarImg) localAvatarImg.src = avatarUrl;
-
-    // Expose globally
-    window.user = data.user;
-    window.user_id = data.user.user_id;
-    window.fullname = data.user.fullname;
-    window.avatar = data.user.avatar;
-
-  } catch (err) {
-    console.error("Auth check failed", err);
-   window.location.href = "login.html";
-
-  }
-}
-
-loadUser();
-</script>
 
 
   <!-- Remaining script imports (unchanged) -->
@@ -985,6 +953,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
