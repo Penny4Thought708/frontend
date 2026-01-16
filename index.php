@@ -1,0 +1,409 @@
+<?php session_start(); ?>
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIY Connect</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lobster&family=Oswald:wght@200..700&family=Rouge+Script&family=Story+Script&display=swap"
+    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Aguafina+Script&family=Lobster&family=Oswald:wght@200..700&family=Rouge+Script&family=Story+Script&display=swap"
+    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Aguafina+Script&family=Lobster&family=Oswald:wght@200..700&family=Rouge+Script&family=Rubik+Distressed&family=Splash&family=Story+Script&display=swap"
+    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Oswald:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=close" />
+  <!-- External CSS -->
+  <link rel="stylesheet" href="main_style.css" />
+ 
+
+<script src="thismain.js?v=1" defer></script>
+
+
+</head>
+
+<body>
+
+
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span>Scrubber's DIY Creation</span>
+    </div>
+    <hr>
+    <nav class="main-nav">
+      <a href="#">Home</a>
+      <a href="#">Services</a>
+      <a href="project.html">Projects</a>
+      <a href="#">Contact</a>
+    </nav>
+    <hr>
+    <div class="auth-section">
+
+      <button type="button" id="loginBtn">Login</button>
+      <button type="button" id="signupBtn">Sign Up</button>
+    </div>
+
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <button id="arrow-left">
+      <img src="img/arrow-right.png" alt="ArrowR">
+    </button>
+    <div class="hero-text">
+      <h1>Your Home, Your Hands, Our Help</h1>
+
+
+      <div class="for_text">
+        <p>Scrubber’s gives you the confidence to tackle any project, big or small. With expert advice, visual guides,
+          and instant support.</p>
+        <div class="link_box">
+          <a href="#">Join Us Today</a>
+        </div>
+      </div>
+    </div>
+    <button id="arrow-right">
+      <img src="img/arrow.png" alt="ArrowL">
+    </button>
+    <div id="dot_1"></div>
+    <div id="dot_2"></div>
+    <div id="dot_3"></div>
+
+  </section>
+
+  <!-- Main Content Grid -->
+  <main class="grid-container">
+
+    <section class="center-column">
+
+
+        <h1  class="top-block">
+          Why DIY Is the Best Way to Get Things Done
+        </h1>
+      <article class="build-block">
+                 <div class="build-block-two">
+            <div class="top-left">
+     
+            </div>
+
+            <div class="top-right">
+    
+        </div>
+        <div class="bottom-left">
+        </div>
+        <div class="bottom-right">
+    
+        </div>
+
+        
+   
+      </div>
+      </article>
+      
+      <div class="bottom-block"> 
+    <p>
+          <strong>Personal Satisfaction:</strong> There’s pride in saying, “I
+          made this.”
+        </p>
+        <hr>
+        <p>
+          Explore projects from fellow DIY enthusiasts and connect with them in real time.
+          Curious to see how it works? <a href="#" target="_blank">Click here</a>.
+        </p>
+        <hr>
+        <p>
+          Learn. Build. Fix. Connect. Turn your ideas into reality with
+          step‑by‑step DIY guides for everything from quick fixes to big builds.
+        </p>
+        <hr>
+        <p>
+          Need an extra hand? Instantly connect with trusted local contractors
+          or helpers nearby.
+        </p>
+        <hr>
+        <p>
+          Download today and start building smarter. Join us by downloading our
+          <a href="https://play.google.com" target="_blank">app</a>.
+        </p>
+
+      </div>
+
+    </section>
+
+
+  </main>
+
+
+  <div class="bot_container" style="position: relative;margin-top: -10%;">
+
+    <div class="app-promotion">
+<section class="project-strip">
+  <h2>Start Your DIY Journey</h2>
+  <p>Select a category to explore guides, tips, and expert help.</p>
+
+  <div class="project-cards">
+    <div class="card">
+      <img src="img/beginner.svg" alt="Beginner Projects">
+      <h3>Beginner Builds</h3>
+      <p>Simple, confidence-boosting projects to get started.</p>
+      <a href="/projects/beginner">Explore</a>
+    </div>
+
+  <div class="card">
+  <img src="img/bathroom.jpg" alt="Bathroom Upgrades">
+  <h3>Bathroom Upgrades</h3>
+  <p>From faucets to full remodels, we've got you covered.</p>
+  <a href="/projects/bathroom">Explore</a>
+</div>
+
+<div class="card">
+  <img src="img/shelving.jpg" alt="Shelving & Storage">
+  <h3>Shelving & Storage</h3>
+  <p>Maximize space with smart, stylish solutions.</p>
+  <a href="/projects/storage">Explore</a>
+</div>
+
+<div class="card">
+  <img src="img/lighting.jpg" alt="Lighting & Electrical">
+  <h3>Lighting & Electrical</h3>
+  <p>Brighten your home with safe, guided installs.</p>
+  <a href="/projects/lighting">Explore</a>
+</div>
+
+<div class="card">
+  <img src="img/flooring.jpg" alt="Flooring & Tiling">
+  <h3>Flooring & Tiling</h3>
+  <p>Lay down style with expert flooring and tile tutorials.</p>
+  <a href="/projects/flooring">Explore</a>
+</div>
+
+<div class="card">
+  <img src="img/painting.jpg" alt="Painting & Finishing">
+  <h3>Painting & Finishing</h3>
+  <p>Transform your space with pro painting techniques.</p>
+  <a href="/projects/painting">Explore</a>
+</div>
+
+<div class="card">
+  <img src="img/outdoor.svg" alt="Outdoor Projects">
+  <h3>Outdoor Projects</h3>
+  <p>Decks, fences, and landscaping to elevate your exterior.</p>
+  <a href="/projects/outdoor">Explore</a>
+</div>
+
+
+
+
+
+
+  </div>
+</section>
+
+    </div>
+  </div>
+
+  </div>
+
+
+
+ <!-- Login Popup -->
+<div class="container3" id="popup" aria-hidden="true">
+  <button type="button" id="closePopup" class="close-btn1" title="Close login form">
+    <span class="material-symbols-outlined">close</span>
+  </button>
+   <div id="left-side-nav">
+    <div class="volume-up"></div>
+  <div class="volume-down"></div>
+  
+                    <ul>
+                      <div class="notification_bar">
+                        <div class="clock" data-time="12:02"></div>
+                        <div class="camera_lens"></div>
+                        <div class="cell_service"></div>
+                        <div class="signal_bars"></div>
+                        <div class="battery"><span class="bolt"></span> </div>
+
+    <form id="loginForm" method="POST" class="form_wrap">
+      <div class="logo-login">Scrubber's</div>
+      <h2>Please Login</h2>
+      <div id="errorBox"></div>
+        <label for="useremail">Email</label>
+        <input type="email" id="login-email" name="email" placeholder="you@example.com" required />
+        <label for="userpassword">Password</label>
+        <input type="password" id="log-password" name="password" placeholder="Password" required />
+        <button type="submit" id="loginBtn" class="btn-Form">Login</button>
+        <a href="#" id="openSignupFrom">Sign Up</a>
+      </form>
+
+  <div class="dock">
+    <div class="app-icon" id="phone"></div>
+    <div class="app-icon" id="message"></div>
+    <div class="app-icon" id="internet"></div>
+    <div class="app-icon" id="camera"></div>
+  </div>
+
+                    </ul>
+
+
+
+                      </div>
+            
+      <div class="home_btn"></div>
+      </div>
+ 
+    
+  
+</div>
+
+<!-- Signup Popup -->
+<div id="popup2" class="popup23" aria-hidden="true">
+  <div class="overlay">
+  <div class="left">
+  <section class="signup-intro">
+  <div class="intro-content">
+    <h1>Join the DIY Network</h1>
+    <p>
+      Ready to bring your ideas to life? The DIY Network is your hub for hands-on projects, 
+      step-by-step guides, and a community of makers just like you. Whether you’re building 
+      your first shelf or tackling a full remodel, you’ll find inspiration, tools, and support here.
+    </p>
+
+  </div>
+</section>
+  </div>
+  <div class="right">
+    <button type="button" id="closePopup2" class="close-btn" title="Close signup form">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+
+    <!-- form must carry action + method -->
+    <form id="sign_form_link" action="signup.php" method="POST">
+      <label for="getMyFullname">Full Name</label>
+      <input type="text" id="getMyFullname" name="getMyFullname" placeholder="John Doe" required />
+
+      <label for="signup-email">Email Address</label>
+      <input type="email" id="signup-email" name="email" placeholder="you@example.com" required />
+
+      <label for="signup_password">Password</label>
+      <input type="password" id="signup_password" name="password" placeholder="Create a strong password" required />
+
+      <label for="confirm-password">Confirm Password</label>
+      <input type="password" id="confirm-password" name="confirm-password" placeholder="Re-enter your password" required />
+
+      <label>
+        <input type="checkbox" name="terms" required />
+        I agree to the <a href="#">Terms and Conditions</a>
+      </label>
+
+      <button type="submit" class="smt-btn">Sign Up</button>
+      <p>Already have an account? <a href="#" id="openSignupFromLogin">Log in here</a>.</p>
+    </form>
+  </div>
+</div>
+</div>
+
+
+
+  <!-- Featured Projects -->
+  <section class="featured-projects">
+    <div class="project-card">
+<h1>Ad PLACEMENT</h1>
+      <article class="project">
+        <div class="image-container">
+
+          <div class="overlay">
+
+          </div>
+
+      </article>
+    </div>
+    <div class="project-card">
+<h1>Ad PLACEMENT</h1>
+    </div>
+    <div class="project-card">
+<h1>Ad PLACEMENT</h1>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
+      <nav class="footer-nav">
+        <a href="/about">About Us</a>
+        <a href="/services">Services</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+      </nav>
+      <div class="social-links">
+        <a href="https://facebook.com" target="_blank">Facebook</a>
+        <a href="https://twitter.com" target="_blank">Twitter</a>
+        <a href="https://instagram.com" target="_blank">Instagram</a>
+      </div>
+    </div>
+  </footer>
+
+
+  
+
+
+
+
+
+
+
+ <script>
+    document.getElementById("loginForm").addEventListener("submit", async e => {
+      e.preventDefault(); // stop normal form submission
+
+      const formData = new FormData(e.target);
+
+      try {
+        const res = await fetch("login.php", {
+          method: "POST",
+          body: formData,
+          credentials: "same-origin"
+        });
+        const data = await res.json();
+
+        const errorBox = document.getElementById("errorBox");
+        errorBox.innerHTML = ""; // clear old messages
+
+        if (data.success) {
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 1000);
+        } else {
+          errorBox.innerHTML = `<p class="error">${data.error}</p>`;
+        }
+      } catch (err) {
+        document.getElementById("errorBox").innerHTML = `<p class="error">Network error</p>`;
+      }
+    });
+  </script>
+
+
+</body>
+
+
+</html>

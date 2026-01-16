@@ -1,0 +1,25 @@
+# .env.example
+
+# MySQL (same DB as PHP backend)
+DB_HOST=localhost
+DB_USER=root
+DB_PASS=
+DB_NAME=scrubbers_db
+
+# Node HTTP server
+NODE_PORT=3001
+NODE_HOST=0.0.0.0
+
+# Frontend origin (for CORS / Socket.io)
+FRONTEND_ORIGIN=https://your-frontend-domain.com
+
+# WebRTC signaling over Socket.io
+SIGNALING_PATH=/socket.io
+
+# TURN / STUN for WebRTC
+STUN_SERVER=stun:stun.l.google.com:19302
+
+# Example TURN (replace with your provider)
+TURN_URL=turn:your-turn.example.com:3478
+TURN_USERNAME=turn-user
+TURN_PASSWORD=turn-pass

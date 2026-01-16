@@ -1,0 +1,325 @@
+/* ------------------------------
+   RESET & GLOBAL SETTINGS
+------------------------------ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary-color: #017575;
+  --bg-light: #f9f9f9;
+  --text-dark: #333;
+  --border-radius: 8px;
+  --transition-speed: 0.3s;
+}
+
+/* ------------------------------
+   BASE ELEMENTS
+------------------------------ */
+body {
+  font-family: "Oswald", sans-serif;
+  background: linear-gradient(to right, #140b40, #140b40, #140b40);
+  color: #e0e0e0; /* lighter text for better contrast */
+  line-height: 1.6;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+  position: relative;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ------------------------------
+   MAIN LAYOUT
+------------------------------ */
+main {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #0a1f44; /* deep blueprint navy */
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent);
+  background-size: 50px 50px;
+  border: 2px solid #1e3a8a;
+  border-radius: 12px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+  animation: blueprintShift 20s linear infinite;
+}
+
+/* ------------------------------
+   MAIN CARDS
+------------------------------ */
+main div {
+  flex: 1;
+  width: auto;
+  height: fit-content;
+  margin: 0 0 15px 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(173, 216, 230, 0.5);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(173, 216, 230, 0.3);
+  color: #e0f7ff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+  animation: fadeSlideUp 1s ease-out forwards;
+}
+
+/* Staggered animation delays */
+.left-colum { animation-delay: 0.2s; }
+.mid-colum  { animation-delay: 0.4s; }
+.right-colum{ animation-delay: 0.6s; }
+
+/* Hover glow effect */
+.left-colum:hover,
+.mid-colum:hover,
+.right-colum:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(173, 216, 230, 0.6);
+  border-color: #00bfff;
+  transition: all 0.3s ease;
+}
+
+/* ------------------------------
+   HEADINGS
+------------------------------ */
+h2 {
+  color: #00bfff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border-bottom: 1px solid rgba(173, 216, 230, 0.4);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ------------------------------
+   CONTACT SECTION
+------------------------------ */
+#content {
+  display: flex;              /* use flex, not flexbox */
+  flex-direction: row;        /* side by side */
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;  
+  display: none;                /* spacing between columns */
+  position: relative;
+  padding: 1rem;
+}
+
+#contact {
+  flex: 1;
+  max-width: 700px;
+  width: 100%;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: var(--bg-light);
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+#contact h2 {
+  text-align: center;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.contact-form .form-group {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-form label {
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--text-dark);
+}
+
+.contact-form input,
+.contact-form textarea {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: border var(--transition-speed) ease;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.submit-btn {
+  background: var(--primary-color);
+  color: #fff;
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--transition-speed) ease, transform var(--transition-speed) ease;
+}
+
+.submit-btn:hover {
+  background: #025e5e;
+  transform: scale(1.05);
+}
+
+/* ------------------------------
+   LISTS INSIDE CARDS
+------------------------------ */
+main div ul {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+main div ul li {
+  position: relative;
+  margin: 0.75rem 0;
+  padding-left: 1.8rem;
+  color: #f0f0f0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+main div ul li::before {
+  content: "✔";
+  position: absolute;
+  left: 0;
+  color: #00bfff;
+  font-weight: bold;
+}
+
+/* ------------------------------
+   FOOTER
+------------------------------ */
+footer {
+  margin-top: 0.2%;
+}
+
+/* ------------------------------
+   ANIMATIONS
+------------------------------ */
+@keyframes blueprintShift {
+  0%   { background-position: 0 0, 0 0; }
+  50%  { background-position: 25px 25px, 25px 25px; }
+  100% { background-position: 0 0, 0 0; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ------------------------------
+   RESPONSIVE
+------------------------------ */
+@media (max-width: 600px) {
+  #contact {
+    padding: 1.5rem;
+  }
+}
+.alert {
+  padding: 1rem 1.5rem;
+  margin: 1.5rem auto;
+  max-width: 600px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-align: center;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.alert.success {
+  background-color: #e6ffed;
+  color: #027a48;
+  border: 1px solid #027a48;
+}
+
+.alert.error {
+  background-color: #ffe6e6;
+  color: #b00020;
+  border: 1px solid #b00020;
+}
+
+
+
+/* Contact info column */
+#contact-info {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(173, 216, 230, 0.5);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 0 12px rgba(173, 216, 230, 0.3);
+  color: #e0f7ff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Headings */
+#contact h2,
+#contact-info h2 {
+  color: #00bfff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(173, 216, 230, 0.4);
+  padding-bottom: 0.5rem;
+}
+
+/* Contact info lines */
+#contact-info p {
+  margin: 0.75rem 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+#contact-info p strong {
+  color: #00bfff;
+  margin-right: 0.5rem;
+  min-width: 120px;
+  display: inline-block;
+}
+
+/* Responsive: stack columns on small screens */
+@media (max-width: 768px) {
+  #content {
+    flex-direction: column;
+  }
+}

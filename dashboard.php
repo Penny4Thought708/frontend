@@ -1,0 +1,1449 @@
+<?php
+session_start();
+if (!isset($_SESSION['fullname'])) {
+  header("Location: index.php");
+  exit();
+}
+?>
+<script>
+window.user_id = <?= json_encode($_SESSION['user_id']) ?>;
+window.fullname = <?= json_encode($_SESSION['fullname']) ?>;
+window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
+
+</script>
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scrubber's Dashboard</title>
+
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="das_style.css?v=<?php echo time(); ?>" />
+
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+
+ <script type="module" src="/NewApp/public/js/app.js"></script>
+
+  <script type="module" src="public/components/ContactsMenu.js"></script>
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <script type="module" src="public/components/calendar-overlay.js"></script>
+  <link rel="stylesheet" type="text/css" href="calling_style.css"/>
+<link rel="stylesheet" type="text/css" href="offscreenPanels_style.css"/>
+</head>
+
+
+<body class="dark-mode">
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="brand-logo">
+      <span class="brand">Scrubber's</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#">Home</a>
+      <a href="services.html">Services</a>
+      <a href="project.html">Projects</a>
+      <a href="#">Contact</a>
+    </nav>
+    
+    <div class="auth-section">
+      <div class="welcome">
+        <h3>Welcome, <?= htmlspecialchars($_SESSION['fullname']);?>!</h3>
+        <p>You are now logged in to your Scrubbers Network.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main>
+    <div id="introduction"></div>
+    <div id="intro_arrow" class="intro-arrow"></div>
+
+    <div id="notification_container"></div>
+
+    <div id="side_nav_buttons">
+  
+      <button id="btn_search" title="Search For Local Help">🔍</button>
+      <button id="btn_chat_main" title="Start Chat">💬</button>
+      <button id="contact_widget" title="Contacts">
+        <img src="img/Contacts.png" alt="contact_widget" class="contact_icon">
+      </button>
+      <button id="voicemail_Btn" title="Voicemail">
+        <img src="img/voicemail.png" alt="voicemail">
+      </button>
+      <button id="btn_notifications" title="Notifications">🔔</button>
+      <button id="btn_settings" title="Settings"><span class="material-symbols-outlined">settings</span></button>
+      <button id="toggleBtn" title="Theme">🌙</button>
+      <hr>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+<button class="logoutButton" onclick="window.location='logout.php'" title="Logout" ><img src="img/logout.png" alt=""></button>
+      <button id="btn_help" title="Help">❓</button>
+    </div>
+
+    <div id="contact_window">
+
+      <div id="leftcontent">
+        <div id="contact_box">
+          <div id="menu_Btn_contact">
+            <img src="img/menu.png" alt="contact-menu">
+          </div>
+          <div id="contact_menu_box">
+            <ul id="contact_menu_list">
+              <li id="select_contact">Select</li>
+              <li id="block_contact">Block Contact</li>
+              <li id="delete_contact">Deleted Contact</li>
+              <li id="view_profile">View Profile</li>
+              <li id="add_contact">Add Contact</li>
+              <li id="settings">Settings</li>
+            </ul>
+          </div>
+      
+
+          <div class="profile_card">
+            <!-- Avatar -->
+            <div class="profile-avatar">
+              <div class="status-dot online"><h3>Online</h3></div>
+
+              <?php
+                $avatar = $_SESSION['avatar'] ?? null;
+                $avatarPath = $avatar ? "uploads/avatars/" . $avatar : "/NewApp/img/defaultUser.png";
+              ?>
+              <img id="profilePreview" src="<?= htmlspecialchars($avatarPath); ?>" alt="Profile Picture">
+
+              <div class="profile_chgBtn">
+                <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
+                <label for="profileImage" class="upload-btn">Change Photo</label>
+                <input type="file" id="profileImage" accept="image/*">
+                <button id="removeAvatar" class="delete-account-btn">Remove Avatar</button>
+              </div>
+            </div>
+
+            <!-- Info -->
+            <div class="profile-info">
+              <h2 class="profile-name"><?= htmlspecialchars($_SESSION['fullname']); ?></h2>
+              <p class="profile-username">@<?= strtolower(str_replace(' ', '', $_SESSION['fullname'])); ?></p>
+
+              <!-- Bio -->
+              <div class="profile-field">
+                <label>Bio</label>
+                <textarea name="bio" id="bioInput" placeholder="Write something about yourself..."></textarea>
+              </div>
+
+              <!-- Display Name -->
+              <div class="profile-field">
+                <label>Display Name</label>
+                <input type="text" name="fullname" id="fullnameInput" value="<?= htmlspecialchars($_SESSION['fullname']); ?>"/>
+              </div>
+
+              <!-- Email -->
+              <div class="profile-field">
+                <label>Email</label>
+                <input type="email" name="email" id="emailInput" placeholder="<?= htmlspecialchars($_SESSION['email']); ?>" value="<?= htmlspecialchars($_SESSION['email']); ?>">
+              </div>
+
+              <!-- Password Change -->
+              <div class="profile-field">
+                <label>Current Password</label>
+                <input type="password" id="currentPasswordInput" placeholder="Enter current password">
+              </div>
+
+              <div class="profile-field">
+                <label>New Password</label>
+                <input type="password" id="newPasswordInput" placeholder="Enter new password">
+              </div>
+
+              <div class="profile-field">
+                <label>Confirm New Password</label>
+                <input type="password" id="confirmPasswordInput" placeholder="Confirm new password">
+              </div>
+
+              <button class="save-profile-btn" id="changePasswordBtn">Change Password</button>
+
+              <!-- Social Links -->
+              <div class="profile-social">
+                <label>Social Links</label>
+                <div class="social-inputs">
+                  <input type="url" name="website" id="websiteInput" placeholder="Website URL">
+                  <input type="url" name="twitter" id="twitterInput" placeholder="Twitter / X">
+                  <input type="url" name="instagram" id="instagramInput" placeholder="Instagram">
+                </div>
+              </div>
+
+              <!-- Toggles -->
+              <label class="toggle-row">
+                <span>Show Online Status</span>
+                <input type="checkbox" name="show_online" id="showOnlineInput" checked>
+                <div class="toggle-slider"></div>
+              </label>
+
+              <label class="toggle-row">
+                <span>Allow Messages</span>
+                <input type="checkbox" name="allow_messages" id="allowMessagesInput" checked>
+                <div class="toggle-slider"></div>
+              </label>
+
+              <!-- Actions -->
+              <div class="profile-actions">
+                <button class="save-profile-btn" id="saveProfileBtn">Save Changes</button>
+                <a href="logout.php" class="logout-btn" title="Logout">Log Out</a>
+                <button class="delete-account-btn" id="deleteAccountBtn">Delete Account</button>
+              </div>
+            </div>
+          </div>
+
+       
+        </div>
+      </div>
+
+      <div id="rightcontent">
+       
+
+      
+      </div>
+    </div>
+    <div id="conwrap">
+   <aside class="sidebar">
+            <div class="contact-lookup">
+              <label for="lookup-input" class="sr-only">Search Contacts</label>
+              <input type="text" id="lookup-input" placeholder="Search for users by name or email..." autocomplete="on" />
+              <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
+            </div>
+            <ul id="contacts-lookup" aria-label="Contact results"></ul>
+          </aside>
+    <div id="con_main">
+   
+
+      <div id="contacts_panel" class="contacts-panel">
+          
+        <div class="panel-header">
+      <h2 id="panelTitle">Call Log</h2>
+          <contacts-menu></contacts-menu>
+        </div>
+
+        <div id="voicemail_list">
+          <div class="voicemail-topbar">
+            <span id="voicemailBadge" class="vm-badge">0</span>
+          </div>
+          <ul id="voiceMList" class="voicemail-list"></ul>
+        </div>
+
+        <div id="bl_con">
+          <ul id="contacts" aria-label="Contacts list"></ul>
+        </div>
+
+        <div id="sav_con" class="call-log-container">
+          <div class="call-log-header">
+            <div class="call-log-actions">
+              <input id="callLogSearch" type="text" placeholder="Search calls…" />
+            </div>
+          </div>
+
+          <div id="callStats" class="call-stats"></div>
+          <div id="callLogList" class="call-log-list"></div>
+        </div>
+      <div id="messaging_box_container">
+    
+    
+    
+      <h2 id="unread_header"></h2>
+    <ul id="messaging_list"></ul>
+</div>
+
+
+          <div id="bloc_box">
+            <ul id="blocked-contacts"></ul>
+          </div>
+
+      </div>
+      <div id="shared-space">
+         <div id="fullProfileModal" class="full-profile-modal">
+          <button id="closeFullProfile" class="close-full-profile">✕</button>
+          <div class="full-profile-content">
+            <div class="full-profile-banner">
+              <div id="fullProfileBannerWrapper" class="banner-wrapper">
+                <img id="fullProfileBanner" src="" alt="Banner">
+              </div>
+            </div>
+
+            <div class="avatar-frame avatar-glow avatar-pulse online">
+              <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar">
+            </div>
+
+            <h2 id="fullProfileName"></h2>
+            <p id="fullProfileEmail"></p>
+            <p id="fullProfilePhone"></p>
+            <div id="fullProfileBio" class="full-profile-bio"></div>
+
+            <div class="profile-line">
+              <img src="https://img.icons8.com/color/48/domain--v1.png" alt="">
+              <a id="fullProfileWebsite" href="#" target="_blank"></a>
+            </div>
+
+            <div class="profile-line">
+              <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="">
+              <a id="fullProfileTwitter" href="#" target="_blank"></a>
+            </div>
+
+            <div class="profile-line">
+              <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="">
+              <a id="fullProfileInstagram" href="#" target="_blank"></a>
+            </div>
+
+            <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
+            <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
+
+            <div class="copy-row">
+              <button id="copyEmailBtn" class="copy-btn">Copy Email</button>
+              <button id="copyPhoneBtn" class="copy-btn">Copy Phone</button>
+            </div>
+
+            <button id="saveLookupContact" class="profile-save-btn">➕ Add To Contacts</button>
+
+            <div class="profile-actions">
+              <button id="profileCallBtn" class="profile-action-btn">📞 Call</button>
+              <button id="profileVideoBtn" class="profile-action-btn">🎥 Video</button>
+              <button id="profileBlockBtn" class="profile-action-btn danger">🚫 Block</button>
+            </div>
+          </div>
+        </div>
+
+    <div id="messaging_box">
+          <div class="header_msg_box">
+           <div class="msg-header-left">
+  <div class="msg-header-info">
+    <h2 id="msgHeaderName" class="msg-contact-name"></h2>
+  </div>
+</div>
+
+
+           <div class="msg-header-right">
+  <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
+    <img src="img/voice.png" alt="Voice Call"height="25px" width="25px">
+  </button>
+
+  <button id="videoBtn" class="msg-icon-btn" title="Video Call">
+    <img src="img/app.png" alt="Video Call" height="28px" width="28px" >
+  </button>
+
+  <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">
+    🐞
+  </button>
+</div>
+
+
+            <div id="voicemailRecordingUI" style="display:none">
+              <p>Leave a voicemail…</p>
+              <div id="vmTimer"></div>
+              <button id="vmStopBtn">Finish</button>
+            </div>
+          </div>
+
+          <!-- Message Window -->
+          <div class="message_win1">
+            <canvas id="waveformCanvas" width="200" height="40" style="display:none;"></canvas>
+            <div id="recordTimer" style="display:none; font-size:14px; color:#ff4d4d; margin-left:10px;">00:00</div>
+            <div id="slideCancel" style="display:none; font-size:14px; color:#999; margin-left:10px;">Slide left to cancel</div>
+          </div>
+
+          <div class="typing-indicator">
+            <img class="typing-avatar" src="" alt="">
+            <div class="typing-bubble"><span></span><span></span><span></span></div>
+          </div>
+
+          <div class="recording-indicator">
+            <div class="recording-bubble">
+              <span class="mic-icon">🎤</span>
+              <span class="recording-text">Recording audio…</span>
+              <div class="pulse-ring"></div>
+            </div>
+          </div>
+
+          <!-- Image Viewer -->
+          <div id="img-viewer" class="img-viewer">
+            <img id="img-viewer-img" alt="Viewed image">
+          </div>
+
+          <!-- Reply Form -->
+          <form id="text_box_reply" autocomplete="off">
+            <button type="button" id="plusBtn" class="plus-btn"><span class="material-symbols-outlined">add</span></button>
+
+            <div id="bottomSheet" class="bottom-sheet">
+              <div class="sheet-handle"></div>
+              <button class="sheet-item" id="sheetCamera">📷 Camera</button>
+              <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
+              <button class="sheet-item" id="sheetFile">📎 File</button>
+              <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
+              <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
+              <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+            </div>
+
+            <emoji-picker id="emojiPicker" data-no-storage></emoji-picker>
+
+            <div id="gifPicker" class="hidden gif-picker">
+              <input type="text" id="gifSearch" placeholder="Search GIFs..." />
+              <div id="gifResults" class="gif-results"></div>
+            </div>
+
+            <input id="attachment_input" type="file" multiple hidden />
+            <div id="attachmentPreview" class="attachment-preview hidden"></div>
+
+            <button type="button" id="micBtn"><img src="img/mic.png" alt="microphone"></button>
+            <div id="message_input" contenteditable="true" class="rich-input" aria-label="Type your message"></div>
+
+            <button type="submit" class="send-btn"><span class="material-symbols-outlined">send</span></button>
+          </form>
+        </div>
+
+        <!-- VIDEO CALL UI -->
+ <!-- VIDEO CALL UI -->
+<div id="video-container">
+
+  <!-- REMOTE VIDEO (big) -->
+  <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
+    <video id="remoteVideo" autoplay playsinline></video>
+
+    <!-- Remote avatar fallback -->
+    <div class="avatar remote-avatar" id="remoteAvatar">
+      <img id="remoteAvatarImg" src="" alt="Remote Avatar">
+      <div class="avatar-ring"></div>
+    </div>
+
+    <!-- Overlay for ringing / connecting -->
+    <div id="callerOverlay" class="call-overlay" style="display:none;"></div>
+  </div>
+
+  <!-- LOCAL VIDEO (small preview) -->
+  <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
+    <video id="localVideo" autoplay playsinline muted></video>
+
+    <!-- Local avatar fallback -->
+    <div class="avatar local-avatar" id="localAvatar">
+      <img id="localAvatarImg" src="/NewApp/img/defaultUser.png" alt="Local Avatar">
+    </div>
+
+   
+  </div>
+ <div id="call-status" class="status"></div>
+  <!-- REMOTE AUDIO -->
+  <audio id="remoteAudio" autoplay playsinline></audio>
+
+  <!-- CALL CONTROLS -->
+  <div id="call-controls">
+    <div id="call-timer" class="call-timer">00:00</div>
+    <button id="decline-call">❌ Decline</button>
+    <button id="answer-call">✅ Answer</button>
+    <button id="mute-call">🔇 Mute</button>
+    <button id="camera-toggle">
+      <span class="material-symbols-outlined">flip_camera_android</span>
+    </button>
+    <button id="end-call">📞 Hang Up</button>
+  </div>
+
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide-in Search Panel -->
+<div id="search_panel" class="search-panel">
+  <div class="search_">
+    <div class="search-header">
+      <h2>Search For Contractors</h2>
+      <button id="close_search">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="search-input">
+      <input id="contractor_query_panel" type="text" placeholder="Search contractors..." />
+      <button id="search_submit_panel" type="button">
+        <span class="material-symbols-outlined">search</span>
+      </button>
+      <ul id="autocomplete_list_panel" class="autocomplete-list"></ul>
+    </div>
+
+    <div class="search-filters">
+      <button class="filter-chip active" data-category="all">All</button>
+      <button class="filter-chip" data-category="roofing">Roofing</button>
+      <button class="filter-chip" data-category="plumbing">Plumbing</button>
+      <button class="filter-chip" data-category="hvac">HVAC</button>
+      <button class="filter-chip" data-category="electrical">Electrical</button>
+      <button class="filter-chip" data-category="general">General</button>
+    </div>
+
+    <div id="search_results"></div>
+  </div>
+
+  <div class="map-container">
+        <iframe id="contractor_map" src="https://www.google.com/maps/embed/v1/search?key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&q=contractors+near+me" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+</div>
+<div id="settings_container">
+
+  <!-- LEFT SIDEBAR: MAIN SETTINGS -->
+  <aside class="sidebar_layout3 settings_left_ active">
+
+    <h2 class="settings-title">Settings</h2>
+
+    <!-- APPEARANCE -->
+    <section class="settings-card">
+      <h3 class="settings-card-title">Appearance</h3>
+
+      <div class="settings-row">
+        <label for="theme_select">Theme</label>
+        <select id="theme_select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="system">System Default</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label for="accent_color">Accent Color</label>
+        <input type="color" id="accent_color" value="#4CAF50">
+      </div>
+
+      <div class="settings-row">
+        <label for="font_size">Font Size</label>
+        <input type="range" id="font_size" min="12" max="24" value="16">
+      </div>
+    </section>
+
+    <!-- VIDEO -->
+    <section class="settings-card">
+      <h3 class="settings-card-title">Video</h3>
+
+      <div class="settings-row">
+        <label>Camera</label>
+        <select id="camera_select"></select>
+      </div>
+
+      <div class="settings-row">
+        <label>Resolution</label>
+        <select id="resolution_select">
+          <option value="720p">720p</option>
+          <option value="1080p">1080p</option>
+          <option value="4k">4K</option>
+        </select>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Background Blur</span>
+        <label class="toggle">
+          <input type="checkbox" id="background_blur">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Mirror Video</span>
+        <label class="toggle">
+          <input type="checkbox" id="mirror_video">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- FIXED: Camera Preview inside Video card -->
+  <div class="settings-row camera-preview-row">
+  <label>Preview</label>
+  <video id="camera_preview" autoplay playsinline muted></video>
+</div>
+
+    </section>
+
+    <!-- AUDIO -->
+    <section class="settings-card">
+      <h3 class="settings-card-title">Audio</h3>
+
+      <div class="settings-row">
+        <label>Microphone</label>
+        <select id="microphone_select"></select>
+      </div>
+
+      <div class="settings-row">
+        <label>Speaker</label>
+        <select id="speaker_select"></select>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Noise Suppression</span>
+        <label class="toggle">
+          <input type="checkbox" id="noise_suppression">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Echo Cancellation</span>
+        <label class="toggle">
+          <input type="checkbox" id="echo_cancellation">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Auto Gain Control</span>
+        <label class="toggle">
+          <input type="checkbox" id="auto_gain">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- FIXED: Mic Level Meter inside Audio card -->
+      <div class="settings-row">
+        <label>Microphone Level</label>
+        <div id="mic_level_bar" class="mic-level-bar">
+          <div class="mic-level-fill"></div>
+        </div>
+      </div>
+
+      <!-- Optional Speaker Test -->
+      <div class="settings-row">
+        <label>Test Speaker</label>
+        <button type="button" id="test_speaker_btn" class="settings-btn">Play Test Sound</button>
+      </div>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section class="settings-card">
+      <h3 class="settings-card-title">Notifications</h3>
+
+      <div class="settings-toggle-row">
+        <span>Call Alerts</span>
+        <label class="toggle">
+          <input type="checkbox" id="call_alerts" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Message Alerts</span>
+        <label class="toggle">
+          <input type="checkbox" id="message_alerts" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Sound Effects</span>
+        <label class="toggle">
+          <input type="checkbox" id="sound_effects" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ACCESSIBILITY -->
+    <section class="settings-card">
+      <h3 class="settings-card-title">Accessibility</h3>
+
+      <div class="settings-toggle-row">
+        <span>High Contrast Mode</span>
+        <label class="toggle">
+          <input type="checkbox" id="high_contrast">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Keyboard Shortcuts</span>
+        <label class="toggle">
+          <input type="checkbox" id="keyboard_shortcuts" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-toggle-row">
+        <span>Screen Reader Support</span>
+        <label class="toggle">
+          <input type="checkbox" id="screen_reader">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- SAVE / RESET -->
+    <section class="settings-card">
+      <button id="save_settings" class="settings-btn primary">Save Settings</button>
+      <button id="reset_settings" class="settings-btn">Reset to Default</button>
+    </section>
+
+  </aside>
+
+  <!-- RIGHT PANEL: PROFILE SETTINGS -->
+  <aside id="profile_settings">
+
+    <button id="contact_close" class="close-btn">✕</button>
+
+    <div id="contact_settings_panel">
+
+      <header class="settings-header">
+        <h2>Profile Settings</h2>
+        <button id="close_contact_settings" class="close-btn">✕</button>
+      </header>
+
+      <section class="settings-card">
+        <h3 class="settings-card-title">Profile</h3>
+
+        <div class="settings-row">
+          <label>Profile Picture</label>
+          <input type="file" id="contact_profile_picture" accept="image/*">
+        </div>
+
+        <div class="settings-row">
+          <label>Display Name</label>
+          <input type="text" id="contact_display_name" placeholder="Enter name">
+        </div>
+
+        <div class="settings-row">
+          <label>Email</label>
+          <input type="email" id="contact_email" placeholder="Enter email">
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h3 class="settings-card-title">Privacy</h3>
+
+        <div class="settings-toggle-row">
+          <span>Show Online Status</span>
+          <label class="toggle">
+            <input type="checkbox" id="show_online">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-toggle-row">
+          <span>Allow Messages</span>
+          <label class="toggle">
+            <input type="checkbox" id="allow_messages">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-card">
+        <h3 class="settings-card-title">Blocked Contacts</h3>
+        <ul id="blocked_list"></ul>
+      </section>
+
+    </div>
+  </aside>
+
+</div>
+
+
+
+
+
+  <div class="notification-wrapper">
+    <span class="notification-bell"><span class="material-symbols-outlined" style="font-size:62px;">notifications</span></span>
+  </div>
+ </main>
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
+      <nav class="footer-nav">
+        <a href="/about">About Us</a>
+        <a href="/services">Services</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+      </nav>
+      <div class="social-links">
+        <a href="https://facebook.com" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i> Facebook</a>
+        <a href="https://twitter.com" target="_blank" rel="noopener"><i class="fab fa-twitter"></i> Twitter</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
+      </div>
+    </div>
+  </footer>
+
+  <audio id="ringtone" src="ringtone.mp3" preload="auto"></audio>
+  <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
+  <audio id="notification" src="notification.mp3" preload="auto"></audio>
+
+  <script src="buttons-functions.js"></script>
+  <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
+
+  <div id="image-viewer-overlay" aria-hidden="true">
+    <button id="image-prev" class="image-nav-btn">❮</button>
+    <img id="image-viewer-img" src="" alt="Image viewer">
+    <button id="image-next" class="image-nav-btn">❯</button>
+  </div>
+
+  <div id="hiddenMessagesPanel" class="hidden-panel" aria-hidden="true">
+    <h3>Hidden Messages</h3>
+    <div id="hiddenList"></div>
+    <button onclick="closeHiddenPanel()">Close</button>
+  </div>
+<!--
+   <div id="callDetailsOverlay" class="call-details-overlay">
+            <div class="call-details-panel">
+              <button id="closeCallDetails" class="close-btn">✕</button>
+              <h3>Call Details</h3>
+              <div id="callDetailsContent"></div>
+            </div>
+          </div>
+
+        -->
+</body>
+<script type="module" src="/NewApp/public/js/socket.js"></script> <script type="module" src="/NewApp/public/js/session.js"></script> <script type="module" src="/NewApp/public/js/dashboard/contacts.js"></script> <script type="module" src="/NewApp/public/js/messaging.js"></script>
+<script  src="SettingsController.js">document.addEventListener("DOMContentLoaded", () => {
+  SettingsController.init();
+  openMainSettings();
+});</script>
+<script src="SettingsStore.js"></script>
+<script src="DeviceManager.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof DeviceManager !== "undefined" && DeviceManager.init) {
+    DeviceManager.init();
+  }
+});
+</script>
+<script src="MediaPreview.js">document.getElementById("test_speaker_btn").addEventListener("click", () => {
+  MediaPreview.testSpeaker(SettingsStore.data.speaker);
+});
+</script>
+
+
+<script type="module">
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await DeviceManager.init();        // permissions + device list
+  await SettingsController.init();   // binds UI + applies settings
+});
+document.getElementById("test_speaker_btn")?.addEventListener("click", () => {
+  MediaPreview.testSpeaker(SettingsStore.data.speaker);
+});
+
+
+import { socket } from "/NewApp/public/js/socket.js";
+import {
+  updateLocalContact,
+  registerPresence
+} from "/NewApp/public/js/dashboard/contacts.js";
+import { getMyUserId } from "/NewApp/public/js/session.js";
+
+/* -------------------------------------------------------
+   DOM READY
+------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  socket.on("connect", registerPresence);
+
+  /* -------------------------------------------------------
+     ELEMENTS
+  ------------------------------------------------------- */
+  const profileInput       = document.getElementById("profileImage");
+  const profilePreview     = document.getElementById("profilePreview");
+  const avatarContainer    = document.querySelector(".profile-avatar");
+  const enhanceBtn         = document.getElementById("enhanceAvatar");
+  const removeBtn          = document.getElementById("removeAvatar");
+  const saveBtn            = document.getElementById("saveProfileBtn");
+  const deleteBtn          = document.getElementById("deleteAccountBtn");
+  const showOnlineInput    = document.getElementById("showOnlineInput");
+  const allowMessagesInput = document.getElementById("allowMessagesInput");
+
+  // DB-style avatar path (e.g. "uploads/avatars/x.png")
+  let currentAvatarPath = null;
+
+  // If the profile UI isn't present on this page, skip initializing profile handlers
+  if (
+    !profileInput ||
+    !profilePreview ||
+    !avatarContainer ||
+    !enhanceBtn ||
+    !removeBtn ||
+    !saveBtn ||
+    !deleteBtn ||
+    !showOnlineInput ||
+    !allowMessagesInput
+  ) {
+    console.warn("[Profile] Profile UI elements not found; skipping profile initialization.");
+    return;
+  }
+
+  /* -------------------------------------------------------
+     HELPERS
+  ------------------------------------------------------- */
+
+  /**
+   * Convert DB path → full display URL with cache-busting.
+   */
+  function buildDisplayUrlFromDbPath(dbPath) {
+    if (!dbPath) return "/NewApp/img/defaultUser.png";
+
+    let clean = dbPath.replace(/^\/+/, "");
+    if (!clean.startsWith("NewApp/")) {
+      clean = `NewApp/${clean}`;
+    }
+
+    return `/${clean}?t=${Date.now()}`;
+  }
+
+  /**
+   * Preview a selected file immediately (data URL).
+   */
+  function previewFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      profilePreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /**
+   * Upload avatar to backend and update UI + real-time presence.
+   */
+  async function uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append("profileImage", file);
+
+    try {
+      const res = await fetch("upload_avatar.php", {
+        method: "POST",
+        body: formData
+      }).then((r) => r.json());
+
+      if (res.status === "ok" && res.avatarUrl) {
+        currentAvatarPath = res.avatarUrl;
+
+        const displayUrl = buildDisplayUrlFromDbPath(currentAvatarPath);
+        profilePreview.src = displayUrl;
+
+        socket.emit("profile:update", { avatar: currentAvatarPath });
+
+        updateLocalContact(getMyUserId(), {
+          contact_avatar: currentAvatarPath
+        });
+      }
+    } catch (err) {
+      console.error("[Profile] Avatar upload error:", err);
+    }
+  }
+
+  /**
+   * Validate + process avatar file.
+   */
+  function handleAvatarFile(file) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Only JPG, PNG, or WEBP allowed.");
+      return;
+    }
+
+    previewFile(file);
+    uploadAvatar(file);
+  }
+
+  /* -------------------------------------------------------
+     AVATAR UPLOAD (CLICK)
+  ------------------------------------------------------- */
+  profileInput.addEventListener("change", () => {
+    const file = profileInput.files[0];
+    if (file) handleAvatarFile(file);
+  });
+
+  /* -------------------------------------------------------
+     DRAG & DROP
+  ------------------------------------------------------- */
+  ["dragenter", "dragover"].forEach((evt) =>
+    avatarContainer.addEventListener(evt, (e) => {
+      e.preventDefault();
+      avatarContainer.classList.add("drag-over");
+    })
+  );
+
+  ["dragleave", "drop"].forEach((evt) =>
+    avatarContainer.addEventListener(evt, (e) => {
+      e.preventDefault();
+      avatarContainer.classList.remove("drag-over");
+    })
+  );
+
+  avatarContainer.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) handleAvatarFile(file);
+  });
+
+  /* -------------------------------------------------------
+     ENHANCE AVATAR
+  ------------------------------------------------------- */
+  enhanceBtn.addEventListener("click", async () => {
+    try {
+      const data = await fetch("enhance_avatar.php", {
+        method: "POST"
+      }).then((r) => r.json());
+
+      if (data.status === "ok" && data.avatarUrl) {
+        currentAvatarPath = data.avatarUrl;
+
+        const displayUrl = buildDisplayUrlFromDbPath(currentAvatarPath);
+        profilePreview.src = displayUrl;
+
+        socket.emit("profile:update", { avatar: currentAvatarPath });
+        updateLocalContact(getMyUserId(), {
+          contact_avatar: currentAvatarPath
+        });
+      } else {
+        alert("Could not enhance avatar.");
+      }
+    } catch {
+      alert("Error enhancing avatar.");
+    }
+  });
+
+  /* -------------------------------------------------------
+     REMOVE AVATAR
+  ------------------------------------------------------- */
+  removeBtn.addEventListener("click", async () => {
+    if (!confirm("Remove your avatar?")) return;
+
+    try {
+      const res = await fetch("remove_avatar.php", {
+        method: "POST"
+      }).then((r) => r.text());
+
+      if (res === "success") {
+        currentAvatarPath = null;
+        profilePreview.src = "/NewApp/img/defaultUser.png";
+
+        socket.emit("profile:update", { avatar: null });
+        updateLocalContact(getMyUserId(), { contact_avatar: null });
+      }
+    } catch (err) {
+      console.error("[Profile] Remove avatar error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     SAVE PROFILE
+  ------------------------------------------------------- */
+  saveBtn.addEventListener("click", async () => {
+    const fullname        = document.getElementById("fullnameInput").value;
+    const email           = document.getElementById("emailInput").value;
+    const bio             = document.getElementById("bioInput").value;
+    const website         = document.getElementById("websiteInput").value;
+    const twitter         = document.getElementById("twitterInput").value;
+    const instagram       = document.getElementById("instagramInput").value;
+    const show_online     = showOnlineInput.checked ? 1 : 0;
+    const allow_messages  = allowMessagesInput.checked ? 1 : 0;
+
+    const data = new FormData();
+    data.append("fullname", fullname);
+    data.append("email", email);
+    data.append("bio", bio);
+    data.append("website", website);
+    data.append("twitter", twitter);
+    data.append("instagram", instagram);
+    data.append("show_online", show_online);
+    data.append("allow_messages", allow_messages);
+
+    try {
+      const res = await fetch("/NewApp/update_profile.php", {
+        method: "POST",
+        body: data
+      }).then((r) => r.json());
+
+      if (res.success) {
+        alert("Profile updated successfully");
+
+        const payload = {
+          fullname,
+          email,
+          bio,
+          website,
+          twitter,
+          instagram,
+          show_online,
+          allow_messages,
+          avatar: currentAvatarPath
+        };
+
+        socket.emit("profile:update", payload);
+        updateLocalContact(getMyUserId(), payload);
+      } else {
+        alert(res.error || "Error updating profile");
+      }
+    } catch (err) {
+      console.error("[Profile] Save error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     DELETE ACCOUNT
+  ------------------------------------------------------- */
+  deleteBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to delete your account?")) return;
+
+    try {
+      const res = await fetch("delete_account.php", {
+        method: "POST"
+      }).then((r) => r.text());
+
+      if (res === "success") {
+        window.location.href = "logout.php";
+      }
+    } catch (err) {
+      console.error("[Profile] Delete account error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     REAL-TIME PROFILE UPDATES (SELF)
+  ------------------------------------------------------- */
+  socket.on("profile:updated", (data) => {
+    if (data.user_id !== getMyUserId()) return;
+
+    if (data.avatar !== undefined) {
+      currentAvatarPath = data.avatar;
+      profilePreview.src = buildDisplayUrlFromDbPath(currentAvatarPath);
+    }
+
+    updateLocalContact(getMyUserId(), data);
+  });
+});
+document.addEventListener("DOMContentLoaded", () => {
+  const panel            = document.getElementById("search_panel");
+  const closeBtn         = document.getElementById("close_search");
+  const input            = document.getElementById("contractor_query_panel");
+  const submitBtn        = document.getElementById("search_submit_panel");
+  const resultsContainer = document.getElementById("search_results");
+  const autocompleteList = document.getElementById("autocomplete_list_panel");
+  const mapFrame         = document.getElementById("contractor_map");
+  const filterChips      = document.querySelectorAll(".filter-chip");
+
+  let currentQuery    = "";
+  let currentCategory = "all";
+  let currentPage     = 1;
+  let isLoading       = false;
+  let hasMore         = true;
+
+  let userLat = null;
+  let userLng = null;
+
+  /* ---------------------------------------
+     Open / Close panel
+  --------------------------------------- */
+
+  window.openSearchPanel = function () {
+    panel.classList.add("active");
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userLat = pos.coords.latitude;
+          userLng = pos.coords.longitude;
+
+          updateMap("contractors near me");
+          resetAndSearch();
+        },
+        () => {
+          console.warn("User denied geolocation");
+          updateMap("contractors near me");
+          resetAndSearch();
+        }
+      );
+    } else {
+      updateMap("contractors near me");
+      resetAndSearch();
+    }
+  };
+
+  closeBtn.addEventListener("click", () => {
+    panel.classList.add("closing");
+    setTimeout(() => {
+      panel.classList.remove("active", "closing");
+    }, 450);
+  });
+
+  /* ---------------------------------------
+     Debounce
+  --------------------------------------- */
+
+  function debounce(fn, delay = 300) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  /* ---------------------------------------
+     Autocomplete (static demo)
+  --------------------------------------- */
+
+ function updateAutocomplete(query) {
+  autocompleteList.innerHTML = "";
+
+  if (query.length < 2) {
+    autocompleteList.style.display = "none";
+    return;
+  }
+
+  const suggestions = [
+    "Roofing contractor in Whiteville",
+    "Plumbing contractor",
+    "HVAC repair",
+    "Electrical services",
+    "General contractor",
+  ].filter((s) => s.toLowerCase().includes(query.toLowerCase()));
+
+  if (suggestions.length === 0) {
+    autocompleteList.style.display = "none";
+    return;
+  }
+
+  suggestions.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    li.addEventListener("click", () => {
+      input.value = item;
+      autocompleteList.style.display = "none";
+      currentQuery = item;
+      resetAndSearch();
+    });
+    autocompleteList.appendChild(li);
+  });
+
+  autocompleteList.style.display = "block";
+}
+
+
+  input.addEventListener(
+    "input",
+    debounce(() => {
+      currentQuery = input.value;
+      updateAutocomplete(currentQuery);
+    }, 250)
+  );
+
+  /* ---------------------------------------
+     Filters
+  --------------------------------------- */
+
+  filterChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      filterChips.forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      currentCategory = chip.dataset.category || "all";
+      resetAndSearch();
+    });
+  });
+
+  /* ---------------------------------------
+     Manual search
+  --------------------------------------- */
+
+  submitBtn.addEventListener("click", () => {
+    currentQuery = input.value;
+    resetAndSearch();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      currentQuery = input.value;
+      autocompleteList.innerHTML = "";
+      resetAndSearch();
+    }
+  });
+
+  /* ---------------------------------------
+     Core search helpers
+  --------------------------------------- */
+
+  function resetAndSearch() {
+    currentPage = 1;
+    hasMore = true;
+    resultsContainer.innerHTML = "";
+    performSearch();
+  }
+
+  function showLoadingSkeleton() {
+    const skeleton = document.createElement("div");
+    skeleton.className = "result-card skeleton";
+    skeleton.innerHTML = `
+      <div class="skeleton-line title"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    `;
+    resultsContainer.appendChild(skeleton);
+  }
+
+  function clearSkeletons() {
+    resultsContainer
+      .querySelectorAll(".skeleton")
+      .forEach((el) => el.remove());
+  }
+
+  async function performSearch() {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+
+    showLoadingSkeleton();
+
+    const params = new URLSearchParams({
+      q: currentQuery,
+      category: currentCategory,
+      page: String(currentPage),
+    });
+
+    if (userLat && userLng) {
+      params.append("lat", userLat);
+      params.append("lng", userLng);
+    }
+
+    try {
+      const res = await fetch(
+        `/NewApp/search_contractors.php?${params.toString()}`
+      );
+      const data = await res.json();
+      clearSkeletons();
+
+      if (!data.success) {
+        if (currentPage === 1) {
+          resultsContainer.innerHTML =
+            `<p class="empty-state">No results. Try another search.</p>`;
+        }
+        isLoading = false;
+        return;
+      }
+
+      if (currentPage === 1 && data.results.length === 0) {
+        resultsContainer.innerHTML =
+          `<p class="empty-state">No contractors found for that search.</p>`;
+        hasMore = false;
+        isLoading = false;
+        return;
+      }
+
+      data.results.forEach((item) => {
+        resultsContainer.appendChild(renderResultCard(item));
+      });
+
+      hasMore = data.hasMore;
+      if (hasMore) currentPage += 1;
+
+      const mapQuery =
+        itemToMapQuery(data.results[0]) ||
+        currentQuery ||
+        "contractors near me";
+      updateMap(mapQuery);
+    } catch (err) {
+      clearSkeletons();
+      console.error("[Search] Error:", err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  function itemToMapQuery(item) {
+    if (!item) return "";
+    const parts = [item.name, item.city, item.state].filter(Boolean);
+    return parts.join(" ");
+  }
+
+  function updateMap(query) {
+    if (!mapFrame) return;
+
+    const base = "https://www.google.com/maps/embed/v1/search";
+    const key = "AIzaSyDbjrFx19WFXQCu-IoFxjbju8WaG5E8phA";
+
+    let url = `${base}?key=${key}&q=${encodeURIComponent(query)}`;
+
+    if (userLat && userLng) {
+      // center is a separate parameter, not part of q
+      url += `&center=${userLat},${userLng}`;
+    }
+
+    mapFrame.src = url;
+  }
+
+  /* ---------------------------------------
+     Result card (distance-ready)
+  --------------------------------------- */
+
+  function renderResultCard(item) {
+    const card = document.createElement("div");
+    card.className = "result-card";
+
+    const rating   = item.rating ? Number(item.rating).toFixed(1) : "N/A";
+    const location = [item.city, item.state].filter(Boolean).join(", ");
+    const distance = item.distance
+      ? `${Number(item.distance).toFixed(1)} km away`
+      : "";
+
+    card.innerHTML = `
+      <h3>${item.name}</h3>
+      <p>${item.description ?? ""}</p>
+      <div class="result-meta">
+        <span class="meta-item">
+          <span class="material-symbols-outlined">star</span>
+          <span>${rating}</span>
+        </span>
+
+        ${location ? `
+          <span class="meta-item">
+            <span class="material-symbols-outlined">location_on</span>
+            <span>${location}</span>
+          </span>` : ""}
+
+        ${distance ? `
+          <span class="meta-item">
+            <span class="material-symbols-outlined">pin_drop</span>
+            <span>${distance}</span>
+          </span>` : ""}
+
+        ${item.phone ? `
+          <span class="meta-item">
+            <span class="material-symbols-outlined">call</span>
+            <a href="tel:${item.phone}">${item.phone}</a>
+          </span>` : ""}
+
+        ${item.website ? `
+          <span class="meta-item">
+            <span class="material-symbols-outlined">language</span>
+            <a href="${item.website}" target="_blank" rel="noopener">Website</a>
+          </span>` : ""}
+      </div>
+    `;
+    return card;
+  }
+
+  /* ---------------------------------------
+     Infinite scroll
+  --------------------------------------- */
+
+  resultsContainer.addEventListener("scroll", () => {
+    const { scrollTop, scrollHeight, clientHeight } = resultsContainer;
+    if (scrollTop + clientHeight >= scrollHeight - 80) {
+      if (!isLoading && hasMore) {
+        performSearch();
+      }
+    }
+  });
+});
+
+
+
+</script>
+
+
+
+
+</html>

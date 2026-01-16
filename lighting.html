@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Lighting Guide</title>
+  <meta name="description" content="Discover lighting ideas for every room in your home with our interactive guide." />
+  <link rel="icon" href="favicon.ico" />
+  <link rel="stylesheet" href="lighting.css" />
+
+  <!-- Open Graph & Twitter Meta Tags -->
+  <meta property="og:title" content="Home Lighting Guide" />
+  <meta property="og:description" content="Explore lighting styles that transform every room." />
+  <meta property="og:image" content="assets/images/lighting-preview.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+</head>
+
+<body>
+
+  <!-- Header remains unchanged -->
+  <header class="site-header">
+    <div class="container header-content">
+      <img src="logo.png" alt="DIY Connect Logo" class="logo" />
+      <nav class="main-nav" aria-label="Main navigation">
+        <ul>
+          <li><a href="index.php">Home</a></li>
+          <li><a href="#">Services</a></li>
+          <li><a href="#">Projects</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </nav>
+      <form class="auth-form" role="form">
+        <input type="text" name="username" placeholder="Username" aria-label="Username" />
+        <input type="password" name="password" placeholder="Password" aria-label="Password" />
+        <button type="submit">Login</button>
+        <button type="button" onclick="location.href='#signup'">Signup</button>
+      </form>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container-search-engine">
+      <h1>Home Lighting Guide</h1>
+      <br>
+
+      <p>Explore lighting styles that transform every room.</p>
+      <form class="search-bar" role="search">
+        <input type="search" name="query" placeholder="Search lighting ideas..." aria-label="Search" />
+        <button type="submit" aria-label="Search">🔍</button>
+      </form>
+    </div>
+  </section>
+
+  <main class="containerbox">
+    <section class="form-section" aria-labelledby="form-title">
+      <form class="left-column" action="/submit" method="post" novalidate>
+        <h2 id="form-title">Lighting Preferences</h2>
+        <ul class="form-list">
+          <li>
+            <label for="area-lxwxh">Area (L × W × H)</label>
+            <textarea id="area-lxwxh" name="area_lxwxh" placeholder="Enter L×W×H" required></textarea>
+          </li>
+          <li>
+            <label for="room-color">Room Color</label>
+            <textarea id="room-color" name="room_color" placeholder="Enter paint or finish color"></textarea>
+          </li>
+          <li>
+            <label for="notes-1">Notes</label>
+            <textarea id="notes-1" name="notes_1" placeholder="Add any relevant notes"></textarea>
+          </li>
+          <li>
+            <label for="notes-2">Additional Notes</label>
+            <textarea id="notes-2" name="notes_2" placeholder="Add more details"></textarea>
+          </li>
+          <li>
+            <label for="special-instructions">Special Instructions</label>
+            <textarea id="special-instructions" name="special_instructions"
+              placeholder="Enter special instructions"></textarea>
+          </li>
+          <li>
+            <label for="contact-info">Contact Info</label>
+            <textarea id="contact-info" name="contact_info" placeholder="Phone or email"></textarea>
+          </li>
+        </ul>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="reset" class="btn btn-secondary">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="lighting-section">
+      <div class="inner_box">
+        <article class="room-section" id="living-room">
+          <div id="user_input-search">
+            <h2>Living Room</h2>
+          </div>
+          <div id="search-input">
+            <hr class="_1" style="display:none;">
+            <hr class="_2" style="display:none;">
+            <hr class="_3">
+            <hr class="_4">
+            <hr class="_5">
+            <hr class="_6">
+
+          </div>
+      </div>
+    </section>
+
+    <aside class="ads" aria-label="Promotions">
+      <div class="ad-slot">
+        <h3>Brighten Your Space</h3>
+        <p>Discover our latest LED lighting collection—energy-efficient, stylish, and built to last.</p>
+        <a href="/products/led-lights" class="ad-button">Shop Now</a>
+      </div>
+
+      <div class="ad-slot">
+        <h3>Free Lighting Consultation</h3>
+        <p>Not sure what lighting fits your room? Book a free virtual consultation with our experts.</p>
+        <a href="/services/consultation" class="ad-button">Book Today</a>
+      </div>
+
+      <div class="ad-slot">
+        <h3>Holiday Sale 🎁</h3>
+        <p>Up to 40% off on all smart lighting systems. Offer ends December 31st!</p>
+        <a href="/offers/holiday-sale" class="ad-button">View Deals</a>
+      </div>
+    </aside>
+  </main>
+
+
+  <!-- Footer remains unchanged -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2025 Your Company Name. All rights reserved.</p>
+      <nav aria-label="Footer navigation">
+        <ul>
+          <li><a href="/about">About Us</a></li>
+          <li><a href="/services">Services</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy Policy</a></li>
+        </ul>
+      </nav>
+      <div class="social-links">
+        <a href="https://facebook.com" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://twitter.com" target="_blank" rel="noopener">Twitter</a>
+        <a href="https://instagram.com" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript Enhancements -->
+  <script>
+    const toggleButton = document.getElementById('darkModeToggle');
+    const savedTheme = localStorage.getItem('theme');
+
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      toggleButton.textContent = '☀️';
+    } else {
+      toggleButton.textContent = '🌙';
+    }
+
+    toggleButton.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      toggleButton.textContent = isDark ? '☀️' : '🌙';
+    });
+
+    document.querySelectorAll('.lighting-box').forEach(box => {
+      box.addEventListener('mouseenter', () => {
+        const info = box.getAttribute('data-info');
+        if (info) box.setAttribute('title', info);
+      });
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('visible');
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.room-section').forEach(section => {
+      observer.observe(section);
+    });
+  </script>
+</body>
+
+</html>

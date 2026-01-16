@@ -1,0 +1,116 @@
+# Scrubbers Messaging System
+
+An enterprise-grade messaging system with:
+
+- ES Module frontend (Dark Luxe Neon + Minimal Neutral Typography)
+- Dual backend: PHP + Node.js (Express)
+- Real-time via Socket.io + WebRTC data channels
+- Per-user R3 reaction model (`message_reactions`)
+- File uploads, read receipts, typing indicators
+- MySQL database: `scrubbers_db`
+
+---
+
+## 1. Tech stack
+
+- Frontend: Vanilla JS (ES Modules), CSS (`messaging-theme.css`)
+- Backends:
+  - PHP (legacy / simple hosting)
+  - Node.js (Express + Socket.io)
+- Database: MySQL (`scrubbers_db`)
+- WebRTC: Browser RTCPeerConnection + Node signaling
+- Reverse proxy: Nginx (recommended in front of Node/PHP)
+- Process manager: PM2 (for Node)
+
+---
+
+## 2. Database schema (used by messaging system)
+
+### 2.1 `private_messages`
+
+Used as the main chat table.
+
+- `id` int(11) PK, AUTO_INCREMENT  
+- `sender_id` int(11), indexed  
+- `receiver_id` int(11), indexed  
+- `message` text, NOT NULL  
+- `file` tinyint(1), default 0  
+- `filename` varchar(255), nullable  
+- `file_url` varchar(255), nullable  
+- `comment` text, nullable  
+- `created_at` timestamp, default current_timestamp  
+- `transport` varchar(20), default `http`
+
+### 2.2 `message_reactions`
+
+Used by R3 per-user reaction model.
+
+- `id` int(11) PK, AUTO_INCREMENT  
+- `message_id` int(11), indexed → `private_messages.id`  
+- `user_id` int(11), indexed → `users.user_id`  
+- `emoji` varchar, nullable  
+
+### 2.3 `users`
+
+- `user_id` PK  
+- `username` (used for sender_name in message list)  
+- You can add `avatar_url`, `status` later.
+
+---
+
+## 3. Project structure overview
+
+```txt
+frontend/
+  messaging/
+    MessagingEngine.js
+    StateStore.js
+    transports/
+      WebRTCTransport.js
+      HTTPTransport.js
+    rendering/
+      MessageRenderer.js
+      FileRenderer.js
+      ReactionRenderer.js
+    reactions/
+      ReactionManager.js
+      ReactionToggle.js
+      ReactionHydrator.js
+    observers/
+      ReadReceiptObserver.js
+      TypingIndicatorManager.js
+    notifications/
+      NotificationManager.js
+    styles/
+      messaging-theme.css
+
+php-backend/
+  db.php
+  messages.php
+  messages_send.php
+  upload.php
+  messages_react.php
+  messages_delete.php
+  typing.php
+  read_receipt.php
+
+node-backend/
+  server.js
+  db.js
+  routes/
+    messages.js
+    reactions.js
+    upload.js
+  sockets/
+    typing.js
+    readReceipts.js
+    reactions.js
+    webrtc.js
+  ecosystem.config.cjs   (PM2)
+
+nginx/
+  scrubbers.conf
+
+webrtc/
+  turn-stun-notes.md
+  .env.example

@@ -1,0 +1,100 @@
+/**
+ * FILE: /c:/xampp/htdocs/NewApp/dashboard.php
+ *
+ * PURPOSE
+ *  - Render the authenticated user's dashboard UI for Scrubber's (messaging, contacts,
+ *    call/video UI, todo list, search panel, settings, and embedded map).
+ *  - Provide server-side session checks and expose selected session values to client JS.
+ *
+ * AUTH / SESSIONS
+ *  - session_start() is used to resume session.
+ *  - Redirects to index.php if $_SESSION['getMyFullname'] is not set (simple auth gate).
+ *  - Several session values are echoed into the page as JSON for client usage:
+ *      window.sessionUserId  <- $_SESSION['user_id'] (nullable)
+ *      window.sessionFullname <- $_SESSION['getMyFullname'] (string)
+ *      window.sessionAvatar  <- $_SESSION['avatar'] (nullable)
+ *      window.USER_ID        <- duplicate of $_SESSION['user_id']
+ *  - Output escaping:
+ *      - htmlspecialchars() is used when printing $_SESSION['getMyFullname'] and contact_name.
+ *
+ * MAJOR DEPENDENCIES / ASSETS
+ *  - CSS:
+ *      - das_style.css?v={timestamp} (cache-busted by time())
+ *      - Google Material Symbols
+ *      - Font Awesome
+ *      - jQuery UI theme CSS
+ *  - JS:
+ *      - jQuery 3.6.0 + jQuery UI 1.13.2
+ *      - Wavesurfer.js
+ *      - Local modules: public/js/app.js, public/components/ContactsMenu.js,
+ *        public/components/calendar-overlay.js, public/js/dashboard/DashboardInit.js
+ *      - buttons-functions.js (synchronous script near bottom)
+ *  - Media:
+ *      - ringtone.mp3, ringback.mp3, notification.mp3
+ *  - External embed:
+ *      - Google Maps iframe (contains API key in src — rotate/remove key before sharing).
+ *
+ * KEY UI SECTIONS / ELEMENTS (IDs / classes referenced by client code)
+ *  - Header & auth:
+ *      - .site-header, .welcome (displays "Welcome, {getMyFullname}")
+ *  - Side nav buttons:
+ *      - #btn_search, #btn_chat_main, #contacts_btn, #btn_notifications, #btn_settings,
+ *        #toggleBtn, #btn_help, .btn (logout anchor -> logout.php)
+ *  - Main layout:
+ *      - #side_nav_buttons, #con_main, .sidebar_layout (todo list), #shared-space
+ *  - ToDo list:
+ *      - #newTask, #addTask, .todo_list, #clearCompleted
+ *  - Search / contractor lookup:
+ *      - #contractor_query, #search_submit, #autocomplete_list
+ *      - Slide-in panel: #search_panel, #contractor_query_panel, #search_results,
+ *        #autocomplete_list_panel
+ *  - Contacts & call log:
+ *      - /*contacts-menu*/ custom element, #contacts, #blocked-contacts, #voiceMList, #voicemailBadge
+ *      - #callLogSearch, #callStats, #callLogList, call details overlay: #callDetailsOverlay
+ *  - Messaging panel:
+ *      - #right_panel, #messaging_box, #message_input, #text_box_reply (form)
+ *      - Attachment & media: #attachment_input, #attachmentPreview, #img-viewer, #emojiPicker
+ *      - Recording UI: #micBtn, #vmTimer, #voicemailRecordingUI, #recordTimer, #waveformCanvas
+ *      - Buttons: #plusBtn, #sheetCamera, #sheetGallery, #sheetFile, #sheetAudio, #sheetEmoji
+ *  - Video / audio call UI:
+ *      - #video-container, #remoteVideo, #localVideo, #remoteAudio
+ *      - Controls: #answer-call, #decline-call, #end-call, #mute-call, #camera-toggle
+ *      - Status/time: #call-timer, #call-quality-indicator, #call-status
+ *  - Settings:
+ *      - #settings_container, #theme_select, #accent_color, #font_size
+ *      - AV device selects: #camera_select, #resolution_select, #microphone_select, #speaker_select
+ *  - Misc:
+ *      - #notification_container, .notification-wrapper, image viewer overlay elements
+ *
+ * CLIENT INTERACTIONS (expected)
+ *  - JS modules will bind to the above IDs/classes to implement:
+ *      - Contact search/autocomplete, contractor search panel
+ *      - Real-time/messaging features (typing indicator, message send/preview)
+ *      - File attachments and camera/gallery upload
+ *      - Press-and-hold voice recording and voicemail flow
+ *      - WebRTC-based video/audio calling (local/remote video elements and controls)
+ *      - Settings persistence and device selection
+ *
+ * SECURITY NOTES / RECOMMENDATIONS
+ *  - Ensure server-side authorization on all AJAX/WebSocket endpoints — session check here is only for page access.
+ *  - Avoid echoing sensitive session data into the global window where possible. Only expose minimal identifiers.
+ *  - Use htmlspecialchars() or JSON-encode for any injected values to prevent XSS (JSON encoding is used for window.* vars).
+ *  - Regenerate session ID on login to mitigate session fixation.
+ *  - Implement CSRF protections for form submissions and state-changing requests.
+ *  - The Google Maps API key in the iframe src should be restricted (HTTP referrers) or rotated/removed from public source.
+ *  - Consider Content-Security-Policy headers to mitigate script injection, and use Subresource Integrity (SRI) for external libs when feasible.
+ *
+ * PERFORMANCE / MAINTENANCE
+ *  - CSS is cache-busted using time() — replace with build-time hashing in production for better caching.
+ *  - Modular JS imports (type="module") indicate an ES module-based client app; ensure proper bundling for production.
+ *  - Centralize UI strings and repeated IDs to avoid drift between markup and JS.
+ *
+ * KNOWN GAPS / TODOs
+ *  - Validate presence/format of $_SESSION['user_id'] before exposing window.USER_ID.
+ *  - Unify session variable exposure (avoid duplicate window.USER_ID and window.sessionUserId).
+ *  - Add role/permission checks if certain UI elements should be hidden for non-privileged users.
+ *  - Add server-side endpoints and docs for messaging, calls, contact management, voicemail storage, and search APIs.
+ *
+ * AUTHOR / COPYRIGHT
+ *  - Template for Scrubber's dashboard UI (2025), includes third-party libs with their own licenses.
+ */
