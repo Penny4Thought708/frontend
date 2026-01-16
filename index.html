@@ -288,36 +288,48 @@
   </footer>
 
   <script>
-    document.getElementById("loginForm").addEventListener("submit", async e => {
-      e.preventDefault(); // stop normal form submission
+    import { API_BASE } from "./config.js";
 
-      const formData = new FormData(e.target);
+document.getElementById("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
 
-      try {
-        const res = await fetch("login.php", {
-          method: "POST",
-          body: formData,
-          credentials: "same-origin"
-        });
-        const data = await res.json();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
 
-        const errorBox = document.getElementById("errorBox");
-        errorBox.innerHTML = ""; // clear old messages
+  const errorBox = document.getElementById("errorBox");
+  errorBox.innerHTML = "";
 
-        if (data.success) {
-          setTimeout(() => {
-            window.location.href = data.redirect;
-          }, 1000);
-        } else {
-          errorBox.innerHTML = `<p class="error">${data.error}</p>`;
-        }
-      } catch (err) {
-        document.getElementById("errorBox").innerHTML = `<p class="error">Network error</p>`;
-      }
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      credentials: "include"
     });
+
+    const data = await res.json();
+
+    if (data.success) {
+      // store token if your backend returns one
+      if (data.token) {
+        localStorage.setItem("auth_token", data.token);
+      }
+
+      setTimeout(() => {
+        window.location.href = "/dashboard.html";
+      }, 800);
+    } else {
+      errorBox.innerHTML = `<p class="error">${data.error}</p>`;
+    }
+  } catch (err) {
+    errorBox.innerHTML = `<p class="error">Network error</p>`;
+  }
+});
+
   </script>
 
 </body>
 </html>
+
 
 
