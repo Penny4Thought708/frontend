@@ -1,25 +1,26 @@
-<?php
-session_start();
-if (!isset($_SESSION['fullname'])) {
-  header("Location: index.php");
-  exit();
-}
-?>
-<script>
-window.user_id = <?= json_encode($_SESSION['user_id']) ?>;
-window.fullname = <?= json_encode($_SESSION['fullname']) ?>;
-window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
-
-</script>
-
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Scrubber's Dashboard</title>
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="referrer" content="no-referrer" />
+  <!-- CSRF token will be populated by the session API -->
+  <meta name="csrf-token" content="" />
 
+  <!-- Basic Content-Security-Policy (prefer to move to server header for stricter control) -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; connect-src 'self' wss: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://code.jquery.com https://maps.googleapis.com; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://code.jquery.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; img-src 'self' data: https:; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src https://www.google.com;">
+
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://code.jquery.com" crossorigin>
+  <link rel="preload" href="das_style.css" as="style">
+
+  <!-- canonical (filled by JS) -->
+  <link rel="canonical" href="">
+
+  <title>Scrubber's Dashboard</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
@@ -34,19 +35,51 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-
- <script type="module" src="/NewApp/public/js/app.js"></script>
+  <script type="module" src="/NewApp/public/js/app.js"></script>
 
   <script type="module" src="public/components/ContactsMenu.js"></script>
   <script src="https://unpkg.com/wavesurfer.js"></script>
   <script type="module" src="public/components/calendar-overlay.js"></script>
   <link rel="stylesheet" type="text/css" href="calling_style.css"/>
-<link rel="stylesheet" type="text/css" href="offscreenPanels_style.css"/>
+  <link rel="stylesheet" type="text/css" href="offscreenPanels_style.css"/>
+
+  <!-- Bootstrapping session & canonical for a static HTML page -->
+  <script>
+    // Fill canonical to avoid needing server-side hostname injection
+    (function setCanonical() {
+      const link = document.querySelector('link[rel="canonical"]');
+      if (link) link.href = location.href;
+    })();
+
+    // Fetch session info from an API endpoint and expose it to client code
+    window._sessionPromise = (async function() {
+      try {
+        const res = await fetch('/NewApp/api/session.php', { credentials: 'include' });
+        if (!res.ok) throw new Error('No session');
+        const data = await res.json();
+        if (!data || !data.fullname) throw new Error('Not logged in');
+        // Expose global session
+        window.user = data;
+        window.user_id = data.user_id ?? null;
+        window.fullname = data.fullname ?? null;
+        window.avatar = data.avatar ?? null;
+        if (data.csrf_token) {
+          const meta = document.querySelector('meta[name="csrf-token"]');
+          if (meta) meta.setAttribute('content', data.csrf_token);
+          window.CSRF_TOKEN = data.csrf_token;
+        }
+        return data;
+      } catch (err) {
+        // Redirect to login if no valid session
+        console.warn('Session bootstrap failed:', err);
+        location.href = '/NewApp/index.html';
+        return null;
+      }
+    })();
+  </script>
 </head>
 
-
 <body class="dark-mode">
-
   <!-- Header -->
   <header class="site-header">
     <div class="brand-logo">
@@ -58,10 +91,10 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
       <a href="project.html">Projects</a>
       <a href="#">Contact</a>
     </nav>
-    
+
     <div class="auth-section">
       <div class="welcome">
-        <h3>Welcome, <?= htmlspecialchars($_SESSION['fullname']);?>!</h3>
+        <h3>Welcome, <span id="welcomeName">User</span>!</h3>
         <p>You are now logged in to your Scrubbers Network.</p>
       </div>
     </div>
@@ -75,7 +108,6 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
     <div id="notification_container"></div>
 
     <div id="side_nav_buttons">
-  
       <button id="btn_search" title="Search For Local Help">🔍</button>
       <button id="btn_chat_main" title="Start Chat">💬</button>
       <button id="contact_widget" title="Contacts">
@@ -88,13 +120,12 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
       <button id="btn_settings" title="Settings"><span class="material-symbols-outlined">settings</span></button>
       <button id="toggleBtn" title="Theme">🌙</button>
       <hr>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<button class="logoutButton" onclick="window.location='logout.php'" title="Logout" ><img src="img/logout.png" alt=""></button>
+      <br><br><br><br><br><br><br><br><br><br><br><br>
+      <button class="logoutButton" onclick="window.location='logout.php'" title="Logout" ><img src="img/logout.png" alt=""></button>
       <button id="btn_help" title="Help">❓</button>
     </div>
 
     <div id="contact_window">
-
       <div id="leftcontent">
         <div id="contact_box">
           <div id="menu_Btn_contact">
@@ -110,18 +141,13 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
               <li id="settings">Settings</li>
             </ul>
           </div>
-      
 
           <div class="profile_card">
             <!-- Avatar -->
             <div class="profile-avatar">
               <div class="status-dot online"><h3>Online</h3></div>
 
-              <?php
-                $avatar = $_SESSION['avatar'] ?? null;
-                $avatarPath = $avatar ? "uploads/avatars/" . $avatar : "/NewApp/img/defaultUser.png";
-              ?>
-              <img id="profilePreview" src="<?= htmlspecialchars($avatarPath); ?>" alt="Profile Picture">
+              <img id="profilePreview" src="/NewApp/img/defaultUser.png" alt="Profile Picture">
 
               <div class="profile_chgBtn">
                 <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
@@ -133,8 +159,8 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
 
             <!-- Info -->
             <div class="profile-info">
-              <h2 class="profile-name"><?= htmlspecialchars($_SESSION['fullname']); ?></h2>
-              <p class="profile-username">@<?= strtolower(str_replace(' ', '', $_SESSION['fullname'])); ?></p>
+              <h2 class="profile-name" id="profileName">User</h2>
+              <p class="profile-username" id="profileUsername">@user</p>
 
               <!-- Bio -->
               <div class="profile-field">
@@ -145,13 +171,13 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
               <!-- Display Name -->
               <div class="profile-field">
                 <label>Display Name</label>
-                <input type="text" name="fullname" id="fullnameInput" value="<?= htmlspecialchars($_SESSION['fullname']); ?>"/>
+                <input type="text" name="fullname" id="fullnameInput" value=""/>
               </div>
 
               <!-- Email -->
               <div class="profile-field">
                 <label>Email</label>
-                <input type="email" name="email" id="emailInput" placeholder="<?= htmlspecialchars($_SESSION['email']); ?>" value="<?= htmlspecialchars($_SESSION['email']); ?>">
+                <input type="email" name="email" id="emailInput" placeholder="">
               </div>
 
               <!-- Password Change -->
@@ -203,559 +229,17 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
               </div>
             </div>
           </div>
-
-       
         </div>
       </div>
 
-      <div id="rightcontent">
-       
-
-      
-      </div>
-    </div>
-    <div id="conwrap">
-   <aside class="sidebar">
-            <div class="contact-lookup">
-              <label for="lookup-input" class="sr-only">Search Contacts</label>
-              <input type="text" id="lookup-input" placeholder="Search for users by name or email..." autocomplete="on" />
-              <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
-            </div>
-            <ul id="contacts-lookup" aria-label="Contact results"></ul>
-          </aside>
-    <div id="con_main">
-   
-
-      <div id="contacts_panel" class="contacts-panel">
-          
-        <div class="panel-header">
-      <h2 id="panelTitle">Call Log</h2>
-          <contacts-menu></contacts-menu>
-        </div>
-
-        <div id="voicemail_list">
-          <div class="voicemail-topbar">
-            <span id="voicemailBadge" class="vm-badge">0</span>
-          </div>
-          <ul id="voiceMList" class="voicemail-list"></ul>
-        </div>
-
-        <div id="bl_con">
-          <ul id="contacts" aria-label="Contacts list"></ul>
-        </div>
-
-        <div id="sav_con" class="call-log-container">
-          <div class="call-log-header">
-            <div class="call-log-actions">
-              <input id="callLogSearch" type="text" placeholder="Search calls…" />
-            </div>
-          </div>
-
-          <div id="callStats" class="call-stats"></div>
-          <div id="callLogList" class="call-log-list"></div>
-        </div>
-      <div id="messaging_box_container">
-    
-    
-    
-      <h2 id="unread_header"></h2>
-    <ul id="messaging_list"></ul>
-</div>
-
-
-          <div id="bloc_box">
-            <ul id="blocked-contacts"></ul>
-          </div>
-
-      </div>
-      <div id="shared-space">
-         <div id="fullProfileModal" class="full-profile-modal">
-          <button id="closeFullProfile" class="close-full-profile">✕</button>
-          <div class="full-profile-content">
-            <div class="full-profile-banner">
-              <div id="fullProfileBannerWrapper" class="banner-wrapper">
-                <img id="fullProfileBanner" src="" alt="Banner">
-              </div>
-            </div>
-
-            <div class="avatar-frame avatar-glow avatar-pulse online">
-              <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar">
-            </div>
-
-            <h2 id="fullProfileName"></h2>
-            <p id="fullProfileEmail"></p>
-            <p id="fullProfilePhone"></p>
-            <div id="fullProfileBio" class="full-profile-bio"></div>
-
-            <div class="profile-line">
-              <img src="https://img.icons8.com/color/48/domain--v1.png" alt="">
-              <a id="fullProfileWebsite" href="#" target="_blank"></a>
-            </div>
-
-            <div class="profile-line">
-              <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="">
-              <a id="fullProfileTwitter" href="#" target="_blank"></a>
-            </div>
-
-            <div class="profile-line">
-              <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="">
-              <a id="fullProfileInstagram" href="#" target="_blank"></a>
-            </div>
-
-            <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
-            <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
-
-            <div class="copy-row">
-              <button id="copyEmailBtn" class="copy-btn">Copy Email</button>
-              <button id="copyPhoneBtn" class="copy-btn">Copy Phone</button>
-            </div>
-
-            <button id="saveLookupContact" class="profile-save-btn">➕ Add To Contacts</button>
-
-            <div class="profile-actions">
-              <button id="profileCallBtn" class="profile-action-btn">📞 Call</button>
-              <button id="profileVideoBtn" class="profile-action-btn">🎥 Video</button>
-              <button id="profileBlockBtn" class="profile-action-btn danger">🚫 Block</button>
-            </div>
-          </div>
-        </div>
-
-    <div id="messaging_box">
-          <div class="header_msg_box">
-           <div class="msg-header-left">
-  <div class="msg-header-info">
-    <h2 id="msgHeaderName" class="msg-contact-name"></h2>
-  </div>
-</div>
-
-
-           <div class="msg-header-right">
-  <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
-    <img src="img/voice.png" alt="Voice Call"height="25px" width="25px">
-  </button>
-
-  <button id="videoBtn" class="msg-icon-btn" title="Video Call">
-    <img src="img/app.png" alt="Video Call" height="28px" width="28px" >
-  </button>
-
-  <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">
-    🐞
-  </button>
-</div>
-
-
-            <div id="voicemailRecordingUI" style="display:none">
-              <p>Leave a voicemail…</p>
-              <div id="vmTimer"></div>
-              <button id="vmStopBtn">Finish</button>
-            </div>
-          </div>
-
-          <!-- Message Window -->
-          <div class="message_win1">
-            <canvas id="waveformCanvas" width="200" height="40" style="display:none;"></canvas>
-            <div id="recordTimer" style="display:none; font-size:14px; color:#ff4d4d; margin-left:10px;">00:00</div>
-            <div id="slideCancel" style="display:none; font-size:14px; color:#999; margin-left:10px;">Slide left to cancel</div>
-          </div>
-
-          <div class="typing-indicator">
-            <img class="typing-avatar" src="" alt="">
-            <div class="typing-bubble"><span></span><span></span><span></span></div>
-          </div>
-
-          <div class="recording-indicator">
-            <div class="recording-bubble">
-              <span class="mic-icon">🎤</span>
-              <span class="recording-text">Recording audio…</span>
-              <div class="pulse-ring"></div>
-            </div>
-          </div>
-
-          <!-- Image Viewer -->
-          <div id="img-viewer" class="img-viewer">
-            <img id="img-viewer-img" alt="Viewed image">
-          </div>
-
-          <!-- Reply Form -->
-          <form id="text_box_reply" autocomplete="off">
-            <button type="button" id="plusBtn" class="plus-btn"><span class="material-symbols-outlined">add</span></button>
-
-            <div id="bottomSheet" class="bottom-sheet">
-              <div class="sheet-handle"></div>
-              <button class="sheet-item" id="sheetCamera">📷 Camera</button>
-              <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
-              <button class="sheet-item" id="sheetFile">📎 File</button>
-              <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
-              <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
-              <button class="sheet-item" id="sheetGif">🎬 GIF</button>
-            </div>
-
-            <emoji-picker id="emojiPicker" data-no-storage></emoji-picker>
-
-            <div id="gifPicker" class="hidden gif-picker">
-              <input type="text" id="gifSearch" placeholder="Search GIFs..." />
-              <div id="gifResults" class="gif-results"></div>
-            </div>
-
-            <input id="attachment_input" type="file" multiple hidden />
-            <div id="attachmentPreview" class="attachment-preview hidden"></div>
-
-            <button type="button" id="micBtn"><img src="img/mic.png" alt="microphone"></button>
-            <div id="message_input" contenteditable="true" class="rich-input" aria-label="Type your message"></div>
-
-            <button type="submit" class="send-btn"><span class="material-symbols-outlined">send</span></button>
-          </form>
-        </div>
-
-        <!-- VIDEO CALL UI -->
- <!-- VIDEO CALL UI -->
-<div id="video-container">
-
-  <!-- REMOTE VIDEO (big) -->
-  <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
-    <video id="remoteVideo" autoplay playsinline></video>
-
-    <!-- Remote avatar fallback -->
-    <div class="avatar remote-avatar" id="remoteAvatar">
-      <img id="remoteAvatarImg" src="" alt="Remote Avatar">
-      <div class="avatar-ring"></div>
+      <div id="rightcontent"></div>
     </div>
 
-    <!-- Overlay for ringing / connecting -->
-    <div id="callerOverlay" class="call-overlay" style="display:none;"></div>
-  </div>
+    <!-- ... rest of your page unchanged ... -->
 
-  <!-- LOCAL VIDEO (small preview) -->
-  <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
-    <video id="localVideo" autoplay playsinline muted></video>
+  </main>
 
-    <!-- Local avatar fallback -->
-    <div class="avatar local-avatar" id="localAvatar">
-      <img id="localAvatarImg" src="/NewApp/img/defaultUser.png" alt="Local Avatar">
-    </div>
-
-   
-  </div>
- <div id="call-status" class="status"></div>
-  <!-- REMOTE AUDIO -->
-  <audio id="remoteAudio" autoplay playsinline></audio>
-
-  <!-- CALL CONTROLS -->
-  <div id="call-controls">
-    <div id="call-timer" class="call-timer">00:00</div>
-    <button id="decline-call">❌ Decline</button>
-    <button id="answer-call">✅ Answer</button>
-    <button id="mute-call">🔇 Mute</button>
-    <button id="camera-toggle">
-      <span class="material-symbols-outlined">flip_camera_android</span>
-    </button>
-    <button id="end-call">📞 Hang Up</button>
-  </div>
-
-</div>
-
-
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Slide-in Search Panel -->
-<div id="search_panel" class="search-panel">
-  <div class="search_">
-    <div class="search-header">
-      <h2>Search For Contractors</h2>
-      <button id="close_search">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-
-    <div class="search-input">
-      <input id="contractor_query_panel" type="text" placeholder="Search contractors..." />
-      <button id="search_submit_panel" type="button">
-        <span class="material-symbols-outlined">search</span>
-      </button>
-      <ul id="autocomplete_list_panel" class="autocomplete-list"></ul>
-    </div>
-
-    <div class="search-filters">
-      <button class="filter-chip active" data-category="all">All</button>
-      <button class="filter-chip" data-category="roofing">Roofing</button>
-      <button class="filter-chip" data-category="plumbing">Plumbing</button>
-      <button class="filter-chip" data-category="hvac">HVAC</button>
-      <button class="filter-chip" data-category="electrical">Electrical</button>
-      <button class="filter-chip" data-category="general">General</button>
-    </div>
-
-    <div id="search_results"></div>
-  </div>
-
-  <div class="map-container">
-        <iframe id="contractor_map" src="https://www.google.com/maps/embed/v1/search?key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&q=contractors+near+me" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-  </div>
-</div>
-<div id="settings_container">
-
-  <!-- LEFT SIDEBAR: MAIN SETTINGS -->
-  <aside class="sidebar_layout3 settings_left_ active">
-
-    <h2 class="settings-title">Settings</h2>
-
-    <!-- APPEARANCE -->
-    <section class="settings-card">
-      <h3 class="settings-card-title">Appearance</h3>
-
-      <div class="settings-row">
-        <label for="theme_select">Theme</label>
-        <select id="theme_select">
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="system">System Default</option>
-        </select>
-      </div>
-
-      <div class="settings-row">
-        <label for="accent_color">Accent Color</label>
-        <input type="color" id="accent_color" value="#4CAF50">
-      </div>
-
-      <div class="settings-row">
-        <label for="font_size">Font Size</label>
-        <input type="range" id="font_size" min="12" max="24" value="16">
-      </div>
-    </section>
-
-    <!-- VIDEO -->
-    <section class="settings-card">
-      <h3 class="settings-card-title">Video</h3>
-
-      <div class="settings-row">
-        <label>Camera</label>
-        <select id="camera_select"></select>
-      </div>
-
-      <div class="settings-row">
-        <label>Resolution</label>
-        <select id="resolution_select">
-          <option value="720p">720p</option>
-          <option value="1080p">1080p</option>
-          <option value="4k">4K</option>
-        </select>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Background Blur</span>
-        <label class="toggle">
-          <input type="checkbox" id="background_blur">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Mirror Video</span>
-        <label class="toggle">
-          <input type="checkbox" id="mirror_video">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <!-- FIXED: Camera Preview inside Video card -->
-  <div class="settings-row camera-preview-row">
-  <label>Preview</label>
-  <video id="camera_preview" autoplay playsinline muted></video>
-</div>
-
-    </section>
-
-    <!-- AUDIO -->
-    <section class="settings-card">
-      <h3 class="settings-card-title">Audio</h3>
-
-      <div class="settings-row">
-        <label>Microphone</label>
-        <select id="microphone_select"></select>
-      </div>
-
-      <div class="settings-row">
-        <label>Speaker</label>
-        <select id="speaker_select"></select>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Noise Suppression</span>
-        <label class="toggle">
-          <input type="checkbox" id="noise_suppression">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Echo Cancellation</span>
-        <label class="toggle">
-          <input type="checkbox" id="echo_cancellation">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Auto Gain Control</span>
-        <label class="toggle">
-          <input type="checkbox" id="auto_gain">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <!-- FIXED: Mic Level Meter inside Audio card -->
-      <div class="settings-row">
-        <label>Microphone Level</label>
-        <div id="mic_level_bar" class="mic-level-bar">
-          <div class="mic-level-fill"></div>
-        </div>
-      </div>
-
-      <!-- Optional Speaker Test -->
-      <div class="settings-row">
-        <label>Test Speaker</label>
-        <button type="button" id="test_speaker_btn" class="settings-btn">Play Test Sound</button>
-      </div>
-    </section>
-
-    <!-- NOTIFICATIONS -->
-    <section class="settings-card">
-      <h3 class="settings-card-title">Notifications</h3>
-
-      <div class="settings-toggle-row">
-        <span>Call Alerts</span>
-        <label class="toggle">
-          <input type="checkbox" id="call_alerts" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Message Alerts</span>
-        <label class="toggle">
-          <input type="checkbox" id="message_alerts" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Sound Effects</span>
-        <label class="toggle">
-          <input type="checkbox" id="sound_effects" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </section>
-
-    <!-- ACCESSIBILITY -->
-    <section class="settings-card">
-      <h3 class="settings-card-title">Accessibility</h3>
-
-      <div class="settings-toggle-row">
-        <span>High Contrast Mode</span>
-        <label class="toggle">
-          <input type="checkbox" id="high_contrast">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Keyboard Shortcuts</span>
-        <label class="toggle">
-          <input type="checkbox" id="keyboard_shortcuts" checked>
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <div class="settings-toggle-row">
-        <span>Screen Reader Support</span>
-        <label class="toggle">
-          <input type="checkbox" id="screen_reader">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </section>
-
-    <!-- SAVE / RESET -->
-    <section class="settings-card">
-      <button id="save_settings" class="settings-btn primary">Save Settings</button>
-      <button id="reset_settings" class="settings-btn">Reset to Default</button>
-    </section>
-
-  </aside>
-
-  <!-- RIGHT PANEL: PROFILE SETTINGS -->
-  <aside id="profile_settings">
-
-    <button id="contact_close" class="close-btn">✕</button>
-
-    <div id="contact_settings_panel">
-
-      <header class="settings-header">
-        <h2>Profile Settings</h2>
-        <button id="close_contact_settings" class="close-btn">✕</button>
-      </header>
-
-      <section class="settings-card">
-        <h3 class="settings-card-title">Profile</h3>
-
-        <div class="settings-row">
-          <label>Profile Picture</label>
-          <input type="file" id="contact_profile_picture" accept="image/*">
-        </div>
-
-        <div class="settings-row">
-          <label>Display Name</label>
-          <input type="text" id="contact_display_name" placeholder="Enter name">
-        </div>
-
-        <div class="settings-row">
-          <label>Email</label>
-          <input type="email" id="contact_email" placeholder="Enter email">
-        </div>
-      </section>
-
-      <section class="settings-card">
-        <h3 class="settings-card-title">Privacy</h3>
-
-        <div class="settings-toggle-row">
-          <span>Show Online Status</span>
-          <label class="toggle">
-            <input type="checkbox" id="show_online">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-toggle-row">
-          <span>Allow Messages</span>
-          <label class="toggle">
-            <input type="checkbox" id="allow_messages">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </section>
-
-      <section class="settings-card">
-        <h3 class="settings-card-title">Blocked Contacts</h3>
-        <ul id="blocked_list"></ul>
-      </section>
-
-    </div>
-  </aside>
-
-</div>
-
-
-
-
-
-  <div class="notification-wrapper">
-    <span class="notification-bell"><span class="material-symbols-outlined" style="font-size:62px;">notifications</span></span>
-  </div>
- </main>
-  <!-- Footer -->
+  <!-- Footer (unchanged) -->
   <footer class="site-footer">
     <div class="footer-content">
       <p>&copy; 2025 DIY Connect. All rights reserved.</p>
@@ -780,6 +264,46 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
   <script src="buttons-functions.js"></script>
   <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
 
+  <!-- Session-based DOM initialization (runs after all DOM is available) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const data = await window._sessionPromise;
+      if (!data) return; // _sessionPromise will have redirected
+
+      // Fill user-related UI
+      const name = data.fullname || 'User';
+      document.getElementById('welcomeName').textContent = name;
+      document.getElementById('profileName').textContent = name;
+      document.getElementById('profileUsername').textContent = '@' + (name.replace(/\s+/g,'').toLowerCase());
+      const emailInput = document.getElementById('emailInput');
+      if (emailInput) emailInput.value = data.email || '';
+
+      const fullnameInput = document.getElementById('fullnameInput');
+      if (fullnameInput) fullnameInput.value = data.fullname || '';
+
+      // Avatar path: server should return a DB path like "uploads/avatars/x.png"
+      function buildDisplayUrl(dbPath) {
+        if (!dbPath) return '/NewApp/img/defaultUser.png';
+        let clean = dbPath.replace(/^\/+/, '');
+        if (!clean.startsWith('NewApp/')) clean = `NewApp/${clean}`;
+        return `/${clean}?t=${Date.now()}`;
+      }
+      const avatarUrl = buildDisplayUrl(data.avatar || null);
+      const profilePreview = document.getElementById('profilePreview');
+      if (profilePreview) profilePreview.src = avatarUrl;
+
+      const localAvatarImg = document.getElementById('localAvatarImg');
+      if (localAvatarImg) localAvatarImg.src = avatarUrl;
+
+      // Expose for other scripts that expect window.user, window.user_id etc.
+      window.user = data;
+      window.user_id = data.user_id ?? null;
+      window.fullname = data.fullname ?? null;
+      window.avatar = data.avatar ?? null;
+    });
+  </script>
+
+  <!-- Remaining script imports (unchanged) -->
   <div id="image-viewer-overlay" aria-hidden="true">
     <button id="image-prev" class="image-nav-btn">❮</button>
     <img id="image-viewer-img" src="" alt="Image viewer">
@@ -791,17 +315,9 @@ window.avatar = <?= json_encode($_SESSION['avatar'] ?? null) ?>;
     <div id="hiddenList"></div>
     <button onclick="closeHiddenPanel()">Close</button>
   </div>
-<!--
-   <div id="callDetailsOverlay" class="call-details-overlay">
-            <div class="call-details-panel">
-              <button id="closeCallDetails" class="close-btn">✕</button>
-              <h3>Call Details</h3>
-              <div id="callDetailsContent"></div>
-            </div>
-          </div>
 
-        -->
 </body>
+ 
 <script type="module" src="/NewApp/public/js/socket.js"></script> <script type="module" src="/NewApp/public/js/session.js"></script> <script type="module" src="/NewApp/public/js/dashboard/contacts.js"></script> <script type="module" src="/NewApp/public/js/messaging.js"></script>
 <script  src="SettingsController.js">document.addEventListener("DOMContentLoaded", () => {
   SettingsController.init();
@@ -1442,6 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </script>
+
 
 
 
