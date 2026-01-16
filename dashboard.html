@@ -35,7 +35,7 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 
-  <script type="module" src="/NewApp/public/js/app.js"></script>
+  <script type="module" src="/public/js/app.js"></script>
 
   <script type="module" src="public/components/ContactsMenu.js"></script>
   <script src="https://unpkg.com/wavesurfer.js"></script>
@@ -54,7 +54,7 @@
     // Fetch session info from an API endpoint and expose it to client code
     window._sessionPromise = (async function() {
       try {
-        const res = await fetch('/NewApp/api/session.php', { credentials: 'include' });
+        const res = await fetch('/api/session.php', { credentials: 'include' });
         if (!res.ok) throw new Error('No session');
         const data = await res.json();
         if (!data || !data.fullname) throw new Error('Not logged in');
@@ -72,7 +72,7 @@
       } catch (err) {
         // Redirect to login if no valid session
         console.warn('Session bootstrap failed:', err);
-        location.href = '/NewApp/index.html';
+        location.href = '/index.html';
         return null;
       }
     })();
@@ -984,5 +984,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
