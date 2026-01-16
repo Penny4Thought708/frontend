@@ -290,8 +290,6 @@
 <script type="module">
 import { API_BASE } from "./public/js/config.js";
 
-
-
 document.getElementById("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
 
@@ -316,6 +314,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
         localStorage.setItem("auth_token", data.token);
       }
 
+      // GitHub Pages requires relative paths
       window.location.href = "dashboard.html";
     } else {
       errorBox.innerHTML = `<p class="error">${data.error}</p>`;
@@ -327,8 +326,10 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 </script>
 
 
+
 </body>
 </html>
+
 
 
 
