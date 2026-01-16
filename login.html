@@ -1,0 +1,27 @@
+import { API_BASE } from "./config.js";
+
+document.getElementById("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+    credentials: "include"
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    if (data.token) {
+      localStorage.setItem("auth_token", data.token);
+    }
+    window.location.href = "/dashboard.html";
+  } else {
+    document.getElementById("errorBox").textContent = data.error;
+  }
+});
+
