@@ -447,14 +447,13 @@ export function updateContactStatus(contactId, isOnline) {
     status.title = isOnline ? "Online" : "Offline";
   }
 }
-
 /* -------------------------------------------------------
-   Load Contacts
+   Load Contacts (Node backend)
 ------------------------------------------------------- */
 
 export async function loadContacts() {
   try {
-    const data = await fetchJSON("get_contacts.php");
+    const data = await fetchJSON("/contacts"); // GET https://letsee-backend.onrender.com/api/contacts
     console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
@@ -485,7 +484,7 @@ export async function loadContacts() {
 }
 
 /* -------------------------------------------------------
-   Render Contact Card (LIST)
+   Render Blocked Card (LIST)
 ------------------------------------------------------- */
 
 function renderBlockedCard(userRaw) {
@@ -509,7 +508,7 @@ function renderBlockedCard(userRaw) {
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
-    const data = await postForm("unblock_contact.php", {
+    const data = await postJSON("/contacts/unblock", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -517,6 +516,10 @@ function renderBlockedCard(userRaw) {
 
   return li;
 }
+
+/* -------------------------------------------------------
+   Render Contact Card (LIST)
+------------------------------------------------------- */
 
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
@@ -557,7 +560,7 @@ export function renderContactCard(userRaw) {
 
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
-    const data = await postForm("block_contact.php", {
+    const data = await postJSON("/contacts/block", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -566,7 +569,7 @@ export function renderContactCard(userRaw) {
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
-    const data = await postForm("delete_contact.php", {
+    const data = await postJSON("/contacts/delete", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -784,5 +787,6 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
