@@ -437,7 +437,7 @@ export function updateContactStatus(contactId, isOnline) {
     status.title = isOnline ? "Online" : "Offline";
   }
 }
-import { getJson, getMyUserId } from "../session.js";
+import { getJson} from "../session.js";
 
 
 // -------------------------------------------------------
@@ -772,6 +772,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
