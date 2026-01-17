@@ -36,76 +36,68 @@
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-  <script>
-async function loadUser() {
-  const res = await fetch("https://letsee-backend.onrender.com/auth/me", {
-    credentials: "include"
-  });
+ <script>
+async function loadUserUnified() {
+  try {
+    const res = await fetch("https://letsee-backend.onrender.com/auth/me", {
+      credentials: "include"
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!data.success) {
+    if (!data.success) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const user = data.user;
+
+    // -------------------------------------------------------
+    // ⭐ GLOBAL IDENTITY (required for session.js + sockets)
+    // -------------------------------------------------------
+    window.user = user;
+    window.user_id = user.id;
+    window.fullname = user.fullname;
+    window.avatar = user.avatar;
+
+    // -------------------------------------------------------
+    // ⭐ DASHBOARD HEADER
+    // -------------------------------------------------------
+    const welcomeName = document.querySelector("#welcomeName");
+    if (welcomeName) welcomeName.textContent = `Welcome, ${user.fullname}!`;
+
+    // -------------------------------------------------------
+    // ⭐ PROFILE SIDEBAR
+    // -------------------------------------------------------
+    const profileName = document.querySelector(".profile-name");
+    const profileUsername = document.querySelector(".profile-username");
+    const fullnameInput = document.querySelector("#fullnameInput");
+    const emailInput = document.querySelector("#emailInput");
+    const profilePreview = document.querySelector("#profilePreview");
+
+    if (profileName) profileName.textContent = user.fullname;
+    if (profileUsername)
+      profileUsername.textContent =
+        "@" + user.fullname.replace(/\s+/g, "").toLowerCase();
+
+    if (fullnameInput) fullnameInput.value = user.fullname;
+    if (emailInput) emailInput.value = user.email;
+
+    const avatarUrl = user.avatar
+      ? `https://letsee-backend.onrender.com/${user.avatar}`
+      : "img/defaultUser.png";
+
+    if (profilePreview) profilePreview.src = avatarUrl;
+
+  } catch (err) {
+    console.error("Failed to load user:", err);
     window.location.href = "index.html";
-    return;
   }
-
-  // Save user globally
-  window.user = data.user;
-  window.user_id = data.user.id;
-  window.fullname = data.user.fullname;
-  window.avatar = data.user.avatar;
-
-  // Fill UI
-  document.querySelector(".profile-name").textContent = data.user.fullname;
-  document.querySelector(".profile-username").textContent =
-    "@" + data.user.fullname.replace(/\s+/g, "").toLowerCase();
-  document.querySelector("#emailInput").value = data.user.email;
-
-  const avatar = data.user.avatar
-    ? `https://letsee-backend.onrender.com/${data.user.avatar}`
-    : "img/defaultUser.png";
-
-  document.querySelector("#profilePreview").src = avatar;
 }
 
+document.addEventListener("DOMContentLoaded", loadUserUnified);
 </script>
-<script>
-async function loadUserProfile() {
-  const res = await fetch("https://letsee-backend.onrender.com/auth/me", {
-    credentials: "include"
-  });
 
-  const data = await res.json();
-
-  if (!data.success) {
-    window.location.href = "index.html";
-    return;
-  }
-
-  const user = data.user;
-
-  // Save globally
-  window.user = user;
-  window.user_id = user.id;
-  window.fullname = user.fullname;
-  window.avatar = user.avatar;
-
-  // Fill UI
-  document.querySelector(".profile-name").textContent = user.fullname;
-  document.querySelector(".profile-username").textContent =
-    "@" + user.fullname.replace(/\s+/g, "").toLowerCase();
-
-  document.querySelector("#fullnameInput").value = user.fullname;
-  document.querySelector("#emailInput").value = user.email;
-
-  const avatarUrl = user.avatar
-    ? `https://letsee-backend.onrender.com/${user.avatar}`
-    : "img/defaultUser.png";
-
-  document.querySelector("#profilePreview").src = avatarUrl;
-}
-
-</script>
 
  <script type="module" src="./public/js/app.js"></script>
 
@@ -1482,6 +1474,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
