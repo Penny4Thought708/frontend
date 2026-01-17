@@ -1,8 +1,10 @@
 // =======================================================
-//  call-log.js — Clean, Normalized, Future-Proof
+//  call-log.js — Node backend + GitHub Pages version
 // =======================================================
 
 import { getVoiceBtn, getVideoBtn } from "./session.js";
+
+const API_BASE = "https://letsee-backend.onrender.com/api";
 
 // =======================================================
 //  CONTACT LOOKUP
@@ -48,15 +50,9 @@ let lastDateKey = null;
 //  NETWORK HELPERS
 // =======================================================
 
-function fixPath(url) {
-  if (url.startsWith("/NewApp/")) return url;
-  if (url.startsWith("/")) return "/NewApp" + url;
-  return "/NewApp/" + url;
-}
-
 async function fetchJSON(url, opts = {}) {
-  const res = await fetch(fixPath(url), {
-    credentials: "same-origin",
+  const res = await fetch(url, {
+    credentials: "include",
     ...opts,
   });
   const text = await res.text();
@@ -68,11 +64,11 @@ async function fetchJSON(url, opts = {}) {
   }
 }
 
-async function postForm(url, params = {}) {
+async function postJSON(url, body = {}) {
   return fetchJSON(url, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 }
 
@@ -167,13 +163,13 @@ function openDetails(id) {
 // =======================================================
 
 export function normalizeAvatarPath(path) {
-  if (!path) return "/NewApp/img/defaultUser.png";
+  if (!path) return "img/defaultUser.png";
 
   if (path.startsWith("http")) return path;
-  if (path.startsWith("/NewApp/")) return path;
-  if (path.startsWith("/uploads/avatars/")) return "/NewApp" + path;
+  if (path.startsWith("/uploads/avatars/")) return path;
+  if (path.startsWith("uploads/avatars/")) return `/${path}`;
 
-  return `/NewApp/uploads/avatars/${path}`;
+  return path;
 }
 
 // =======================================================
@@ -201,24 +197,20 @@ const ICONS = {
 // =======================================================
 
 function normalizeCallLog(raw, sessionUserId) {
-  // Normalize direction + status
-let direction = String(raw.direction || "").toLowerCase();
-const status = String(raw.status || "").toLowerCase();
-const callType = String(raw.call_type || "").toLowerCase();
+  let direction = String(raw.direction || "").toLowerCase();
+  const status = String(raw.status || "").toLowerCase();
+  const callType = String(raw.call_type || "").toLowerCase();
 
-// ⭐ Correct missed-call direction inference
-if (status === "missed") {
-  direction = String(raw.receiver_id) === String(sessionUserId)
-    ? "incoming"
-    : "outgoing";
-}
+  if (status === "missed") {
+    direction = String(raw.receiver_id) === String(sessionUserId)
+      ? "incoming"
+      : "outgoing";
+  }
 
-const isOutgoing = direction === "outgoing";
-const isIncoming = direction === "incoming";
-const isMissed = status === "missed";
+  const isOutgoing = direction === "outgoing";
+  const isIncoming = direction === "incoming";
+  const isMissed = status === "missed";
 
-
-  // Determine other party
   const otherId =
     raw.other_party_id ??
     (isOutgoing ? raw.receiver_id : raw.caller_id);
@@ -230,18 +222,17 @@ const isMissed = status === "missed";
 
   const avatar = normalizeAvatarPath(contact?.avatar || avatarFromRow);
 
-  // ⭐ ICON SELECTION (now correct for missed calls)
   let icon = "";
   let iconClass = "";
 
   if (isMissed) {
     if (isIncoming) {
-      icon = ICONS.missed.incoming;      // call_received
+      icon = ICONS.missed.incoming;
       iconClass = "call-icon-incoming missed-inbound";
     } else {
       icon = callType === "video"
-        ? ICONS.missed.video             // missed_video_call
-        : ICONS.missed.outgoing;         // call_missed_outgoing
+        ? ICONS.missed.video
+        : ICONS.missed.outgoing;
       iconClass = "call-icon-missed";
     }
   } else {
@@ -255,34 +246,29 @@ const isMissed = status === "missed";
   const directionLabel = isOutgoing ? "Outgoing" : "Incoming";
   const callTypeLabel = callType === "video" ? "Video call" : "Voice call";
 
-
   return {
-  ...raw,
-  __version: CALL_LOG_VERSION,   // ⭐ store version
-  logId: raw.id,
-  direction,
-  status,
-  call_type: callType,
-  other_party_id: otherId,
-  display_name: contact?.contact_name || nameFromRow || `User ${otherId}`,
-  avatar,
-  session_user_id: sessionUserId,
+    ...raw,
+    __version: CALL_LOG_VERSION,
+    logId: raw.id,
+    direction,
+    status,
+    call_type: callType,
+    other_party_id: otherId,
+    display_name: contact?.contact_name || nameFromRow || `User ${otherId}`,
+    avatar,
+    session_user_id: sessionUserId,
 
-  icon,
-  iconClass,
-  directionLabel,
-  callTypeLabel,
-};
-
+    icon,
+    iconClass,
+    directionLabel,
+    callTypeLabel,
   };
+}
 
 function migrateLogIfNeeded(raw, sessionUserId) {
-  // If no version or outdated → re-normalize
   if (!raw.__version || raw.__version < CALL_LOG_VERSION) {
     return normalizeCallLog(raw, sessionUserId);
   }
-
-  // Already up-to-date
   return raw;
 }
 
@@ -302,7 +288,6 @@ function renderItem(log) {
   div.className = "call-log-item";
   div.dataset.id = log.logId;
 
-  // ⭐ Add call-icon-click class so we can target it
   const iconHTML = `
     <span class="material-symbols-outlined ${log.iconClass} call-icon-click">
       ${log.icon}
@@ -343,55 +328,50 @@ function renderItem(log) {
     </div>
   `;
 
-div.querySelector(".call-icon-click")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const userRaw = {
-    contact_id: log.other_party_id,
-    contact_name: log.display_name,
-    avatar: log.avatar
-  };
+  div.querySelector(".call-icon-click")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const userRaw = {
+      contact_id: log.other_party_id,
+      contact_name: log.display_name,
+      avatar: log.avatar
+    };
 
-  window.showMessageBoxOnly?.();
-  window.openMessagesFor?.(userRaw);
-});
+    window.showMessageBoxOnly?.();
+    window.openMessagesFor?.(userRaw);
+  });
 
-div.querySelector(".call-chat-btn")?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  const userRaw = {
-    contact_id: log.other_party_id,
-    contact_name: log.display_name,
-    avatar: log.avatar
-  };
+  div.querySelector(".call-chat-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const userRaw = {
+      contact_id: log.other_party_id,
+      contact_name: log.display_name,
+      avatar: log.avatar
+    };
 
-  window.showMessageBoxOnly?.();
-  window.openMessagesFor?.(userRaw);
-});
+    window.showMessageBoxOnly?.();
+    window.openMessagesFor?.(userRaw);
+  });
 
-div.querySelector(".call-log-main")?.addEventListener("click", (e) => {
-  
-  if (e.target.closest(".call-actions") || e.target.closest(".call-delete-btn")) {
-    return;
-  }
+  div.querySelector(".call-log-main")?.addEventListener("click", (e) => {
+    if (e.target.closest(".call-actions") || e.target.closest(".call-delete-btn")) {
+      return;
+    }
 
-  const userRaw = {
-    contact_id: log.other_party_id,
-    contact_name: log.display_name,
-    avatar: log.avatar
-  };
+    const userRaw = {
+      contact_id: log.other_party_id,
+      contact_name: log.display_name,
+      avatar: log.avatar
+    };
 
-  window.showMessageBoxOnly?.();
-  window.openMessagesFor?.(userRaw);
-});
+    window.showMessageBoxOnly?.();
+    window.openMessagesFor?.(userRaw);
+  });
 
-
-
-  // Details
   div.querySelector(".call-details-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     openDetails(log.logId);
   });
 
-  // Redial
   div.querySelector(".call-redial-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
     const id = e.currentTarget.dataset.id;
@@ -475,8 +455,12 @@ async function deleteLog(id, el) {
   callLogCache = callLogCache.filter((l) => String(l.logId) !== String(id));
   localStorage.setItem("callLogs", JSON.stringify(callLogCache));
 
-  await postForm("/api/call-logs/delete.php", { logId: id });
-  socketRef?.emit("call:log:delete", { logId: id });
+  try {
+    await postJSON(`${API_BASE}/calls/delete`, { logId: id });
+    socketRef?.emit("call:log:delete", { logId: id });
+  } catch (err) {
+    console.error("Failed to delete call log:", err);
+  }
 
   updateStats();
 }
@@ -517,31 +501,25 @@ async function loadPage(initial = false) {
 
   try {
     const data = await fetchJSON(
-      `/api/call-logs/load.php?offset=${callLogPageOffset}&limit=${PAGE_SIZE}`
+      `${API_BASE}/calls/history?offset=${callLogPageOffset}&limit=${PAGE_SIZE}`
     );
 
     const sessionUserId = data.userId;
+    const stored = JSON.parse(localStorage.getItem("callLogs") || "[]");
 
-      const stored = JSON.parse(localStorage.getItem("callLogs") || "[]");
-
-      const logs = (data.data || []).map(raw => {
-        const existing = stored.find(l =>
-  String(l.logId ?? l.id) === String(raw.id)
-);
-
+    const logs = (data.data || []).map(raw => {
+      const existing = stored.find(l =>
+        String(l.logId ?? l.id) === String(raw.id)
+      );
 
       if (existing) {
-  const migrated = migrateLogIfNeeded(existing, sessionUserId);
-  debugLogEntry(raw, migrated, existing);
-  return migrated;
-}
+        const migrated = migrateLogIfNeeded(existing, sessionUserId);
+        debugLogEntry(raw, migrated, existing);
+        return migrated;
+      }
 
-
-        // Fresh normalization
-        return normalizeCallLog(raw, sessionUserId);
-      });
-
-
+      return normalizeCallLog(raw, sessionUserId);
+    });
 
     if (initial) {
       callLogCache = [];
@@ -578,6 +556,8 @@ function debugLogEntry(raw, normalized, stored) {
   if (!debugMode) return;
 
   const panel = document.getElementById("callLogDebugPanel");
+  if (!panel) return;
+
   const div = document.createElement("div");
   div.className = "debug-entry";
 
@@ -615,12 +595,11 @@ export function addCallLogEntry(raw) {
   const sessionUserId =
     raw.session_user_id || raw.userId || window.SESSION_USER_ID;
 
-const log = normalizeCallLog(raw, sessionUserId);
-debugLogEntry(raw, log, null);
+  const log = normalizeCallLog(raw, sessionUserId);
+  debugLogEntry(raw, log, null);
 
-callLogCache.unshift(log);
-localStorage.setItem("callLogs", JSON.stringify(callLogCache));
-
+  callLogCache.unshift(log);
+  localStorage.setItem("callLogs", JSON.stringify(callLogCache));
 
   listEl.innerHTML = "";
   lastDateKey = null;
@@ -655,3 +634,5 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
+
