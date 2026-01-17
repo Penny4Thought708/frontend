@@ -2,10 +2,8 @@
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
 
-// ✔ FIXED: GitHub Pages cannot load /NewApp/... paths
-import { socket } from "../socket.js";
+import { socket } from "public/js/socket.js";
 
-// ✔ FIXED: session imports must be relative
 import {
   getMyUserId,
   lookupBtn,
@@ -16,10 +14,7 @@ import {
   messageBox,
 } from "../session.js";
 
-// ✔ FIXED: messaging module path
-import {loadThread} from "../messaging.js";
-
-// ✔ FIXED: call log module path
+import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
 
 let activeContact = null;
@@ -32,25 +27,21 @@ let autoCloseProfileOnMessages = true; // you can toggle this anytime
 window.UserCache = window.UserCache || {};
 
 /* -------------------------------------------------------
-   Helpers (Node backend + GitHub Pages)
+   Helpers
 ------------------------------------------------------- */
-
-const API_BASE = "https://letsee-backend.onrender.com/api";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
-/**
- * GET JSON from backend
- */
-async function fetchJSON(path, opts = {}) {
-  const url = `${API_BASE}${path}`;
+function fixPath(url) {
+  if (url.startsWith("/NewApp/")) return url;
+  if (url.startsWith("/")) return "/NewApp" + url;
+  return "/NewApp/" + url;
+}
 
-  const res = await fetch(url, {
-    credentials: "include",
-    ...opts,
-  });
-
+async function fetchJSON(url, opts = {}) {
+  const full = fixPath(url);
+  const res = await fetch(full, { credentials: "same-origin", ...opts });
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -60,14 +51,11 @@ async function fetchJSON(path, opts = {}) {
   }
 }
 
-/**
- * POST JSON to backend
- */
-async function postJSON(path, body = {}) {
-  return fetchJSON(path, {
+async function postForm(url, params = {}) {
+  return fetchJSON(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params),
   });
 }
 
@@ -447,13 +435,14 @@ export function updateContactStatus(contactId, isOnline) {
     status.title = isOnline ? "Online" : "Offline";
   }
 }
+
 /* -------------------------------------------------------
-   Load Contacts (Node backend)
+   Load Contacts
 ------------------------------------------------------- */
 
 export async function loadContacts() {
   try {
-    const data = await fetchJSON("/contacts"); // GET https://letsee-backend.onrender.com/api/contacts
+    const data = await fetchJSON("get_contacts.php");
     console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
@@ -484,7 +473,7 @@ export async function loadContacts() {
 }
 
 /* -------------------------------------------------------
-   Render Blocked Card (LIST)
+   Render Contact Card (LIST)
 ------------------------------------------------------- */
 
 function renderBlockedCard(userRaw) {
@@ -508,7 +497,7 @@ function renderBlockedCard(userRaw) {
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
-    const data = await postJSON("/contacts/unblock", {
+    const data = await postForm("unblock_contact.php", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -516,10 +505,6 @@ function renderBlockedCard(userRaw) {
 
   return li;
 }
-
-/* -------------------------------------------------------
-   Render Contact Card (LIST)
-------------------------------------------------------- */
 
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
@@ -560,7 +545,7 @@ export function renderContactCard(userRaw) {
 
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
-    const data = await postJSON("/contacts/block", {
+    const data = await postForm("block_contact.php", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -569,7 +554,7 @@ export function renderContactCard(userRaw) {
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
-    const data = await postJSON("/contacts/delete", {
+    const data = await postForm("delete_contact.php", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -787,8 +772,3 @@ export function renderLookupCard(user) {
 
   return li;
 }
-
-
-
-
-
