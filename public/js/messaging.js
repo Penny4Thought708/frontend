@@ -236,7 +236,7 @@ function markMessageRead(msgId) {
 // ------------------------------------------------------
 // Load thread
 // ------------------------------------------------------
-async function loadThread(contactId) {
+export function loadThread(contactId) {
   currentContactId = contactId;
   messagesById.clear();
   if (messagesContainer) messagesContainer.innerHTML = "";
@@ -248,7 +248,7 @@ async function loadThread(contactId) {
       observeMessagesForRead();
     }
   } catch (e) {
-    console.error("loadThread error", e);
+    console.error(" error", e);
   }
 }
 
@@ -558,6 +558,7 @@ window.Messaging = {
   stopRecording,
   sendAudioMessage
 };
+
 
 
 
