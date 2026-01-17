@@ -32,21 +32,25 @@ let autoCloseProfileOnMessages = true; // you can toggle this anytime
 window.UserCache = window.UserCache || {};
 
 /* -------------------------------------------------------
-   Helpers
+   Helpers (Node backend + GitHub Pages)
 ------------------------------------------------------- */
+
+const API_BASE = "https://letsee-backend.onrender.com/api";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
-function fixPath(url) {
-  if (url.startsWith("/NewApp/")) return url;
-  if (url.startsWith("/")) return "/NewApp" + url;
-  return "/NewApp/" + url;
-}
+/**
+ * GET JSON from backend
+ */
+async function fetchJSON(path, opts = {}) {
+  const url = `${API_BASE}${path}`;
 
-async function fetchJSON(url, opts = {}) {
-  const full = fixPath(url);
-  const res = await fetch(full, { credentials: "same-origin", ...opts });
+  const res = await fetch(url, {
+    credentials: "include",
+    ...opts,
+  });
+
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -56,11 +60,14 @@ async function fetchJSON(url, opts = {}) {
   }
 }
 
-async function postForm(url, params = {}) {
-  return fetchJSON(url, {
+/**
+ * POST JSON to backend
+ */
+async function postJSON(path, body = {}) {
+  return fetchJSON(path, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 }
 
@@ -777,4 +784,5 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
