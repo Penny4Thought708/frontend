@@ -620,7 +620,7 @@ socket.on("message:reaction", ({ messageId, reactions }) => {
       url: fileUrl,
       comment: msg.comment,
     });
-  } else {
+  } 
 
   /* -------------------------------------------------------
      TEXT MESSAGE
@@ -1611,6 +1611,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
