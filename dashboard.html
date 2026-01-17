@@ -24,6 +24,20 @@
 <link rel="canonical" href="https://penny4thought708.github.io/frontend/dashboard.html">
 
   <title>Scrubber's Dashboard</title>
+<!-- 1. Load user identity FIRST -->
+<script>
+document.addEventListener("DOMContentLoaded", loadUserUnified);
+</script>
+
+<!-- 2. Load app AFTER identity is ready -->
+<script type="module">
+import "./public/js/app.js";
+</script>
+
+<!-- 3. Load components AFTER app -->
+<script type="module" src="public/components/ContactsMenu.js"></script>
+<script type="module" src="public/components/calendar-overlay.js"></script>
+<script src="https://unpkg.com/wavesurfer.js"></script>
 
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1474,6 +1488,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
