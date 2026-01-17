@@ -19,7 +19,7 @@ import {
   previewDiv,
   playNotification,
   getJson,
-  postForm,
+  postJson,
 } from "./session.js";
 
 /* -------------------------------------------------------
@@ -50,13 +50,13 @@ function smartScroll(force = false) {
   if (!messageWin) return;
 
   const nearBottom =
-    messageWin.scrollHeight - messageWin.scrollTop - messageWin.clientHeight < 80;
+    messageWin.scrollHeight - messageWin.scrollTop - messageWin.clientHeight <
+    80;
 
   if (force || nearBottom) {
     messageWin.scrollTop = messageWin.scrollHeight;
   }
 }
-
 
 export function showMessageWindow() {
   messageBox?.classList.add("active");
@@ -69,11 +69,10 @@ export function showMessageWindow() {
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
 
-socket.emit("register", {
-  userId: getMyUserId(),
-  fullname: getMyFullname(),
-});
-
+  socket.emit("register", {
+    userId: getMyUserId(),
+    fullname: getMyFullname(),
+  });
 });
 
 /* -------------------------------------------------------
@@ -82,7 +81,7 @@ socket.emit("register", {
 
 export function setReceiver(id) {
   receiver_id = id;
-  window.receiver_id = id; // ⭐ FIX: make it global
+  window.receiver_id = id;
   console.log("[messaging] Receiver set:", receiver_id);
   console.log("[GLOBAL] window.receiver_id =", window.receiver_id);
 }
@@ -110,7 +109,7 @@ msgOpenBtn?.addEventListener("click", async () => {
     messages
       .filter((m) => !m.is_me && typeof m.id !== "undefined")
       .forEach((m) => {
-        postForm("/api/messages/read.php", {
+        postJson("/messages/read", {
           from: m.sender_id,
           to: getMyUserId(),
           messageId: m.id,
@@ -128,28 +127,29 @@ closeMsgBtn?.addEventListener("click", () =>
 );
 
 /* -------------------------------------------------------
-   Load Messages (modernized for new reaction format)
+   Load Messages (Node API)
+//   GET /api/messages/thread?contactId=...
 ------------------------------------------------------- */
 export async function loadMessages(contactId = receiver_id) {
   if (!contactId) return [];
 
   try {
-    const res = await getJson(`/api/messages/load.php?contact_id=${contactId}`);
+    const res = await getJson(`/messages/thread?contactId=${contactId}`);
     const messages = Array.isArray(res.messages) ? res.messages : [];
+
+    lastLoadedMessages = messages;
 
     if (!messages.length) return [];
 
     const newest = messages[messages.length - 1];
 
-    // ⭐ If no new messages, do nothing
     if (newest.id <= lastSeenMessageId) {
       return messages;
     }
 
-    // ⭐ Append ONLY the new messages
-    const newMessages = messages.filter(m => m.id > lastSeenMessageId);
+    const newMessages = messages.filter((m) => m.id > lastSeenMessageId);
 
-    newMessages.forEach(msg => {
+    newMessages.forEach((msg) => {
       renderMessage(msg);
 
       if (msg.id && Array.isArray(msg.reactions)) {
@@ -157,20 +157,15 @@ export async function loadMessages(contactId = receiver_id) {
       }
     });
 
-    // ⭐ Scroll only when new messages arrive
     smartScroll(true);
-
-    // Update last seen ID
     lastSeenMessageId = newest.id;
 
     return messages;
-
   } catch (err) {
     console.error("Failed to load messages", err);
     return [];
   }
 }
-
 
 /* -------------------------------------------------------
    Image Viewer (Lightbox)
@@ -184,7 +179,7 @@ let currentImageIndex = 0;
 
 function buildGalleryFromMessages() {
   return lastLoadedMessages
-    .filter((m) => m.file === 1 && (m.url || m.file_url)) // only image messages
+    .filter((m) => m.file === 1 && (m.url || m.file_url))
     .map((m) => m.url || m.file_url);
 }
 
@@ -309,11 +304,11 @@ function appendFileContentToParagraph(p, file) {
     p.appendChild(img);
   } else if (url) {
     const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.textContent = name;
-    link.style.marginLeft = "6px";
-    p.appendChild(link);
+      link.href = url;
+      link.target = "_blank";
+      link.textContent = name;
+      link.style.marginLeft = "6px";
+      p.appendChild(link);
   } else {
     p.appendChild(document.createTextNode(` [${name}]`));
   }
@@ -325,6 +320,7 @@ function appendFileContentToParagraph(p, file) {
     p.appendChild(comment);
   }
 }
+
 /* -------------------------------------------------------
    Reactions rendering
 ------------------------------------------------------- */
@@ -371,6 +367,205 @@ export function renderMessage(msg) {
   strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
   p.appendChild(strong);
   p.appendChild(document.createTextNode(": "));
+
+  if (msg.text) {
+    p.appendChild(document.createTextNode(msg.text));
+  }
+
+  if (Array.isArray(msg.files)) {
+    msg.files.forEach((file) => appendFileContentToParagraph(p, file));
+  }
+
+  div.appendChild(p);
+
+  const meta = document.createElement("div");
+  meta.className = "msg-meta";
+
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "msg-time";
+  timeSpan.textContent = msg.time || "";
+  meta.appendChild(timeSpan);
+
+  const reactionDisplay = document.createElement("div");
+  reactionDisplay.className = "reaction-display";
+  meta.appendChild(reactionDisplay);
+
+  div.appendChild(meta);
+
+  messageWin.appendChild(div);
+  smartScroll(true);
+
+  if (msg.id && Array.isArray(msg.reactions)) {
+    renderReactionsForMessage(msg.id, msg.reactions);
+  }
+}
+
+/* -------------------------------------------------------
+   Read observer (intersection-based read receipts)
+//   POST /api/messages/read
+------------------------------------------------------- */
+
+function observeMessagesForRead() {
+  if (!("IntersectionObserver" in window) || !messageWin) return;
+
+  if (readObserver) {
+    readObserver.disconnect();
+  }
+
+  readObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        const el = entry.target;
+        const msgId = el.dataset.msgId;
+        const senderId = el.dataset.senderId;
+
+        if (!msgId || !senderId) return;
+
+        postJson("/messages/read", {
+          from: senderId,
+          to: getMyUserId(),
+          messageId: msgId,
+        }).catch((err) =>
+          console.warn("Failed to mark message as read:", err)
+        );
+
+        readObserver.unobserve(el);
+      });
+    },
+    {
+      root: messageWin,
+      threshold: 0.6,
+    }
+  );
+
+  messageWin
+    .querySelectorAll(".receiver_msg[data-msg-id]")
+    .forEach((el) => readObserver.observe(el));
+}
+
+/* -------------------------------------------------------
+   Sending messages
+//   POST /api/messages/send
+//------------------------------------------------------- */
+
+async function sendMessage(text, files = []) {
+  if (!receiver_id) return;
+
+  const payload = {
+    to: receiver_id,
+    text: text || "",
+    files,
+  };
+
+  try {
+    const res = await postJson("/messages/send", payload);
+    if (res && res.message) {
+      renderMessage(res.message);
+      smartScroll(true);
+    }
+  } catch (err) {
+    console.error("Failed to send message:", err);
+    showError("Failed to send");
+  }
+}
+
+/* -------------------------------------------------------
+   Attachments preview + upload
+//   POST /api/messages/upload
+//------------------------------------------------------- */
+
+let pendingFiles = [];
+
+attachmentBtn?.addEventListener("click", () => {
+  attachmentInput?.click();
+});
+
+attachmentInput?.addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+
+  previewEl.innerHTML = "";
+  pendingFiles = [];
+
+  for (const file of files) {
+    const item = document.createElement("div");
+    item.className = "file-preview-item";
+    item.textContent = file.name;
+    previewEl.appendChild(item);
+  }
+
+  try {
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files[]", f));
+
+    const res = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/upload",
+      {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      }
+    );
+
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    const data = await res.json();
+
+    pendingFiles = Array.isArray(data.files) ? data.files : [];
+  } catch (err) {
+    console.error("File upload failed:", err);
+    showError("File upload failed");
+    previewEl.innerHTML = "";
+    pendingFiles = [];
+  }
+});
+
+/* -------------------------------------------------------
+   Form submit
+------------------------------------------------------- */
+
+msgForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = msgInput?.value.trim() || "";
+
+  if (!text && pendingFiles.length === 0) return;
+
+  await sendMessage(text, pendingFiles);
+
+  if (msgInput) msgInput.value = "";
+  previewEl.innerHTML = "";
+  pendingFiles = [];
+});
+
+/* -------------------------------------------------------
+   Incoming messages via socket
+------------------------------------------------------- */
+
+socket.on("message:new", (msg) => {
+  if (!msg) return;
+
+  if (Number(msg.sender_id) !== Number(receiver_id)) {
+    playNotification();
+    if (badge) {
+      badge.textContent = "1";
+      badge.style.display = "inline-block";
+    }
+  }
+
+  renderMessage(msg);
+  smartScroll(true);
+});
+
+/* -------------------------------------------------------
+   Incoming reactions via socket
+//------------------------------------------------------- */
+
+socket.on("message:reaction", ({ messageId, reactions }) => {
+  if (!messageId) return;
+  renderReactionsForMessage(messageId, reactions || []);
+});
+
 
   /* -------------------------------------------------------
      AUDIO MESSAGE
@@ -1447,3 +1642,4 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
