@@ -38,8 +38,8 @@ const previewEl = previewDiv;
    UI Helpers
 ------------------------------------------------------- */
 
-function showError(msg) {
-  console.error(msg);
+function showError() {
+  console.error();
   if (badge) {
     badge.textContent = "!";
     badge.style.display = "inline-block";
@@ -352,7 +352,6 @@ function renderReactionsForMessage(messageId, reactions) {
 /* -------------------------------------------------------
    Render Message
 ------------------------------------------------------- */
-
 export function renderMessage(msg) {
   if (!messageWin) return;
 
@@ -368,10 +367,48 @@ export function renderMessage(msg) {
   p.appendChild(strong);
   p.appendChild(document.createTextNode(": "));
 
-  if (msg.text) {
+  /* -------------------------------------------------------
+     AUDIO MESSAGE
+  ------------------------------------------------------- */
+  if (msg.type === "audio") {
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "metadata";
+    audio.src = msg.url;
+
+    const durationLabel = document.createElement("span");
+    durationLabel.className = "audio-duration";
+    durationLabel.textContent = "…";
+
+    audio.addEventListener("loadedmetadata", () => {
+      if (!isFinite(audio.duration)) {
+        durationLabel.textContent = "0:00";
+        return;
+      }
+      const secs = Math.floor(audio.duration);
+      const m = String(Math.floor(secs / 60)).padStart(1, "0");
+      const s = String(secs % 60).padStart(2, "0");
+      durationLabel.textContent = `${m}:${s}`;
+    });
+
+    audio.addEventListener("play", () => div.classList.add("audio-playing"));
+    audio.addEventListener("pause", () => div.classList.remove("audio-playing"));
+    audio.addEventListener("ended", () => div.classList.remove("audio-playing"));
+
+    p.appendChild(audio);
+    p.appendChild(durationLabel);
+  }
+
+  /* -------------------------------------------------------
+     TEXT MESSAGE
+  ------------------------------------------------------- */
+  else if (msg.text) {
     p.appendChild(document.createTextNode(msg.text));
   }
 
+  /* -------------------------------------------------------
+     FILE MESSAGE
+  ------------------------------------------------------- */
   if (Array.isArray(msg.files)) {
     msg.files.forEach((file) => appendFileContentToParagraph(p, file));
   }
@@ -570,40 +607,7 @@ socket.on("message:reaction", ({ messageId, reactions }) => {
   /* -------------------------------------------------------
      AUDIO MESSAGE
   ------------------------------------------------------- */
-  if (msg.type === "audio") {
-    const audio = document.createElement("audio");
-    audio.controls = true;
-    audio.preload = "metadata";
-    audio.src = msg.url;
 
-    const durationLabel = document.createElement("span");
-    durationLabel.className = "audio-duration";
-    durationLabel.textContent = "…";
-
-    audio.addEventListener("loadedmetadata", () => {
-      if (!isFinite(audio.duration)) {
-        durationLabel.textContent = "0:00";
-        return;
-      }
-      const secs = Math.floor(audio.duration);
-      const m = String(Math.floor(secs / 60)).padStart(1, "0");
-      const s = String(secs % 60).padStart(2, "0");
-      durationLabel.textContent = `${m}:${s}`;
-    });
-
-    audio.addEventListener("play", () => {
-      div.classList.add("audio-playing");
-    });
-    audio.addEventListener("pause", () => {
-      div.classList.remove("audio-playing");
-    });
-    audio.addEventListener("ended", () => {
-      div.classList.remove("audio-playing");
-    });
-
-    p.appendChild(audio);
-    p.appendChild(durationLabel);
-  } else if (
 
   /* -------------------------------------------------------
      FILE MESSAGE (images, docs, etc.)
@@ -1613,6 +1617,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
