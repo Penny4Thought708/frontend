@@ -1050,19 +1050,7 @@ function createReadObserver() {
   );
 }
 
-function observeMessagesForRead() {
-  if (!messageWin) return;
 
-  if (!readObserver) readObserver = createReadObserver();
-  if (!readObserver) return;
-
-  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
-    if (!el.dataset.observing) {
-      readObserver.observe(el);
-      el.dataset.observing = "1";
-    }
-  });
-}
 
 /* -------------------------------------------------------
    Activity Tracking
@@ -1642,5 +1630,6 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
