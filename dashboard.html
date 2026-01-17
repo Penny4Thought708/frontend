@@ -45,12 +45,15 @@ async function loadUser() {
   const data = await res.json();
 
   if (!data.success) {
-    window.location.href = "index.html"; // back to login
+    window.location.href = "index.html";
     return;
   }
 
   // Save user globally
   window.user = data.user;
+  window.user_id = data.user.id;
+  window.fullname = data.user.fullname;
+  window.avatar = data.user.avatar;
 
   // Fill UI
   document.querySelector(".profile-name").textContent = data.user.fullname;
@@ -58,7 +61,6 @@ async function loadUser() {
     "@" + data.user.fullname.replace(/\s+/g, "").toLowerCase();
   document.querySelector("#emailInput").value = data.user.email;
 
-  // Avatar
   const avatar = data.user.avatar
     ? `https://letsee-backend.onrender.com/${data.user.avatar}`
     : "img/defaultUser.png";
@@ -66,7 +68,6 @@ async function loadUser() {
   document.querySelector("#profilePreview").src = avatar;
 }
 
-document.addEventListener("DOMContentLoaded", loadUser);
 </script>
 <script>
 async function loadUserProfile() {
@@ -83,16 +84,20 @@ async function loadUserProfile() {
 
   const user = data.user;
 
-  // Fill name + username
+  // Save globally
+  window.user = user;
+  window.user_id = user.id;
+  window.fullname = user.fullname;
+  window.avatar = user.avatar;
+
+  // Fill UI
   document.querySelector(".profile-name").textContent = user.fullname;
   document.querySelector(".profile-username").textContent =
     "@" + user.fullname.replace(/\s+/g, "").toLowerCase();
 
-  // Fill inputs
   document.querySelector("#fullnameInput").value = user.fullname;
   document.querySelector("#emailInput").value = user.email;
 
-  // Avatar
   const avatarUrl = user.avatar
     ? `https://letsee-backend.onrender.com/${user.avatar}`
     : "img/defaultUser.png";
@@ -100,7 +105,6 @@ async function loadUserProfile() {
   document.querySelector("#profilePreview").src = avatarUrl;
 }
 
-document.addEventListener("DOMContentLoaded", loadUserProfile);
 </script>
 
  <script type="module" src="./public/js/app.js"></script>
@@ -1478,6 +1482,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
