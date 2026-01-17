@@ -443,7 +443,7 @@ export function updateContactStatus(contactId, isOnline) {
 // -------------------------------------------------------
 export async function loadContacts() {
   try {
-    const data = await fetchJSON("/letss/contacts");
+    const data = await fetchJSON("/letsee/contacts");
     console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
@@ -763,6 +763,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
