@@ -236,19 +236,21 @@ function markMessageRead(msgId) {
 // ------------------------------------------------------
 // Load thread
 // ------------------------------------------------------
-export function loadThread(contactId) {
+export async function loadThread(contactId) {
   currentContactId = contactId;
   messagesById.clear();
   if (messagesContainer) messagesContainer.innerHTML = "";
+
   try {
     const res = await fetch(`/messages/thread?contactId=${encodeURIComponent(contactId)}`);
     const data = await res.json();
+
     if (Array.isArray(data.messages)) {
       data.messages.forEach(m => renderMessage(m, { prepend: false }));
       observeMessagesForRead();
     }
   } catch (e) {
-    console.error(" error", e);
+    console.error("loadThread error", e);
   }
 }
 
@@ -558,6 +560,7 @@ window.Messaging = {
   stopRecording,
   sendAudioMessage
 };
+
 
 
 
