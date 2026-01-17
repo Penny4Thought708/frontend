@@ -22,10 +22,12 @@ import { initCallUI } from "./webrtc/CallUI.js";
 
 // Dashboard UI
 import "./dashboard/DashboardInit.js";
+
 // Make renderMessage globally available for the GIF sender, etc.
 window.renderMessage = function (msg) {
   renderIncomingMessage(msg);
 };
+
 /* -------------------------------------------------------
    Speaking Detection (Local User)
 ------------------------------------------------------- */
@@ -101,13 +103,13 @@ function stopSpeakingDetection() {
   // Load contacts first (sets contactLookup)
   await loadContacts();
 
-  // Messaging engine
+  // Messaging engine (Node backend; base path now API-relative, not /NewApp)
   const messaging = new MessagingEngine(
     socket,
     renderMessages,
     renderIncomingMessage,
     updateReactionUI,
-    "/NewApp"
+    "/api" // assumed Node messaging base; backend will expose /api/messages/...
   );
 
   // WebRTC
@@ -122,6 +124,10 @@ function stopSpeakingDetection() {
     window.currentChatUserId = contactId;
     await messaging.loadMessages(contactId);
   };
+
+  // Expose speaking detection helpers if needed elsewhere
+  window.startSpeakingDetection = startSpeakingDetection;
+  window.stopSpeakingDetection = stopSpeakingDetection;
 })();
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -257,6 +263,7 @@ window.addEventListener("DOMContentLoaded", () => {
     console.log("Tour already completed.");
   }
 });
+
 window.showNotification = function (title, message) {
   const container = document.getElementById("notification_container");
 
@@ -285,6 +292,7 @@ window.showNotification = function (title, message) {
     setTimeout(() => note.remove(), 400);
   });
 };
+
 const contactBox = document.getElementById("contact_box");
 const contactWidget = document.getElementById("contact_widget");
 const contactClose = document.getElementById("contact_close");
@@ -298,6 +306,7 @@ contactWidget.addEventListener("click", () => {
 contactClose.addEventListener("click", () => {
   contactBox.classList.remove("open");
 });
+
 /* -------------------------------------------------------
    CONTACT MENU TOGGLE
 ------------------------------------------------------- */
@@ -329,6 +338,7 @@ const Panels = {
   addContact: document.querySelector(".sidebar"),
   profile: document.querySelector(".profile_card"),
 };
+
 /* -------------------------------------------------------
    MENU BUTTONS
 ------------------------------------------------------- */
@@ -355,11 +365,11 @@ function hideAllPanels() {
   // Profile panel uses .active
   if (Panels.profile) Panels.profile.classList.remove("active");
 }
+
 function showContacts() {
   hideAllPanels();
   if (Panels.contacts) Panels.contacts.style.display = "block";
 }
-
 
 function togglePanel(panelName) {
   const panel = Panels[panelName];
@@ -416,6 +426,7 @@ Buttons.openProfile.addEventListener("click", () => {
   togglePanel("profile");
   contactMenu.classList.remove("open");
 });
+
 
 /* -------------------------------------------------------
    BLOCKED CONTACTS LOADER
@@ -1338,3 +1349,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
