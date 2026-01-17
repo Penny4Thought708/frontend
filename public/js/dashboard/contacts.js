@@ -2,8 +2,10 @@
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
 
-import { socket } from "/NewApp/public/js/socket.js";
+// ✔ FIXED: GitHub Pages cannot load /NewApp/... paths
+import { socket } from "../socket.js";
 
+// ✔ FIXED: session imports must be relative
 import {
   getMyUserId,
   lookupBtn,
@@ -14,7 +16,10 @@ import {
   messageBox,
 } from "../session.js";
 
+// ✔ FIXED: messaging module path
 import { setReceiver, loadMessages } from "../messaging.js";
+
+// ✔ FIXED: call log module path
 import { setContactLookup } from "../call-log.js";
 
 let activeContact = null;
@@ -772,3 +777,4 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
