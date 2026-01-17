@@ -1,7 +1,9 @@
 // public/js/session.js
 // -------------------------------------------------------
 // Session + DOM + Helpers (shared across messaging, calls, contacts)
+
 import { DEBUG } from "./debug.js";
+import { socket } from "./socket.js";
 
 const w = typeof window !== "undefined" ? window : {};
 
@@ -19,7 +21,6 @@ export function getMyFullname() {
 export function getMyAvatar() {
   return w.avatar || null;
 }
-
 
 // -------------------------------------------------------
 // DOM helpers
@@ -120,36 +121,41 @@ export function playNotification() {
 }
 
 // -------------------------------------------------------
-// Unified API helpers (auto-prefix /NewApp/)
+// ⭐ Unified API helpers (Node backend + GitHub Pages)
 // -------------------------------------------------------
-function fixPath(url) {
-  if (url.startsWith("/NewApp/")) return url;
-  if (url.startsWith("/")) return "/NewApp" + url;
-  return "/NewApp/" + url;
+const API_BASE = "https://letsee-backend.onrender.com/api";
+
+function apiUrl(path) {
+  if (path.startsWith("http")) return path;
+  if (!path.startsWith("/")) path = "/" + path;
+  return `${API_BASE}${path}`;
 }
 
-export async function getJson(url) {
-  const full = fixPath(url);
-  const res = await fetch(full, { credentials: "same-origin" });
-
-  if (!res.ok) throw new Error(`GET ${full} failed: ${res.status}`);
-  return res.json();
-}
-
-export async function postForm(url, params = {}) {
-  const full = fixPath(url);
-  const res = await fetch(full, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params),
-    credentials: "same-origin",
+export async function getJson(path) {
+  const url = apiUrl(path);
+  const res = await fetch(url, {
+    credentials: "include",
   });
 
-  if (!res.ok) throw new Error(`POST ${full} failed: ${res.status}`);
+  if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
   return res.json();
 }
 
-window.postForm = postForm;
+export async function postJson(path, body = {}) {
+  const url = apiUrl(path);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    credentials: "include",
+  });
+
+  if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
+  return res.json();
+}
+
+// expose globally if needed
+window.postJson = postJson;
 
 // -------------------------------------------------------
 // Scroll helper
@@ -209,7 +215,6 @@ export function endCall({
 // -------------------------------------------------------
 // Socket registration (now dynamic)
 // -------------------------------------------------------
-import { socket } from "./socket.js";
 socket.on("connect", () => {
   const uid = getMyUserId();
   if (!uid) {
@@ -222,8 +227,6 @@ socket.on("connect", () => {
     fullname: getMyFullname(),
   });
 });
-
-
 
 socket.on("reconnect_attempt", (n) => {
   if (DEBUG.socket && (n === 1 || n % 5 === 0)) {
@@ -242,3 +245,4 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
