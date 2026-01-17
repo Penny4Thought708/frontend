@@ -437,20 +437,24 @@ export function updateContactStatus(contactId, isOnline) {
     status.title = isOnline ? "Online" : "Offline";
   }
 }
+import { getJson, getMyUserId } from "../session.js";
+
 
 // -------------------------------------------------------
-// Load Contacts
+// Load Contacts (Node backend)
 // -------------------------------------------------------
 export async function loadContacts() {
   try {
-    const data = await fetchJSON("/letsee/contacts");
+    const data = await getJson("/contacts");
     console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
     const blockedList = $id("blocked-contacts");
 
+    // CONTACTS LIST
     if (list && Array.isArray(data.contacts)) {
       list.innerHTML = "";
+
       const normalizedContacts = data.contacts.map(normalizeContact);
 
       normalizedContacts
@@ -460,18 +464,23 @@ export async function loadContacts() {
       setContactLookup(normalizedContacts);
     }
 
+    // BLOCKED LIST
     if (blockedList && Array.isArray(data.blocked)) {
       blockedList.innerHTML = "";
+
       data.blocked
         .map(normalizeContact)
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
+    // Request presence updates
     socket.emit("presence:get", { userId: getMyUserId() });
+
   } catch (err) {
     console.error("Failed to load contacts:", err);
   }
 }
+
 
 // -------------------------------------------------------
 // Render Blocked Card
@@ -763,6 +772,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
