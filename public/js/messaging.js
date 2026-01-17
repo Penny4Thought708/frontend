@@ -1203,26 +1203,6 @@ async function sendFileViaHttp(file, targetId) {
       });
 
       const msgId = msgRes?.id || null;
-
-      renderMessage({
-        id: msgId,
-        is_me: true,
-        type: "file",
-        filename: msgRes?.filename || file.name,
-        url: msgRes?.file_url || data.url,
-        comment: msgRes?.comment || "",
-        created_at: msgRes?.created_at || new Date(),
-        sender_id: getMyUserId(),
-        sender_name: "You",
-        file: 1,
-      });
-    } else {
-      showError("Upload failed");
-    }
-  } catch (err) {
-    console.error("Upload HTTP file failed", err);
-    showError("Upload failed");
-  }
 }
 
 /* -------------------------------------------------------
@@ -1630,6 +1610,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
