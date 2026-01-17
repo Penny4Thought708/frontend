@@ -96,25 +96,28 @@ export function renderContactCard(user, pendingPresence, updateContactStatus) {
 ------------------------------------------------------- */
 
 async function blockContact(contact_id) {
-  const res = await fetch("block_contact.php", {
+  const res = await fetch("https://letsee-backend.onrender.com/letsee/api/api/contacts/block", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ contact_id }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contact_id }),
   });
 
   const data = await res.json();
   if (data.success) alert("Contact blocked");
 }
 
+
 async function deleteContact(contact_id) {
   if (!confirm("Delete this contact")) return;
 
-  const res = await fetch("delete_contact.php", {
+  const res = await fetch("https://letsee-backend.onrender.com/letsee/api/api/contacts/delete", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ contact_id }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contact_id }),
   });
 
   const data = await res.json();
   if (data.success) alert("Contact deleted");
 }
+
+
