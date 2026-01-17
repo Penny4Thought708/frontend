@@ -1,4 +1,4 @@
-// public/js/contacts.js
+// public/js/dashboard/contacts.js
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
 
@@ -21,48 +21,55 @@ let activeContact = null;
 let isProfileOpen = false;
 let isMessagesOpen = false;
 let openProfileUserId = null;
-let autoCloseProfileOnMessages = true; // you can toggle this anytime
+let autoCloseProfileOnMessages = true;
 
 // Global cache of contacts (by id)
 window.UserCache = window.UserCache || {};
 
-/* -------------------------------------------------------
-   Helpers
-------------------------------------------------------- */
+// -------------------------------------------------------
+// Backend config (Render / Neon via Node API)
+// -------------------------------------------------------
+const API_BASE = "https://letsee-backend.onrender.com";
 
+function apiUrl(path) {
+  if (!path) return API_BASE;
+  if (path.startsWith("http")) return path;
+  if (!path.startsWith("/")) path = "/" + path;
+  return API_BASE + path;
+}
+
+// -------------------------------------------------------
+// Helpers
+// -------------------------------------------------------
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
-function fixPath(url) {
-  if (url.startsWith("/NewApp/")) return url;
-  if (url.startsWith("/")) return "/NewApp" + url;
-  return "/NewApp/" + url;
-}
-
-async function fetchJSON(url, opts = {}) {
-  const full = fixPath(url);
-  const res = await fetch(full, { credentials: "same-origin", ...opts });
+async function fetchJSON(path, opts = {}) {
+  const url = apiUrl(path);
+  const res = await fetch(url, {
+    credentials: "include",
+    ...opts,
+  });
   const text = await res.text();
   try {
     return JSON.parse(text);
   } catch {
-    console.error("Non-JSON response:", text);
+    console.error("Non-JSON response from", url, ":", text);
     throw new Error("Invalid JSON response");
   }
 }
 
-async function postForm(url, params = {}) {
-  return fetchJSON(url, {
+async function postJSON(path, body = {}) {
+  return fetchJSON(path, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(params),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
 }
 
-/* -------------------------------------------------------
-   Normalize Contact Object (ALL DB FIELDS)
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Normalize Contact Object (ALL DB FIELDS)
+// -------------------------------------------------------
 function normalizeContact(raw) {
   if (!raw) return {};
 
@@ -71,16 +78,21 @@ function normalizeContact(raw) {
 
   const toBool = (v) => v == 1 || v === "1" || v === true;
 
-  // Avatar
+  // Avatar (GitHub Pages friendly: /frontend/dashboard.html → img/...)
   let avatar = safe(raw.contact_avatar || raw.avatar);
   if (!avatar || avatar.length < 3 || avatar === "null") {
-    avatar = "/NewApp/img/defaultUser.png";
+    avatar = "img/defaultUser.png";
+  } else if (avatar.startsWith("/")) {
+    // avoid root-relative on GitHub Pages
+    avatar = avatar.replace(/^\/+/, "");
   }
 
   // Banner
   let banner = safe(raw.contact_banner || raw.banner);
   if (!banner || banner.length < 3 || banner === "null") {
-    banner = "/NewApp/img/profile-banner.jpg";
+    banner = "img/profile-banner.jpg";
+  } else if (banner.startsWith("/")) {
+    banner = banner.replace(/^\/+/, "");
   }
 
   // Website
@@ -114,7 +126,6 @@ function normalizeContact(raw) {
     contact_twitter: twitter || "",
     contact_instagram: instagram || "",
 
-    // ⭐ Correct toggle logic
     contact_show_online: toBool(
       raw.contact_show_online ?? raw.show_online ?? 1
     ),
@@ -130,7 +141,6 @@ function normalizeContact(raw) {
     fromLookup: raw.fromLookup === true,
   };
 
-  // Cache
   if (user.contact_id) {
     UserCache[user.contact_id] = {
       ...(UserCache[user.contact_id] || {}),
@@ -141,19 +151,17 @@ function normalizeContact(raw) {
   return user;
 }
 
-/* -------------------------------------------------------
-   Unified local update engine
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Unified local update engine
+// -------------------------------------------------------
 export function updateLocalContact(userId, changes) {
   if (!userId) return;
 
-  // 1. Update cache
   if (!UserCache[userId]) UserCache[userId] = {};
   Object.assign(UserCache[userId], changes);
   const u = UserCache[userId];
 
-  // 2. Update contact list
+  // Contact list
   const contactCard = document.querySelector(
     `.contact-card[data-contact-id="${userId}"]`
   );
@@ -176,7 +184,7 @@ export function updateLocalContact(userId, changes) {
     }
   }
 
-  // 3. Update full profile modal (if open)
+  // Full profile modal
   if (isProfileOpen && openProfileUserId == userId) {
     if (changes.fullname || changes.contact_name) {
       $id("fullProfileName").textContent =
@@ -271,7 +279,7 @@ export function updateLocalContact(userId, changes) {
     }
   }
 
-  // 4. Update lookup cards
+  // Lookup cards
   document
     .querySelectorAll(`.lookup-card[data-id="${userId}"]`)
     .forEach((card) => {
@@ -293,7 +301,7 @@ export function updateLocalContact(userId, changes) {
       }
     });
 
-  // 5. Update message header if chatting with them
+  // Message header
   if (window.currentChatUserId == userId) {
     const header = $(".header_msg_box h2");
     const avatarEl = $(".header_msg_box .chat-header-avatar");
@@ -308,10 +316,9 @@ export function updateLocalContact(userId, changes) {
   }
 }
 
-/* -------------------------------------------------------
-   Call Buttons
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Call Buttons
+// -------------------------------------------------------
 function wireGlobalCallButtons(user) {
   const voiceBtn = getVoiceBtn?.();
   const videoBtn = getVideoBtn?.();
@@ -327,10 +334,9 @@ function wireGlobalCallButtons(user) {
   }
 }
 
-/* -------------------------------------------------------
-   Messaging Panel Toggle
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Messaging Panel Toggle
+// -------------------------------------------------------
 function showMessages() {
   const box = messageBox;
   if (!box) return;
@@ -345,10 +351,9 @@ function showMessages() {
   box.classList.add("active");
 }
 
-/* -------------------------------------------------------
-   Messaging Logic
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Messaging Logic
+// -------------------------------------------------------
 function updateMessageHeader(name) {
   const header = $(".header_msg_box h2");
   if (header) header.textContent = name ?? "Messages";
@@ -358,7 +363,6 @@ export function openMessagesFor(userRaw) {
   const user = normalizeContact(userRaw);
   const profileModal = $id("fullProfileModal");
 
-  // ⭐ Auto-close profile modal if enabled
   if (autoCloseProfileOnMessages && isProfileOpen && profileModal) {
     profileModal.classList.remove("open");
     isProfileOpen = false;
@@ -384,8 +388,8 @@ export function openMessagesFor(userRaw) {
   if (messageBox) messageBox.classList.add("active");
   loadMessages();
 }
-const closeBtn = $id("closeFullProfile");
 
+const closeBtn = $id("closeFullProfile");
 if (closeBtn) {
   closeBtn.onclick = () => {
     const modal = $id("fullProfileModal");
@@ -402,10 +406,9 @@ function selectCard(li) {
   li.classList.add("selected");
 }
 
-/* -------------------------------------------------------
-   Presence
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Presence
+// -------------------------------------------------------
 export function registerPresence() {
   socket.emit("register", getMyUserId());
 
@@ -413,7 +416,6 @@ export function registerPresence() {
     updateContactStatus(contact_id, online);
   });
 
-  // Real-time profile updates (global)
   socket.on("profile:updated", (data) => {
     const userId = data.user_id;
     if (!userId) return;
@@ -436,13 +438,12 @@ export function updateContactStatus(contactId, isOnline) {
   }
 }
 
-/* -------------------------------------------------------
-   Load Contacts
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Load Contacts
+// -------------------------------------------------------
 export async function loadContacts() {
   try {
-    const data = await fetchJSON("get_contacts.php");
+    const data = await fetchJSON("/letss/contacts");
     console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
@@ -472,10 +473,9 @@ export async function loadContacts() {
   }
 }
 
-/* -------------------------------------------------------
-   Render Contact Card (LIST)
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Render Blocked Card
+// -------------------------------------------------------
 function renderBlockedCard(userRaw) {
   const user = normalizeContact(userRaw);
 
@@ -497,7 +497,7 @@ function renderBlockedCard(userRaw) {
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
-    const data = await postForm("unblock_contact.php", {
+    const data = await postJSON("/letsee/api/api/contacts/unblock", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -506,6 +506,9 @@ function renderBlockedCard(userRaw) {
   return li;
 }
 
+// -------------------------------------------------------
+// Render Contact Card (LIST)
+// -------------------------------------------------------
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
 
@@ -545,7 +548,7 @@ export function renderContactCard(userRaw) {
 
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
-    const data = await postForm("block_contact.php", {
+    const data = await postJSON("/letsee/api/api/contacts/block", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -554,7 +557,7 @@ export function renderContactCard(userRaw) {
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
-    const data = await postForm("delete_contact.php", {
+    const data = await postJSON("/letsee/api/api/contacts/delete", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -563,32 +566,28 @@ export function renderContactCard(userRaw) {
   return li;
 }
 
-/* -------------------------------------------------------
-   FULL PROFILE MODAL (ALL FIELDS, REAL-TIME READY)
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// FULL PROFILE MODAL
+// -------------------------------------------------------
 function openFullProfile(userRaw) {
   const user = normalizeContact(userRaw);
   activeContact = user;
   openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
+  if (!modal) return;
   modal.classList.add("open");
   isProfileOpen = true;
 
-  // Avatar + Banner
   $id("fullProfileAvatar").src = user.contact_avatar;
   $id("fullProfileBanner").src = user.contact_banner;
 
-  // Basic Info
   $id("fullProfileName").textContent = user.contact_name;
   $id("fullProfileEmail").textContent = user.contact_email;
   $id("fullProfilePhone").textContent = user.contact_phone || "No phone";
 
-  // Bio
   $id("fullProfileBio").textContent = user.contact_bio || "No bio";
 
-  // Website
   if (user.contact_website) {
     const w = $id("fullProfileWebsite");
     w.textContent = user.contact_website;
@@ -600,7 +599,6 @@ function openFullProfile(userRaw) {
     $id("fullProfileWebsite").removeAttribute("href");
   }
 
-  // Twitter
   if (user.contact_twitter) {
     const t = $id("fullProfileTwitter");
     t.textContent = user.contact_twitter;
@@ -610,7 +608,6 @@ function openFullProfile(userRaw) {
     $id("fullProfileTwitter").removeAttribute("href");
   }
 
-  // Instagram
   if (user.contact_instagram) {
     const i = $id("fullProfileInstagram");
     i.textContent = user.contact_instagram;
@@ -620,7 +617,6 @@ function openFullProfile(userRaw) {
     $id("fullProfileInstagram").removeAttribute("href");
   }
 
-  // Permissions
   const showOnlineEl = $id("fullProfileShowOnline");
   showOnlineEl.textContent = user.contact_show_online ? "Online" : "Offline";
   showOnlineEl.classList.toggle("status-online", user.contact_show_online);
@@ -633,25 +629,23 @@ function openFullProfile(userRaw) {
   allowMsgEl.classList.toggle("status-online", user.contact_allow_messages);
   allowMsgEl.classList.toggle("status-offline", !user.contact_allow_messages);
 
-  // Copy buttons
   $id("copyEmailBtn").onclick = () =>
     navigator.clipboard.writeText(user.contact_email);
 
   $id("copyPhoneBtn").onclick = () =>
     navigator.clipboard.writeText(user.contact_phone || "");
 
-  // Buttons
   const callBtn = $id("profileCallBtn");
   const videoBtn = $id("profileVideoBtn");
   const blockBtn = $id("profileBlockBtn");
   const saveBtn = $id("saveLookupContact");
 
-  // Use safe checks in case elements are not present
   callBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
       window.startCall(user.contact_id, false);
     else console.warn("startCall is not available");
   });
+
   videoBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
       window.startCall(user.contact_id, true);
@@ -660,7 +654,7 @@ function openFullProfile(userRaw) {
 
   blockBtn?.addEventListener("click", async () => {
     if (!confirm(`Block ${user.contact_name}?`)) return;
-    const data = await postForm("block_contact.php", {
+    const data = await postJSON("/letsee/api/api/contacts/block", {
       contact_id: user.contact_id,
     });
     if (data.success) {
@@ -672,7 +666,6 @@ function openFullProfile(userRaw) {
     }
   });
 
-  // Only touch saveBtn if it exists and ensure the handler is safe
   if (saveBtn) {
     if (user.fromLookup) {
       saveBtn.style.display = "block";
@@ -690,10 +683,9 @@ function openFullProfile(userRaw) {
   }
 }
 
-/* -------------------------------------------------------
-   Lookup Search
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Lookup Search
+// -------------------------------------------------------
 function runLookup(query) {
   if (!lookupResults) return;
   if (!query) {
@@ -703,7 +695,7 @@ function runLookup(query) {
 
   lookupResults.innerHTML = `<li class="empty">Searching...</li>`;
 
-  fetchJSON(`lookup_contacts.php?query=${encodeURIComponent(query)}`)
+  fetchJSON(`/letsee/api/users/search?query=${encodeURIComponent(query)}`)
     .then((data) => {
       lookupResults.innerHTML = "";
 
@@ -733,10 +725,9 @@ lookupInput?.addEventListener("input", () => {
   }, 300);
 });
 
-/* -------------------------------------------------------
-   Render Lookup Card
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// Render Lookup Card
+// -------------------------------------------------------
 export function renderLookupCard(user) {
   const li = document.createElement("li");
   li.className = "lookup-card";
@@ -772,3 +763,5 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+
