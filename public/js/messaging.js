@@ -1176,7 +1176,6 @@ attachmentInput?.addEventListener("change", () => {
 /* -------------------------------------------------------
    File Upload (HTTP)
 ------------------------------------------------------- */
-
 async function sendFileViaHttp(file, targetId) {
   const fd = new FormData();
   fd.append("attachment", file);
@@ -1203,7 +1202,11 @@ async function sendFileViaHttp(file, targetId) {
       });
 
       const msgId = msgRes?.id || null;
-}
+    } // <-- closes the if
+  } catch (err) {
+    console.error("File upload error:", err);
+  } // <-- closes the try
+} // <-- closes the function
 
 /* -------------------------------------------------------
    Sending Messages (text + files)
@@ -1610,6 +1613,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
