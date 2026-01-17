@@ -17,7 +17,7 @@ import {
 } from "../session.js";
 
 // ✔ FIXED: messaging module path
-import { setReceiver, loadMessages } from "../messaging.js";
+import { setReceiver,loadThread} from "../messaging.js";
 
 // ✔ FIXED: call log module path
 import { setContactLookup } from "../call-log.js";
@@ -787,6 +787,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
