@@ -674,9 +674,8 @@ function isDarkMode() {
 // -------------------------------------------------------
 async function loadVoicemails() {
   try {
-    const res = await fetch(
-      `http://localhost:3001/api/voicemail/list?userId=${window.USER_ID}`
-    );
+    const res = await fetch(`${API_BASE}/voicemail/list`, { credentials: "include" })
+
 
     const data = await res.json();
 
@@ -1357,5 +1356,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
