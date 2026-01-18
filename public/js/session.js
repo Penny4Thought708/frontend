@@ -1,6 +1,6 @@
-// public/js/session.js
 // -------------------------------------------------------
-// Session + DOM + Helpers (shared across messaging, calls, contacts)
+// session.js — Identity, API Helpers, DOM Bindings, Socket Registration
+// -------------------------------------------------------
 
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
@@ -8,7 +8,7 @@ import { socket } from "./socket.js";
 const w = typeof window !== "undefined" ? window : {};
 
 // -------------------------------------------------------
-// ⭐ Dynamic session identity (always fresh)
+// ⭐ Identity Helpers (always fresh)
 // -------------------------------------------------------
 export function getMyUserId() {
   return w.user_id ? Number(w.user_id) : null;
@@ -22,8 +22,51 @@ export function getMyAvatar() {
   return w.avatar || null;
 }
 
+export function refreshIdentity(user) {
+  if (!user) return;
+  w.user_id = user.user_id;
+  w.fullname = user.fullname;
+  w.avatar = user.avatar;
+}
+
+export function isLoggedIn() {
+  return !!w.user_id;
+}
+
 // -------------------------------------------------------
-// DOM helpers
+// ⭐ URL Helpers (avatars, banners)
+// -------------------------------------------------------
+export function avatarUrl(filename) {
+  if (!filename) return "img/defaultUser.png";
+  if (filename.startsWith("http")) return filename;
+  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
+}
+
+export function bannerUrl(filename) {
+  if (!filename) return "img/profile-banner.jpg";
+  if (filename.startsWith("http")) return filename;
+  return `https://letsee-backend.onrender.com/uploads/banners/${filename}`;
+}
+
+// -------------------------------------------------------
+// ⭐ Wait for identity (prevents early socket registration)
+// -------------------------------------------------------
+export function waitForIdentity(timeout = 3000) {
+  return new Promise((resolve) => {
+    const start = Date.now();
+
+    const check = () => {
+      if (w.user_id) return resolve(true);
+      if (Date.now() - start > timeout) return resolve(false);
+      requestAnimationFrame(check);
+    };
+
+    check();
+  });
+}
+
+// -------------------------------------------------------
+// DOM Helpers
 // -------------------------------------------------------
 const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
@@ -40,8 +83,6 @@ export const messageWin = qs(".message_win1");
 export const msgCounter = qs("#msg_header h3:last-child");
 export const badge = qs(".notification-badge .badge");
 export const notificationSound = el("notification");
-
-// Attachment preview
 export const previewDiv = el("preview");
 
 // -------------------------------------------------------
@@ -121,7 +162,7 @@ export function playNotification() {
 }
 
 // -------------------------------------------------------
-// ⭐ Unified API helpers (Node backend + GitHub Pages)
+// ⭐ Unified API Helpers (Node backend + GitHub Pages)
 // -------------------------------------------------------
 const API_BASE = "https://letsee-backend.onrender.com/api";
 
@@ -133,12 +174,19 @@ function apiUrl(path) {
 
 export async function getJson(path) {
   const url = apiUrl(path);
-  const res = await fetch(url, {
-    credentials: "include",
-  });
+  const res = await fetch(url, { credentials: "include" });
 
   if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
   return res.json();
+}
+
+export async function safeGetJson(path) {
+  try {
+    return await getJson(path);
+  } catch (err) {
+    console.warn("[safeGetJson] Error:", err);
+    return null;
+  }
 }
 
 export async function postJson(path, body = {}) {
@@ -154,7 +202,6 @@ export async function postJson(path, body = {}) {
   return res.json();
 }
 
-// expose globally if needed
 window.postJson = postJson;
 
 // -------------------------------------------------------
@@ -185,6 +232,7 @@ export function endCall({
   try {
     pc?.getSenders()?.forEach((s) => s.track?.stop?.());
   } catch {}
+
   try {
     pc?.close();
   } catch {}
@@ -192,6 +240,7 @@ export function endCall({
   try {
     dataChannel?.close();
   } catch {}
+
   try {
     localStream?.getTracks()?.forEach((t) => t.stop());
   } catch {}
@@ -213,9 +262,11 @@ export function endCall({
 }
 
 // -------------------------------------------------------
-// Socket registration (now dynamic)
+// ⭐ Socket Registration (now identity‑safe)
 // -------------------------------------------------------
-socket.on("connect", () => {
+socket.on("connect", async () => {
+  await waitForIdentity();
+
   const uid = getMyUserId();
   if (!uid) {
     console.warn("[socket] No user_id in window; skipping register");
@@ -245,4 +296,6 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
+
 
