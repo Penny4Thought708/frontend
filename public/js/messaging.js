@@ -1,7 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO WebRTC, Node backend)
-// -------------------------------------------------------
+// Messaging System (NO WebRTC)
 
 import { socket } from "./socket.js";
 
@@ -20,6 +19,7 @@ import {
   previewDiv,
   playNotification,
   getJson,
+  postForm,
   postJson,
 } from "./session.js";
 
@@ -69,7 +69,7 @@ export function showMessageWindow() {
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
 
-  socket.emit("session:init", {
+  socket.emit("register", {
     userId: getMyUserId(),
     fullname: getMyFullname(),
   });
@@ -106,17 +106,14 @@ msgOpenBtn?.addEventListener("click", async () => {
     }
     if (badge) badge.style.display = "none";
 
-    // Mark all visible incoming messages as read
-    for (const m of messages.filter(
+    const unread = messages.filter(
       (m) => !m.is_me && typeof m.id !== "undefined"
-    )) {
-      try {
-        await postJson("/messages/mark-read", {
-          messageId: m.id,
-        });
-      } catch (err) {
-        console.warn("mark-read failed for", m.id, err);
-      }
+    );
+
+    for (const m of unread) {
+      await postJson("/messages/mark-read", {
+        messageId: m.id,
+      });
     }
 
     observeMessagesForRead();
@@ -130,7 +127,7 @@ closeMsgBtn?.addEventListener("click", () =>
 );
 
 /* -------------------------------------------------------
-   Load Messages (Node backend, reaction-aware)
+   Load Messages (Node backend)
 ------------------------------------------------------- */
 
 export async function loadMessages(contactId = window.receiver_id) {
@@ -140,18 +137,19 @@ export async function loadMessages(contactId = window.receiver_id) {
     const res = await getJson(`/messages/thread/${contactId}`);
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
-    lastLoadedMessages = messages;
+    if (!messages.length) {
+      lastLoadedMessages = [];
+      return [];
+    }
 
-    if (!messages.length) return [];
+    lastLoadedMessages = messages;
 
     const newest = messages[messages.length - 1];
 
-    // If no new messages, do nothing
     if (newest.id <= lastSeenMessageId) {
       return messages;
     }
 
-    // Append ONLY the new messages
     const newMessages = messages.filter((m) => m.id > lastSeenMessageId);
 
     newMessages.forEach((msg) => {
@@ -163,7 +161,6 @@ export async function loadMessages(contactId = window.receiver_id) {
     });
 
     smartScroll(true);
-
     lastSeenMessageId = newest.id;
 
     return messages;
@@ -385,13 +382,13 @@ export function renderMessage(msg) {
       url: msg.url || msg.file_url,
       comment: msg.comment || "",
     });
-  } else if (msg.message) {
-    p.appendChild(document.createTextNode(msg.message));
+  } else {
+    p.appendChild(document.createTextNode(msg.message || ""));
   }
 
   const meta = document.createElement("small");
   meta.textContent = msg.created_at
-    ? ` ${new Date(msg.created_at).toLocaleTimeString()}`
+    ? ` ${new Date(msg.created_at).toLocaleString()}`
     : "";
 
   const reactionDisplay = document.createElement("div");
@@ -401,30 +398,38 @@ export function renderMessage(msg) {
   div.appendChild(meta);
   div.appendChild(reactionDisplay);
 
+  div.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    showDeleteMenu(msg, e.clientX, e.clientY);
+  });
+
+  div.addEventListener("click", (e) => {
+    if (e.target.closest(".reaction-display")) return;
+    showReactionPicker(msg, div, e.clientX, e.clientY);
+  });
+
   messageWin.appendChild(div);
   smartScroll();
 }
 
 /* -------------------------------------------------------
-   Delete / Hide / Restore (Node backend)
+   Delete / Hide / Restore
 ------------------------------------------------------- */
 
-async function deleteMessageLocal(id) {
+function deleteMessageLocal(id) {
   const el = document.querySelector(`[data-msg-id="${id}"]`);
   if (el) el.remove();
 
-  try {
-    await postJson("/messages/hide", { messageId: id });
-    showUndoDelete(id);
-  } catch (err) {
-    console.warn("Hide failed:", err);
-  }
+  postJson("/messages/hide", { messageId: id });
+  showUndoDelete(id);
 }
 
 async function restoreMessage(id) {
   try {
     const res = await postJson("/messages/restore", { messageId: id });
-    if (res.success) loadMessages();
+    if (res.success) {
+      loadMessages();
+    }
   } catch (err) {
     console.warn("Failed to restore message", err);
   }
@@ -442,11 +447,18 @@ async function deleteMessageForEveryone(id) {
     if (res.success) {
       const el = document.querySelector(`[data-msg-id="${id}"]`);
       if (el) el.remove();
+    } else {
+      console.warn("Delete error:", res.error);
     }
   } catch (err) {
     console.warn("Delete for everyone failed", err);
   }
 }
+
+socket.on("call:voicemail", () => {
+  showVoicemailRecordingUI();
+  startVoicemailRecorder();
+});
 
 /* -------------------------------------------------------
    Undo Toast
@@ -486,40 +498,36 @@ if (manageHiddenBtn) {
 }
 
 async function loadHiddenMessages() {
-  try {
-    const res = await getJson("/messages/hidden");
-    const list = Array.isArray(res.messages) ? res.messages : [];
+  const res = await getJson("/messages/hidden");
+  const list = Array.isArray(res) ? res : [];
 
-    const container = document.getElementById("hiddenList");
-    if (!container) return;
+  const container = document.getElementById("hiddenList");
+  if (!container) return;
 
-    container.innerHTML = "";
+  container.innerHTML = "";
 
-    list.forEach((msg) => {
-      const div = document.createElement("div");
-      div.className = "hidden-item";
+  list.forEach((msg) => {
+    const div = document.createElement("div");
+    div.className = "hidden-item";
 
-      const p = document.createElement("p");
-      const strong = document.createElement("strong");
-      strong.textContent = msg.sender_name || `User ${msg.sender_id}`;
-      p.appendChild(strong);
-      p.appendChild(document.createTextNode(`: ${msg.message || ""}`));
+    const p = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = msg.sender_name;
+    p.appendChild(strong);
+    p.appendChild(document.createTextNode(`: ${msg.message}`));
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = "Restore";
-      btn.addEventListener("click", () => restoreMessage(msg.id));
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Restore";
+    btn.addEventListener("click", () => restoreMessage(msg.id));
 
-      div.appendChild(p);
-      div.appendChild(btn);
-      container.appendChild(div);
-    });
+    div.appendChild(p);
+    div.appendChild(btn);
+    container.appendChild(div);
+  });
 
-    const panel = document.getElementById("hiddenMessagesPanel");
-    if (panel) panel.style.display = "block";
-  } catch (err) {
-    console.warn("Failed to load hidden messages", err);
-  }
+  const panel = document.getElementById("hiddenMessagesPanel");
+  if (panel) panel.style.display = "block";
 }
 
 /* -------------------------------------------------------
@@ -592,37 +600,48 @@ msgInput?.addEventListener("input", () => {
   if (!targetId) return;
 
   if (lastTypingTarget !== targetId) {
-    socket.emit("typing", { from: getMyUserId(), to: targetId, typing: true });
+    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
     lastTypingTarget = targetId;
   }
 
-  socket.emit("typing", { from: getMyUserId(), to: targetId, typing: true });
+  socket.emit("typing:start", { from: getMyUserId(), to: targetId });
 
   if (typingStopTimer) clearTimeout(typingStopTimer);
 
   typingStopTimer = setTimeout(() => {
-    socket.emit("typing", { from: getMyUserId(), to: targetId, typing: false });
+    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
   }, 900);
 });
 
-socket.on("typing", ({ from, typing }) => {
+socket.on("typing:start", ({ from, getMyFullname, avatar }) => {
   const partner = getTargetId();
   if (!partner) return;
 
   if (String(from) === String(partner)) {
-    if (!typing) {
-      typingIndicator?.classList.remove("active");
-      return;
+    const name = getMyFullname || userNames[from] || `User ${from}`;
+
+    const avatarEl = typingIndicator.querySelector(".typing-avatar");
+    const bubble = typingIndicator.querySelector(".typing-bubble");
+
+    bubble.dataset.name = name;
+
+    if (avatar) {
+      avatarEl.src = avatar;
+      avatarEl.style.display = "block";
+    } else {
+      avatarEl.style.display = "none";
     }
 
-    const name = userNames[from] || `User ${from}`;
-    const avatarEl = typingIndicator?.querySelector(".typing-avatar");
-    const bubble = typingIndicator?.querySelector(".typing-bubble");
+    typingIndicator.classList.add("active");
+  }
+});
 
-    if (bubble) bubble.dataset.name = name;
-    if (avatarEl) avatarEl.style.display = "none";
+socket.on("typing:stop", ({ from }) => {
+  const partner = getTargetId();
+  if (!partner) return;
 
-    typingIndicator?.classList.add("active");
+  if (String(from) === String(partner)) {
+    typingIndicator.classList.remove("active");
   }
 });
 
@@ -708,7 +727,7 @@ function createReadObserver() {
 
   return new IntersectionObserver(
     (entries, observer) => {
-      entries.forEach(async (entry) => {
+      entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
 
         const msgEl = entry.target;
@@ -716,13 +735,9 @@ function createReadObserver() {
         const senderId = msgEl.dataset.senderId;
 
         if (msgId && senderId && senderId !== String(getMyUserId())) {
-          try {
-            await postJson("/messages/mark-read", {
-              messageId: Number(msgId),
-            });
-          } catch (err) {
-            console.warn("mark-read observer failed", err);
-          }
+          postJson("/messages/mark-read", {
+            messageId: msgId,
+          });
 
           observer.unobserve(msgEl);
           msgEl.dataset.observing = "0";
@@ -869,36 +884,32 @@ attachmentInput?.addEventListener("change", () => {
 });
 
 /* -------------------------------------------------------
-   File Upload (HTTP → Node backend)
+   File Upload (HTTP)
 ------------------------------------------------------- */
-
-const BACKEND_BASE = "https://letsee-backend.onrender.com/api";
 
 async function sendFileViaHttp(file, targetId) {
   const fd = new FormData();
   fd.append("attachment", file);
-  fd.append("to", targetId || "");
-  fd.append("from", getMyUserId());
+  fd.append("receiver_id", targetId || "");
+  fd.append("sender_id", getMyUserId());
 
   try {
-    const res = await fetch(`${BACKEND_BASE}/messages/upload`, {
+    const res = await fetch("/messages/upload", {
       method: "POST",
       body: fd,
-      credentials: "include",
+      credentials: "same-origin",
     });
 
     const data = await res.json();
     if (data?.success && data.url) {
       const msgRes = await postJson("/messages/send", {
-        to: targetId,
+        sender_id: getMyUserId(),
+        receiver_id: targetId,
         message: `File: ${file.name}`,
-        files: [
-          {
-            filename: file.name,
-            url: data.url,
-            type: file.type,
-          },
-        ],
+        transport: "http",
+        file: 1,
+        filename: file.name,
+        file_url: data.url,
       });
 
       const msgId = msgRes?.id || null;
@@ -954,7 +965,8 @@ if (msgForm) {
     if (message && targetId) {
       try {
         const data = await postJson("/messages/send", {
-          to: targetId,
+          sender_id: getMyUserId(),
+          receiver_id: targetId,
           message,
         });
 
@@ -969,15 +981,6 @@ if (msgForm) {
             created_at: data.created_at,
             sender_id: getMyUserId(),
             sender_name: "You",
-          });
-
-          socket.emit("message:new", {
-            id: data.id,
-            from: getMyUserId(),
-            to: targetId,
-            message: data.message,
-            created_at: data.created_at,
-            is_me: true,
           });
         } else {
           showError(data?.error || "Failed to send message");
@@ -995,7 +998,7 @@ if (msgForm) {
 }
 
 /* -------------------------------------------------------
-   RECORDING TIMER
+   Voice Messages: Recording + Upload + Playback
 ------------------------------------------------------- */
 
 function startTimer() {
@@ -1018,10 +1021,6 @@ function stopTimer() {
   timerInterval = null;
   if (recordTimer) recordTimer.style.display = "none";
 }
-
-/* -------------------------------------------------------
-   WAVEFORM VISUALIZATION
-------------------------------------------------------- */
 
 function startWaveform(stream) {
   if (!waveformCanvas || !ctx) return;
@@ -1069,10 +1068,6 @@ function stopWaveform() {
   if (animationId) cancelAnimationFrame(animationId);
   animationId = null;
 }
-
-/* -------------------------------------------------------
-   AUDIO RECORDING CORE
-------------------------------------------------------- */
 
 async function startRecording() {
   try {
@@ -1223,7 +1218,7 @@ socket.on("recording:stop", ({ from }) => {
 });
 
 /* -------------------------------------------------------
-   UPLOAD + SEND AUDIO MESSAGE (Node backend)
+   UPLOAD + SEND AUDIO MESSAGE
 ------------------------------------------------------- */
 
 async function sendAudioMessage(blob) {
@@ -1261,7 +1256,7 @@ async function sendAudioMessage(blob) {
       try {
         result = JSON.parse(xhr.responseText || "{}");
       } catch (err) {
-        console.error("audio upload JSON parse error:", err, xhr.responseText);
+        console.error("audio JSON parse error:", err, xhr.responseText);
       }
 
       resolve(result);
@@ -1272,7 +1267,7 @@ async function sendAudioMessage(blob) {
       resolve({ success: false, error: "Network error" });
     };
 
-    xhr.open("POST", `${BACKEND_BASE}/messages/audio`);
+    xhr.open("POST", "/messages/audio");
     xhr.send(formData);
   }).then((result) => {
     if (result?.success && result.url) {
@@ -1289,19 +1284,10 @@ async function sendAudioMessage(blob) {
 }
 
 /* -------------------------------------------------------
-   RENDER AUDIO MESSAGE (Unified with renderMessage)
+   RENDER AUDIO MESSAGE (socket)
 ------------------------------------------------------- */
 
-socket.on("message:new", (msg) => {
-  // Incoming text/file messages from socket
-  const isMine = String(msg.from) === String(getMyUserId());
-  renderMessage({
-    ...msg,
-    is_me: isMine,
-  });
-});
-
-socket.on("message:audio", ({ id, from, to, url }) => {
+socket.on("message:audio", ({ id, from, url }) => {
   if (!url) return;
 
   const isMine = String(from) === String(getMyUserId());
@@ -1309,7 +1295,7 @@ socket.on("message:audio", ({ id, from, to, url }) => {
   const msg = {
     id: id ?? null,
     sender_id: from,
-    receiver_id: to,
+    receiver_id: getTargetId?.() ?? receiver_id,
     sender_name: isMine ? "You" : null,
     receiver_name: null,
     message: "",
@@ -1327,6 +1313,59 @@ socket.on("message:audio", ({ id, from, to, url }) => {
 
   renderMessage(msg);
 });
+
+/* -------------------------------------------------------
+   Reaction Picker (simple)
+------------------------------------------------------- */
+
+function showReactionPicker(msg, msgEl, x, y) {
+  const existing = document.querySelector(".reaction-picker");
+  if (existing) existing.remove();
+
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+
+  const emojis = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+
+  emojis.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = emoji;
+    btn.onclick = async () => {
+      try {
+        const res = await postJson("/messages/react", {
+          messageId: msg.id,
+          emoji,
+        });
+        if (Array.isArray(res.reactions)) {
+          renderReactionsForMessage(msg.id, res.reactions);
+        }
+      } catch (err) {
+        console.error("React failed", err);
+      }
+      picker.remove();
+    };
+    picker.appendChild(btn);
+  });
+
+  document.body.appendChild(picker);
+  picker.style.left = x + "px";
+  picker.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener(
+      "click",
+      function close(e) {
+        if (!picker.contains(e.target)) {
+          picker.remove();
+          document.removeEventListener("click", close);
+        }
+      },
+      { once: true }
+    );
+  }, 10);
+}
+
 
 
 
