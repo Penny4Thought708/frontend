@@ -494,20 +494,22 @@ function updateStats() {
 // =======================================================
 //  LOAD PAGE (RELOAD PATH)
 // =======================================================
-
 async function loadPage(initial = false) {
   if (loading || !hasMore) return;
   loading = true;
 
   try {
     const data = await fetchJSON(
-      `${API_BASE}/calls/history?offset=${callLogPageOffset}&limit=${PAGE_SIZE}`
+      `${API_BASE}/call-logs?offset=${callLogPageOffset}&limit=${PAGE_SIZE}`
     );
 
-    const sessionUserId = data.userId;
+    // Backend no longer returns userId → use global identity
+    const sessionUserId = window.user_id;
+
     const stored = JSON.parse(localStorage.getItem("callLogs") || "[]");
 
-    const logs = (data.data || []).map(raw => {
+    // Backend now returns { logs: [...] }
+    const logs = (data.logs || []).map(raw => {
       const existing = stored.find(l =>
         String(l.logId ?? l.id) === String(raw.id)
       );
@@ -542,37 +544,6 @@ async function loadPage(initial = false) {
   }
 }
 
-let debugMode = false;
-
-document.addEventListener("keydown", (e) => {
-  const key = e.key?.toLowerCase();
-  if (key === "d") {
-    debugMode = !debugMode;
-    document.body.classList.toggle("calllog-debug", debugMode);
-  }
-});
-
-function debugLogEntry(raw, normalized, stored) {
-  if (!debugMode) return;
-
-  const panel = document.getElementById("callLogDebugPanel");
-  if (!panel) return;
-
-  const div = document.createElement("div");
-  div.className = "debug-entry";
-
-  div.innerHTML = `
-    <strong>ID: ${raw.id}</strong><br>
-    <pre>RAW:
-${JSON.stringify(raw, null, 2)}</pre>
-    <pre>NORMALIZED:
-${JSON.stringify(normalized, null, 2)}</pre>
-    <pre>STORED:
-${JSON.stringify(stored, null, 2)}</pre>
-  `;
-
-  panel.prepend(div);
-}
 
 // =======================================================
 //  REAL-TIME ADD (SOCKET PATH)
@@ -634,5 +605,6 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
 
 
