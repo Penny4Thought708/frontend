@@ -1,6 +1,7 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO WebRTC)
+// Messaging System (NO WebRTC, Node backend)
+// -------------------------------------------------------
 
 import { socket } from "./socket.js";
 
@@ -19,9 +20,8 @@ import {
   previewDiv,
   playNotification,
   getJson,
-  postJson,   // ⭐ ADD THIS
+  postJson,
 } from "./session.js";
-
 
 /* -------------------------------------------------------
    Messaging State
@@ -58,7 +58,6 @@ function smartScroll(force = false) {
   }
 }
 
-
 export function showMessageWindow() {
   messageBox?.classList.add("active");
 }
@@ -70,11 +69,10 @@ export function showMessageWindow() {
 socket.on("connect", () => {
   console.log("Socket connected:", socket.id);
 
-socket.emit("register", {
-  userId: getMyUserId(),
-  fullname: getMyFullname(),
-});
-
+  socket.emit("session:init", {
+    userId: getMyUserId(),
+    fullname: getMyFullname(),
+  });
 });
 
 /* -------------------------------------------------------
@@ -83,7 +81,7 @@ socket.emit("register", {
 
 export function setReceiver(id) {
   receiver_id = id;
-  window.receiver_id = id; // ⭐ FIX: make it global
+  window.receiver_id = id;
   console.log("[messaging] Receiver set:", receiver_id);
   console.log("[GLOBAL] window.receiver_id =", window.receiver_id);
 }
@@ -108,7 +106,17 @@ msgOpenBtn?.addEventListener("click", async () => {
     }
     if (badge) badge.style.display = "none";
 
-
+    // Mark all visible incoming messages as read
+    for (const m of messages.filter(
+      (m) => !m.is_me && typeof m.id !== "undefined"
+    )) {
+      try {
+        await postJson("/messages/mark-read", {
+          messageId: m.id,
+        });
+      } catch (err) {
+        console.warn("mark-read failed for", m.id, err);
+      }
     }
 
     observeMessagesForRead();
@@ -121,31 +129,32 @@ closeMsgBtn?.addEventListener("click", () =>
   messageBox?.classList.remove("active")
 );
 
-
 /* -------------------------------------------------------
-   Load Messages (modernized for new reaction format)
+   Load Messages (Node backend, reaction-aware)
 ------------------------------------------------------- */
+
 export async function loadMessages(contactId = window.receiver_id) {
   if (!contactId) return [];
 
   try {
-    // ⭐ Correct endpoint + correct variable
     const res = await getJson(`/messages/thread/${contactId}`);
     const messages = Array.isArray(res.messages) ? res.messages : [];
+
+    lastLoadedMessages = messages;
 
     if (!messages.length) return [];
 
     const newest = messages[messages.length - 1];
 
-    // ⭐ If no new messages, do nothing
+    // If no new messages, do nothing
     if (newest.id <= lastSeenMessageId) {
       return messages;
     }
 
-    // ⭐ Append ONLY the new messages
-    const newMessages = messages.filter(m => m.id > lastSeenMessageId);
+    // Append ONLY the new messages
+    const newMessages = messages.filter((m) => m.id > lastSeenMessageId);
 
-    newMessages.forEach(msg => {
+    newMessages.forEach((msg) => {
       renderMessage(msg);
 
       if (msg.id && Array.isArray(msg.reactions)) {
@@ -153,14 +162,11 @@ export async function loadMessages(contactId = window.receiver_id) {
       }
     });
 
-    // ⭐ Scroll only when new messages arrive
     smartScroll(true);
 
-    // Update last seen ID
     lastSeenMessageId = newest.id;
 
     return messages;
-
   } catch (err) {
     console.error("Failed to load messages", err);
     return [];
@@ -179,7 +185,7 @@ let currentImageIndex = 0;
 
 function buildGalleryFromMessages() {
   return lastLoadedMessages
-    .filter((m) => m.file === 1 && (m.url || m.file_url)) // only image messages
+    .filter((m) => m.file === 1 && (m.url || m.file_url))
     .map((m) => m.url || m.file_url);
 }
 
@@ -320,6 +326,7 @@ function appendFileContentToParagraph(p, file) {
     p.appendChild(comment);
   }
 }
+
 /* -------------------------------------------------------
    Reactions rendering
 ------------------------------------------------------- */
@@ -367,167 +374,57 @@ export function renderMessage(msg) {
   p.appendChild(strong);
   p.appendChild(document.createTextNode(": "));
 
-  /* -------------------------------------------------------
-     AUDIO MESSAGE
-  ------------------------------------------------------- */
-  if (msg.type === "audio") {
+  if (msg.type === "audio" && msg.url) {
     const audio = document.createElement("audio");
     audio.controls = true;
-    audio.preload = "metadata";
     audio.src = msg.url;
-
-    const durationLabel = document.createElement("span");
-    durationLabel.className = "audio-duration";
-    durationLabel.textContent = "…";
-
-    audio.addEventListener("loadedmetadata", () => {
-      if (!isFinite(audio.duration)) {
-        durationLabel.textContent = "0:00";
-        return;
-      }
-      const secs = Math.floor(audio.duration);
-      const m = String(Math.floor(secs / 60)).padStart(1, "0");
-      const s = String(secs % 60).padStart(2, "0");
-      durationLabel.textContent = `${m}:${s}`;
-    });
-
-    audio.addEventListener("play", () => {
-      div.classList.add("audio-playing");
-    });
-    audio.addEventListener("pause", () => {
-      div.classList.remove("audio-playing");
-    });
-    audio.addEventListener("ended", () => {
-      div.classList.remove("audio-playing");
-    });
-
     p.appendChild(audio);
-    p.appendChild(durationLabel);
-  } else if (
-
-  /* -------------------------------------------------------
-     FILE MESSAGE (images, docs, etc.)
-  ------------------------------------------------------- */
-    msg.type === "file" ||
-    msg.file ||
-    /^File:/i.test(msg.message || "")
-  ) {
-    const name =
-      msg.name || msg.filename || (msg.message || "").replace(/^File:\s*/, "");
-
-    const fileUrl = msg.url || msg.file_url || msg.data || null;
-
+  } else if (msg.file && (msg.url || msg.file_url)) {
     appendFileContentToParagraph(p, {
-      name,
-      url: fileUrl,
-      comment: msg.comment,
+      name: msg.filename || "file",
+      url: msg.url || msg.file_url,
+      comment: msg.comment || "",
     });
-  } else {
-
-  /* -------------------------------------------------------
-     TEXT MESSAGE
-  ------------------------------------------------------- */
-    p.appendChild(document.createTextNode(msg.message ?? ""));
+  } else if (msg.message) {
+    p.appendChild(document.createTextNode(msg.message));
   }
 
-  const reactionBar = document.createElement("div");
-  reactionBar.className = "reaction-bar";
-  reactionBar.innerHTML = `
-    <span class="react-emoji">👍</span>
-    <span class="react-emoji">❤️</span>
-    <span class="react-emoji">😂</span>
-    <span class="react-emoji">😮</span>
-    <span class="react-emoji">😢</span>
-  `;
-
-  reactionBar.addEventListener("click", async (e) => {
-    const emoji = e.target.closest(".react-emoji")?.textContent;
-    if (!emoji || !msg.id) return;
-
-    try {
-      const res = await postForm("/api/messages/react.php", {
-        id: msg.id,
-        emoji,
-        user_id: getMyUserId(),
-      });
-
-      if (!res || !res.success) {
-        console.warn("Failed to add reaction", res?.error);
-        return;
-      }
-
-      renderReactionsForMessage(msg.id, res.reactions);
-    } catch (err) {
-      console.warn("Failed to add reaction", err);
-    }
-  });
+  const meta = document.createElement("small");
+  meta.textContent = msg.created_at
+    ? ` ${new Date(msg.created_at).toLocaleTimeString()}`
+    : "";
 
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
 
-  const ts =
-    msg.created_at instanceof Date
-      ? msg.created_at
-      : new Date(msg.created_at || Date.now());
-
-  const small = document.createElement("small");
-  small.textContent = ts.toLocaleString();
-
-  const statusSpan = document.createElement("span");
-  statusSpan.className = "status-flags";
-
-  if (msg.id) {
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "delete-msg";
-    del.textContent = "🗑";
-
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      showDeleteMenu(msg, e.pageX, e.pageY);
-    });
-
-    statusSpan.appendChild(del);
-  }
-
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.appendChild(small);
-  meta.appendChild(statusSpan);
-
-  div.appendChild(reactionBar);
-  div.appendChild(reactionDisplay);
   div.appendChild(p);
   div.appendChild(meta);
+  div.appendChild(reactionDisplay);
 
   messageWin.appendChild(div);
-
-  if (Array.isArray(msg.reactions) && msg.id != null) {
-    renderReactionsForMessage(msg.id, msg.reactions);
-  }
-
   smartScroll();
-  observeMessagesForRead();
 }
 
 /* -------------------------------------------------------
-   Delete / Hide / Restore
+   Delete / Hide / Restore (Node backend)
 ------------------------------------------------------- */
 
-function deleteMessageLocal(id) {
+async function deleteMessageLocal(id) {
   const el = document.querySelector(`[data-msg-id="${id}"]`);
   if (el) el.remove();
 
-  postForm("/api/messages/hide.php", { id });
-  showUndoDelete(id);
+  try {
+    await postJson("/messages/hide", { messageId: id });
+    showUndoDelete(id);
+  } catch (err) {
+    console.warn("Hide failed:", err);
+  }
 }
 
 async function restoreMessage(id) {
   try {
-    const res = await postForm("/api/messages/restore.php", { id });
-    if (res.success) {
-      loadMessages();
-    }
+    const res = await postJson("/messages/restore", { messageId: id });
+    if (res.success) loadMessages();
   } catch (err) {
     console.warn("Failed to restore message", err);
   }
@@ -537,26 +434,19 @@ async function deleteMessageForEveryone(id) {
   if (!id) return;
 
   try {
-    const res = await postForm("/api/messages/delete.php", {
-      id,
-      everyone: 1,
+    const res = await postJson("/messages/delete", {
+      messageId: id,
+      everyone: true,
     });
 
     if (res.success) {
       const el = document.querySelector(`[data-msg-id="${id}"]`);
       if (el) el.remove();
-    } else {
-      console.warn("Delete error:", res.error);
     }
   } catch (err) {
     console.warn("Delete for everyone failed", err);
   }
 }
-
-socket.on("call:voicemail", () => {
-  showVoicemailRecordingUI();
-  startVoicemailRecorder();
-});
 
 /* -------------------------------------------------------
    Undo Toast
@@ -596,38 +486,40 @@ if (manageHiddenBtn) {
 }
 
 async function loadHiddenMessages() {
-  const res = await fetch("/api/messages/hidden.php", {
-    credentials: "same-origin",
-  });
-  const list = await res.json();
+  try {
+    const res = await getJson("/messages/hidden");
+    const list = Array.isArray(res.messages) ? res.messages : [];
 
-  const container = document.getElementById("hiddenList");
-  if (!container) return;
+    const container = document.getElementById("hiddenList");
+    if (!container) return;
 
-  container.innerHTML = "";
+    container.innerHTML = "";
 
-  list.forEach((msg) => {
-    const div = document.createElement("div");
-    div.className = "hidden-item";
+    list.forEach((msg) => {
+      const div = document.createElement("div");
+      div.className = "hidden-item";
 
-    const p = document.createElement("p");
-    const strong = document.createElement("strong");
-    strong.textContent = msg.sender_name;
-    p.appendChild(strong);
-    p.appendChild(document.createTextNode(`: ${msg.message}`));
+      const p = document.createElement("p");
+      const strong = document.createElement("strong");
+      strong.textContent = msg.sender_name || `User ${msg.sender_id}`;
+      p.appendChild(strong);
+      p.appendChild(document.createTextNode(`: ${msg.message || ""}`));
 
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "Restore";
-    btn.addEventListener("click", () => restoreMessage(msg.id));
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Restore";
+      btn.addEventListener("click", () => restoreMessage(msg.id));
 
-    div.appendChild(p);
-    div.appendChild(btn);
-    container.appendChild(div);
-  });
+      div.appendChild(p);
+      div.appendChild(btn);
+      container.appendChild(div);
+    });
 
-  const panel = document.getElementById("hiddenMessagesPanel");
-  if (panel) panel.style.display = "block";
+    const panel = document.getElementById("hiddenMessagesPanel");
+    if (panel) panel.style.display = "block";
+  } catch (err) {
+    console.warn("Failed to load hidden messages", err);
+  }
 }
 
 /* -------------------------------------------------------
@@ -700,48 +592,37 @@ msgInput?.addEventListener("input", () => {
   if (!targetId) return;
 
   if (lastTypingTarget !== targetId) {
-    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
+    socket.emit("typing", { from: getMyUserId(), to: targetId, typing: true });
     lastTypingTarget = targetId;
   }
 
-  socket.emit("typing:start", { from: getMyUserId(), to: targetId });
+  socket.emit("typing", { from: getMyUserId(), to: targetId, typing: true });
 
   if (typingStopTimer) clearTimeout(typingStopTimer);
 
   typingStopTimer = setTimeout(() => {
-    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
+    socket.emit("typing", { from: getMyUserId(), to: targetId, typing: false });
   }, 900);
 });
 
-socket.on("typing:start", ({ from, getMyFullname, avatar }) => {
+socket.on("typing", ({ from, typing }) => {
   const partner = getTargetId();
   if (!partner) return;
 
   if (String(from) === String(partner)) {
-    const name = getMyFullname || userNames[from] || `User ${from}`;
-
-    const avatarEl = typingIndicator.querySelector(".typing-avatar");
-    const bubble = typingIndicator.querySelector(".typing-bubble");
-
-    bubble.dataset.name = name;
-
-    if (avatar) {
-      avatarEl.src = avatar;
-      avatarEl.style.display = "block";
-    } else {
-      avatarEl.style.display = "none";
+    if (!typing) {
+      typingIndicator?.classList.remove("active");
+      return;
     }
 
-    typingIndicator.classList.add("active");
-  }
-});
+    const name = userNames[from] || `User ${from}`;
+    const avatarEl = typingIndicator?.querySelector(".typing-avatar");
+    const bubble = typingIndicator?.querySelector(".typing-bubble");
 
-socket.on("typing:stop", ({ from }) => {
-  const partner = getTargetId();
-  if (!partner) return;
+    if (bubble) bubble.dataset.name = name;
+    if (avatarEl) avatarEl.style.display = "none";
 
-  if (String(from) === String(partner)) {
-    typingIndicator.classList.remove("active");
+    typingIndicator?.classList.add("active");
   }
 });
 
@@ -819,34 +700,34 @@ socket.on("statusUpdate", ({ contact_id, online, away }) => {
 });
 
 /* -------------------------------------------------------
-   Read Observer (Node backend version)
+   Read Observer
 ------------------------------------------------------- */
 
 function createReadObserver() {
   if (!messageWin) return null;
 
   return new IntersectionObserver(
-    async (entries, observer) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
+    (entries, observer) => {
+      entries.forEach(async (entry) => {
+        if (!entry.isIntersecting) return;
 
         const msgEl = entry.target;
+        const msgId = msgEl.dataset.msgId;
         const senderId = msgEl.dataset.senderId;
 
-        // Only mark messages from the OTHER user
-        if (senderId && senderId !== String(getMyUserId())) {
+        if (msgId && senderId && senderId !== String(getMyUserId())) {
           try {
             await postJson("/messages/mark-read", {
-              contactId: receiver_id,
+              messageId: Number(msgId),
             });
           } catch (err) {
-            console.warn("[readObserver] mark-read failed:", err);
+            console.warn("mark-read observer failed", err);
           }
 
           observer.unobserve(msgEl);
           msgEl.dataset.observing = "0";
         }
-      }
+      });
     },
     { root: messageWin, threshold: 0.75 }
   );
@@ -988,32 +869,36 @@ attachmentInput?.addEventListener("change", () => {
 });
 
 /* -------------------------------------------------------
-   File Upload (HTTP)
+   File Upload (HTTP → Node backend)
 ------------------------------------------------------- */
+
+const BACKEND_BASE = "https://letsee-backend.onrender.com/api";
 
 async function sendFileViaHttp(file, targetId) {
   const fd = new FormData();
   fd.append("attachment", file);
-  fd.append("receiver_id", targetId || "");
-  fd.append("sender_id", getMyUserId());
+  fd.append("to", targetId || "");
+  fd.append("from", getMyUserId());
 
   try {
-    const res = await fetch("/api/messages/upload.php", {
+    const res = await fetch(`${BACKEND_BASE}/messages/upload`, {
       method: "POST",
       body: fd,
-      credentials: "same-origin",
+      credentials: "include",
     });
 
     const data = await res.json();
     if (data?.success && data.url) {
-      const msgRes = await postForm("/api/messages/send.php", {
-        sender_id: getMyUserId(),
-        receiver_id: targetId,
+      const msgRes = await postJson("/messages/send", {
+        to: targetId,
         message: `File: ${file.name}`,
-        transport: "http",
-        file: 1,
-        filename: file.name,
-        file_url: data.url,
+        files: [
+          {
+            filename: file.name,
+            url: data.url,
+            type: file.type,
+          },
+        ],
       });
 
       const msgId = msgRes?.id || null;
@@ -1068,9 +953,8 @@ if (msgForm) {
 
     if (message && targetId) {
       try {
-        const data = await postForm("/api/messages/send.php", {
-          sender_id: getMyUserId(),
-          receiver_id: targetId,
+        const data = await postJson("/messages/send", {
+          to: targetId,
           message,
         });
 
@@ -1086,6 +970,15 @@ if (msgForm) {
             sender_id: getMyUserId(),
             sender_name: "You",
           });
+
+          socket.emit("message:new", {
+            id: data.id,
+            from: getMyUserId(),
+            to: targetId,
+            message: data.message,
+            created_at: data.created_at,
+            is_me: true,
+          });
         } else {
           showError(data?.error || "Failed to send message");
         }
@@ -1100,19 +993,9 @@ if (msgForm) {
 } else {
   console.warn("msgForm not found — submit handler not attached");
 }
-/* -------------------------------------------------------
-   Voice Messages: Recording + Upload + Playback
-------------------------------------------------------- */
-
-// Assumes globals:
-// - socket
-// - getMyUserId()
-// - receiver_id (current chat partner)
-// - getTargetId() → current chat partner ID
-// - showError(msg) → toast/error UI
 
 /* -------------------------------------------------------
-   RECORDING TIMER (CLEAN VERSION)
+   RECORDING TIMER
 ------------------------------------------------------- */
 
 function startTimer() {
@@ -1135,8 +1018,9 @@ function stopTimer() {
   timerInterval = null;
   if (recordTimer) recordTimer.style.display = "none";
 }
+
 /* -------------------------------------------------------
-   WAVEFORM VISUALIZATION (CLEAN VERSION)
+   WAVEFORM VISUALIZATION
 ------------------------------------------------------- */
 
 function startWaveform(stream) {
@@ -1217,13 +1101,11 @@ async function startRecording() {
     stopWaveform();
     stopTimer();
 
-    // Cancelled by sliding left
     if (cancelRecording) {
       cleanupStream();
       return;
     }
 
-    // No audio captured
     if (!audioChunks.length) {
       cleanupStream();
       return;
@@ -1341,7 +1223,7 @@ socket.on("recording:stop", ({ from }) => {
 });
 
 /* -------------------------------------------------------
-   UPLOAD + SEND AUDIO MESSAGE (CLEAN VERSION)
+   UPLOAD + SEND AUDIO MESSAGE (Node backend)
 ------------------------------------------------------- */
 
 async function sendAudioMessage(blob) {
@@ -1356,18 +1238,15 @@ async function sendAudioMessage(blob) {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
 
-    // Attach audio + metadata
     formData.append("audio", blob, "audio.webm");
     formData.append("from", getMyUserId());
     formData.append("to", targetId);
 
-    // Upload progress UI
     const progressBar = document.createElement("div");
     progressBar.className = "upload-progress";
     progressBar.textContent = "Uploading… 0%";
     messageWin?.appendChild(progressBar);
 
-    // Progress updates
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         const percent = Math.round((e.loaded / e.total) * 100);
@@ -1375,7 +1254,6 @@ async function sendAudioMessage(blob) {
       }
     };
 
-    // Upload complete
     xhr.onload = () => {
       progressBar.remove();
 
@@ -1383,24 +1261,21 @@ async function sendAudioMessage(blob) {
       try {
         result = JSON.parse(xhr.responseText || "{}");
       } catch (err) {
-        console.error("audio.php JSON parse error:", err, xhr.responseText);
+        console.error("audio upload JSON parse error:", err, xhr.responseText);
       }
 
       resolve(result);
     };
 
-    // Upload error
     xhr.onerror = () => {
       progressBar.remove();
       resolve({ success: false, error: "Network error" });
     };
 
-    // Correct path for your /NewApp structure
-    xhr.open("POST", "api/messages/audio.php");
+    xhr.open("POST", `${BACKEND_BASE}/messages/audio`);
     xhr.send(formData);
   }).then((result) => {
     if (result?.success && result.url) {
-      // Notify via socket
       socket.emit("message:audio", {
         from: getMyUserId(),
         to: targetId,
@@ -1412,20 +1287,29 @@ async function sendAudioMessage(blob) {
     }
   });
 }
+
 /* -------------------------------------------------------
    RENDER AUDIO MESSAGE (Unified with renderMessage)
 ------------------------------------------------------- */
 
-socket.on("message:audio", ({ id, from, url }) => {
+socket.on("message:new", (msg) => {
+  // Incoming text/file messages from socket
+  const isMine = String(msg.from) === String(getMyUserId());
+  renderMessage({
+    ...msg,
+    is_me: isMine,
+  });
+});
+
+socket.on("message:audio", ({ id, from, to, url }) => {
   if (!url) return;
 
   const isMine = String(from) === String(getMyUserId());
 
-  // Build a message object identical to loader.php output
   const msg = {
     id: id ?? null,
     sender_id: from,
-    receiver_id: getTargetId?.() ?? receiver_id,
+    receiver_id: to,
     sender_name: isMine ? "You" : null,
     receiver_name: null,
     message: "",
@@ -1441,9 +1325,9 @@ socket.on("message:audio", ({ id, from, url }) => {
     reactions: [],
   };
 
-  // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
