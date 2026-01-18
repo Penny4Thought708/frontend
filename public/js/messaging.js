@@ -135,7 +135,7 @@ export async function loadMessages(contactId = window.receiver_id) {
 
   try {
     // ⭐ Correct endpoint + correct variable
-    const res = await getJson(`/api/messages/thread/${contactId}`);
+    const res = await getJson(`/messages/thread/${contactId}`);
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
     if (!messages.length) return [];
@@ -1447,6 +1447,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
