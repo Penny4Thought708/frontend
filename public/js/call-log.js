@@ -1,8 +1,12 @@
 // =======================================================
-//  call-log.js — Node backend + GitHub Pages version
+//  call-log.js — Polished for Node Backend + GitHub Pages
 // =======================================================
 
-import { getVoiceBtn, getVideoBtn } from "./session.js";
+import { 
+  getVoiceBtn, 
+  getVideoBtn, 
+  avatarUrl 
+} from "./session.js";
 
 const API_BASE = "https://letsee-backend.onrender.com/api";
 
@@ -35,7 +39,8 @@ let socketRef = null;
 // =======================================================
 //  DOM ELEMENTS
 // =======================================================
-const CALL_LOG_VERSION = 2; // increment whenever normalization logic changes
+
+const CALL_LOG_VERSION = 2;
 
 const listEl = document.getElementById("callLogList");
 const searchEl = document.getElementById("callLogSearch");
@@ -55,6 +60,7 @@ async function fetchJSON(url, opts = {}) {
     credentials: "include",
     ...opts,
   });
+
   const text = await res.text();
   try {
     return JSON.parse(text);
@@ -110,18 +116,6 @@ function insertDateHeader(ts) {
 }
 
 // =======================================================
-//  LAST MESSAGE
-// =======================================================
-
-function formatLastMessage(log, sessionUserId) {
-  const msg = (log.last_message || "").trim();
-  if (!msg) return "";
-  return String(log.last_message_sender_id) === String(sessionUserId)
-    ? `You: ${msg}`
-    : msg;
-}
-
-// =======================================================
 //  DETAILS OVERLAY
 // =======================================================
 
@@ -145,14 +139,6 @@ function openDetails(id) {
     <div class="call-details-row"><span>Status</span><span>${log.status}</span></div>
     <div class="call-details-row"><span>Duration</span><span>${m}:${s}</span></div>
     <div class="call-details-row"><span>Time</span><span>${new Date(log.timestamp).toLocaleString()}</span></div>
-    ${
-      log.last_message
-        ? `<div class="call-details-row"><span>Last message</span><span>${formatLastMessage(
-            log,
-            log.session_user_id
-          )}</span></div>`
-        : ""
-    }
   `;
 
   detailsOverlay.classList.add("active");
@@ -163,17 +149,11 @@ function openDetails(id) {
 // =======================================================
 
 export function normalizeAvatarPath(path) {
-  if (!path) return "img/defaultUser.png";
-
-  if (path.startsWith("http")) return path;
-  if (path.startsWith("/uploads/avatars/")) return path;
-  if (path.startsWith("uploads/avatars/")) return `/${path}`;
-
-  return path;
+  return avatarUrl(path);
 }
 
 // =======================================================
-//  ICON MAP (single source of truth)
+//  ICON MAP
 // =======================================================
 
 const ICONS = {
@@ -186,14 +166,14 @@ const ICONS = {
     video: "video_call",
   },
   missed: {
-    incoming: "call_received",        // red incoming arrow (styled via class)
-    outgoing: "call_missed_outgoing", // red outbound missed
-    video: "missed_video_call",       // missed video icon
+    incoming: "call_received",
+    outgoing: "call_missed_outgoing",
+    video: "missed_video_call",
   },
 };
 
 // =======================================================
-//  CALL LOG NORMALIZER (single source of truth)
+//  CALL LOG NORMALIZER
 // =======================================================
 
 function normalizeCallLog(raw, sessionUserId) {
@@ -456,7 +436,7 @@ async function deleteLog(id, el) {
   localStorage.setItem("callLogs", JSON.stringify(callLogCache));
 
   try {
-    await postJSON(`${API_BASE}/calls/delete`, { logId: id });
+    await postJSON(`${API_BASE}/call-logs/delete`, { logId: id });
     socketRef?.emit("call:log:delete", { logId: id });
   } catch (err) {
     console.error("Failed to delete call log:", err);
@@ -492,8 +472,9 @@ function updateStats() {
 }
 
 // =======================================================
-//  LOAD PAGE (RELOAD PATH)
+//  LOAD PAGE (FIXED FOR NODE BACKEND)
 // =======================================================
+
 async function loadPage(initial = false) {
   if (loading || !hasMore) return;
   loading = true;
@@ -503,12 +484,9 @@ async function loadPage(initial = false) {
       `${API_BASE}/call-logs?offset=${callLogPageOffset}&limit=${PAGE_SIZE}`
     );
 
-    // Backend no longer returns userId → use global identity
     const sessionUserId = window.user_id;
-
     const stored = JSON.parse(localStorage.getItem("callLogs") || "[]");
 
-    // Backend now returns { logs: [...] }
     const logs = (data.logs || []).map(raw => {
       const existing = stored.find(l =>
         String(l.logId ?? l.id) === String(raw.id)
@@ -544,27 +522,51 @@ async function loadPage(initial = false) {
   }
 }
 
+// =======================================================
+//  DEBUG PANEL
+// =======================================================
+
+let debugMode = false;
+
+document.addEventListener("keydown", (e) => {
+  const key = e.key?.toLowerCase();
+  if (key === "d") {
+    debugMode = !debugMode;
+    document.body.classList.toggle("calllog-debug", debugMode);
+  }
+});
+
+function debugLogEntry(raw, normalized, stored) {
+  if (!debugMode) return;
+
+  const panel = document.getElementById("callLogDebugPanel");
+  if (!panel) return;
+
+  const div = document.createElement("div");
+  div.className = "debug-entry";
+
+  div.innerHTML = `
+    <strong>ID: ${raw.id}</strong><br>
+    <pre>RAW:
+${JSON.stringify(raw, null, 2)}</pre>
+    <pre>NORMALIZED:
+${JSON.stringify(normalized, null, 2)}</pre>
+    <pre>STORED:
+${JSON.stringify(stored, null, 2)}</pre>
+  `;
+
+  panel.prepend(div);
+}
 
 // =======================================================
-//  REAL-TIME ADD (SOCKET PATH)
+//  REAL-TIME ADD
 // =======================================================
 
 export function addCallLogEntry(raw) {
   if (!raw) return;
 
-  console.log(
-    "REAL-TIME RAW:",
-    raw.status,
-    raw.call_type,
-    raw.direction,
-    raw
-  );
-
-  const idx = callLogCache.findIndex((l) => String(l.id) === String(raw.id));
-  if (idx !== -1) callLogCache.splice(idx, 1);
-
   const sessionUserId =
-    raw.session_user_id || raw.userId || window.SESSION_USER_ID;
+    raw.session_user_id || raw.userId || window.user_id;
 
   const log = normalizeCallLog(raw, sessionUserId);
   debugLogEntry(raw, log, null);
