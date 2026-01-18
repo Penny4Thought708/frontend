@@ -1,17 +1,24 @@
 // public/js/dashboard/contacts.js
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
+// Node backend + GitHub Pages + unified session helpers
+// -------------------------------------------------------
 
 import { socket } from "../socket.js";
 
 import {
   getMyUserId,
+  getMyFullname,
   lookupBtn,
   lookupInput,
   lookupResults,
   getVoiceBtn,
   getVideoBtn,
   messageBox,
+  avatarUrl,
+  bannerUrl,
+  getJson,
+  postJson,
 } from "../session.js";
 
 import { setReceiver, loadMessages } from "../messaging.js";
@@ -27,45 +34,10 @@ let autoCloseProfileOnMessages = true;
 window.UserCache = window.UserCache || {};
 
 // -------------------------------------------------------
-// Backend config (Render / Neon via Node API)
-// -------------------------------------------------------
-const API_BASE = "https://letsee-backend.onrender.com";
-
-function apiUrl(path) {
-  if (!path) return API_BASE;
-  if (path.startsWith("http")) return path;
-  if (!path.startsWith("/")) path = "/" + path;
-  return API_BASE + path;
-}
-
-// -------------------------------------------------------
 // Helpers
 // -------------------------------------------------------
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
-
-async function fetchJSON(path, opts = {}) {
-  const url = apiUrl(path);
-  const res = await fetch(url, {
-    credentials: "include",
-    ...opts,
-  });
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error("Non-JSON response from", url, ":", text);
-    throw new Error("Invalid JSON response");
-  }
-}
-
-async function postJSON(path, body = {}) {
-  return fetchJSON(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
 
 // -------------------------------------------------------
 // Normalize Contact Object (ALL DB FIELDS)
@@ -78,36 +50,22 @@ function normalizeContact(raw) {
 
   const toBool = (v) => v == 1 || v === "1" || v === true;
 
-  // Avatar (GitHub Pages friendly: /frontend/dashboard.html → img/...)
-  let avatar = safe(raw.contact_avatar || raw.avatar);
-  if (!avatar || avatar.length < 3 || avatar === "null") {
-    avatar = "img/defaultUser.png";
-  } else if (avatar.startsWith("/")) {
-    // avoid root-relative on GitHub Pages
-    avatar = avatar.replace(/^\/+/, "");
-  }
+  const avatarRaw = raw.contact_avatar || raw.avatar;
+  const bannerRaw = raw.contact_banner || raw.banner;
 
-  // Banner
-  let banner = safe(raw.contact_banner || raw.banner);
-  if (!banner || banner.length < 3 || banner === "null") {
-    banner = "img/profile-banner.jpg";
-  } else if (banner.startsWith("/")) {
-    banner = banner.replace(/^\/+/, "");
-  }
+  const avatar = avatarUrl(avatarRaw);
+  const banner = bannerUrl(bannerRaw);
 
-  // Website
   let website = safe(raw.contact_website || raw.website);
   if (website && !website.startsWith("http")) {
     website = "https://" + website;
   }
 
-  // Twitter
   let twitter = safe(raw.contact_twitter || raw.twitter);
   if (twitter.startsWith("https://twitter.com/")) {
     twitter = twitter.replace("https://twitter.com/", "");
   }
 
-  // Instagram
   let instagram = safe(raw.contact_instagram || raw.instagram);
   if (instagram.startsWith("https://instagram.com/")) {
     instagram = instagram.replace("https://instagram.com/", "");
@@ -161,7 +119,6 @@ export function updateLocalContact(userId, changes) {
   Object.assign(UserCache[userId], changes);
   const u = UserCache[userId];
 
-  // Contact list
   const contactCard = document.querySelector(
     `.contact-card[data-contact-id="${userId}"]`
   );
@@ -184,7 +141,6 @@ export function updateLocalContact(userId, changes) {
     }
   }
 
-  // Full profile modal
   if (isProfileOpen && openProfileUserId == userId) {
     if (changes.fullname || changes.contact_name) {
       $id("fullProfileName").textContent =
@@ -279,7 +235,6 @@ export function updateLocalContact(userId, changes) {
     }
   }
 
-  // Lookup cards
   document
     .querySelectorAll(`.lookup-card[data-id="${userId}"]`)
     .forEach((card) => {
@@ -301,7 +256,6 @@ export function updateLocalContact(userId, changes) {
       }
     });
 
-  // Message header
   if (window.currentChatUserId == userId) {
     const header = $(".header_msg_box h2");
     const avatarEl = $(".header_msg_box .chat-header-avatar");
@@ -410,7 +364,10 @@ function selectCard(li) {
 // Presence
 // -------------------------------------------------------
 export function registerPresence() {
-  socket.emit("register", getMyUserId());
+  socket.emit("session:init", {
+    userId: getMyUserId(),
+    fullname: getMyFullname(),
+  });
 
   socket.on("statusUpdate", ({ contact_id, online }) => {
     updateContactStatus(contact_id, online);
@@ -437,8 +394,6 @@ export function updateContactStatus(contactId, isOnline) {
     status.title = isOnline ? "Online" : "Offline";
   }
 }
-import { getJson} from "../session.js";
-
 
 // -------------------------------------------------------
 // Load Contacts (Node backend)
@@ -451,7 +406,6 @@ export async function loadContacts() {
     const list = $id("contacts");
     const blockedList = $id("blocked-contacts");
 
-    // CONTACTS LIST
     if (list && Array.isArray(data.contacts)) {
       list.innerHTML = "";
 
@@ -464,7 +418,6 @@ export async function loadContacts() {
       setContactLookup(normalizedContacts);
     }
 
-    // BLOCKED LIST
     if (blockedList && Array.isArray(data.blocked)) {
       blockedList.innerHTML = "";
 
@@ -473,14 +426,11 @@ export async function loadContacts() {
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
-    // Request presence updates
     socket.emit("presence:get", { userId: getMyUserId() });
-
   } catch (err) {
     console.error("Failed to load contacts:", err);
   }
 }
-
 
 // -------------------------------------------------------
 // Render Blocked Card
@@ -506,7 +456,7 @@ function renderBlockedCard(userRaw) {
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
-    const data = await postJSON("/letsee/api/api/contacts/unblock", {
+    const data = await postJson("/contacts/unblock", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -557,7 +507,7 @@ export function renderContactCard(userRaw) {
 
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
-    const data = await postJSON("/letsee/api/api/contacts/block", {
+    const data = await postJson("/contacts/block", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -566,7 +516,7 @@ export function renderContactCard(userRaw) {
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
-    const data = await postJSON("/letsee/api/api/contacts/delete", {
+    const data = await postJson("/contacts/delete", {
       contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
@@ -663,7 +613,7 @@ function openFullProfile(userRaw) {
 
   blockBtn?.addEventListener("click", async () => {
     if (!confirm(`Block ${user.contact_name}?`)) return;
-    const data = await postJSON("/letsee/api/api/contacts/block", {
+    const data = await postJson("/contacts/block", {
       contact_id: user.contact_id,
     });
     if (data.success) {
@@ -704,7 +654,7 @@ function runLookup(query) {
 
   lookupResults.innerHTML = `<li class="empty">Searching...</li>`;
 
-  fetchJSON(`/letsee/api/users/search?query=${encodeURIComponent(query)}`)
+  getJson(`/users/search?query=${encodeURIComponent(query)}`)
     .then((data) => {
       lookupResults.innerHTML = "";
 
@@ -772,6 +722,8 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+
 
 
 
