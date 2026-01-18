@@ -543,37 +543,45 @@ window.openMessagingPanel = function () {
 };
 
 /* ---------------------------------------------------------
-   Load Message List
+   Load Message List (Node backend version)
 --------------------------------------------------------- */
-async function loadMessageList(userId) {
+async function loadMessageList() {
   const list = document.getElementById("messaging_list");
   const header = document.getElementById("unread_header");
 
   list.innerHTML = "";
   header.textContent = "Loading...";
 
-  const res = await fetch("message_list.php?user_id=" + userId);
-  const data = await res.json();
+  try {
+    // Node backend route (session-based, no userId needed)
+    const data = await getJson("/contacts");
 
-  const conversations = data.conversations || [];
+    const conversations = data.contacts || [];
+    window.lastMessageList = conversations;
 
-  // Save globally so openChat() can reference it
-  window.lastMessageList = conversations;
+    // Total unread count
+    const totalUnread = conversations.reduce(
+      (sum, c) => sum + (c.unread_count || 0),
+      0
+    );
 
-  // Total unread count
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+    // Header text
+    header.textContent =
+      totalUnread > 0
+        ? `You have ${totalUnread} unread message${totalUnread === 1 ? "" : "s"}`
+        : "No unread messages";
 
-  // Header text
-  header.textContent =
-    totalUnread > 0
-      ? `You have ${totalUnread} unread message${totalUnread === 1 ? "" : "s"}`
-      : "No unread messages";
+    // Render each conversation
+    conversations.forEach((conv) => {
+      list.appendChild(buildMessageCard(conv));
+    });
 
-  // Render each conversation
-  conversations.forEach((conv) => {
-    list.appendChild(buildMessageCard(conv));
-  });
+  } catch (err) {
+    console.error("[loadMessageList] Error:", err);
+    header.textContent = "Failed to load messages";
+  }
 }
+
 
 /* ---------------------------------------------------------
    Build Conversation Card
@@ -1349,4 +1357,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
