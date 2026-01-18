@@ -6,6 +6,26 @@ import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
 const w = typeof window !== "undefined" ? window : {};
+// -------------------------------------------------------
+// ⭐ Load identity from backend (/auth/me)
+// -------------------------------------------------------
+async function loadIdentity() {
+  try {
+    const me = await getJson("/auth/me");
+
+    if (me?.user) {
+      refreshIdentity(me.user);
+      console.log("[session] Identity loaded:", me.user);
+    } else {
+      console.warn("[session] No user returned from /auth/me");
+    }
+  } catch (err) {
+    console.warn("[session] Failed to load identity:", err);
+  }
+}
+
+// Kick off identity load immediately
+loadIdentity();
 
 // -------------------------------------------------------
 // ⭐ Identity Helpers (always fresh)
@@ -296,6 +316,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
