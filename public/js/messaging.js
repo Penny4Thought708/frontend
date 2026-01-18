@@ -108,14 +108,14 @@ msgOpenBtn?.addEventListener("click", async () => {
     }
     if (badge) badge.style.display = "none";
 
-    messages
-      .filter((m) => !m.is_me && typeof m.id !== "undefined")
-      .forEach((m) => {
-       await postJson("/messages/mark-read", {
-  messageId: m.id,
-});
-
-      });
+    // ⭐ FIX: forEach + await = syntax error → use for..of
+    for (const m of messages) {
+      if (!m.is_me && typeof m.id !== "undefined") {
+        await postJson("/messages/mark-read", {
+          messageId: m.id,
+        });
+      }
+    }
 
     observeMessagesForRead();
   } catch {
@@ -126,6 +126,7 @@ msgOpenBtn?.addEventListener("click", async () => {
 closeMsgBtn?.addEventListener("click", () =>
   messageBox?.classList.remove("active")
 );
+
 
 /* -------------------------------------------------------
    Load Messages (modernized for new reaction format)
@@ -1449,6 +1450,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
