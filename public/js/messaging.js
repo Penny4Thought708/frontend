@@ -19,8 +19,9 @@ import {
   previewDiv,
   playNotification,
   getJson,
- 
+  postJson,   // ⭐ ADD THIS
 } from "./session.js";
+
 
 /* -------------------------------------------------------
    Messaging State
@@ -110,11 +111,10 @@ msgOpenBtn?.addEventListener("click", async () => {
     messages
       .filter((m) => !m.is_me && typeof m.id !== "undefined")
       .forEach((m) => {
-        postForm("/api/messages/read.php", {
-          from: m.sender_id,
-          to: getMyUserId(),
-          messageId: m.id,
-        });
+       await postJson("/messages/mark-read", {
+  messageId: m.id,
+});
+
       });
 
     observeMessagesForRead();
@@ -824,32 +824,34 @@ socket.on("statusUpdate", ({ contact_id, online, away }) => {
 });
 
 /* -------------------------------------------------------
-   Read Observer
+   Read Observer (Node backend version)
 ------------------------------------------------------- */
 
 function createReadObserver() {
   if (!messageWin) return null;
 
   return new IntersectionObserver(
-    (entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
+    async (entries, observer) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
 
         const msgEl = entry.target;
-        const msgId = msgEl.dataset.msgId;
         const senderId = msgEl.dataset.senderId;
 
-        if (msgId && senderId && senderId !== String(getMyUserId())) {
-          postForm("/api/messages/read.php", {
-            from: senderId,
-            to: getMyUserId(),
-            messageId: msgId,
-          });
+        // Only mark messages from the OTHER user
+        if (senderId && senderId !== String(getMyUserId())) {
+          try {
+            await postJson("/messages/mark-read", {
+              contactId: receiver_id,
+            });
+          } catch (err) {
+            console.warn("[readObserver] mark-read failed:", err);
+          }
 
           observer.unobserve(msgEl);
           msgEl.dataset.observing = "0";
         }
-      });
+      }
     },
     { root: messageWin, threshold: 0.75 }
   );
@@ -1447,6 +1449,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
