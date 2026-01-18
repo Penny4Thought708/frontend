@@ -164,7 +164,8 @@ export function playNotification() {
 // -------------------------------------------------------
 // ⭐ Unified API Helpers (Node backend + GitHub Pages)
 // -------------------------------------------------------
-const API_BASE = "https://letsee-backend.onrender.com";
+const API_BASE = "https://letsee-backend.onrender.com/api";
+
 
 
 function apiUrl(path) {
@@ -318,6 +319,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
