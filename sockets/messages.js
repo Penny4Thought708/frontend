@@ -1,7 +1,5 @@
 // node-backend/sockets/messages.js
-
 export default function registerMessageHandlers(io, socket) {
-  // Normalize IDs to strings
   const toStr = (v) => (v == null ? null : String(v));
 
   /* -------------------------------------------------------
@@ -10,14 +8,12 @@ export default function registerMessageHandlers(io, socket) {
   socket.on("message:new", (msg) => {
     const toStrId = toStr(msg.to);
 
-    // Deliver to recipient
     for (const [id, s] of io.of("/").sockets) {
       if (toStr(s.userId) === toStrId) {
         s.emit("message:new", msg);
       }
     }
 
-    // Echo back to sender
     socket.emit("message:new", msg);
   });
 
@@ -62,28 +58,26 @@ export default function registerMessageHandlers(io, socket) {
   /* -------------------------------------------------------
      AUDIO MESSAGE
   ------------------------------------------------------- */
-// node-backend/sockets/messages.js
+  socket.on("message:audio", ({ id, from, to, url }) => {
+    const fromStr = String(from);
+    const toStr = String(to);
 
-socket.on("message:audio", ({ id, from, to, url }) => {
-  const fromStr = String(from);
-  const toStr = String(to);
-
-  // Deliver to receiver
-  for (const [sid, s] of io.of("/").sockets) {
-    if (String(s.userId) === toStr) {
-      s.emit("message:audio", {
-        id,
-        from: fromStr,
-        url
-      });
+    // Deliver to receiver
+    for (const [sid, s] of io.of("/").sockets) {
+      if (String(s.userId) === toStr) {
+        s.emit("message:audio", {
+          id,
+          from: fromStr,
+          url
+        });
+      }
     }
-  }
 
-  // Echo back to sender
-  socket.emit("message:audio", {
-    id,
-    from: fromStr,
-    url
+    // Echo back to sender
+    socket.emit("message:audio", {
+      id,
+      from: fromStr,
+      url
+    });
   });
-});
 }
