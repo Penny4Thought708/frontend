@@ -108,13 +108,7 @@ msgOpenBtn?.addEventListener("click", async () => {
     }
     if (badge) badge.style.display = "none";
 
-    // ⭐ FIX: forEach + await = syntax error → use for..of
-    for (const m of messages) {
-      if (!m.is_me && typeof m.id !== "undefined") {
-        await postJson("/messages/mark-read", {
-          messageId: m.id,
-        });
-      }
+
     }
 
     observeMessagesForRead();
@@ -1450,6 +1444,7 @@ socket.on("message:audio", ({ id, from, url }) => {
   // Use your main renderer so audio behaves like all other messages
   renderMessage(msg);
 });
+
 
 
 
