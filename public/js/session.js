@@ -32,6 +32,18 @@ export function refreshIdentity(user) {
 export function isLoggedIn() {
   return !!w.user_id;
 }
+export async function postForm(url, data) {
+  const formData = new FormData();
+  Object.entries(data).forEach(([k, v]) => formData.append(k, v));
+
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+
+  return res.json();
+}
 
 // -------------------------------------------------------
 // ⭐ URL Helpers (avatars, banners)
@@ -319,6 +331,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
