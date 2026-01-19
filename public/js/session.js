@@ -20,7 +20,7 @@ async function loadIdentity() {
 
     const data = await res.json();
 
-    // FIX: your backend wraps identity inside data.user
+    // Backend returns: { success: true, user: {...} }
     const u = data.user;
 
     w.user_id = u.user_id;
@@ -32,7 +32,6 @@ async function loadIdentity() {
     console.error("[session] Failed to load identity:", err);
   }
 }
-
 
 // Load identity immediately
 loadIdentity();
@@ -50,6 +49,14 @@ export function getMyFullname() {
 
 export function getMyAvatar() {
   return w.avatar || null;
+}
+
+// -------------------------------------------------------
+// Avatar URL helper (Node backend)
+// -------------------------------------------------------
+export function avatarUrl(filename) {
+  if (!filename) return "/img/defaultUser.png";
+  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
 }
 
 // -------------------------------------------------------
@@ -73,13 +80,6 @@ export const notificationSound = el("notification");
 
 // Attachment preview
 export const previewDiv = el("preview");
-// -------------------------------------------------------
-// Avatar URL helper (Node backend version)
-// -------------------------------------------------------
-export function avatarUrl(filename) {
-  if (!filename) return "/img/defaultUser.png";
-  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
-}
 
 // -------------------------------------------------------
 // Lookup UI
@@ -267,6 +267,8 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
+
 
 
 
