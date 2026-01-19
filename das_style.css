@@ -94,7 +94,7 @@ emoji-picker::part(search) {
 
   background: rgba(155, 154, 154, 0.55);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  \nbackdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
 
   border-radius: 22px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -119,6 +119,25 @@ emoji-picker::part(search) {
 
 #gifPicker.hidden {
   pointer-events: none;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 10px;
+  text-align: center;
 }
 
 /* -------------------------------------------------------
@@ -5218,3 +5237,4 @@ footer a:active {
     bottom: 80px;
   }
 }
+
