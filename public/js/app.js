@@ -480,11 +480,11 @@ window.addEventListener("load", function () {
       if (savedCon && savedCon.style.display !== "none") {
         showSection(blockedCon);
         panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="./img/Contacts.png" alt="contacts"> Contacts';
+        this.innerHTML = '<img src="Contacts.png" alt="contacts"> Contacts';
       } else {
         showSection(savedCon);
         panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="./img/calllog.png" alt="call-log"> Call Log';
+        this.innerHTML = '<img src="calllog.png" alt="call-log"> Call Log';
       }
     });
 
@@ -1356,6 +1356,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
 
