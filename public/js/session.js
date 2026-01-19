@@ -4,6 +4,7 @@
 
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
+window.API_BASE = API_BASE;
 
 const w = typeof window !== "undefined" ? window : {};
 
@@ -331,6 +332,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
