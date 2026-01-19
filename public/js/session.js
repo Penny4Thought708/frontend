@@ -237,18 +237,21 @@ export function endCall({
 // ⭐ Correct Node-compatible socket registration
 // -------------------------------------------------------
 socket.on("connect", () => {
-  const uid = getMyUserId();
+  const tryRegister = () => {
+    const uid = getMyUserId();
+    if (!uid) {
+      console.warn("[socket] No user_id yet — waiting for identity...");
+      setTimeout(tryRegister, 200); // retry until identity exists
+      return;
+    }
 
-  if (!uid) {
-    console.warn("[socket] No user_id yet — waiting for identity...");
-    return;
-  }
+    socket.emit("register", uid);
+    console.log("[socket] Registered with backend:", uid);
+  };
 
-  // Node backend expects "register"
-  socket.emit("register", uid);
-
-  console.log("[socket] Registered with backend:", uid);
+  tryRegister();
 });
+
 
 socket.on("reconnect_attempt", (n) => {
   if (DEBUG.socket && (n === 1 || n % 5 === 0)) {
@@ -296,6 +299,7 @@ function resetInactivityTimer() {
 
 // Start timer on page load
 resetInactivityTimer();
+
 
 
 
