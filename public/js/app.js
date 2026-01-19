@@ -582,7 +582,7 @@ function buildMessageCard(conv) {
   const li = document.createElement("li");
   li.className = "message-card " + (conv.unread > 0 ? "unread" : "read");
 
-  const avatar = conv.avatar || "img/defaultUser.png";
+  const avatar = conv.avatar || "/img/defaultUser.png";
 
   li.innerHTML = `
     <div class="msg-avatar">
@@ -1279,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
 
