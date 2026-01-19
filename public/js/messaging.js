@@ -19,9 +19,9 @@ import {
   previewDiv,
   playNotification,
   getJson,
-  postForm,
   postJson,
 } from "./session.js";
+
 
 /* -------------------------------------------------------
    Messaging State
@@ -134,7 +134,7 @@ export async function loadMessages(contactId = window.receiver_id) {
   if (!contactId) return [];
 
   try {
-    const res = await getJson(`/messages/thread/${contactId}`);
+    const res = await getJson(`https://letsee-backend.onrender.com/api/messages/thread/${contactId}`);
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
     if (!messages.length) {
@@ -426,7 +426,10 @@ function deleteMessageLocal(id) {
 
 async function restoreMessage(id) {
   try {
-    const res = await postJson("/messages/restore", { messageId: id });
+    await postJson("https://letsee-backend.onrender.com/api/messages/mark-read", {
+      messageId: m.id,
+     });
+
     if (res.success) {
       loadMessages();
     }
@@ -1365,6 +1368,7 @@ function showReactionPicker(msg, msgEl, x, y) {
     );
   }, 10);
 }
+
 
 
 
