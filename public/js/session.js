@@ -240,17 +240,21 @@ socket.on("connect", () => {
   const tryRegister = () => {
     const uid = getMyUserId();
     if (!uid) {
-      console.warn("[socket] No user_id yet — waiting for identity...");
-      setTimeout(tryRegister, 200); // retry until identity exists
+      setTimeout(tryRegister, 200);
       return;
     }
 
-    socket.emit("register", uid);
-    console.log("[socket] Registered with backend:", uid);
+    socket.emit("register", {
+      userId: uid,
+      fullname: getMyFullname()
+    });
+
+    console.log("[socket] Registered:", uid);
   };
 
   tryRegister();
 });
+
 
 
 socket.on("reconnect_attempt", (n) => {
@@ -299,6 +303,7 @@ function resetInactivityTimer() {
 
 // Start timer on page load
 resetInactivityTimer();
+
 
 
 
