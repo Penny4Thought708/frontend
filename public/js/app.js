@@ -1,8 +1,11 @@
+// app.js — Core dashboard wiring: session + socket + messaging + contacts + call logs + UI
+
+// -------------------------------------------------------
 // Core session + socket
-import { messageWin } from "./session.js";
+// -------------------------------------------------------
+import { messageWin, getMyUserId, API_BASE, getJson } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
-
 
 // Messaging
 import { MessagingEngine } from "./messaging/MessagingEngine.js";
@@ -15,7 +18,7 @@ import "./messaging/TypingUI.js";
 
 // Contacts + Call logs
 import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
-import { initCallLogs, normalizeAvatarPath } from "./call-log.js";
+import { initCallLogs } from "./call-log.js";
 
 // WebRTC
 import { WebRTCController } from "./webrtc/WebRTCController.js";
@@ -36,7 +39,7 @@ window.renderMessage = function (msg) {
 let speakingDetector = null;
 
 function startSpeakingDetection(stream, wrapperEl) {
-  stopSpeakingDetection(); // cleanup if already running
+  stopSpeakingDetection();
   if (!stream || !wrapperEl) return;
 
   const avatarEl =
@@ -52,7 +55,7 @@ function startSpeakingDetection(stream, wrapperEl) {
   source.connect(analyser);
 
   const data = new Uint8Array(analyser.frequencyBinCount);
-  const SPEAKING_THRESHOLD = 0.07; // tweak if needed
+  const SPEAKING_THRESHOLD = 0.07;
   const SMOOTHING = 0.8;
 
   let smoothedLevel = 0;
@@ -63,7 +66,7 @@ function startSpeakingDetection(stream, wrapperEl) {
 
     let sum = 0;
     for (let i = 0; i < data.length; i++) sum += data[i];
-    const avg = sum / data.length / 255; // 0..1
+    const avg = sum / data.length / 255;
 
     smoothedLevel = SMOOTHING * smoothedLevel + (1 - SMOOTHING) * avg;
 
@@ -100,17 +103,21 @@ function stopSpeakingDetection() {
   speakingDetector = null;
 }
 
+/* -------------------------------------------------------
+   Core async bootstrap
+------------------------------------------------------- */
+
 (async () => {
-  // Load contacts first (sets contactLookup)
+  // Load contacts first
   await loadContacts();
 
-  // Messaging engine (Node backend; base path now API-relative, not /NewApp)
+  // Messaging engine (Node backend; base path /api)
   const messaging = new MessagingEngine(
     socket,
     renderMessages,
     renderIncomingMessage,
     updateReactionUI,
-    "/api" // assumed Node messaging base; backend will expose /api/messages/...
+    "/api"
   );
 
   // WebRTC
@@ -126,31 +133,39 @@ function stopSpeakingDetection() {
     await messaging.loadMessages(contactId);
   };
 
-  // Expose speaking detection helpers if needed elsewhere
+  // Expose speaking detection helpers
   window.startSpeakingDetection = startSpeakingDetection;
   window.stopSpeakingDetection = stopSpeakingDetection;
 })();
+
+/* -------------------------------------------------------
+   Contact window toggle
+------------------------------------------------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
   const contactWindow = document.getElementById("contact_window");
   const contactWidget = document.getElementById("contact_widget");
 
-  // OPEN / TOGGLE
-  contactWidget.addEventListener("click", (e) => {
-    e.stopPropagation(); // prevent immediate close
-    contactWindow.classList.toggle("active");
-  });
+  if (contactWindow && contactWidget) {
+    contactWidget.addEventListener("click", (e) => {
+      e.stopPropagation();
+      contactWindow.classList.toggle("active");
+    });
 
-  // CLOSE when clicking outside
-  document.addEventListener("click", (e) => {
-    if (
-      !contactWindow.contains(e.target) &&
-      !contactWidget.contains(e.target)
-    ) {
-      contactWindow.classList.remove("active");
-    }
-  });
+    document.addEventListener("click", (e) => {
+      if (
+        !contactWindow.contains(e.target) &&
+        !contactWidget.contains(e.target)
+      ) {
+        contactWindow.classList.remove("active");
+      }
+    });
+  }
 });
+
+/* -------------------------------------------------------
+   Intro Tour
+------------------------------------------------------- */
 
 function startIntroTour() {
   console.log("Tour starting…");
@@ -215,18 +230,15 @@ function startIntroTour() {
     const rect = target.getBoundingClientRect();
     console.log("Target rect:", rect);
 
-    // Force nav open
     const nav = document.getElementById("side_nav_buttons");
-    nav.classList.add("open");
+    if (nav) nav.classList.add("open");
 
-    // Show intro box
     introBox.style.display = "block";
     introBox.innerHTML = step.text;
 
     introBox.style.top = rect.top + "px";
     introBox.style.left = rect.right + 20 + "px";
 
-    // Arrow
     arrow.style.display = "block";
     arrow.className = "intro-arrow " + step.arrow;
     arrow.style.top = rect.top + rect.height / 2 - 10 + "px";
@@ -242,7 +254,8 @@ function startIntroTour() {
       introBox.style.display = "none";
       arrow.style.display = "none";
 
-      document.getElementById("side_nav_buttons").classList.remove("open");
+      const nav = document.getElementById("side_nav_buttons");
+      if (nav) nav.classList.remove("open");
       localStorage.setItem("tourCompleted", "true");
     }
   }
@@ -253,7 +266,6 @@ function startIntroTour() {
   nextStep();
 }
 
-// Run only on first visit
 window.addEventListener("DOMContentLoaded", () => {
   console.log("DOM loaded. Checking tourCompleted…");
 
@@ -265,8 +277,13 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+/* -------------------------------------------------------
+   Notification helper
+------------------------------------------------------- */
+
 window.showNotification = function (title, message) {
   const container = document.getElementById("notification_container");
+  if (!container) return;
 
   const note = document.createElement("div");
   note.className = "notification";
@@ -278,58 +295,57 @@ window.showNotification = function (title, message) {
 
   container.appendChild(note);
 
-  // Slide in
   setTimeout(() => note.classList.add("show"), 10);
 
-  // Auto remove after 5 seconds
   setTimeout(() => {
     note.classList.remove("show");
     setTimeout(() => note.remove(), 400);
   }, 5000);
 
-  // Remove on click
   note.addEventListener("click", () => {
     note.classList.remove("show");
     setTimeout(() => note.remove(), 400);
   });
 };
 
+/* -------------------------------------------------------
+   Contact panel + menu
+------------------------------------------------------- */
+
 const contactBox = document.getElementById("contact_box");
 const contactWidget = document.getElementById("contact_widget");
 const contactClose = document.getElementById("contact_close");
 
-// OPEN PANEL
-contactWidget.addEventListener("click", () => {
-  contactBox.classList.add("open");
-});
+if (contactWidget && contactBox) {
+  contactWidget.addEventListener("click", () => {
+    contactBox.classList.add("open");
+  });
+}
 
-// CLOSE PANEL
-contactClose.addEventListener("click", () => {
-  contactBox.classList.remove("open");
-});
-
-/* -------------------------------------------------------
-   CONTACT MENU TOGGLE
-------------------------------------------------------- */
+if (contactClose && contactBox) {
+  contactClose.addEventListener("click", () => {
+    contactBox.classList.remove("open");
+  });
+}
 
 const contactMenu = document.getElementById("contact_menu_box");
 const menuWidget = document.getElementById("menu_Btn_contact");
 
-// Open/close the menu
-menuWidget.addEventListener("click", (e) => {
-  e.stopPropagation();
-  contactMenu.classList.toggle("open");
-});
+if (contactMenu && menuWidget) {
+  menuWidget.addEventListener("click", (e) => {
+    e.stopPropagation();
+    contactMenu.classList.toggle("open");
+  });
 
-// Close menu when clicking outside
-document.addEventListener("click", (e) => {
-  if (!contactMenu.contains(e.target) && !menuWidget.contains(e.target)) {
-    contactMenu.classList.remove("open");
-  }
-});
+  document.addEventListener("click", (e) => {
+    if (!contactMenu.contains(e.target) && !menuWidget.contains(e.target)) {
+      contactMenu.classList.remove("open");
+    }
+  });
+}
 
 /* -------------------------------------------------------
-   PANEL REGISTRY
+   Panel registry + controller
 ------------------------------------------------------- */
 
 const Panels = {
@@ -340,10 +356,6 @@ const Panels = {
   profile: document.querySelector(".profile_card"),
 };
 
-/* -------------------------------------------------------
-   MENU BUTTONS
-------------------------------------------------------- */
-
 const Buttons = {
   block: document.getElementById("block_contact"),
   addContact: document.getElementById("add_contact"),
@@ -352,18 +364,10 @@ const Buttons = {
   openProfile: document.getElementById("view_profile"),
 };
 
-/* -------------------------------------------------------
-   PANEL CONTROLLER
-------------------------------------------------------- */
-
 function hideAllPanels() {
   if (Panels.contacts) Panels.contacts.style.display = "none";
   if (Panels.blocked) Panels.blocked.style.display = "none";
-
-  // Settings container uses .active
   if (Panels.settings) Panels.settings.classList.remove("active");
-
-  // Profile panel uses .active
   if (Panels.profile) Panels.profile.classList.remove("active");
 }
 
@@ -377,8 +381,7 @@ function togglePanel(panelName) {
   if (!panel) return;
 
   const isOpen =
-    panel.classList.contains("active") ||
-    panel.style.display === "block";
+    panel.classList.contains("active") || panel.style.display === "block";
 
   if (isOpen) {
     showContacts();
@@ -394,47 +397,48 @@ function togglePanel(panelName) {
   }
 }
 
+showContacts();
+
 /* -------------------------------------------------------
-   DEFAULT STATE
+   Block contact + settings + profile
 ------------------------------------------------------- */
 
-showContacts(); // contacts visible by default
+if (Buttons.block) {
+  Buttons.block.addEventListener("click", () => {
+    togglePanel("blocked");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.settings) {
+  Buttons.settings.addEventListener("click", () => {
+    togglePanel("settings");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.closeSettings) {
+  Buttons.closeSettings.addEventListener("click", () => {
+    if (Panels.settings && Panels.settings.classList)
+      Panels.settings.classList.remove("open");
+    showContacts();
+  });
+}
+
+if (Buttons.openProfile) {
+  Buttons.openProfile.addEventListener("click", () => {
+    togglePanel("profile");
+    contactMenu?.classList.remove("open");
+  });
+}
 
 /* -------------------------------------------------------
-   MENU ACTIONS
-------------------------------------------------------- */
-
-// Block Contact
-Buttons.block.addEventListener("click", () => {
-  togglePanel("blocked");
-  contactMenu.classList.remove("open");
-});
-
-// Settings (open)
-Buttons.settings.addEventListener("click", () => {
-  togglePanel("settings");
-  contactMenu.classList.remove("open");
-});
-
-// Settings (close button)
-Buttons.closeSettings.addEventListener("click", () => {
-  if (Panels.settings && Panels.settings.classList)
-    Panels.settings.classList.remove("open");
-  showContacts();
-});
-
-Buttons.openProfile.addEventListener("click", () => {
-  togglePanel("profile");
-  contactMenu.classList.remove("open");
-});
-
-
-/* -------------------------------------------------------
-   BLOCKED CONTACTS LOADER
+   Blocked contacts loader (placeholder)
 ------------------------------------------------------- */
 
 function loadBlockedContacts(list) {
   const ul = document.getElementById("blocked-contacts");
+  if (!ul) return;
   ul.innerHTML = "";
 
   list.forEach((name) => {
@@ -446,9 +450,9 @@ function loadBlockedContacts(list) {
 
 loadBlockedContacts(["John Doe", "Spam Caller", "Unknown Number"]);
 
-// -------------------------------------------------------
-// Voicemail + DND + Wavesurfer UI logic
-// -------------------------------------------------------
+/* -------------------------------------------------------
+   Voicemail + DND + Wavesurfer UI logic
+------------------------------------------------------- */
 
 window.addEventListener("load", function () {
   customElements.whenDefined("contacts-menu").then(() => {
@@ -460,10 +464,10 @@ window.addEventListener("load", function () {
 
     const panelTitle = document.getElementById("panelTitle");
     const messagingBox2 = document.getElementById("messaging_box_container");
-    const vmListPanel = document.getElementById("voicemail_list"); // voicemail panel container
-    const savedCon = document.getElementById("sav_con"); // call history panel
-    const blockedCon = document.getElementById("bl_con"); // contacts panel
-    const blockListBox = document.getElementById("bloc_box"); // blocked contacts panel
+    const vmListPanel = document.getElementById("voicemail_list");
+    const savedCon = document.getElementById("sav_con");
+    const blockedCon = document.getElementById("bl_con");
+    const blockListBox = document.getElementById("bloc_box");
 
     function showSection(section) {
       [savedCon, blockedCon, vmListPanel, blockListBox, messagingBox2].forEach(
@@ -472,62 +476,55 @@ window.addEventListener("load", function () {
           sec.style.display = "none";
         }
       );
-
       if (section) section.style.display = "block";
     }
 
     // Toggle between Call Log and Contacts
-    toggleBtn.addEventListener("click", function () {
+    toggleBtn?.addEventListener("click", function () {
       if (savedCon && savedCon.style.display !== "none") {
         showSection(blockedCon);
-        panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="Contacts.png" alt="contacts"> Contacts';
+        if (panelTitle) panelTitle.textContent = "Contacts";
+        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
       } else {
         showSection(savedCon);
-        panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="calllog.png" alt="call-log"> Call Log';
+        if (panelTitle) panelTitle.textContent = "Call History";
+        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
       }
     });
 
-    messagingBtn.addEventListener("click", () => {
+    messagingBtn?.addEventListener("click", () => {
       showSection(messagingBox2);
-      panelTitle.textContent = "Messaging";
-
-      loadMessageList(window.user_id);
+      if (panelTitle) panelTitle.textContent = "Messaging";
+      loadMessageList();
     });
 
-    // Block List
-    blockBtn.addEventListener("click", () => {
+    blockBtn?.addEventListener("click", () => {
       showSection(blockListBox);
-      panelTitle.textContent = "Blocked Contacts";
+      if (panelTitle) panelTitle.textContent = "Blocked Contacts";
     });
 
-    // Voicemail panel
-    voicemailBtn.addEventListener("click", () => {
+    voicemailBtn?.addEventListener("click", () => {
       showSection(vmListPanel);
-      panelTitle.textContent = "Voicemail";
-      loadVoicemails(); // refresh list when opening
+      if (panelTitle) panelTitle.textContent = "Voicemail";
+      loadVoicemails();
     });
 
-    // Do Not Disturb toggle
-    const icon = donotBtn.querySelector("img");
+    const icon = donotBtn?.querySelector("img");
     let dndActive = false;
 
-    donotBtn.addEventListener("click", () => {
+    donotBtn?.addEventListener("click", () => {
       dndActive = !dndActive;
-      icon.classList.toggle("active", dndActive);
+      icon?.classList.toggle("active", dndActive);
 
       socket.emit("dnd:update", {
-        userId: CURRENT_LOGGED_IN_USER_ID,
+        userId: getMyUserId(),
         active: dndActive,
       });
     });
 
-    // Default view
     showSection(savedCon);
-    panelTitle.textContent = "Call History";
+    if (panelTitle) panelTitle.textContent = "Call History";
 
-    // Initial load of voicemails (for badge on first load)
     loadVoicemails();
   });
 });
@@ -536,11 +533,10 @@ window.openMessagingPanel = function () {
   const messagingBox2 = document.getElementById("messaging_box_container");
   const panelTitle = document.getElementById("panelTitle");
 
-  showSection(messagingBox2);
-  panelTitle.textContent = "Messaging";
+  if (messagingBox2) messagingBox2.style.display = "block";
+  if (panelTitle) panelTitle.textContent = "Messaging";
 
-  // Load conversation list if not loaded yet
-  loadMessageList(window.user_id);
+  loadMessageList();
 };
 
 /* ---------------------------------------------------------
@@ -550,39 +546,34 @@ async function loadMessageList() {
   const list = document.getElementById("messaging_list");
   const header = document.getElementById("unread_header");
 
+  if (!list || !header) return;
+
   list.innerHTML = "";
   header.textContent = "Loading...";
 
   try {
-    // Node backend route (session-based, no userId needed)
     const data = await getJson("/contacts");
-
     const conversations = data.contacts || [];
     window.lastMessageList = conversations;
 
-    // Total unread count
     const totalUnread = conversations.reduce(
       (sum, c) => sum + (c.unread_count || 0),
       0
     );
 
-    // Header text
     header.textContent =
       totalUnread > 0
         ? `You have ${totalUnread} unread message${totalUnread === 1 ? "" : "s"}`
         : "No unread messages";
 
-    // Render each conversation
     conversations.forEach((conv) => {
       list.appendChild(buildMessageCard(conv));
     });
-
   } catch (err) {
     console.error("[loadMessageList] Error:", err);
     header.textContent = "Failed to load messages";
   }
 }
-
 
 /* ---------------------------------------------------------
    Build Conversation Card
@@ -594,57 +585,42 @@ function buildMessageCard(conv) {
   const avatar = conv.avatar || "img/defaultUser.png";
 
   li.innerHTML = `
-        <div class="msg-avatar">
-            <img src="${avatar}">
-            ${
-              conv.unread > 0
-                ? `<span class="unread-badge">${conv.unread}</span>`
-                : ""
-            }
-        </div>
+    <div class="msg-avatar">
+      <img src="${avatar}">
+      ${
+        conv.unread > 0
+          ? `<span class="unread-badge">${conv.unread}</span>`
+          : ""
+      }
+    </div>
 
-        <div class="msg-info">
-            <div class="msg-top">
-                <div class="msg-name">${conv.name}</div>
-                <div class="msg-time">${formatTime(
-                  conv.lastMessage.timestamp
-                )}</div>
-            </div>
-            <div class="msg-bottom">
-                <div class="msg-preview">${sanitizePreview(
-                  conv.lastMessage.text
-                )}</div>
-            </div>
-        </div>
-    `;
+    <div class="msg-info">
+      <div class="msg-top">
+        <div class="msg-name">${conv.name}</div>
+        <div class="msg-time">${formatTime(conv.lastMessage.timestamp)}</div>
+      </div>
+      <div class="msg-bottom">
+        <div class="msg-preview">${sanitizePreview(
+          conv.lastMessage.text
+        )}</div>
+      </div>
+    </div>
+  `;
 
-  /* SINGLE CLICK HANDLER — correct, clean, unified */
   li.addEventListener("click", () => {
-    // Convert message-list conversation → contact object
     const userRaw = {
       contact_id: conv.id,
       contact_name: conv.name,
       avatar: conv.avatar,
     };
 
-    // Use your existing messaging system
     openMessagesFor(userRaw);
 
-    // Mark visually as read
     li.classList.remove("unread");
     li.classList.add("read");
   });
 
   return li;
-}
-function showSection(section) {
-  // Hide all panels
-  document
-    .querySelectorAll(".panel")
-    .forEach((p) => p.classList.remove("active"));
-
-  // Show the selected panel
-  section.classList.add("active");
 }
 
 /* ---------------------------------------------------------
@@ -662,22 +638,18 @@ function sanitizePreview(text) {
   return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// -------------------------------------------------------
-// Helpers for theme + Wavesurfer
-// -------------------------------------------------------
 function isDarkMode() {
-  // Adjust to match your app's dark mode toggle logic
   return document.body.classList.contains("dark-mode");
 }
 
-// -------------------------------------------------------
-// Voicemail loading + rendering
-// -------------------------------------------------------
+/* -------------------------------------------------------
+   Voicemail loading + rendering
+------------------------------------------------------- */
 async function loadVoicemails() {
   try {
-    const res = await fetch(`${API_BASE}/voicemail/list`, { credentials: "include" })
-
-
+    const res = await fetch(`${API_BASE}/voicemail/list`, {
+      credentials: "include",
+    });
     const data = await res.json();
 
     const listEl = document.getElementById("voiceMList");
@@ -703,7 +675,6 @@ async function loadVoicemails() {
   }
 }
 
-// Realtime voicemail
 socket.on("voicemail:new", (vm) => {
   renderVoicemail(vm);
   incrementVoicemailBadge();
@@ -754,7 +725,6 @@ function renderVoicemail(vm) {
     </div>
   `;
 
-  // ---- Wavesurfer: waveform + theme + peaks + speed + download ----
   if (!isMissedCall && typeof WaveSurfer !== "undefined") {
     const dark = isDarkMode();
 
@@ -762,7 +732,7 @@ function renderVoicemail(vm) {
       container: `#waveform-${vm.id}`,
       waveColor: dark ? "#777777" : "#999",
       progressColor: dark ? "#4da3ff" : "#007aff",
-      cursorColor: dark ? "#ffffff" : "#000000", // animated playhead
+      cursorColor: dark ? "#ffffff" : "#000000",
       cursorWidth: 2,
       height: 48,
       barWidth: 2,
@@ -804,19 +774,16 @@ function renderVoicemail(vm) {
       document.body.removeChild(a);
     };
 
-    // Optional: hook if you ever want to sync extra UI with playback
-    waveform.on("audioprocess", () => {
-      // custom per-frame logic if needed
-    });
+    waveform.on("audioprocess", () => {});
   }
 
-  // Mark listened
   li.querySelector(".mark-listened").onclick = async () => {
     try {
-      await fetch("http://localhost:3001/api/voicemail/listened", {
+      await fetch(`${API_BASE}/voicemail/listened`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: vm.id }),
+        credentials: "include",
       });
 
       li.classList.remove("unheard");
@@ -826,18 +793,17 @@ function renderVoicemail(vm) {
     }
   };
 
-  // Call back
   li.querySelector(".call-back").onclick = () => {
     socket.emit("call:start", { to: vm.from_id });
   };
 
-  // Delete voicemail
   li.querySelector(".delete-voicemail").onclick = async () => {
     try {
-      await fetch("http://localhost:3001/api/voicemail/delete", {
+      await fetch(`${API_BASE}/voicemail/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: vm.id }),
+        credentials: "include",
       });
 
       li.remove();
@@ -847,7 +813,6 @@ function renderVoicemail(vm) {
     }
   };
 
-  // Swipe-to-delete (mobile)
   let startX = 0;
 
   li.addEventListener("touchstart", (e) => {
@@ -865,9 +830,9 @@ function renderVoicemail(vm) {
   listEl.appendChild(li);
 }
 
-// -------------------------------------------------------
-// Badge + toast
-// -------------------------------------------------------
+/* -------------------------------------------------------
+   Voicemail badge + toast
+------------------------------------------------------- */
 function updateVoicemailBadge(count) {
   const badge = document.getElementById("voicemailBadge");
   if (!badge) return;
@@ -900,6 +865,10 @@ function showVoicemailToast(vm) {
 
   setTimeout(() => toast.remove(), 3000);
 }
+
+/* -------------------------------------------------------
+   Voicemail recorder (Node backend version)
+------------------------------------------------------- */
 let vmRecorder;
 let vmChunks = [];
 
@@ -916,46 +885,40 @@ async function startVoicemailRecorder() {
     const form = new FormData();
     form.append("audio", blob);
 
-    const upload = await fetch(
-      "http://localhost/NewApp/api/messages/audio.php",
-      {
-        method: "POST",
-        body: form,
-      }
-    );
+    const upload = await fetch(`${API_BASE}/messages/audio`, {
+      method: "POST",
+      body: form,
+      credentials: "include",
+    });
 
     const data = await upload.json();
 
-    await fetch("http://localhost:3001/api/voicemail/save", {
+    await fetch(`${API_BASE}/voicemail/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId: calleeId,
-        fromId: callerId,
         audioUrl: data.url,
       }),
+      credentials: "include",
     });
   };
 
   vmRecorder.start();
 }
+
 socket.on("call:voicemail", () => {
-  showVoicemailRecordingUI();
+  window.showVoicemailRecordingUI?.();
   startVoicemailRecorder();
 });
 
 /* -------------------------------------------------------
-   WHATSAPP‑STYLE BOTTOM SHEET + GIF PICKER + EMOJI + SEND
-   (STABLE, CONTENTEDITABLE, WITH DEBUG LOGS)
+   WhatsApp-style bottom sheet + GIF + emoji + send
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   console.log(
     "[UI] DOMContentLoaded - initializing bottom sheet, emoji, GIF, and send handler"
   );
 
-  /* -------------------------------------------------------
-     ELEMENTS
-  ------------------------------------------------------- */
   const plusBtn = document.getElementById("plusBtn");
   const bottomSheet = document.getElementById("bottomSheet");
 
@@ -971,7 +934,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const gifSearch = document.getElementById("gifSearch");
   const gifResults = document.getElementById("gifResults");
 
-  const messageInput = document.getElementById("message_input"); // contenteditable
+  const messageInput = document.getElementById("message_input");
   const form = document.getElementById("text_box_reply");
   const attachmentInput = document.getElementById("attachment_input");
 
@@ -993,9 +956,6 @@ document.addEventListener("DOMContentLoaded", () => {
     attachmentInput,
   });
 
-  /* -------------------------------------------------------
-     SAFETY CHECKS
-  ------------------------------------------------------- */
   if (!messageInput || !form) {
     console.warn(
       "[UI] message_input or form#text_box_reply missing — messaging UI disabled"
@@ -1003,9 +963,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  /* -------------------------------------------------------
-     HELPERS
-  ------------------------------------------------------- */
   const closeAll = () => {
     console.log("[UI] closeAll()");
     bottomSheet?.classList.remove("visible");
@@ -1022,9 +979,6 @@ document.addEventListener("DOMContentLoaded", () => {
     sel.addRange(range);
   };
 
-  /* -------------------------------------------------------
-     TOGGLE BOTTOM SHEET
-  ------------------------------------------------------- */
   plusBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     console.log("[UI] plusBtn clicked");
@@ -1033,15 +987,12 @@ document.addEventListener("DOMContentLoaded", () => {
     bottomSheet?.classList.toggle("visible");
   });
 
-  /* -------------------------------------------------------
-     CLICK OUTSIDE HANDLER (BOTTOM SHEET + EMOJI + GIF)
-  ------------------------------------------------------- */
   document.addEventListener("click", (e) => {
     const target = e.target;
 
     const clickedInsideSheet = bottomSheet?.contains(target);
     const clickedPlus = target === plusBtn;
-    const clickedEmojiShadow = target.closest("emoji-picker") !== null;
+    const clickedEmojiShadow = target.closest?.("emoji-picker") !== null;
     const clickedGifPicker = gifPicker?.contains(target);
 
     if (
@@ -1054,13 +1005,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* -------------------------------------------------------
-     SHEET ACTIONS
-  ------------------------------------------------------- */
   sheetCamera?.addEventListener("click", () => {
     console.log("[SHEET] Camera clicked");
     closeAll();
-    // camera logic placeholder
   });
 
   sheetGallery?.addEventListener("click", () => {
@@ -1093,7 +1040,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* -------------------------------------------------------
-     EMOJI INSERTION (CONTENTEDITABLE AWARE)
+     EMOJI INSERTION
   ------------------------------------------------------- */
   emojiPicker?.addEventListener("emoji-click", (event) => {
     const emoji = event.detail.unicode;
@@ -1119,7 +1066,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* -------------------------------------------------------
-     TENOR API CONFIG
+     Tenor API
   ------------------------------------------------------- */
   const TENOR_KEY = "AIzaSyCdGnnQLWc8TnlSHcVgW2xlFzM1v1KyuPQ";
   const TENOR_TRENDING = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=30`;
@@ -1128,9 +1075,6 @@ document.addEventListener("DOMContentLoaded", () => {
       q
     )}&key=${TENOR_KEY}&limit=30`;
 
-  /* -------------------------------------------------------
-     LOAD TRENDING GIFS
-  ------------------------------------------------------- */
   async function loadTrendingGIFs() {
     if (!gifResults) {
       console.warn("[GIF] gifResults not found – cannot render GIFs");
@@ -1152,9 +1096,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* -------------------------------------------------------
-     SEARCH GIFS
-  ------------------------------------------------------- */
   async function searchGIFs(query) {
     if (!gifResults) {
       console.warn("[GIF] gifResults not found – cannot render GIFs");
@@ -1177,9 +1118,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* -------------------------------------------------------
-     RENDER GIF GRID
-  ------------------------------------------------------- */
   function renderGIFs(gifs) {
     if (!gifResults) {
       console.warn("[GIF] gifResults not found – cannot render GIFs");
@@ -1205,7 +1143,6 @@ document.addEventListener("DOMContentLoaded", () => {
       img.addEventListener("click", () => {
         console.log("[GIF] Selected:", url);
 
-        // Insert GIF inline inside the contenteditable input
         messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
 
         moveCaretToEnd(messageInput);
@@ -1219,9 +1156,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* -------------------------------------------------------
-     GIF SEARCH INPUT
-  ------------------------------------------------------- */
   gifSearch?.addEventListener("input", (e) => {
     const q = e.target.value.trim();
     console.log("[GIF] Search input:", q);
@@ -1230,7 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* -------------------------------------------------------
-     SEND HANDLER (TEXT + GIF) USING window.postForm
+     SEND HANDLER (TEXT + GIF) — Node backend
   ------------------------------------------------------- */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1253,87 +1187,75 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Extract plain text
     const temp = document.createElement("div");
     temp.innerHTML = raw;
     const text = (temp.textContent || "").trim();
     console.log("[SEND] Extracted text:", text);
 
-    // Extract first GIF URL (if any)
     const gifMatch = raw.match(/<img[^>]+src="([^"]+\.gif)"/i);
     const gifUrl = gifMatch ? gifMatch[1] : null;
     console.log("[SEND] Extracted GIF URL:", gifUrl);
 
-    if (typeof window.postForm !== "function") {
-      console.error("[SEND] window.postForm is not a function");
-      window.showError?.("Internal error: send helper missing");
-      return;
-    }
-
     try {
-      // Pure GIF message
       if (gifUrl && !text) {
         console.log("[SEND] Sending pure GIF");
 
-        const data = await window.postForm("/api/messages/send.php", {
-          receiver_id: targetId,
-          file: 1,
-          file_url: gifUrl,
-          message: "",
+        const res = await fetch(`${API_BASE}/messages/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            receiver_id: targetId,
+            file: 1,
+            file_url: gifUrl,
+            message: "",
+          }),
         });
 
+        const data = await res.json();
         console.log("[SEND] GIF response:", data);
 
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (!success) {
+        if (!data || data.error) {
           const errMsg = data?.error || "Failed to send GIF";
           console.warn("[SEND] GIF send failed (backend):", errMsg);
           window.showError?.(errMsg);
-        } else {
-          console.log("[SEND] GIF send success, response:", data);
-          if (typeof window.renderMessages === "function") {
-            window.renderMessages({
-              id: data.id,
-              is_me: true,
-              file: 1,
-              file_url: gifUrl,
-              created_at: data.created_at,
-              sender_id: window.getMyUserId(),
-              sender_name: "You",
-              type: "gif",
-              message: "",
-            });
-            console.log("[SEND] GIF rendered locally via renderMessage");
-          } else {
-            console.warn(
-              "[SEND] GIF sent, but window.renderMessage is not defined"
-            );
-            // no error toast here – backend succeeded, UI just won’t optimistically render
-          }
+        } else if (typeof window.renderMessage === "function") {
+          window.renderMessage({
+            id: data.id,
+            is_me: true,
+            file: 1,
+            file_url: gifUrl,
+            created_at: data.created_at,
+            sender_id: getMyUserId(),
+            sender_name: "You",
+            type: "gif",
+            message: "",
+          });
+          console.log("[SEND] GIF rendered locally via renderMessage");
         }
       } else if (text) {
-        // Text message (emojis, etc.)
         console.log("[SEND] Sending text:", text);
 
-        const data = await window.postForm("/api/messages/send.php", {
-          receiver_id: targetId,
-          message: text,
+        const res = await fetch(`${API_BASE}/messages/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            receiver_id: targetId,
+            message: text,
+          }),
         });
 
+        const data = await res.json();
         console.log("[SEND] Text response:", data);
 
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success && typeof window.renderMessage === "function") {
+        if (data && !data.error && typeof window.renderMessage === "function") {
           window.renderMessage({
             id: data.id,
             is_me: true,
             message: data.message,
             created_at: data.created_at,
-            sender_id: window.getMyUserId(),
+            sender_id: getMyUserId(),
             sender_name: "You",
             type: "text",
           });
@@ -1357,6 +1279,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
+
 
 
 
