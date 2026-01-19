@@ -4,7 +4,7 @@
 
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
-window.API_BASE = API_BASE;
+
 
 const w = typeof window !== "undefined" ? window : {};
 
@@ -179,7 +179,7 @@ export function playNotification() {
 // -------------------------------------------------------
 const API_BASE = "https://letsee-backend.onrender.com/api";
 
-
+window.API_BASE = API_BASE;
 
 function apiUrl(path) {
   if (path.startsWith("http")) return path;
@@ -332,6 +332,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
