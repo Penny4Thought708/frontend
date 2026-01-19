@@ -29,6 +29,16 @@ import {
 const API_BASE = "https://letsee-backend.onrender.com/api/messages";
 
 /* -------------------------------------------------------
+   Identity Waiter (prevents 400 errors)
+------------------------------------------------------- */
+
+async function waitForIdentity() {
+  while (!getMyUserId()) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+}
+
+/* -------------------------------------------------------
    Messaging State
 ------------------------------------------------------- */
 
@@ -104,6 +114,8 @@ msgOpenBtn?.addEventListener("click", async () => {
 
   if (!receiver_id) return;
 
+  await waitForIdentity();
+
   try {
     const messages = await loadMessages();
     if (Array.isArray(messages) && messages.length) {
@@ -136,10 +148,11 @@ closeMsgBtn?.addEventListener("click", () =>
 ------------------------------------------------------- */
 
 export async function loadMessages(contactId = receiver_id) {
-  // ⭐ Prevent 400 errors: identity must be loaded first
+  await waitForIdentity();
+
   const myId = getMyUserId();
   if (!myId) {
-    console.warn("[messaging] Identity not loaded yet — delaying message load");
+    console.warn("[messaging] Identity still missing — aborting load");
     return [];
   }
 
@@ -1326,6 +1339,7 @@ socket.on("message:audio", ({ id, from, url }) => {
 
   renderMessage(msg);
 });
+
 
 
 
