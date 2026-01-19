@@ -49,7 +49,7 @@ export async function postForm(url, data) {
 // ⭐ URL Helpers (avatars, banners)
 // -------------------------------------------------------
 export function avatarUrl(filename) {
-  if (!filename) return "img/defaultUser.png";
+  if (!filename) return "./img/defaultUser.png";
   if (filename.startsWith("http")) return filename;
   return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
 }
@@ -331,6 +331,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
