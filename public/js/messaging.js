@@ -139,7 +139,7 @@ export async function loadMessages(contactId = receiver_id) {
   if (!contactId) return [];
 
   try {
-    const res = await getJson(`${API_BASE}/thread/${contactId}`);
+    const res = await getJson(`${API_BASE}/messages/thread/${contactId}`)
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
     if (!messages.length) {
@@ -1312,6 +1312,7 @@ socket.on("message:audio", ({ id, from, url }) => {
 
   renderMessage(msg);
 });
+
 
 
 
