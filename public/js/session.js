@@ -20,16 +20,19 @@ async function loadIdentity() {
 
     const data = await res.json();
 
-    // Store identity globally
-    w.user_id = data.user_id;
-    w.fullname = data.fullname;
-    w.avatar = data.avatar;
+    // FIX: your backend wraps identity inside data.user
+    const u = data.user;
 
-    console.log("[session] Identity loaded:", data);
+    w.user_id = u.user_id;
+    w.fullname = u.fullname;
+    w.avatar = u.avatar;
+
+    console.log("[session] Identity loaded:", u);
   } catch (err) {
     console.error("[session] Failed to load identity:", err);
   }
 }
+
 
 // Load identity immediately
 loadIdentity();
@@ -264,6 +267,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
