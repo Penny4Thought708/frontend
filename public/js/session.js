@@ -1,15 +1,41 @@
+// public/js/session.js
 // -------------------------------------------------------
-// session.js — Identity, API Helpers, DOM Bindings, Socket Registration
-// -------------------------------------------------------
+// Session + DOM + Helpers (Node backend compatible)
 
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
-
 const w = typeof window !== "undefined" ? window : {};
 
 // -------------------------------------------------------
-// ⭐ Identity Helpers (always fresh)
+// ⭐ Load identity from backend (Node version)
+// -------------------------------------------------------
+async function loadIdentity() {
+  try {
+    const res = await fetch("https://letsee-backend.onrender.com/api/auth/me", {
+      credentials: "include",
+    });
+
+    if (!res.ok) throw new Error("Identity request failed");
+
+    const data = await res.json();
+
+    // Store identity globally
+    w.user_id = data.user_id;
+    w.fullname = data.fullname;
+    w.avatar = data.avatar;
+
+    console.log("[session] Identity loaded:", data);
+  } catch (err) {
+    console.error("[session] Failed to load identity:", err);
+  }
+}
+
+// Load identity immediately
+loadIdentity();
+
+// -------------------------------------------------------
+// Identity getters
 // -------------------------------------------------------
 export function getMyUserId() {
   return w.user_id ? Number(w.user_id) : null;
@@ -23,63 +49,8 @@ export function getMyAvatar() {
   return w.avatar || null;
 }
 
-export function refreshIdentity(user) {
-  if (!user) return;
-  w.user_id = user.user_id;
-  w.fullname = user.fullname;
-  w.avatar = user.avatar;
-}
-
-export function isLoggedIn() {
-  return !!w.user_id;
-}
-export async function postForm(url, data) {
-  const formData = new FormData();
-  Object.entries(data).forEach(([k, v]) => formData.append(k, v));
-
-  const res = await fetch(url, {
-    method: "POST",
-    body: formData,
-    credentials: "include",
-  });
-
-  return res.json();
-}
-
 // -------------------------------------------------------
-// ⭐ URL Helpers (avatars, banners)
-// -------------------------------------------------------
-export function avatarUrl(filename) {
-  if (!filename) return "./img/defaultUser.png";
-  if (filename.startsWith("http")) return filename;
-  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
-}
-
-export function bannerUrl(filename) {
-  if (!filename) return "img/profile-banner.jpg";
-  if (filename.startsWith("http")) return filename;
-  return `https://letsee-backend.onrender.com/uploads/banners/${filename}`;
-}
-
-// -------------------------------------------------------
-// ⭐ Wait for identity (prevents early socket registration)
-// -------------------------------------------------------
-export function waitForIdentity(timeout = 3000) {
-  return new Promise((resolve) => {
-    const start = Date.now();
-
-    const check = () => {
-      if (w.user_id) return resolve(true);
-      if (Date.now() - start > timeout) return resolve(false);
-      requestAnimationFrame(check);
-    };
-
-    check();
-  });
-}
-
-// -------------------------------------------------------
-// DOM Helpers
+// DOM helpers
 // -------------------------------------------------------
 const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
@@ -96,6 +67,8 @@ export const messageWin = qs(".message_win1");
 export const msgCounter = qs("#msg_header h3:last-child");
 export const badge = qs(".notification-badge .badge");
 export const notificationSound = el("notification");
+
+// Attachment preview
 export const previewDiv = el("preview");
 
 // -------------------------------------------------------
@@ -175,69 +148,25 @@ export function playNotification() {
 }
 
 // -------------------------------------------------------
-// ⭐ Unified API Helpers (Node backend + GitHub Pages)
+// ⭐ Node-compatible API helpers (NO /NewApp nonsense)
 // -------------------------------------------------------
-export const API_BASE = "https://letsee-backend.onrender.com/api";
-window.API_BASE = API_BASE;
-
-function apiUrl(path) {
-  if (path.startsWith("http")) return path;
-  if (!path.startsWith("/")) path = "/" + path;
-  return `${API_BASE}${path}`;
-}
-
-export async function getJson(path) {
-  const url = apiUrl(path);
+export async function getJson(url) {
   const res = await fetch(url, { credentials: "include" });
-
   if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
   return res.json();
 }
 
-export async function safeGetJson(path) {
-  try {
-    return await getJson(path);
-  } catch (err) {
-    console.warn("[safeGetJson] Error:", err);
-    return null;
-  }
-}
-
-export async function postJson(path, body = {}) {
-  const url = apiUrl(path);
+export async function postJson(url, body = {}) {
   const res = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    credentials: "include",
   });
 
   if (!res.ok) throw new Error(`POST ${url} failed: ${res.status}`);
   return res.json();
 }
-
-window.postJson = postJson;
-
-// -------------------------------------------------------
-// ⭐ Load identity from backend (/auth/me)
-// -------------------------------------------------------
-async function loadIdentity() {
-  try {
-    const me = await getJson("/auth/me");
-
-    if (me?.user) {
-      refreshIdentity(me.user);
-      console.log("[session] Identity loaded:", me.user);
-    } else {
-      console.warn("[session] No user returned from /auth/me");
-    }
-  } catch (err) {
-    console.warn("[session] Failed to load identity:", err);
-  }
-}
-
-// ⭐ Kick off identity load AFTER API helpers exist
-loadIdentity();
 
 // -------------------------------------------------------
 // Scroll helper
@@ -267,7 +196,6 @@ export function endCall({
   try {
     pc?.getSenders()?.forEach((s) => s.track?.stop?.());
   } catch {}
-
   try {
     pc?.close();
   } catch {}
@@ -275,7 +203,6 @@ export function endCall({
   try {
     dataChannel?.close();
   } catch {}
-
   try {
     localStream?.getTracks()?.forEach((t) => t.stop());
   } catch {}
@@ -297,21 +224,20 @@ export function endCall({
 }
 
 // -------------------------------------------------------
-// ⭐ Socket Registration (identity‑safe)
+// ⭐ Correct Node-compatible socket registration
 // -------------------------------------------------------
-socket.on("connect", async () => {
-  await waitForIdentity();
-
+socket.on("connect", () => {
   const uid = getMyUserId();
+
   if (!uid) {
-    console.warn("[socket] No user_id in window; skipping register");
+    console.warn("[socket] No user_id yet — waiting for identity...");
     return;
   }
 
-  socket.emit("session:init", {
-    userId: uid,
-    fullname: getMyFullname(),
-  });
+  // Node backend expects "register"
+  socket.emit("register", uid);
+
+  console.log("[socket] Registered with backend:", uid);
 });
 
 socket.on("reconnect_attempt", (n) => {
@@ -331,6 +257,8 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
+
 
 
 
