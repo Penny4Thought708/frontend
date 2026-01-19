@@ -1,7 +1,7 @@
 // public/js/dashboard/contacts.js
 // -------------------------------------------------------
-// Contacts, presence, lookup, and messaging entrypoint
-// Node backend + GitHub Pages + unified session helpers
+// Modern Contacts Module (Node backend, no last-message,
+// no unread badges, clean UI, presence, lookup, messaging)
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -15,8 +15,6 @@ import {
   getVoiceBtn,
   getVideoBtn,
   messageBox,
-  avatarUrl,
-  bannerUrl,
   getJson,
   postJson,
 } from "../session.js";
@@ -24,13 +22,16 @@ import {
 import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
 
+// -------------------------------------------------------
+// State
+// -------------------------------------------------------
 let activeContact = null;
 let isProfileOpen = false;
 let isMessagesOpen = false;
 let openProfileUserId = null;
 let autoCloseProfileOnMessages = true;
 
-// Global cache of contacts (by id)
+// Global cache
 window.UserCache = window.UserCache || {};
 
 // -------------------------------------------------------
@@ -40,233 +41,60 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 // -------------------------------------------------------
-// Normalize Contact Object (ALL DB FIELDS)
+// Normalize Contact (Option B structure)
 // -------------------------------------------------------
 function normalizeContact(raw) {
-  if (!raw) return {};
-
-  const safe = (v, fallback = "") =>
-    v === null || v === undefined || v === "null" ? fallback : String(v);
-
-  const toBool = (v) => v == 1 || v === "1" || v === true;
-
-  const avatarRaw = raw.contact_avatar || raw.avatar;
-  const bannerRaw = raw.contact_banner || raw.banner;
-
-  const avatar = avatarUrl(avatarRaw);
-  const banner = bannerUrl(bannerRaw);
-
-  let website = safe(raw.contact_website || raw.website);
-  if (website && !website.startsWith("http")) {
-    website = "https://" + website;
-  }
-
-  let twitter = safe(raw.contact_twitter || raw.twitter);
-  if (twitter.startsWith("https://twitter.com/")) {
-    twitter = twitter.replace("https://twitter.com/", "");
-  }
-
-  let instagram = safe(raw.contact_instagram || raw.instagram);
-  if (instagram.startsWith("https://instagram.com/")) {
-    instagram = instagram.replace("https://instagram.com/", "");
-  }
+  if (!raw) return null;
 
   const user = {
-    contact_id: safe(raw.contact_id || raw.user_id || null),
-    contact_name: safe(raw.fullname || raw.contact_name),
-    contact_email: safe(raw.email || raw.contact_email),
-    contact_avatar: avatar,
-    contact_phone: safe(raw.phone || raw.contact_phone),
-    contact_bio: safe(raw.bio || raw.contact_bio),
-    contact_banner: banner,
-
-    contact_website: website || "",
-    contact_twitter: twitter || "",
-    contact_instagram: instagram || "",
-
-    contact_show_online: toBool(
-      raw.contact_show_online ?? raw.show_online ?? 1
-    ),
-    contact_allow_messages: toBool(
-      raw.contact_allow_messages ?? raw.allow_messages ?? 1
-    ),
-
-    last_message: raw.last_message ?? null,
-    last_message_at: raw.last_message_at ?? null,
-    unread_count: raw.unread_count ?? 0,
-
-    online: raw.online ?? false,
+    id: raw.id,
+    name: raw.name,
+    email: raw.email,
+    avatar: raw.avatar,
+    phone: raw.phone || "",
+    bio: raw.bio || "",
+    banner: raw.banner,
+    is_favorite: raw.is_favorite || false,
+    added_on: raw.added_on,
+    online: raw.online || false,
+    unread: raw.unread || 0,
     fromLookup: raw.fromLookup === true,
   };
 
-  if (user.contact_id) {
-    UserCache[user.contact_id] = {
-      ...(UserCache[user.contact_id] || {}),
-      ...user,
-    };
-  }
-
+  // Cache
+  window.UserCache[user.id] = user;
   return user;
 }
 
 // -------------------------------------------------------
-// Unified local update engine
+// Update Local Contact (UI sync)
 // -------------------------------------------------------
 export function updateLocalContact(userId, changes) {
-  if (!userId) return;
+  const u = window.UserCache[userId];
+  if (!u) return;
 
-  if (!UserCache[userId]) UserCache[userId] = {};
-  Object.assign(UserCache[userId], changes);
-  const u = UserCache[userId];
+  Object.assign(u, changes);
 
-  const contactCard = document.querySelector(
+  // Update contact card
+  const card = document.querySelector(
     `.contact-card[data-contact-id="${userId}"]`
   );
-  if (contactCard) {
-    if (changes.fullname || changes.contact_name) {
-      const name = changes.fullname || changes.contact_name || u.contact_name;
-      const el = contactCard.querySelector(".contact-name");
-      if (el) el.textContent = name;
-    }
-    if (changes.email || changes.contact_email) {
-      const email = changes.email || changes.contact_email || u.contact_email;
-      const el = contactCard.querySelector(".contact-email");
-      if (el) el.textContent = email;
-    }
-    if (changes.avatar || changes.contact_avatar) {
-      const avatar =
-        changes.avatar || changes.contact_avatar || u.contact_avatar;
-      const img = contactCard.querySelector(".contact-avatar");
-      if (img) img.src = avatar;
-    }
+  if (card) {
+    if (changes.name) card.querySelector(".contact-name").textContent = u.name;
+    if (changes.email)
+      card.querySelector(".contact-email").textContent = u.email;
+    if (changes.avatar)
+      card.querySelector(".contact-avatar").src = u.avatar;
   }
 
-  if (isProfileOpen && openProfileUserId == userId) {
-    if (changes.fullname || changes.contact_name) {
-      $id("fullProfileName").textContent =
-        changes.fullname || changes.contact_name || u.contact_name;
-    }
-    if (changes.email || changes.contact_email) {
-      $id("fullProfileEmail").textContent =
-        changes.email || changes.contact_email || u.contact_email;
-    }
-    if (changes.phone || changes.contact_phone) {
-      $id("fullProfilePhone").textContent =
-        changes.phone || changes.contact_phone || u.contact_phone || "No phone";
-    }
-    if (changes.bio || changes.contact_bio) {
-      $id("fullProfileBio").textContent =
-        changes.bio || changes.contact_bio || u.contact_bio || "No bio";
-    }
-    if (changes.avatar || changes.contact_avatar) {
-      const avatar =
-        changes.avatar || changes.contact_avatar || u.contact_avatar;
-      $id("fullProfileAvatar").src = avatar;
-    }
-    if (changes.banner || changes.contact_banner) {
-      const banner =
-        changes.banner || changes.contact_banner || u.contact_banner;
-      $id("fullProfileBanner").src = banner;
-    }
-    if (changes.website || changes.contact_website) {
-      const website =
-        changes.website || changes.contact_website || u.contact_website || "";
-      const w = $id("fullProfileWebsite");
-      if (website) {
-        w.textContent = website;
-        w.href = website.startsWith("http") ? website : "https://" + website;
-      } else {
-        w.textContent = "None";
-        w.removeAttribute("href");
-      }
-    }
-    if (changes.twitter || changes.contact_twitter) {
-      const twitter =
-        changes.twitter || changes.contact_twitter || u.contact_twitter || "";
-      const t = $id("fullProfileTwitter");
-      if (twitter) {
-        t.textContent = twitter;
-        t.href = "https://twitter.com/" + twitter.replace("@", "");
-      } else {
-        t.textContent = "None";
-        t.removeAttribute("href");
-      }
-    }
-    if (changes.instagram || changes.contact_instagram) {
-      const instagram =
-        changes.instagram ||
-        changes.contact_instagram ||
-        u.contact_instagram ||
-        "";
-      const i = $id("fullProfileInstagram");
-      if (instagram) {
-        i.textContent = instagram;
-        i.href = "https://instagram.com/" + instagram.replace("@", "");
-      } else {
-        i.textContent = "None";
-        i.removeAttribute("href");
-      }
-    }
-    if (
-      changes.show_online !== undefined ||
-      changes.contact_show_online !== undefined
-    ) {
-      const val =
-        changes.show_online ??
-        changes.contact_show_online ??
-        u.contact_show_online;
-      const el = $id("fullProfileShowOnline");
-      el.textContent = val ? "Online" : "Offline";
-      el.classList.toggle("status-online", !!val);
-      el.classList.toggle("status-offline", !val);
-    }
-    if (
-      changes.allow_messages !== undefined ||
-      changes.contact_allow_messages !== undefined
-    ) {
-      const val =
-        changes.allow_messages ??
-        changes.contact_allow_messages ??
-        u.contact_allow_messages;
-      const el = $id("fullProfileAllowMessages");
-      el.textContent = val ? "Messages Allowed" : "Messages Blocked";
-      el.classList.toggle("status-online", !!val);
-      el.classList.toggle("status-offline", !val);
-    }
-  }
-
-  document
-    .querySelectorAll(`.lookup-card[data-id="${userId}"]`)
-    .forEach((card) => {
-      if (changes.fullname || changes.contact_name) {
-        const name = changes.fullname || changes.contact_name || u.contact_name;
-        const el = card.querySelector(".lookup-name");
-        if (el) el.textContent = name;
-      }
-      if (changes.email || changes.contact_email) {
-        const email = changes.email || changes.contact_email || u.contact_email;
-        const el = card.querySelector(".lookup-email");
-        if (el) el.textContent = email;
-      }
-      if (changes.avatar || changes.contact_avatar) {
-        const avatar =
-          changes.avatar || changes.contact_avatar || u.contact_avatar;
-        const img = card.querySelector(".lookup-avatar img");
-        if (img) img.src = avatar;
-      }
-    });
-
-  if (window.currentChatUserId == userId) {
-    const header = $(".header_msg_box h2");
-    const avatarEl = $(".header_msg_box .chat-header-avatar");
-    if (header && (changes.fullname || changes.contact_name)) {
-      header.textContent =
-        changes.fullname || changes.contact_name || u.contact_name;
-    }
-    if (avatarEl && (changes.avatar || changes.contact_avatar)) {
-      avatarEl.src =
-        changes.avatar || changes.contact_avatar || u.contact_avatar;
-    }
+  // Update profile modal
+  if (isProfileOpen && openProfileUserId === userId) {
+    $id("fullProfileName").textContent = u.name;
+    $id("fullProfileEmail").textContent = u.email;
+    $id("fullProfilePhone").textContent = u.phone || "No phone";
+    $id("fullProfileBio").textContent = u.bio || "No bio";
+    $id("fullProfileAvatar").src = u.avatar;
+    $id("fullProfileBanner").src = u.banner;
   }
 }
 
@@ -278,13 +106,13 @@ function wireGlobalCallButtons(user) {
   const videoBtn = getVideoBtn?.();
 
   if (voiceBtn) {
-    voiceBtn.dataset.targetId = user.contact_id;
-    voiceBtn.dataset.targetName = user.contact_name;
+    voiceBtn.dataset.targetId = user.id;
+    voiceBtn.dataset.targetName = user.name;
   }
 
   if (videoBtn) {
-    videoBtn.dataset.targetId = user.contact_id;
-    videoBtn.dataset.targetName = user.contact_name;
+    videoBtn.dataset.targetId = user.id;
+    videoBtn.dataset.targetName = user.name;
   }
 }
 
@@ -292,17 +120,16 @@ function wireGlobalCallButtons(user) {
 // Messaging Panel Toggle
 // -------------------------------------------------------
 function showMessages() {
-  const box = messageBox;
-  if (!box) return;
+  if (!messageBox) return;
 
-  if (box.classList.contains("active")) {
-    box.classList.remove("active");
-    box.classList.add("closing");
-    setTimeout(() => box.classList.remove("closing"), 750);
+  if (messageBox.classList.contains("active")) {
+    messageBox.classList.remove("active");
+    messageBox.classList.add("closing");
+    setTimeout(() => messageBox.classList.remove("closing"), 750);
     return;
   }
 
-  box.classList.add("active");
+  messageBox.classList.add("active");
 }
 
 // -------------------------------------------------------
@@ -323,7 +150,7 @@ export function openMessagesFor(userRaw) {
     openProfileUserId = null;
   }
 
-  if (isMessagesOpen && activeContact?.contact_id === user.contact_id) {
+  if (isMessagesOpen && activeContact?.id === user.id) {
     showMessages();
     isMessagesOpen = false;
     return;
@@ -331,13 +158,13 @@ export function openMessagesFor(userRaw) {
 
   activeContact = user;
 
-  setReceiver(user.contact_id);
-  window.currentChatUserId = user.contact_id;
+  setReceiver(user.id);
+  window.currentChatUserId = user.id;
 
   isMessagesOpen = true;
 
   wireGlobalCallButtons(user);
-  updateMessageHeader(user.contact_name);
+  updateMessageHeader(user.name);
 
   if (messageBox) messageBox.classList.add("active");
   loadMessages();
@@ -376,8 +203,10 @@ export function registerPresence() {
   socket.on("profile:updated", (data) => {
     const userId = data.user_id;
     if (!userId) return;
+
     const changes = { ...data };
     delete changes.user_id;
+
     updateLocalContact(userId, changes);
   });
 }
@@ -396,7 +225,7 @@ export function updateContactStatus(contactId, isOnline) {
 }
 
 // -------------------------------------------------------
-// Load Contacts (Node backend)
+// Load Contacts
 // -------------------------------------------------------
 export async function loadContacts() {
   try {
@@ -409,13 +238,13 @@ export async function loadContacts() {
     if (list && Array.isArray(data.contacts)) {
       list.innerHTML = "";
 
-      const normalizedContacts = data.contacts.map(normalizeContact);
+      const normalized = data.contacts.map(normalizeContact);
 
-      normalizedContacts
-        .sort((a, b) => a.contact_name.localeCompare(b.contact_name))
+      normalized
+        .sort((a, b) => a.name.localeCompare(b.name))
         .forEach((c) => list.appendChild(renderContactCard(c)));
 
-      setContactLookup(normalizedContacts);
+      setContactLookup(normalized);
     }
 
     if (blockedList && Array.isArray(data.blocked)) {
@@ -435,29 +264,27 @@ export async function loadContacts() {
 // -------------------------------------------------------
 // Render Blocked Card
 // -------------------------------------------------------
-function renderBlockedCard(userRaw) {
-  const user = normalizeContact(userRaw);
-
+function renderBlockedCard(user) {
   const li = document.createElement("li");
   li.className = "blocked-card";
-  li.dataset.userId = user.contact_id;
+  li.dataset.userId = user.id;
 
   li.innerHTML = `
     <div class="blocked-avatar">
-      <img src="${user.contact_avatar}">
+      <img src="${user.avatar}">
     </div>
 
     <div class="blocked-info">
-      <div class="blocked-name">${user.contact_name}</div>
-      <div class="blocked-email">${user.contact_email}</div>
+      <div class="blocked-name">${user.name}</div>
+      <div class="blocked-email">${user.email}</div>
     </div>
 
-    <button class="unblock-btn" data-id="${user.contact_id}">Unblock</button>
+    <button class="unblock-btn" data-id="${user.id}">Unblock</button>
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
     const data = await postJson("/contacts/unblock", {
-      contact_id: user.contact_id,
+      contact_id: user.id,
     });
     if (data.success) loadContacts();
   };
@@ -466,24 +293,22 @@ function renderBlockedCard(userRaw) {
 }
 
 // -------------------------------------------------------
-// Render Contact Card (LIST)
+// Render Contact Card
 // -------------------------------------------------------
-export function renderContactCard(userRaw) {
-  const user = normalizeContact(userRaw);
-
+export function renderContactCard(user) {
   const li = document.createElement("li");
   li.className = "contact-card";
-  li.dataset.contactId = String(user.contact_id);
+  li.dataset.contactId = String(user.id);
 
   li.innerHTML = `
-    <img class="contact-avatar" src="${user.contact_avatar}">
+    <img class="contact-avatar" src="${user.avatar}">
     <span class="contact-status" title="${
       user.online ? "Online" : "Offline"
     }"></span>
 
     <div class="contact-info">
-      <div class="contact-name">${user.contact_name}</div>
-      <div class="contact-email">${user.contact_email}</div>
+      <div class="contact-name">${user.name}</div>
+      <div class="contact-email">${user.email}</div>
     </div>
 
     <div class="contact-actions">
@@ -508,16 +333,16 @@ export function renderContactCard(userRaw) {
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
     const data = await postJson("/contacts/block", {
-      contact_id: user.contact_id,
+      contact_id: user.id,
     });
     if (data.success) loadContacts();
   };
 
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
-    if (!confirm(`Delete ${user.contact_name}?`)) return;
+    if (!confirm(`Delete ${user.name}?`)) return;
     const data = await postJson("/contacts/delete", {
-      contact_id: user.contact_id,
+      contact_id: user.id,
     });
     if (data.success) loadContacts();
   };
@@ -528,118 +353,49 @@ export function renderContactCard(userRaw) {
 // -------------------------------------------------------
 // FULL PROFILE MODAL
 // -------------------------------------------------------
-function openFullProfile(userRaw) {
-  const user = normalizeContact(userRaw);
+function openFullProfile(user) {
   activeContact = user;
-  openProfileUserId = user.contact_id;
+  openProfileUserId = user.id;
 
   const modal = $id("fullProfileModal");
   if (!modal) return;
   modal.classList.add("open");
   isProfileOpen = true;
 
-  $id("fullProfileAvatar").src = user.contact_avatar;
-  $id("fullProfileBanner").src = user.contact_banner;
+  $id("fullProfileAvatar").src = user.avatar;
+  $id("fullProfileBanner").src = user.banner;
 
-  $id("fullProfileName").textContent = user.contact_name;
-  $id("fullProfileEmail").textContent = user.contact_email;
-  $id("fullProfilePhone").textContent = user.contact_phone || "No phone";
-
-  $id("fullProfileBio").textContent = user.contact_bio || "No bio";
-
-  if (user.contact_website) {
-    const w = $id("fullProfileWebsite");
-    w.textContent = user.contact_website;
-    w.href = user.contact_website.startsWith("http")
-      ? user.contact_website
-      : "https://" + user.contact_website;
-  } else {
-    $id("fullProfileWebsite").textContent = "None";
-    $id("fullProfileWebsite").removeAttribute("href");
-  }
-
-  if (user.contact_twitter) {
-    const t = $id("fullProfileTwitter");
-    t.textContent = user.contact_twitter;
-    t.href = "https://twitter.com/" + user.contact_twitter.replace("@", "");
-  } else {
-    $id("fullProfileTwitter").textContent = "None";
-    $id("fullProfileTwitter").removeAttribute("href");
-  }
-
-  if (user.contact_instagram) {
-    const i = $id("fullProfileInstagram");
-    i.textContent = user.contact_instagram;
-    i.href = "https://instagram.com/" + user.contact_instagram.replace("@", "");
-  } else {
-    $id("fullProfileInstagram").textContent = "None";
-    $id("fullProfileInstagram").removeAttribute("href");
-  }
-
-  const showOnlineEl = $id("fullProfileShowOnline");
-  showOnlineEl.textContent = user.contact_show_online ? "Online" : "Offline";
-  showOnlineEl.classList.toggle("status-online", user.contact_show_online);
-  showOnlineEl.classList.toggle("status-offline", !user.contact_show_online);
-
-  const allowMsgEl = $id("fullProfileAllowMessages");
-  allowMsgEl.textContent = user.contact_allow_messages
-    ? "Messages Allowed"
-    : "Messages Blocked";
-  allowMsgEl.classList.toggle("status-online", user.contact_allow_messages);
-  allowMsgEl.classList.toggle("status-offline", !user.contact_allow_messages);
-
-  $id("copyEmailBtn").onclick = () =>
-    navigator.clipboard.writeText(user.contact_email);
-
-  $id("copyPhoneBtn").onclick = () =>
-    navigator.clipboard.writeText(user.contact_phone || "");
+  $id("fullProfileName").textContent = user.name;
+  $id("fullProfileEmail").textContent = user.email;
+  $id("fullProfilePhone").textContent = user.phone || "No phone";
+  $id("fullProfileBio").textContent = user.bio || "No bio";
 
   const callBtn = $id("profileCallBtn");
   const videoBtn = $id("profileVideoBtn");
   const blockBtn = $id("profileBlockBtn");
-  const saveBtn = $id("saveLookupContact");
 
   callBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
-      window.startCall(user.contact_id, false);
-    else console.warn("startCall is not available");
+      window.startCall(user.id, false);
   });
 
   videoBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
-      window.startCall(user.contact_id, true);
-    else console.warn("startCall is not available");
+      window.startCall(user.id, true);
   });
 
   blockBtn?.addEventListener("click", async () => {
-    if (!confirm(`Block ${user.contact_name}?`)) return;
+    if (!confirm(`Block ${user.name}?`)) return;
     const data = await postJson("/contacts/block", {
-      contact_id: user.contact_id,
+      contact_id: user.id,
     });
     if (data.success) {
-      alert("User blocked");
       loadContacts();
-      if (modal) modal.classList.remove("open");
+      modal.classList.remove("open");
       isProfileOpen = false;
       openProfileUserId = null;
     }
   });
-
-  if (saveBtn) {
-    if (user.fromLookup) {
-      saveBtn.style.display = "block";
-      saveBtn.onclick = () => {
-        if (typeof window.saveLookupContact === "function") {
-          window.saveLookupContact(user.contact_id);
-        } else {
-          console.error("saveLookupContact is not defined");
-        }
-      };
-    } else {
-      saveBtn.style.display = "none";
-      saveBtn.onclick = null;
-    }
-  }
 }
 
 // -------------------------------------------------------
@@ -660,8 +416,10 @@ function runLookup(query) {
 
       if (Array.isArray(data) && data.length) {
         data.forEach((u) => {
-          const normalized = normalizeContact(u);
-          normalized.fromLookup = true;
+          const normalized = normalizeContact({
+            ...u,
+            fromLookup: true,
+          });
           lookupResults.appendChild(renderLookupCard(normalized));
         });
       } else {
@@ -690,16 +448,16 @@ lookupInput?.addEventListener("input", () => {
 export function renderLookupCard(user) {
   const li = document.createElement("li");
   li.className = "lookup-card";
-  li.dataset.id = user.contact_id;
+  li.dataset.id = user.id;
 
   li.innerHTML = `
     <div class="lookup-avatar">
-      <img src="${user.contact_avatar}">
+      <img src="${user.avatar}">
     </div>
 
     <div class="lookup-info">
-      <div class="lookup-name">${user.contact_name}</div>
-      <div class="lookup-email">${user.contact_email}</div>
+      <div class="lookup-name">${user.name}</div>
+      <div class="lookup-email">${user.email}</div>
     </div>
 
     <div class="lookup-actions">
@@ -722,6 +480,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
