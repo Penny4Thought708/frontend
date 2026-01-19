@@ -73,7 +73,7 @@ credentials: "include" });
 
         const avatarUrl = user.avatar
           ? `https://letsee-backend.onrender.com/${user.avatar}`
-          : "./img/defaultUser.png";
+          : "/img/defaultUser.png";
 
         if (profilePreview) profilePreview.src = avatarUrl;
 
@@ -173,7 +173,7 @@ credentials: "include" });
             <div class="profile-avatar">
               <div class="status-dot online"><h3>Online</h3></div>
 
-          <img id="profilePreview" src="./img/defaultUser.png" alt="Profile Picture">
+          <img id="profilePreview" src="/img/defaultUser.png" alt="Profile Picture">
 
 <div class="profile_chgBtn">
   <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
@@ -480,7 +480,7 @@ credentials: "include" });
 
     <!-- Local avatar fallback -->
     <div class="avatar local-avatar" id="localAvatar">
-      <img id="localAvatarImg" src="./img/defaultUser.png" alt="Local Avatar">
+      <img id="localAvatarImg" src="/img/defaultUser.png" alt="Local Avatar">
     </div>
 
    
@@ -947,7 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ------------------------------------------------------- */
 
     function buildDisplayUrlFromDbPath(dbPath) {
-      if (!dbPath) return "img/defaultUser.png";
+      if (!dbPath) return "/img/defaultUser.png";
 
       let url = dbPath;
       if (!url.startsWith("http")) {
@@ -1078,7 +1078,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (res.success) {
           currentAvatarPath = null;
-          profilePreview.src = "./img/defaultUser.png";
+          profilePreview.src = "/img/defaultUser.png";
 
           socket.emit("profile:update", { avatar: null });
           updateLocalContact(getMyUserId(), { contact_avatar: null });
@@ -1470,6 +1470,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
