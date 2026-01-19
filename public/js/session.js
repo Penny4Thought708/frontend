@@ -268,6 +268,35 @@ socket.on("error", (err) => {
   }
 });
 
+// ------------------------------
+// AUTO LOGOUT AFTER INACTIVITY
+// ------------------------------
+let inactivityTimer;
+const AUTO_LOGOUT_MINUTES = 30; // change as needed
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+
+  inactivityTimer = setTimeout(async () => {
+    console.log("[session] Auto-logout due to inactivity");
+
+    await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+      method: "POST",
+      credentials: "include"
+    });
+
+    window.location.href = "index.html";
+  }, AUTO_LOGOUT_MINUTES * 60 * 1000);
+}
+
+// Reset timer on any activity
+["click", "mousemove", "keydown", "scroll", "touchstart"].forEach(evt => {
+  window.addEventListener(evt, resetInactivityTimer);
+});
+
+// Start timer on page load
+resetInactivityTimer();
+
 
 
 
