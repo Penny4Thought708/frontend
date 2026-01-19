@@ -1,4 +1,4 @@
-// public/js/contacts.js
+// public/js/dashboard/contacts.js
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
 // Node backend version (mapped to legacy UI fields)
@@ -49,13 +49,6 @@ function normalizeContact(raw) {
     contact_phone: raw.phone || "",
     contact_bio: raw.bio || "",
     contact_banner: raw.banner || "img/profile-banner.jpg",
-
-    contact_website: raw.website || "",
-    contact_twitter: raw.twitter || "",
-    contact_instagram: raw.instagram || "",
-
-    contact_show_online: raw.online ?? false,
-    contact_allow_messages: true,
 
     online: raw.online ?? false,
     unread_count: raw.unread ?? 0,
@@ -495,6 +488,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
