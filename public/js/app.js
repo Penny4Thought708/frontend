@@ -3,7 +3,12 @@
 // -------------------------------------------------------
 // Core session + socket
 // -------------------------------------------------------
-import { messageWin, getMyUserId, API_BASE, getJson } from "./session.js";
+import {
+  messageWin,
+  getMyUserId,
+  getJson,
+  postJson,
+} from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
@@ -26,6 +31,32 @@ import { initCallUI } from "./webrtc/CallUI.js";
 
 // Dashboard UI
 import "./dashboard/DashboardInit.js";
+
+// Backend base
+const API_BASE = "https://letsee-backend.onrender.com/api";
+
+// Simple form helper (JSON)
+window.postForm = async function (path, payload) {
+  const cleanPath = path.replace(".php", "");
+  const url = cleanPath.startsWith("http")
+    ? cleanPath
+    : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response from", url, ":", text);
+    throw new Error("Invalid JSON response");
+  }
+};
 
 // Make renderMessage globally available for the GIF sender, etc.
 window.renderMessage = function (msg) {
@@ -103,6 +134,10 @@ function stopSpeakingDetection() {
   speakingDetector = null;
 }
 
+// Expose speaking detection helpers
+window.startSpeakingDetection = startSpeakingDetection;
+window.stopSpeakingDetection = stopSpeakingDetection;
+
 /* -------------------------------------------------------
    Core async bootstrap
 ------------------------------------------------------- */
@@ -132,10 +167,6 @@ function stopSpeakingDetection() {
     window.currentChatUserId = contactId;
     await messaging.loadMessages(contactId);
   };
-
-  // Expose speaking detection helpers
-  window.startSpeakingDetection = startSpeakingDetection;
-  window.stopSpeakingDetection = stopSpeakingDetection;
 })();
 
 /* -------------------------------------------------------
@@ -168,8 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
 ------------------------------------------------------- */
 
 function startIntroTour() {
-  console.log("Tour starting…");
-
   const steps = [
     {
       element: "#btn_search",
@@ -211,24 +240,16 @@ function startIntroTour() {
   const introBox = document.getElementById("introduction");
   const arrow = document.getElementById("intro_arrow");
 
-  if (!introBox) console.error("❌ #introduction NOT FOUND");
-  if (!arrow) console.error("❌ #intro_arrow NOT FOUND");
+  if (!introBox || !arrow) return;
 
   let index = 0;
 
   function showStep(i) {
-    console.log("Showing step", i);
-
     const step = steps[i];
     const target = document.querySelector(step.element);
-
-    if (!target) {
-      console.error("❌ Target not found:", step.element);
-      return;
-    }
+    if (!target) return;
 
     const rect = target.getBoundingClientRect();
-    console.log("Target rect:", rect);
 
     const nav = document.getElementById("side_nav_buttons");
     if (nav) nav.classList.add("open");
@@ -250,7 +271,6 @@ function startIntroTour() {
       showStep(index);
       index++;
     } else {
-      console.log("Tour finished.");
       introBox.style.display = "none";
       arrow.style.display = "none";
 
@@ -261,19 +281,12 @@ function startIntroTour() {
   }
 
   introBox.addEventListener("click", nextStep);
-
-  console.log("Starting first step…");
   nextStep();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM loaded. Checking tourCompleted…");
-
   if (!localStorage.getItem("tourCompleted")) {
-    console.log("Tour not completed. Starting in 300ms…");
     setTimeout(startIntroTour, 300);
-  } else {
-    console.log("Tour already completed.");
   }
 });
 
@@ -328,6 +341,10 @@ if (contactClose && contactBox) {
   });
 }
 
+/* -------------------------------------------------------
+   CONTACT MENU TOGGLE
+------------------------------------------------------- */
+
 const contactMenu = document.getElementById("contact_menu_box");
 const menuWidget = document.getElementById("menu_Btn_contact");
 
@@ -345,7 +362,7 @@ if (contactMenu && menuWidget) {
 }
 
 /* -------------------------------------------------------
-   Panel registry + controller
+   PANEL REGISTRY
 ------------------------------------------------------- */
 
 const Panels = {
@@ -356,6 +373,10 @@ const Panels = {
   profile: document.querySelector(".profile_card"),
 };
 
+/* -------------------------------------------------------
+   MENU BUTTONS
+------------------------------------------------------- */
+
 const Buttons = {
   block: document.getElementById("block_contact"),
   addContact: document.getElementById("add_contact"),
@@ -363,6 +384,10 @@ const Buttons = {
   closeSettings: document.getElementById("close_contact_settings"),
   openProfile: document.getElementById("view_profile"),
 };
+
+/* -------------------------------------------------------
+   PANEL CONTROLLER
+------------------------------------------------------- */
 
 function hideAllPanels() {
   if (Panels.contacts) Panels.contacts.style.display = "none";
@@ -397,10 +422,14 @@ function togglePanel(panelName) {
   }
 }
 
+/* -------------------------------------------------------
+   DEFAULT STATE
+------------------------------------------------------- */
+
 showContacts();
 
 /* -------------------------------------------------------
-   Block contact + settings + profile
+   MENU ACTIONS
 ------------------------------------------------------- */
 
 if (Buttons.block) {
@@ -433,7 +462,7 @@ if (Buttons.openProfile) {
 }
 
 /* -------------------------------------------------------
-   Blocked contacts loader (placeholder)
+   BLOCKED CONTACTS LOADER (placeholder)
 ------------------------------------------------------- */
 
 function loadBlockedContacts(list) {
@@ -479,33 +508,32 @@ window.addEventListener("load", function () {
       if (section) section.style.display = "block";
     }
 
-    // Toggle between Call Log and Contacts
     toggleBtn?.addEventListener("click", function () {
       if (savedCon && savedCon.style.display !== "none") {
         showSection(blockedCon);
-        if (panelTitle) panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="Contacts.png" alt="contacts"> Contacts';
+        panelTitle.textContent = "Contacts";
+        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
       } else {
         showSection(savedCon);
-        if (panelTitle) panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="calllog.png" alt="call-log"> Call Log';
+        panelTitle.textContent = "Call History";
+        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
       }
     });
 
     messagingBtn?.addEventListener("click", () => {
       showSection(messagingBox2);
-      if (panelTitle) panelTitle.textContent = "Messaging";
-      loadMessageList();
+      panelTitle.textContent = "Messaging";
+      loadMessageList(window.user_id);
     });
 
     blockBtn?.addEventListener("click", () => {
       showSection(blockListBox);
-      if (panelTitle) panelTitle.textContent = "Blocked Contacts";
+      panelTitle.textContent = "Blocked Contacts";
     });
 
     voicemailBtn?.addEventListener("click", () => {
       showSection(vmListPanel);
-      if (panelTitle) panelTitle.textContent = "Voicemail";
+      panelTitle.textContent = "Voicemail";
       loadVoicemails();
     });
 
@@ -523,8 +551,7 @@ window.addEventListener("load", function () {
     });
 
     showSection(savedCon);
-    if (panelTitle) panelTitle.textContent = "Call History";
-
+    panelTitle.textContent = "Call History";
     loadVoicemails();
   });
 });
@@ -533,76 +560,74 @@ window.openMessagingPanel = function () {
   const messagingBox2 = document.getElementById("messaging_box_container");
   const panelTitle = document.getElementById("panelTitle");
 
-  if (messagingBox2) messagingBox2.style.display = "block";
-  if (panelTitle) panelTitle.textContent = "Messaging";
+  if (!messagingBox2 || !panelTitle) return;
 
-  loadMessageList();
+  const showSection = (section) => {
+    document
+      .querySelectorAll(".panel")
+      .forEach((p) => p.classList.remove("active"));
+    section.classList.add("active");
+  };
+
+  showSection(messagingBox2);
+  panelTitle.textContent = "Messaging";
+  loadMessageList(window.user_id);
 };
 
 /* ---------------------------------------------------------
-   Load Message List (Node backend version)
+   Load Message List (Node backend)
 --------------------------------------------------------- */
-async function loadMessageList() {
+async function loadMessageList(userId) {
   const list = document.getElementById("messaging_list");
   const header = document.getElementById("unread_header");
 
   if (!list || !header) return;
 
   list.innerHTML = "";
-  header.textContent = "Loading...";
+  header.textContent = "Messages";
 
   try {
-    const data = await getJson("/contacts");
-    const conversations = data.contacts || [];
+    const res = await fetch(`${API_BASE}/messages/list?user_id=${userId}`, {
+      credentials: "include",
+    });
+    const data = await res.json();
+
+    const conversations = data.conversations || [];
     window.lastMessageList = conversations;
-
-    const totalUnread = conversations.reduce(
-      (sum, c) => sum + (c.unread_count || 0),
-      0
-    );
-
-    header.textContent =
-      totalUnread > 0
-        ? `You have ${totalUnread} unread message${totalUnread === 1 ? "" : "s"}`
-        : "No unread messages";
 
     conversations.forEach((conv) => {
       list.appendChild(buildMessageCard(conv));
     });
   } catch (err) {
-    console.error("[loadMessageList] Error:", err);
+    console.error("[loadMessageList] error:", err);
     header.textContent = "Failed to load messages";
   }
 }
 
 /* ---------------------------------------------------------
-   Build Conversation Card
+   Build Conversation Card (no unread badges)
 --------------------------------------------------------- */
 function buildMessageCard(conv) {
   const li = document.createElement("li");
-  li.className = "message-card " + (conv.unread > 0 ? "unread" : "read");
+  li.className = "message-card";
 
   const avatar = conv.avatar || "img/defaultUser.png";
+  const last = conv.lastMessage || {};
+  const time = last.timestamp ? formatTime(last.timestamp) : "";
+  const preview = last.text || "";
 
   li.innerHTML = `
     <div class="msg-avatar">
       <img src="${avatar}">
-      ${
-        conv.unread > 0
-          ? `<span class="unread-badge">${conv.unread}</span>`
-          : ""
-      }
     </div>
 
     <div class="msg-info">
       <div class="msg-top">
-        <div class="msg-name">${conv.name}</div>
-        <div class="msg-time">${formatTime(conv.lastMessage.timestamp)}</div>
+        <div class="msg-name">${conv.name || "Unknown"}</div>
+        <div class="msg-time">${time}</div>
       </div>
       <div class="msg-bottom">
-        <div class="msg-preview">${sanitizePreview(
-          conv.lastMessage.text
-        )}</div>
+        <div class="msg-preview">${sanitizePreview(preview)}</div>
       </div>
     </div>
   `;
@@ -613,11 +638,7 @@ function buildMessageCard(conv) {
       contact_name: conv.name,
       avatar: conv.avatar,
     };
-
     openMessagesFor(userRaw);
-
-    li.classList.remove("unread");
-    li.classList.add("read");
   });
 
   return li;
@@ -627,6 +648,7 @@ function buildMessageCard(conv) {
    Helpers
 --------------------------------------------------------- */
 function formatTime(iso) {
+  if (!iso) return "";
   const date = new Date(iso);
   return date.toLocaleString([], {
     hour: "2-digit",
@@ -635,7 +657,7 @@ function formatTime(iso) {
 }
 
 function sanitizePreview(text) {
-  return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (text || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function isDarkMode() {
@@ -647,9 +669,9 @@ function isDarkMode() {
 ------------------------------------------------------- */
 async function loadVoicemails() {
   try {
-    const res = await fetch(`${API_BASE}/voicemail/list`, {
-      credentials: "include",
-    });
+    const res = await fetch(
+      `http://localhost:3001/api/voicemail/list?userId=${window.USER_ID}`
+    );
     const data = await res.json();
 
     const listEl = document.getElementById("voiceMList");
@@ -773,17 +795,14 @@ function renderVoicemail(vm) {
       a.click();
       document.body.removeChild(a);
     };
-
-    waveform.on("audioprocess", () => {});
   }
 
   li.querySelector(".mark-listened").onclick = async () => {
     try {
-      await fetch(`${API_BASE}/voicemail/listened`, {
+      await fetch("http://localhost:3001/api/voicemail/listened", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: vm.id }),
-        credentials: "include",
       });
 
       li.classList.remove("unheard");
@@ -799,11 +818,10 @@ function renderVoicemail(vm) {
 
   li.querySelector(".delete-voicemail").onclick = async () => {
     try {
-      await fetch(`${API_BASE}/voicemail/delete`, {
+      await fetch("http://localhost:3001/api/voicemail/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: vm.id }),
-        credentials: "include",
       });
 
       li.remove();
@@ -867,7 +885,7 @@ function showVoicemailToast(vm) {
 }
 
 /* -------------------------------------------------------
-   Voicemail recorder (Node backend version)
+   Voicemail recorder → backend
 ------------------------------------------------------- */
 let vmRecorder;
 let vmChunks = [];
@@ -893,13 +911,14 @@ async function startVoicemailRecorder() {
 
     const data = await upload.json();
 
-    await fetch(`${API_BASE}/voicemail/save`, {
+    await fetch("http://localhost:3001/api/voicemail/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        userId: window.calleeId,
+        fromId: window.callerId,
         audioUrl: data.url,
       }),
-      credentials: "include",
     });
   };
 
@@ -907,18 +926,16 @@ async function startVoicemailRecorder() {
 }
 
 socket.on("call:voicemail", () => {
-  window.showVoicemailRecordingUI?.();
+  if (typeof window.showVoicemailRecordingUI === "function") {
+    window.showVoicemailRecordingUI();
+  }
   startVoicemailRecorder();
 });
 
 /* -------------------------------------------------------
-   WhatsApp-style bottom sheet + GIF + emoji + send
+   Bottom sheet + emoji + GIF + send
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
-  console.log(
-    "[UI] DOMContentLoaded - initializing bottom sheet, emoji, GIF, and send handler"
-  );
-
   const plusBtn = document.getElementById("plusBtn");
   const bottomSheet = document.getElementById("bottomSheet");
 
@@ -938,33 +955,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("text_box_reply");
   const attachmentInput = document.getElementById("attachment_input");
 
-  console.log("[UI] Elements:", {
-    plusBtn,
-    bottomSheet,
-    sheetCamera,
-    sheetGallery,
-    sheetFile,
-    sheetAudio,
-    sheetEmoji,
-    sheetGif,
-    emojiPicker,
-    gifPicker,
-    gifSearch,
-    gifResults,
-    messageInput,
-    form,
-    attachmentInput,
-  });
-
-  if (!messageInput || !form) {
-    console.warn(
-      "[UI] message_input or form#text_box_reply missing — messaging UI disabled"
-    );
-    return;
-  }
+  if (!messageInput || !form) return;
 
   const closeAll = () => {
-    console.log("[UI] closeAll()");
     bottomSheet?.classList.remove("visible");
     emojiPicker?.classList.add("hidden");
     gifPicker?.classList.add("hidden");
@@ -981,7 +974,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   plusBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
-    console.log("[UI] plusBtn clicked");
     emojiPicker?.classList.add("hidden");
     gifPicker?.classList.add("hidden");
     bottomSheet?.classList.toggle("visible");
@@ -989,10 +981,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.addEventListener("click", (e) => {
     const target = e.target;
-
     const clickedInsideSheet = bottomSheet?.contains(target);
     const clickedPlus = target === plusBtn;
-    const clickedEmojiShadow = target.closest?.("emoji-picker") !== null;
+    const clickedEmojiShadow =
+      target.closest && target.closest("emoji-picker") !== null;
     const clickedGifPicker = gifPicker?.contains(target);
 
     if (
@@ -1006,68 +998,46 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   sheetCamera?.addEventListener("click", () => {
-    console.log("[SHEET] Camera clicked");
     closeAll();
   });
 
   sheetGallery?.addEventListener("click", () => {
-    console.log("[SHEET] Gallery clicked");
     closeAll();
     attachmentInput?.click();
   });
 
   sheetFile?.addEventListener("click", () => {
-    console.log("[SHEET] File clicked");
     closeAll();
     attachmentInput?.click();
   });
 
   sheetAudio?.addEventListener("click", () => {
-    console.log("[SHEET] Audio clicked");
     closeAll();
     window.micBtn?.click();
   });
 
-  /* -------------------------------------------------------
-     EMOJI PICKER TOGGLE
-  ------------------------------------------------------- */
   sheetEmoji?.addEventListener("click", (e) => {
     e.stopPropagation();
-    console.log("[EMOJI] sheetEmoji clicked");
     bottomSheet?.classList.remove("visible");
     gifPicker?.classList.add("hidden");
     emojiPicker?.classList.toggle("hidden");
   });
 
-  /* -------------------------------------------------------
-     EMOJI INSERTION
-  ------------------------------------------------------- */
   emojiPicker?.addEventListener("emoji-click", (event) => {
     const emoji = event.detail.unicode;
-    console.log("[EMOJI] Insert:", emoji);
-
     messageInput.innerHTML += emoji;
     moveCaretToEnd(messageInput);
     messageInput.focus();
   });
 
-  /* -------------------------------------------------------
-     GIF PICKER TOGGLE
-  ------------------------------------------------------- */
   sheetGif?.addEventListener("click", (e) => {
     e.stopPropagation();
-    console.log("[GIF] sheetGif clicked");
-
     bottomSheet?.classList.remove("visible");
     emojiPicker?.classList.add("hidden");
     gifPicker?.classList.toggle("hidden");
-
     loadTrendingGIFs();
   });
 
-  /* -------------------------------------------------------
-     Tenor API
-  ------------------------------------------------------- */
   const TENOR_KEY = "AIzaSyCdGnnQLWc8TnlSHcVgW2xlFzM1v1KyuPQ";
   const TENOR_TRENDING = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=30`;
   const TENOR_SEARCH = (q) =>
@@ -1076,79 +1046,47 @@ document.addEventListener("DOMContentLoaded", () => {
     )}&key=${TENOR_KEY}&limit=30`;
 
   async function loadTrendingGIFs() {
-    if (!gifResults) {
-      console.warn("[GIF] gifResults not found – cannot render GIFs");
-      return;
-    }
-    console.log("[GIF] Loading trending GIFs…", TENOR_TRENDING);
-
+    if (!gifResults) return;
     try {
       const res = await fetch(TENOR_TRENDING);
-      if (!res.ok) {
-        console.error("[GIF] Trending request failed:", res.status);
-        return;
-      }
+      if (!res.ok) return;
       const data = await res.json();
-      console.log("[GIF] Trending response:", data);
       renderGIFs(data.results || []);
     } catch (err) {
-      console.error("[GIF] Failed to load trending GIFs", err);
+      console.error("[GIF] trending error:", err);
     }
   }
 
   async function searchGIFs(query) {
-    if (!gifResults) {
-      console.warn("[GIF] gifResults not found – cannot render GIFs");
-      return;
-    }
-    console.log("[GIF] Searching GIFs for:", query);
-
+    if (!gifResults) return;
     try {
       const url = TENOR_SEARCH(query);
       const res = await fetch(url);
-      if (!res.ok) {
-        console.error("[GIF] Search request failed:", res.status);
-        return;
-      }
+      if (!res.ok) return;
       const data = await res.json();
-      console.log("[GIF] Search response:", data);
       renderGIFs(data.results || []);
     } catch (err) {
-      console.error("[GIF] Failed to search GIFs", err);
+      console.error("[GIF] search error:", err);
     }
   }
 
   function renderGIFs(gifs) {
-    if (!gifResults) {
-      console.warn("[GIF] gifResults not found – cannot render GIFs");
-      return;
-    }
-
-    console.log("[GIF] Rendering GIF grid, count:", gifs.length);
+    if (!gifResults) return;
     gifResults.innerHTML = "";
 
     gifs.forEach((gif) => {
       const url =
         gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
-
-      if (!url) {
-        console.warn("[GIF] GIF without URL:", gif);
-        return;
-      }
+      if (!url) return;
 
       const img = document.createElement("img");
       img.src = url;
       img.alt = "GIF";
 
       img.addEventListener("click", () => {
-        console.log("[GIF] Selected:", url);
-
         messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
-
         moveCaretToEnd(messageInput);
         messageInput.focus();
-        console.log("[GIF] Inserted into message_input");
-
         gifPicker?.classList.add("hidden");
       });
 
@@ -1158,68 +1096,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   gifSearch?.addEventListener("input", (e) => {
     const q = e.target.value.trim();
-    console.log("[GIF] Search input:", q);
     if (!q) loadTrendingGIFs();
     else searchGIFs(q);
   });
 
-  /* -------------------------------------------------------
-     SEND HANDLER (TEXT + GIF) — Node backend
-  ------------------------------------------------------- */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log("[SEND] Submit triggered");
 
     const targetId = window.receiver_id;
-    console.log("[SEND] receiver_id:", targetId);
-
     if (!targetId) {
-      console.warn("[SEND] No receiver selected");
       window.showError?.("No receiver selected");
       return;
     }
 
     const raw = messageInput.innerHTML.trim();
-    console.log("[SEND] Raw HTML:", raw);
-
-    if (!raw) {
-      console.warn("[SEND] Empty message; abort");
-      return;
-    }
+    if (!raw) return;
 
     const temp = document.createElement("div");
     temp.innerHTML = raw;
     const text = (temp.textContent || "").trim();
-    console.log("[SEND] Extracted text:", text);
 
     const gifMatch = raw.match(/<img[^>]+src="([^"]+\.gif)"/i);
     const gifUrl = gifMatch ? gifMatch[1] : null;
-    console.log("[SEND] Extracted GIF URL:", gifUrl);
 
     try {
       if (gifUrl && !text) {
-        console.log("[SEND] Sending pure GIF");
-
-        const res = await fetch(`${API_BASE}/messages/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            receiver_id: targetId,
-            file: 1,
-            file_url: gifUrl,
-            message: "",
-          }),
+        const data = await window.postForm("/messages/send", {
+          receiver_id: targetId,
+          file: 1,
+          file_url: gifUrl,
+          message: "",
         });
 
-        const data = await res.json();
-        console.log("[SEND] GIF response:", data);
+        const success =
+          data && (data.success === true || typeof data.id !== "undefined");
 
-        if (!data || data.error) {
-          const errMsg = data?.error || "Failed to send GIF";
-          console.warn("[SEND] GIF send failed (backend):", errMsg);
-          window.showError?.(errMsg);
-        } else if (typeof window.renderMessage === "function") {
+        if (success && typeof window.renderMessage === "function") {
           window.renderMessage({
             id: data.id,
             is_me: true,
@@ -1231,25 +1143,20 @@ document.addEventListener("DOMContentLoaded", () => {
             type: "gif",
             message: "",
           });
-          console.log("[SEND] GIF rendered locally via renderMessage");
+        } else if (!success) {
+          const errMsg = data?.error || "Failed to send GIF";
+          window.showError?.(errMsg);
         }
       } else if (text) {
-        console.log("[SEND] Sending text:", text);
-
-        const res = await fetch(`${API_BASE}/messages/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            receiver_id: targetId,
-            message: text,
-          }),
+        const data = await window.postForm("/messages/send", {
+          receiver_id: targetId,
+          message: text,
         });
 
-        const data = await res.json();
-        console.log("[SEND] Text response:", data);
+        const success =
+          data && (data.success === true || typeof data.id !== "undefined");
 
-        if (data && !data.error && typeof window.renderMessage === "function") {
+        if (success && typeof window.renderMessage === "function") {
           window.renderMessage({
             id: data.id,
             is_me: true,
@@ -1259,26 +1166,21 @@ document.addEventListener("DOMContentLoaded", () => {
             sender_name: "You",
             type: "text",
           });
-          console.log("[SEND] Text rendered locally");
         } else {
           const msg = data?.error || "Failed to send message";
-          console.warn("[SEND] Text send failed:", msg);
           window.showError?.(msg);
         }
-      } else {
-        console.warn("[SEND] Neither GIF nor text present; nothing sent");
       }
     } catch (err) {
-      console.error("[SEND] Exception during send:", err);
+      console.error("[SEND] error:", err);
       window.showError?.("Failed to send message");
     }
 
     messageInput.innerHTML = "";
-    console.log("[SEND] message_input cleared");
   });
-
-  console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
+
 
 
 
