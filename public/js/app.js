@@ -3,7 +3,7 @@
 // -------------------------------------------------------
 // Core session + socket
 // -------------------------------------------------------
-import { messageWin, getMyUserId, API_BASE, getJson } from "session.js";
+import { messageWin, getMyUserId, API_BASE, getJson } from "/session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
@@ -1279,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
 
