@@ -1,7 +1,6 @@
 // public/js/dashboard/contacts.js
 // -------------------------------------------------------
-// Modern Contacts Module (Node backend, no last-message,
-// no unread badges, clean UI, presence, lookup, messaging)
+// Contacts Module (Mapped to legacy UI field names)
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -31,7 +30,6 @@ let isMessagesOpen = false;
 let openProfileUserId = null;
 let autoCloseProfileOnMessages = true;
 
-// Global cache
 window.UserCache = window.UserCache || {};
 
 // -------------------------------------------------------
@@ -41,33 +39,38 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 // -------------------------------------------------------
-// Normalize Contact (Option B structure)
+// NORMALIZE CONTACT (MAP BACKEND → FRONTEND)
 // -------------------------------------------------------
 function normalizeContact(raw) {
   if (!raw) return null;
 
   const user = {
-    id: raw.id,
-    name: raw.name,
-    email: raw.email,
-    avatar: raw.avatar,
-    phone: raw.phone || "",
-    bio: raw.bio || "",
-    banner: raw.banner,
+    // Mapped fields
+    contact_id: raw.id,
+    contact_name: raw.name,
+    contact_email: raw.email,
+    contact_avatar: raw.avatar,
+    contact_phone: raw.phone || "",
+    contact_bio: raw.bio || "",
+    contact_banner: raw.banner,
+
+    // Flags
     is_favorite: raw.is_favorite || false,
     added_on: raw.added_on,
     online: raw.online || false,
+
+    // No unread badges, but keep value for future
     unread: raw.unread || 0,
+
     fromLookup: raw.fromLookup === true,
   };
 
-  // Cache
-  window.UserCache[user.id] = user;
+  window.UserCache[user.contact_id] = user;
   return user;
 }
 
 // -------------------------------------------------------
-// Update Local Contact (UI sync)
+// Update Local Contact (UI Sync)
 // -------------------------------------------------------
 export function updateLocalContact(userId, changes) {
   const u = window.UserCache[userId];
@@ -75,26 +78,28 @@ export function updateLocalContact(userId, changes) {
 
   Object.assign(u, changes);
 
-  // Update contact card
   const card = document.querySelector(
     `.contact-card[data-contact-id="${userId}"]`
   );
+
   if (card) {
-    if (changes.name) card.querySelector(".contact-name").textContent = u.name;
-    if (changes.email)
-      card.querySelector(".contact-email").textContent = u.email;
-    if (changes.avatar)
-      card.querySelector(".contact-avatar").src = u.avatar;
+    if (changes.contact_name)
+      card.querySelector(".contact-name").textContent = u.contact_name;
+
+    if (changes.contact_email)
+      card.querySelector(".contact-email").textContent = u.contact_email;
+
+    if (changes.contact_avatar)
+      card.querySelector(".contact-avatar").src = u.contact_avatar;
   }
 
-  // Update profile modal
   if (isProfileOpen && openProfileUserId === userId) {
-    $id("fullProfileName").textContent = u.name;
-    $id("fullProfileEmail").textContent = u.email;
-    $id("fullProfilePhone").textContent = u.phone || "No phone";
-    $id("fullProfileBio").textContent = u.bio || "No bio";
-    $id("fullProfileAvatar").src = u.avatar;
-    $id("fullProfileBanner").src = u.banner;
+    $id("fullProfileName").textContent = u.contact_name;
+    $id("fullProfileEmail").textContent = u.contact_email;
+    $id("fullProfilePhone").textContent = u.contact_phone || "No phone";
+    $id("fullProfileBio").textContent = u.contact_bio || "No bio";
+    $id("fullProfileAvatar").src = u.contact_avatar;
+    $id("fullProfileBanner").src = u.contact_banner;
   }
 }
 
@@ -106,13 +111,13 @@ function wireGlobalCallButtons(user) {
   const videoBtn = getVideoBtn?.();
 
   if (voiceBtn) {
-    voiceBtn.dataset.targetId = user.id;
-    voiceBtn.dataset.targetName = user.name;
+    voiceBtn.dataset.targetId = user.contact_id;
+    voiceBtn.dataset.targetName = user.contact_name;
   }
 
   if (videoBtn) {
-    videoBtn.dataset.targetId = user.id;
-    videoBtn.dataset.targetName = user.name;
+    videoBtn.dataset.targetId = user.contact_id;
+    videoBtn.dataset.targetName = user.contact_name;
   }
 }
 
@@ -150,7 +155,7 @@ export function openMessagesFor(userRaw) {
     openProfileUserId = null;
   }
 
-  if (isMessagesOpen && activeContact?.id === user.id) {
+  if (isMessagesOpen && activeContact?.contact_id === user.contact_id) {
     showMessages();
     isMessagesOpen = false;
     return;
@@ -158,13 +163,14 @@ export function openMessagesFor(userRaw) {
 
   activeContact = user;
 
-  setReceiver(user.id);
-  window.currentChatUserId = user.id;
+  // FIXED: correct receiver id
+  setReceiver(user.contact_id);
+  window.currentChatUserId = user.contact_id;
 
   isMessagesOpen = true;
 
   wireGlobalCallButtons(user);
-  updateMessageHeader(user.name);
+  updateMessageHeader(user.contact_name);
 
   if (messageBox) messageBox.classList.add("active");
   loadMessages();
@@ -241,7 +247,7 @@ export async function loadContacts() {
       const normalized = data.contacts.map(normalizeContact);
 
       normalized
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort((a, b) => a.contact_name.localeCompare(b.contact_name))
         .forEach((c) => list.appendChild(renderContactCard(c)));
 
       setContactLookup(normalized);
@@ -267,24 +273,24 @@ export async function loadContacts() {
 function renderBlockedCard(user) {
   const li = document.createElement("li");
   li.className = "blocked-card";
-  li.dataset.userId = user.id;
+  li.dataset.userId = user.contact_id;
 
   li.innerHTML = `
     <div class="blocked-avatar">
-      <img src="${user.avatar}">
+      <img src="${user.contact_avatar}">
     </div>
 
     <div class="blocked-info">
-      <div class="blocked-name">${user.name}</div>
-      <div class="blocked-email">${user.email}</div>
+      <div class="blocked-name">${user.contact_name}</div>
+      <div class="blocked-email">${user.contact_email}</div>
     </div>
 
-    <button class="unblock-btn" data-id="${user.id}">Unblock</button>
+    <button class="unblock-btn" data-id="${user.contact_id}">Unblock</button>
   `;
 
   li.querySelector(".unblock-btn").onclick = async () => {
     const data = await postJson("/contacts/unblock", {
-      contact_id: user.id,
+      contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
   };
@@ -298,17 +304,17 @@ function renderBlockedCard(user) {
 export function renderContactCard(user) {
   const li = document.createElement("li");
   li.className = "contact-card";
-  li.dataset.contactId = String(user.id);
+  li.dataset.contactId = String(user.contact_id);
 
   li.innerHTML = `
-    <img class="contact-avatar" src="${user.avatar}">
+    <img class="contact-avatar" src="${user.contact_avatar}">
     <span class="contact-status" title="${
       user.online ? "Online" : "Offline"
     }"></span>
 
     <div class="contact-info">
-      <div class="contact-name">${user.name}</div>
-      <div class="contact-email">${user.email}</div>
+      <div class="contact-name">${user.contact_name}</div>
+      <div class="contact-email">${user.contact_email}</div>
     </div>
 
     <div class="contact-actions">
@@ -333,16 +339,16 @@ export function renderContactCard(user) {
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
     const data = await postJson("/contacts/block", {
-      contact_id: user.id,
+      contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
   };
 
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
-    if (!confirm(`Delete ${user.name}?`)) return;
+    if (!confirm(`Delete ${user.contact_name}?`)) return;
     const data = await postJson("/contacts/delete", {
-      contact_id: user.id,
+      contact_id: user.contact_id,
     });
     if (data.success) loadContacts();
   };
@@ -355,20 +361,20 @@ export function renderContactCard(user) {
 // -------------------------------------------------------
 function openFullProfile(user) {
   activeContact = user;
-  openProfileUserId = user.id;
+  openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
   if (!modal) return;
   modal.classList.add("open");
   isProfileOpen = true;
 
-  $id("fullProfileAvatar").src = user.avatar;
-  $id("fullProfileBanner").src = user.banner;
+  $id("fullProfileAvatar").src = user.contact_avatar;
+  $id("fullProfileBanner").src = user.contact_banner;
 
-  $id("fullProfileName").textContent = user.name;
-  $id("fullProfileEmail").textContent = user.email;
-  $id("fullProfilePhone").textContent = user.phone || "No phone";
-  $id("fullProfileBio").textContent = user.bio || "No bio";
+  $id("fullProfileName").textContent = user.contact_name;
+  $id("fullProfileEmail").textContent = user.contact_email;
+  $id("fullProfilePhone").textContent = user.contact_phone || "No phone";
+  $id("fullProfileBio").textContent = user.contact_bio || "No bio";
 
   const callBtn = $id("profileCallBtn");
   const videoBtn = $id("profileVideoBtn");
@@ -376,18 +382,18 @@ function openFullProfile(user) {
 
   callBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
-      window.startCall(user.id, false);
+      window.startCall(user.contact_id, false);
   });
 
   videoBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
-      window.startCall(user.id, true);
+      window.startCall(user.contact_id, true);
   });
 
   blockBtn?.addEventListener("click", async () => {
-    if (!confirm(`Block ${user.name}?`)) return;
+    if (!confirm(`Block ${user.contact_name}?`)) return;
     const data = await postJson("/contacts/block", {
-      contact_id: user.id,
+      contact_id: user.contact_id,
     });
     if (data.success) {
       loadContacts();
@@ -448,16 +454,16 @@ lookupInput?.addEventListener("input", () => {
 export function renderLookupCard(user) {
   const li = document.createElement("li");
   li.className = "lookup-card";
-  li.dataset.id = user.id;
+  li.dataset.id = user.contact_id;
 
   li.innerHTML = `
     <div class="lookup-avatar">
-      <img src="${user.avatar}">
+      <img src="${user.contact_avatar}">
     </div>
 
     <div class="lookup-info">
-      <div class="lookup-name">${user.name}</div>
-      <div class="lookup-email">${user.email}</div>
+      <div class="lookup-name">${user.contact_name}</div>
+      <div class="lookup-email">${user.contact_email}</div>
     </div>
 
     <div class="lookup-actions">
@@ -480,6 +486,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
