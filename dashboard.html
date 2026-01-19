@@ -84,6 +84,16 @@ credentials: "include" });
     }
 
     document.addEventListener("DOMContentLoaded", loadUserUnified);
+async function logout() {
+  await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+    method: "POST",
+    credentials: "include"
+  });
+
+  window.location.href = "index.html";
+}
+
+    
   </script>
 
   <!-- ⭐ Load app AFTER identity -->
@@ -145,7 +155,10 @@ credentials: "include" });
       <button id="toggleBtn" title="Theme">🌙</button>
       <hr>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<button class="logoutButton" onclick="window.location='logout.php'" title="Logout" ><img src="logout.png" alt=""></button>
+<button class="logoutButton" onclick="logout()" title="Logout">
+  <img src="logout.png" alt="">
+</button>
+
       <button id="btn_help" title="Help">❓</button>
     </div>
 
@@ -247,7 +260,8 @@ credentials: "include" });
               <!-- Actions -->
               <div class="profile-actions">
                 <button class="save-profile-btn" id="saveProfileBtn">Save Changes</button>
-                <a href="logout.php" class="logout-btn" title="Logout">Log Out</a>
+                <a href="#" class="logout-btn" onclick="logout()" title="Logout">Log Out</a>
+
                 <button class="delete-account-btn" id="deleteAccountBtn">Delete Account</button>
               </div>
             </div>
@@ -1470,6 +1484,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
