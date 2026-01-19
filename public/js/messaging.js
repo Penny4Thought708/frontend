@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO WebRTC)
+// Messaging System (NO WebRTC, Node backend)
 
 import { socket } from "./socket.js";
 
@@ -21,7 +21,6 @@ import {
   getJson,
   postJson,
 } from "./session.js";
-
 
 /* -------------------------------------------------------
    Messaging State
@@ -111,9 +110,10 @@ msgOpenBtn?.addEventListener("click", async () => {
     );
 
     for (const m of unread) {
-      await postJson("/messages/mark-read", {
-        messageId: m.id,
-      });
+      await postJson(
+        "https://letsee-backend.onrender.com/api/messages/mark-read",
+        { messageId: m.id }
+      );
     }
 
     observeMessagesForRead();
@@ -134,40 +134,104 @@ export async function loadMessages(contactId = window.receiver_id) {
   if (!contactId) return [];
 
   try {
-    const res = await getJson(`https://letsee-backend.onrender.com/api/messages/thread/${contactId}`);
+    const res = await getJson(
+      `https://letsee-backend.onrender.com/api/messages/thread/${contactId}`
+    );
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
     if (!messages.length) {
       lastLoadedMessages = [];
+      messageWin.innerHTML = "";
       return [];
     }
 
     lastLoadedMessages = messages;
+    messageWin.innerHTML = "";
 
-    const newest = messages[messages.length - 1];
-
-    if (newest.id <= lastSeenMessageId) {
-      return messages;
-    }
-
-    const newMessages = messages.filter((m) => m.id > lastSeenMessageId);
-
-    newMessages.forEach((msg) => {
+    messages.forEach((msg) => {
       renderMessage(msg);
-
       if (msg.id && Array.isArray(msg.reactions)) {
         renderReactionsForMessage(msg.id, msg.reactions);
       }
     });
 
     smartScroll(true);
-    lastSeenMessageId = newest.id;
+    lastSeenMessageId = messages[messages.length - 1].id;
 
     return messages;
   } catch (err) {
     console.error("Failed to load messages", err);
     return [];
   }
+}
+
+/* -------------------------------------------------------
+   Render Message
+------------------------------------------------------- */
+
+function renderMessage(msg) {
+  if (!messageWin) return;
+
+  const isMe = msg.sender_id === getMyUserId();
+
+  const div = document.createElement("div");
+  div.className = `chat-message ${isMe ? "me" : "them"}`;
+  div.dataset.id = msg.id;
+
+  const name = document.createElement("div");
+  name.className = "chat-name";
+  name.textContent = isMe ? "You" : msg.sender_name || "Contact";
+
+  const body = document.createElement("div");
+  body.className = "chat-body";
+
+  const p = document.createElement("p");
+  p.textContent = msg.message || "";
+
+  if (msg.file === 1 && (msg.url || msg.file_url)) {
+    appendFileContentToParagraph(p, {
+      name: msg.file_name,
+      url: msg.url || msg.file_url,
+      comment: msg.file_comment,
+    });
+  }
+
+  body.appendChild(p);
+
+  const meta = document.createElement("div");
+  meta.className = "chat-meta";
+  meta.textContent = msg.created_at || "";
+
+  div.appendChild(name);
+  div.appendChild(body);
+  div.appendChild(meta);
+
+  messageWin.appendChild(div);
+}
+
+/* -------------------------------------------------------
+   Reactions
+------------------------------------------------------- */
+
+function renderReactionsForMessage(messageId, reactions) {
+  const msgEl = messageWin?.querySelector(`.chat-message[data-id="${messageId}"]`);
+  if (!msgEl) return;
+
+  let bar = msgEl.querySelector(".reaction-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.className = "reaction-bar";
+    msgEl.appendChild(bar);
+  }
+
+  bar.innerHTML = "";
+
+  reactions.forEach((r) => {
+    const span = document.createElement("span");
+    span.className = "reaction";
+    span.textContent = r.emoji;
+    bar.appendChild(span);
+  });
 }
 
 /* -------------------------------------------------------
@@ -325,1049 +389,115 @@ function appendFileContentToParagraph(p, file) {
 }
 
 /* -------------------------------------------------------
-   Reactions rendering
+   Attachments UI
 ------------------------------------------------------- */
-
-function renderReactionsForMessage(messageId, reactions) {
-  const container = document.querySelector(
-    `[data-msg-id="${messageId}"] .reaction-display`
-  );
-  if (!container) return;
-
-  container.innerHTML = "";
-  if (!Array.isArray(reactions) || reactions.length === 0) return;
-
-  const counts = {};
-  reactions.forEach((r) => {
-    const emoji = r.emoji;
-    if (!emoji) return;
-    counts[emoji] = (counts[emoji] || 0) + 1;
-  });
-
-  Object.entries(counts).forEach(([emoji, count]) => {
-    const span = document.createElement("span");
-    span.className = "reaction-pill";
-    span.textContent = count > 1 ? `${emoji} ${count}` : emoji;
-    container.appendChild(span);
-  });
-}
-
-/* -------------------------------------------------------
-   Render Message
-------------------------------------------------------- */
-
-export function renderMessage(msg) {
-  if (!messageWin) return;
-
-  const div = document.createElement("div");
-  div.className = msg.is_me ? "sender_msg" : "receiver_msg";
-
-  if (msg.id != null) div.dataset.msgId = String(msg.id);
-  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
-
-  const p = document.createElement("p");
-  const strong = document.createElement("strong");
-  strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
-  p.appendChild(strong);
-  p.appendChild(document.createTextNode(": "));
-
-  if (msg.type === "audio" && msg.url) {
-    const audio = document.createElement("audio");
-    audio.controls = true;
-    audio.src = msg.url;
-    p.appendChild(audio);
-  } else if (msg.file && (msg.url || msg.file_url)) {
-    appendFileContentToParagraph(p, {
-      name: msg.filename || "file",
-      url: msg.url || msg.file_url,
-      comment: msg.comment || "",
-    });
-  } else {
-    p.appendChild(document.createTextNode(msg.message || ""));
-  }
-
-  const meta = document.createElement("small");
-  meta.textContent = msg.created_at
-    ? ` ${new Date(msg.created_at).toLocaleString()}`
-    : "";
-
-  const reactionDisplay = document.createElement("div");
-  reactionDisplay.className = "reaction-display";
-
-  div.appendChild(p);
-  div.appendChild(meta);
-  div.appendChild(reactionDisplay);
-
-  div.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    showDeleteMenu(msg, e.clientX, e.clientY);
-  });
-
-  div.addEventListener("click", (e) => {
-    if (e.target.closest(".reaction-display")) return;
-    showReactionPicker(msg, div, e.clientX, e.clientY);
-  });
-
-  messageWin.appendChild(div);
-  smartScroll();
-}
-
-/* -------------------------------------------------------
-   Delete / Hide / Restore
-------------------------------------------------------- */
-
-function deleteMessageLocal(id) {
-  const el = document.querySelector(`[data-msg-id="${id}"]`);
-  if (el) el.remove();
-
-  postJson("/messages/hide", { messageId: id });
-  showUndoDelete(id);
-}
-
-async function restoreMessage(id) {
-  try {
-    await postJson("https://letsee-backend.onrender.com/api/messages/mark-read", {
-      messageId: m.id,
-     });
-
-    if (res.success) {
-      loadMessages();
-    }
-  } catch (err) {
-    console.warn("Failed to restore message", err);
-  }
-}
-
-async function deleteMessageForEveryone(id) {
-  if (!id) return;
-
-  try {
-    const res = await postJson("/messages/delete", {
-      messageId: id,
-      everyone: true,
-    });
-
-    if (res.success) {
-      const el = document.querySelector(`[data-msg-id="${id}"]`);
-      if (el) el.remove();
-    } else {
-      console.warn("Delete error:", res.error);
-    }
-  } catch (err) {
-    console.warn("Delete for everyone failed", err);
-  }
-}
-
-socket.on("call:voicemail", () => {
-  showVoicemailRecordingUI();
-  startVoicemailRecorder();
-});
-
-/* -------------------------------------------------------
-   Undo Toast
-------------------------------------------------------- */
-
-function showUndoDelete(id) {
-  const toast = document.createElement("div");
-  toast.className = "undo-toast";
-  toast.textContent = "Message hidden";
-
-  const undoBtn = document.createElement("button");
-  undoBtn.textContent = "Undo";
-
-  let timer = null;
-
-  undoBtn.onclick = () => {
-    restoreMessage(id);
-    toast.remove();
-    if (timer) clearTimeout(timer);
-  };
-
-  toast.appendChild(undoBtn);
-  document.body.appendChild(toast);
-
-  timer = setTimeout(() => {
-    toast.remove();
-  }, 5000);
-}
-
-/* -------------------------------------------------------
-   Hidden Messages Panel
-------------------------------------------------------- */
-
-const manageHiddenBtn = document.getElementById("manageHiddenBtn");
-if (manageHiddenBtn) {
-  manageHiddenBtn.onclick = loadHiddenMessages;
-}
-
-async function loadHiddenMessages() {
-  const res = await getJson("/messages/hidden");
-  const list = Array.isArray(res) ? res : [];
-
-  const container = document.getElementById("hiddenList");
-  if (!container) return;
-
-  container.innerHTML = "";
-
-  list.forEach((msg) => {
-    const div = document.createElement("div");
-    div.className = "hidden-item";
-
-    const p = document.createElement("p");
-    const strong = document.createElement("strong");
-    strong.textContent = msg.sender_name;
-    p.appendChild(strong);
-    p.appendChild(document.createTextNode(`: ${msg.message}`));
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "Restore";
-    btn.addEventListener("click", () => restoreMessage(msg.id));
-
-    div.appendChild(p);
-    div.appendChild(btn);
-    container.appendChild(div);
-  });
-
-  const panel = document.getElementById("hiddenMessagesPanel");
-  if (panel) panel.style.display = "block";
-}
-
-/* -------------------------------------------------------
-   Delete Menu
-------------------------------------------------------- */
-
-function showDeleteMenu(msg, x, y) {
-  const existing = document.querySelector(".delete-menu");
-  if (existing) existing.remove();
-
-  const menu = document.createElement("div");
-  menu.className = "delete-menu";
-
-  const delMe = document.createElement("button");
-  delMe.textContent = "Delete for Me";
-  delMe.onclick = () => {
-    deleteMessageLocal(msg.id);
-    menu.remove();
-  };
-  menu.appendChild(delMe);
-
-  if (msg.is_me) {
-    const delAll = document.createElement("button");
-    delAll.textContent = "Delete for Everyone";
-    delAll.onclick = () => {
-      deleteMessageForEveryone(msg.id);
-      menu.remove();
-    };
-    menu.appendChild(delAll);
-  }
-
-  const cancel = document.createElement("button");
-  cancel.textContent = "Cancel";
-  cancel.onclick = () => menu.remove();
-  menu.appendChild(cancel);
-
-  document.body.appendChild(menu);
-
-  menu.style.left = x + "px";
-  menu.style.top = y + "px";
-
-  setTimeout(() => {
-    document.addEventListener(
-      "click",
-      function close(e) {
-        if (!menu.contains(e.target)) {
-          menu.remove();
-          document.removeEventListener("click", close);
-        }
-      },
-      { once: true }
-    );
-  }, 10);
-}
-
-/* -------------------------------------------------------
-   Typing Indicator
-------------------------------------------------------- */
-
-const typingIndicator = document.querySelector(".typing-indicator");
-let typingStopTimer = null;
-let lastTypingTarget = null;
-
-function getTargetId() {
-  return receiver_id;
-}
-
-msgInput?.addEventListener("input", () => {
-  const targetId = getTargetId();
-  if (!targetId) return;
-
-  if (lastTypingTarget !== targetId) {
-    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
-    lastTypingTarget = targetId;
-  }
-
-  socket.emit("typing:start", { from: getMyUserId(), to: targetId });
-
-  if (typingStopTimer) clearTimeout(typingStopTimer);
-
-  typingStopTimer = setTimeout(() => {
-    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
-  }, 900);
-});
-
-socket.on("typing:start", ({ from, getMyFullname, avatar }) => {
-  const partner = getTargetId();
-  if (!partner) return;
-
-  if (String(from) === String(partner)) {
-    const name = getMyFullname || userNames[from] || `User ${from}`;
-
-    const avatarEl = typingIndicator.querySelector(".typing-avatar");
-    const bubble = typingIndicator.querySelector(".typing-bubble");
-
-    bubble.dataset.name = name;
-
-    if (avatar) {
-      avatarEl.src = avatar;
-      avatarEl.style.display = "block";
-    } else {
-      avatarEl.style.display = "none";
-    }
-
-    typingIndicator.classList.add("active");
-  }
-});
-
-socket.on("typing:stop", ({ from }) => {
-  const partner = getTargetId();
-  if (!partner) return;
-
-  if (String(from) === String(partner)) {
-    typingIndicator.classList.remove("active");
-  }
-});
-
-/* -------------------------------------------------------
-   Recording Indicator + Audio Recording + Waveform + Timer
-------------------------------------------------------- */
-
-const recordingIndicator = document.querySelector(".recording-indicator");
-const micBtn = document.getElementById("micBtn");
-
-let isRecording = false;
-let mediaRecorder;
-let audioChunks = [];
-let audioStream;
-let analyser;
-let dataArray;
-let animationId;
-
-let cancelRecording = false;
-let startX = 0;
-
-const waveformCanvas = document.getElementById("waveformCanvas");
-const ctx = waveformCanvas?.getContext("2d");
-
-const recordTimer = document.getElementById("recordTimer");
-let timerInterval;
-let secondsElapsed = 0;
-
-const slideCancel = document.getElementById("slideCancel");
-
-/* -------------------------------------------------------
-   Delivered / Read / Deleted
-------------------------------------------------------- */
-
-function updateStatus(messageId, text) {
-  const el = document.querySelector(`[data-msg-id="${messageId}"] small`);
-  if (!el) return;
-
-  if (!el.textContent.includes(text)) {
-    el.textContent += ` ${text}`;
-  }
-}
-
-socket.on("message:delivered", ({ messageId }) => {
-  if (messageId) updateStatus(messageId, "✓ delivered");
-});
-
-socket.on("message:read", ({ messageId }) => {
-  if (messageId) updateStatus(messageId, "✓ read");
-});
-
-socket.on("message:deleted", ({ messageId }) => {
-  const msgEl = document.querySelector(`[data-msg-id="${messageId}"]`);
-  if (!msgEl) return;
-
-  const p = msgEl.querySelector("p");
-  if (p) p.textContent = "⚠️ Message deleted";
-
-  msgEl.classList.add("deleted-message");
-});
-
-/* -------------------------------------------------------
-   Presence
-------------------------------------------------------- */
-
-socket.on("statusUpdate", ({ contact_id, online, away }) => {
-  const el = document.querySelector(
-    `[data-contact-id="${contact_id}"] .status`
-  );
-  if (!el) return;
-
-  const status = away ? "Away" : online ? "Online" : "Offline";
-  el.textContent = status;
-  el.className = `status ${status.toLowerCase()}`;
-});
-
-/* -------------------------------------------------------
-   Read Observer
-------------------------------------------------------- */
-
-function createReadObserver() {
-  if (!messageWin) return null;
-
-  return new IntersectionObserver(
-    (entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-
-        const msgEl = entry.target;
-        const msgId = msgEl.dataset.msgId;
-        const senderId = msgEl.dataset.senderId;
-
-        if (msgId && senderId && senderId !== String(getMyUserId())) {
-          postJson("/messages/mark-read", {
-            messageId: msgId,
-          });
-
-          observer.unobserve(msgEl);
-          msgEl.dataset.observing = "0";
-        }
-      });
-    },
-    { root: messageWin, threshold: 0.75 }
-  );
-}
-
-function observeMessagesForRead() {
-  if (!messageWin) return;
-
-  if (!readObserver) readObserver = createReadObserver();
-  if (!readObserver) return;
-
-  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
-    if (!el.dataset.observing) {
-      readObserver.observe(el);
-      el.dataset.observing = "1";
-    }
-  });
-}
-
-/* -------------------------------------------------------
-   Activity Tracking
-------------------------------------------------------- */
-
-let activityTimeout = null;
-
-["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
-  document.addEventListener(evt, () => {
-    clearTimeout(activityTimeout);
-
-    activityTimeout = setTimeout(() => {
-      socket.emit("activity");
-    }, 600);
-
-    observeMessagesForRead();
-  });
-});
-
-/* -------------------------------------------------------
-   Polling
-------------------------------------------------------- */
-
-let polling = false;
-
-setInterval(async () => {
-  if (!receiver_id || polling) return;
-
-  polling = true;
-  try {
-    await loadMessages();
-  } catch (err) {
-    showError("Poll failed");
-  }
-  polling = false;
-}, 8000);
-
-/* -------------------------------------------------------
-   Drag & Drop Upload
-------------------------------------------------------- */
-
-if (messageWin) {
-  messageWin.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    messageWin.classList.add("drag-over");
-  });
-
-  messageWin.addEventListener("dragleave", (e) => {
-    if (e.target === messageWin) {
-      messageWin.classList.remove("drag-over");
-    }
-  });
-
-  messageWin.addEventListener("drop", (e) => {
-    e.preventDefault();
-    messageWin.classList.remove("drag-over");
-
-    const dt = new DataTransfer();
-    [...e.dataTransfer.files].forEach((f) => dt.items.add(f));
-    attachmentInput.files = dt.files;
-
-    renderPreviews([...dt.files]);
-  });
-}
-
-/* -------------------------------------------------------
-   File Previews
-------------------------------------------------------- */
-
-function renderPreviews(files) {
-  if (!previewEl) return;
-  previewEl.innerHTML = "";
-
-  files.forEach((file) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "preview-wrapper";
-
-    if (file.type.startsWith("image/")) {
-      const img = document.createElement("img");
-      const objUrl = URL.createObjectURL(file);
-      img.src = objUrl;
-      img.alt = file.name;
-      img.style.maxWidth = "100px";
-      img.style.maxHeight = "100px";
-      img.onload = () => URL.revokeObjectURL(objUrl);
-      wrapper.appendChild(img);
-    } else {
-      const link = document.createElement("a");
-      const objUrl = URL.createObjectURL(file);
-      link.href = objUrl;
-      link.download = file.name;
-      link.textContent = file.name;
-      wrapper.appendChild(link);
-    }
-
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.textContent = "✖";
-    removeBtn.className = "remove-preview";
-    removeBtn.onclick = () => {
-      const current = Array.from(attachmentInput.files || []);
-      const newFiles = current.filter((f) => f !== file);
-      const dt = new DataTransfer();
-      newFiles.forEach((f) => dt.items.add(f));
-      attachmentInput.files = dt.files;
-      renderPreviews(newFiles);
-    };
-
-    wrapper.appendChild(removeBtn);
-    previewEl.appendChild(wrapper);
-  });
-}
 
 attachmentBtn?.addEventListener("click", () => {
   attachmentInput?.click();
 });
 
 attachmentInput?.addEventListener("change", () => {
-  const files = Array.from(attachmentInput.files || []);
-  renderPreviews(files);
-});
-
-/* -------------------------------------------------------
-   File Upload (HTTP)
-------------------------------------------------------- */
-
-async function sendFileViaHttp(file, targetId) {
-  const fd = new FormData();
-  fd.append("attachment", file);
-  fd.append("receiver_id", targetId || "");
-  fd.append("sender_id", getMyUserId());
-
-  try {
-    const res = await fetch("/messages/upload", {
-      method: "POST",
-      body: fd,
-      credentials: "same-origin",
-    });
-
-    const data = await res.json();
-    if (data?.success && data.url) {
-      const msgRes = await postJson("/messages/send", {
-        sender_id: getMyUserId(),
-        receiver_id: targetId,
-        message: `File: ${file.name}`,
-        transport: "http",
-        file: 1,
-        filename: file.name,
-        file_url: data.url,
-      });
-
-      const msgId = msgRes?.id || null;
-
-      renderMessage({
-        id: msgId,
-        is_me: true,
-        type: "file",
-        filename: msgRes?.filename || file.name,
-        url: msgRes?.file_url || data.url,
-        comment: msgRes?.comment || "",
-        created_at: msgRes?.created_at || new Date(),
-        sender_id: getMyUserId(),
-        sender_name: "You",
-        file: 1,
-      });
-    } else {
-      showError("Upload failed");
-    }
-  } catch (err) {
-    console.error("Upload HTTP file failed", err);
-    showError("Upload failed");
-  }
-}
-
-/* -------------------------------------------------------
-   Sending Messages (text + files)
-------------------------------------------------------- */
-
-if (msgForm) {
-  msgForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const message = (msgInput?.value ?? "").trim();
-    const files = Array.from(attachmentInput?.files || []);
-
-    const targetId = receiver_id;
-
-    if (!targetId && !message && !files.length) {
-      showError("No receiver selected");
-      return;
-    }
-
-    if (files.length > 0) {
-      for (const file of files) {
-        await sendFileViaHttp(file, targetId);
-      }
-
-      attachmentInput.value = "";
-      if (previewEl) previewEl.innerHTML = "";
-    }
-
-    if (message && targetId) {
-      try {
-        const data = await postJson("/messages/send", {
-          sender_id: getMyUserId(),
-          receiver_id: targetId,
-          message,
-        });
-
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success) {
-          renderMessage({
-            id: data.id,
-            is_me: true,
-            message: data.message,
-            created_at: data.created_at,
-            sender_id: getMyUserId(),
-            sender_name: "You",
-          });
-        } else {
-          showError(data?.error || "Failed to send message");
-        }
-      } catch (err) {
-        console.error("Send message failed", err);
-        showError("Failed to send message");
-      }
-    }
-
-    if (msgInput) msgInput.value = "";
-  });
-} else {
-  console.warn("msgForm not found — submit handler not attached");
-}
-
-/* -------------------------------------------------------
-   Voice Messages: Recording + Upload + Playback
-------------------------------------------------------- */
-
-function startTimer() {
-  if (!recordTimer) return;
-
-  secondsElapsed = 0;
-  recordTimer.style.display = "inline-block";
-  recordTimer.textContent = "00:00";
-
-  timerInterval = setInterval(() => {
-    secondsElapsed++;
-    const m = String(Math.floor(secondsElapsed / 60)).padStart(2, "0");
-    const s = String(secondsElapsed % 60).padStart(2, "0");
-    recordTimer.textContent = `${m}:${s}`;
-  }, 1000);
-}
-
-function stopTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  if (recordTimer) recordTimer.style.display = "none";
-}
-
-function startWaveform(stream) {
-  if (!waveformCanvas || !ctx) return;
-
-  waveformCanvas.style.display = "inline-block";
-
-  const audioCtx = new AudioContext();
-  const source = audioCtx.createMediaStreamSource(stream);
-
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-
-  dataArray = new Uint8Array(analyser.frequencyBinCount);
-  source.connect(analyser);
-
-  function draw() {
-    animationId = requestAnimationFrame(draw);
-
-    analyser.getByteFrequencyData(dataArray);
-
-    ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
-
-    const barWidth = 3;
-    let x = 0;
-
-    for (let i = 0; i < dataArray.length; i += 4) {
-      const barHeight = dataArray[i] / 3;
-      const volume = dataArray[i] / 255;
-
-      ctx.fillStyle =
-        volume < 0.3 ? "#ffb3b3" : volume < 0.6 ? "#ff4d4d" : "#ff9900";
-
-      ctx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
-
-      x += barWidth + 2;
-    }
-  }
-
-  draw();
-}
-
-function stopWaveform() {
-  if (!waveformCanvas) return;
-  waveformCanvas.style.display = "none";
-  if (animationId) cancelAnimationFrame(animationId);
-  animationId = null;
-}
-
-async function startRecording() {
-  try {
-    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (err) {
-    console.error("Microphone error:", err);
-    showError?.("Microphone access denied");
+  if (!attachmentInput.files || !attachmentInput.files.length) {
+    if (previewEl) previewEl.innerHTML = "";
     return;
   }
 
+  const file = attachmentInput.files[0];
+  if (!previewEl) return;
+
+  previewEl.innerHTML = "";
+  const div = document.createElement("div");
+  div.className = "attachment-preview-item";
+  div.textContent = file.name;
+  previewEl.appendChild(div);
+});
+
+/* -------------------------------------------------------
+   Send Message
+------------------------------------------------------- */
+
+msgForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!receiver_id) return;
+
+  const text = msgInput?.value?.trim() || "";
+  const file = attachmentInput?.files?.[0] || null;
+
+  if (!text && !file) return;
+
   try {
-    mediaRecorder = new MediaRecorder(audioStream);
-  } catch (err) {
-    console.error("MediaRecorder init failed:", err);
-    showError?.("Audio recording not supported");
-    return;
-  }
-
-  audioChunks = [];
-
-  mediaRecorder.ondataavailable = (e) => {
-    if (e.data?.size > 0) audioChunks.push(e.data);
-  };
-
-  mediaRecorder.onstop = () => {
-    stopWaveform();
-    stopTimer();
-
-    if (cancelRecording) {
-      cleanupStream();
-      return;
-    }
-
-    if (!audioChunks.length) {
-      cleanupStream();
-      return;
-    }
-
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    cleanupStream();
-    sendAudioMessage(audioBlob);
-  };
-
-  mediaRecorder.start();
-  startWaveform(audioStream);
-  startTimer();
-}
-
-function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-  } else {
-    stopWaveform();
-    stopTimer();
-  }
-}
-
-function cleanupStream() {
-  audioStream?.getTracks()?.forEach((t) => t.stop());
-  audioStream = null;
-  mediaRecorder = null;
-}
-
-/* -------------------------------------------------------
-   PRESS + HOLD + SLIDE CANCEL
-------------------------------------------------------- */
-
-function handleRecordStart(e) {
-  const targetId = getTargetId?.() ?? receiver_id;
-  if (!targetId || !getMyUserId()) return;
-
-  cancelRecording = false;
-  isRecording = true;
-
-  startX = e.touches ? e.touches[0].clientX : e.clientX;
-
-  if (slideCancel) {
-    slideCancel.style.display = "inline-block";
-    slideCancel.style.opacity = "1";
-  }
-
-  startRecording();
-
-  socket.emit("recording:start", {
-    from: getMyUserId(),
-    to: targetId,
-  });
-}
-
-function handleRecordStop() {
-  const targetId = getTargetId?.() ?? receiver_id;
-  if (!targetId || !getMyUserId()) return;
-  if (!isRecording) return;
-
-  isRecording = false;
-
-  if (slideCancel) {
-    slideCancel.style.display = "none";
-    slideCancel.style.opacity = "1";
-  }
-
-  stopRecording();
-
-  socket.emit("recording:stop", {
-    from: getMyUserId(),
-    to: targetId,
-  });
-}
-
-function handleSlideCancel(e) {
-  if (!isRecording || !slideCancel) return;
-
-  const currentX = e.touches ? e.touches[0].clientX : e.clientX;
-  const slidFarEnough = startX - currentX > 80;
-
-  cancelRecording = slidFarEnough;
-  slideCancel.style.opacity = slidFarEnough ? "0.3" : "1";
-}
-
-// Mouse
-micBtn?.addEventListener("mousedown", handleRecordStart);
-micBtn?.addEventListener("mousemove", handleSlideCancel);
-micBtn?.addEventListener("mouseup", handleRecordStop);
-micBtn?.addEventListener("mouseleave", handleRecordStop);
-
-// Touch
-micBtn?.addEventListener("touchstart", handleRecordStart);
-micBtn?.addEventListener("touchmove", handleSlideCancel);
-micBtn?.addEventListener("touchend", handleRecordStop);
-micBtn?.addEventListener("touchcancel", handleRecordStop);
-
-/* -------------------------------------------------------
-   RECORDING INDICATOR (RECEIVER)
-------------------------------------------------------- */
-
-socket.on("recording:start", ({ from }) => {
-  const partner = getTargetId?.() ?? receiver_id;
-  if (String(from) === String(partner)) {
-    recordingIndicator?.classList.add("active");
-  }
-});
-
-socket.on("recording:stop", ({ from }) => {
-  const partner = getTargetId?.() ?? receiver_id;
-  if (String(from) === String(partner)) {
-    recordingIndicator?.classList.remove("active");
-  }
-});
-
-/* -------------------------------------------------------
-   UPLOAD + SEND AUDIO MESSAGE
-------------------------------------------------------- */
-
-async function sendAudioMessage(blob) {
-  const targetId = getTargetId?.() ?? receiver_id;
-
-  if (!targetId || !getMyUserId()) {
-    showError?.("No recipient selected");
-    return;
-  }
-
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
     const formData = new FormData();
+    formData.append("sender_id", getMyUserId());
+    formData.append("receiver_id", receiver_id);
+    formData.append("message", text);
 
-    formData.append("audio", blob, "audio.webm");
-    formData.append("from", getMyUserId());
-    formData.append("to", targetId);
-
-    const progressBar = document.createElement("div");
-    progressBar.className = "upload-progress";
-    progressBar.textContent = "Uploading… 0%";
-    messageWin?.appendChild(progressBar);
-
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percent = Math.round((e.loaded / e.total) * 100);
-        progressBar.textContent = `Uploading… ${percent}%`;
-      }
-    };
-
-    xhr.onload = () => {
-      progressBar.remove();
-
-      let result = {};
-      try {
-        result = JSON.parse(xhr.responseText || "{}");
-      } catch (err) {
-        console.error("audio JSON parse error:", err, xhr.responseText);
-      }
-
-      resolve(result);
-    };
-
-    xhr.onerror = () => {
-      progressBar.remove();
-      resolve({ success: false, error: "Network error" });
-    };
-
-    xhr.open("POST", "/messages/audio");
-    xhr.send(formData);
-  }).then((result) => {
-    if (result?.success && result.url) {
-      socket.emit("message:audio", {
-        from: getMyUserId(),
-        to: targetId,
-        url: result.url,
-      });
-    } else {
-      console.error("Audio upload failed:", result);
-      showError?.("Audio upload failed");
+    if (file) {
+      formData.append("file", file);
     }
-  });
-}
 
-/* -------------------------------------------------------
-   RENDER AUDIO MESSAGE (socket)
-------------------------------------------------------- */
+    const res = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/send",
+      {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      }
+    );
 
-socket.on("message:audio", ({ id, from, url }) => {
-  if (!url) return;
+    if (!res.ok) throw new Error("Send failed");
 
-  const isMine = String(from) === String(getMyUserId());
+    msgInput.value = "";
+    if (attachmentInput) attachmentInput.value = "";
+    if (previewEl) previewEl.innerHTML = "";
 
-  const msg = {
-    id: id ?? null,
-    sender_id: from,
-    receiver_id: getTargetId?.() ?? receiver_id,
-    sender_name: isMine ? "You" : null,
-    receiver_name: null,
-    message: "",
-    transport: "socket",
-    file: 1,
-    filename: url.split("/").pop(),
-    url: url,
-    comment: "",
-    created_at: new Date().toISOString(),
-    is_read: isMine ? 1 : 0,
-    is_me: isMine,
-    type: "audio",
-    reactions: [],
-  };
-
-  renderMessage(msg);
+    await loadMessages(receiver_id);
+  } catch (err) {
+    console.error("Failed to send message", err);
+    showError("Failed to send");
+  }
 });
 
 /* -------------------------------------------------------
-   Reaction Picker (simple)
+   Read Observer
 ------------------------------------------------------- */
 
-function showReactionPicker(msg, msgEl, x, y) {
-  const existing = document.querySelector(".reaction-picker");
-  if (existing) existing.remove();
+function observeMessagesForRead() {
+  if (!("IntersectionObserver" in window) || !messageWin) return;
 
-  const picker = document.createElement("div");
-  picker.className = "reaction-picker";
+  if (readObserver) {
+    readObserver.disconnect();
+  }
 
-  const emojis = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+  readObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(async (entry) => {
+        if (!entry.isIntersecting) return;
 
-  emojis.forEach((emoji) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = emoji;
-    btn.onclick = async () => {
-      try {
-        const res = await postJson("/messages/react", {
-          messageId: msg.id,
-          emoji,
-        });
-        if (Array.isArray(res.reactions)) {
-          renderReactionsForMessage(msg.id, res.reactions);
+        const el = entry.target;
+        const id = Number(el.dataset.id);
+        if (!id) return;
+
+        try {
+          await postJson(
+            "https://letsee-backend.onrender.com/api/messages/mark-read",
+            { messageId: id }
+          );
+        } catch (err) {
+          console.warn("Failed to mark read", err);
         }
-      } catch (err) {
-        console.error("React failed", err);
-      }
-      picker.remove();
-    };
-    picker.appendChild(btn);
-  });
 
-  document.body.appendChild(picker);
-  picker.style.left = x + "px";
-  picker.style.top = y + "px";
+        readObserver.unobserve(el);
+      });
+    },
+    { threshold: 0.6 }
+  );
 
-  setTimeout(() => {
-    document.addEventListener(
-      "click",
-      function close(e) {
-        if (!picker.contains(e.target)) {
-          picker.remove();
-          document.removeEventListener("click", close);
-        }
-      },
-      { once: true }
-    );
-  }, 10);
+  messageWin
+    .querySelectorAll(".chat-message")
+    .forEach((el) => readObserver.observe(el));
 }
+
+
 
 
 
