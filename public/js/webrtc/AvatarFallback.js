@@ -1,20 +1,34 @@
 // public/js/webrtc/AvatarFallback.js
 // Unified avatar system for CALL UI + MESSAGING UI
 
-const DEFAULT_AVATAR = "/NewApp/img/defaultUser.png";
+const DEFAULT_AVATAR = "img/defaultUser.png";
+const BACKEND_BASE = "https://letsee-backend.onrender.com";
 
 /* -------------------------------------------------------
-   NORMALIZE PATH
+   NORMALIZE AVATAR PATH
+   - Supports: absolute URLs, /uploads/..., uploads/..., filenames
+   - Works on GitHub Pages + Node backend
 ------------------------------------------------------- */
 function normalizeAvatarPath(path) {
   if (!path) return DEFAULT_AVATAR;
 
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.startsWith("/NewApp/")) return path;
-  if (path.startsWith("/uploads/avatars/")) return "/NewApp" + path;
-  if (path.includes("uploads/avatars/")) return "/NewApp/" + path.replace(/^\//, "");
+  // Already a full URL
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
 
-  return `/NewApp/uploads/avatars/${path}`;
+  // Backend returned "/uploads/avatars/filename.jpg"
+  if (path.startsWith("/uploads/avatars/")) {
+    return `${BACKEND_BASE}${path}`;
+  }
+
+  // Backend returned "uploads/avatars/filename.jpg"
+  if (path.includes("uploads/avatars/")) {
+    return `${BACKEND_BASE}/${path.replace(/^\//, "")}`;
+  }
+
+  // Backend returned just "filename.jpg"
+  return `${BACKEND_BASE}/uploads/avatars/${path}`;
 }
 
 /* -------------------------------------------------------
@@ -23,7 +37,6 @@ function normalizeAvatarPath(path) {
 export function setRemoteAvatar(avatarUrl) {
   const img = document.getElementById("remoteAvatarImg");
   const wrapper = document.getElementById("remoteAvatar");
-
   if (!img || !wrapper) return;
 
   img.src = normalizeAvatarPath(avatarUrl);
@@ -36,7 +49,6 @@ export function setRemoteAvatar(avatarUrl) {
 export function setLocalAvatar(avatarUrl) {
   const img = document.getElementById("localAvatarImg");
   const wrapper = document.getElementById("localAvatar");
-
   if (!img || !wrapper) return;
 
   img.src = normalizeAvatarPath(avatarUrl);
@@ -46,7 +58,6 @@ export function setLocalAvatar(avatarUrl) {
 /* -------------------------------------------------------
    CALL UI — SHOW AVATAR WHEN VIDEO IS OFF
 ------------------------------------------------------- */
-// Remote: avatar visible, video hidden (no camera / stopped)
 export function showRemoteAvatar() {
   const video = document.getElementById("remoteVideo");
   const avatar = document.getElementById("remoteAvatar");
@@ -61,7 +72,6 @@ export function showRemoteAvatar() {
   }
 }
 
-// Local: avatar visible, video hidden
 export function showLocalAvatar() {
   const video = document.getElementById("localVideo");
   const avatar = document.getElementById("localAvatar");
@@ -79,22 +89,19 @@ export function showLocalAvatar() {
 /* -------------------------------------------------------
    CALL UI — SHOW VIDEO WHEN AVAILABLE
 ------------------------------------------------------- */
-// Remote: Discord style → video on top, avatar still exists underneath
 export function showRemoteVideo() {
   const video = document.getElementById("remoteVideo");
   const avatar = document.getElementById("remoteAvatar");
 
   if (avatar) {
-    avatar.style.display = "flex";  // keep it there, let CSS handle layering
+    avatar.style.display = "flex"; // stays underneath for fade-in effect
     avatar.style.opacity = "1";
   }
   if (video) {
     video.style.display = "block";
-    // opacity + scale animation handled in controller via fadeInVideo()
   }
 }
 
-// Local: B2 → local avatar hides when camera ON
 export function showLocalVideo() {
   const video = document.getElementById("localVideo");
   const avatar = document.getElementById("localAvatar");
@@ -105,31 +112,26 @@ export function showLocalVideo() {
   }
   if (video) {
     video.style.display = "block";
-    // opacity + scale animation handled in controller via fadeInVideo()
   }
 }
 
 /* -------------------------------------------------------
-   OPTIONAL — SPEAKING INDICATOR (WebRTC audio levels)
+   OPTIONAL — SPEAKING INDICATOR
 ------------------------------------------------------- */
 export function setRemoteSpeaking(isSpeaking) {
   const ring = document.querySelector("#remoteAvatar .avatar-ring");
   if (!ring) return;
-
-  if (isSpeaking) ring.classList.add("speaking");
-  else ring.classList.remove("speaking");
+  ring.classList.toggle("speaking", isSpeaking);
 }
 
 export function setLocalSpeaking(isSpeaking) {
   const ring = document.querySelector("#localAvatar .avatar-ring");
   if (!ring) return;
-
-  if (isSpeaking) ring.classList.add("speaking");
-  else ring.classList.remove("speaking");
+  ring.classList.toggle("speaking", isSpeaking);
 }
 
 /* -------------------------------------------------------
-   MESSAGING UI — avatar rendering
+   MESSAGING UI — AVATAR RENDERING
 ------------------------------------------------------- */
 export function applyAvatar(wrapperEl, avatarUrl, fullName) {
   if (!wrapperEl) return;
@@ -152,7 +154,7 @@ export function applyAvatar(wrapperEl, avatarUrl, fullName) {
 }
 
 /* -------------------------------------------------------
-   MESSAGING UI — visibility helpers
+   MESSAGING UI — VISIBILITY HELPERS
 ------------------------------------------------------- */
 export function showAvatar(wrapperEl) {
   if (!wrapperEl) return;
@@ -173,3 +175,5 @@ export function showVideo(wrapperEl) {
   if (video) video.style.display = "block";
   if (avatarEl) avatarEl.style.display = "none";
 }
+
+
