@@ -2,6 +2,7 @@
 import { messageWin } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
+import { API_BASE } from "./session.js";
 
 // Messaging
 import { MessagingEngine } from "./messaging/MessagingEngine.js";
@@ -1356,6 +1357,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
 
