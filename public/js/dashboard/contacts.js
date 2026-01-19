@@ -2,7 +2,8 @@
 // -------------------------------------------------------
 // Contacts, presence, lookup, and messaging entrypoint
 
-import { socket } from "public/js/socket.js";
+import { socket } from "../socket.js";
+
 
 import {
   getMyUserId,
@@ -620,6 +621,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
