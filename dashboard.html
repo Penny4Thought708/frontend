@@ -34,7 +34,8 @@
   <script>
     async function loadUserUnified() {
       try {
-        const res = await fetch("https://letsee-backend.onrender.com/auth/me", {
+       const res = await fetch("https://letsee-backend.onrender.com/api/auth/me", {
+
           credentials: "include"
         });
 
@@ -1464,6 +1465,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
