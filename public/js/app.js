@@ -484,11 +484,11 @@ window.addEventListener("load", function () {
       if (savedCon && savedCon.style.display !== "none") {
         showSection(blockedCon);
         if (panelTitle) panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
+        this.innerHTML = '<img src="Contacts.png" alt="contacts"> Contacts';
       } else {
         showSection(savedCon);
         if (panelTitle) panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
+        this.innerHTML = '<img src="calllog.png" alt="call-log"> Call Log';
       }
     });
 
@@ -582,7 +582,7 @@ function buildMessageCard(conv) {
   const li = document.createElement("li");
   li.className = "message-card " + (conv.unread > 0 ? "unread" : "read");
 
-  const avatar = conv.avatar || "/img/defaultUser.png";
+  const avatar = conv.avatar || "img/defaultUser.png";
 
   li.innerHTML = `
     <div class="msg-avatar">
@@ -1279,6 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("[UI] Bottom sheet + emoji + GIF + send initialized");
 });
+
 
 
 
