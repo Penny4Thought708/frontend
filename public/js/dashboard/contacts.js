@@ -1,13 +1,13 @@
-// public/js/dashboard/contacts.js
+// public/js/contacts.js
 // -------------------------------------------------------
-// Contacts Module (Mapped to legacy UI field names)
+// Contacts, presence, lookup, and messaging entrypoint
+// Node backend version (mapped to legacy UI fields)
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
 
 import {
   getMyUserId,
-  getMyFullname,
   lookupBtn,
   lookupInput,
   lookupResults,
@@ -15,15 +15,12 @@ import {
   getVideoBtn,
   messageBox,
   getJson,
-  postJson,
+  postJson
 } from "../session.js";
 
 import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
 
-// -------------------------------------------------------
-// State
-// -------------------------------------------------------
 let activeContact = null;
 let isProfileOpen = false;
 let isMessagesOpen = false;
@@ -39,30 +36,31 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 // -------------------------------------------------------
-// NORMALIZE CONTACT (MAP BACKEND → FRONTEND)
+// Normalize backend → legacy UI fields
 // -------------------------------------------------------
 function normalizeContact(raw) {
   if (!raw) return null;
 
   const user = {
-    // Mapped fields
     contact_id: raw.id,
     contact_name: raw.name,
     contact_email: raw.email,
-    contact_avatar: raw.avatar,
+    contact_avatar: raw.avatar || "img/defaultUser.png",
     contact_phone: raw.phone || "",
     contact_bio: raw.bio || "",
-    contact_banner: raw.banner,
+    contact_banner: raw.banner || "img/profile-banner.jpg",
 
-    // Flags
-    is_favorite: raw.is_favorite || false,
-    added_on: raw.added_on,
-    online: raw.online || false,
+    contact_website: raw.website || "",
+    contact_twitter: raw.twitter || "",
+    contact_instagram: raw.instagram || "",
 
-    // No unread badges, but keep value for future
-    unread: raw.unread || 0,
+    contact_show_online: raw.online ?? false,
+    contact_allow_messages: true,
 
-    fromLookup: raw.fromLookup === true,
+    online: raw.online ?? false,
+    unread_count: raw.unread ?? 0,
+
+    fromLookup: raw.fromLookup === true
   };
 
   window.UserCache[user.contact_id] = user;
@@ -70,13 +68,13 @@ function normalizeContact(raw) {
 }
 
 // -------------------------------------------------------
-// Update Local Contact (UI Sync)
+// Update Local Contact
 // -------------------------------------------------------
 export function updateLocalContact(userId, changes) {
-  const u = window.UserCache[userId];
-  if (!u) return;
+  if (!UserCache[userId]) UserCache[userId] = {};
+  Object.assign(UserCache[userId], changes);
 
-  Object.assign(u, changes);
+  const u = UserCache[userId];
 
   const card = document.querySelector(
     `.contact-card[data-contact-id="${userId}"]`
@@ -163,7 +161,6 @@ export function openMessagesFor(userRaw) {
 
   activeContact = user;
 
-  // FIXED: correct receiver id
   setReceiver(user.contact_id);
   window.currentChatUserId = user.contact_id;
 
@@ -198,8 +195,7 @@ function selectCard(li) {
 // -------------------------------------------------------
 export function registerPresence() {
   socket.emit("session:init", {
-    userId: getMyUserId(),
-    fullname: getMyFullname(),
+    userId: getMyUserId()
   });
 
   socket.on("statusUpdate", ({ contact_id, online }) => {
@@ -236,7 +232,6 @@ export function updateContactStatus(contactId, isOnline) {
 export async function loadContacts() {
   try {
     const data = await getJson("/contacts");
-    console.log("CONTACTS API RESPONSE:", data);
 
     const list = $id("contacts");
     const blockedList = $id("blocked-contacts");
@@ -270,7 +265,9 @@ export async function loadContacts() {
 // -------------------------------------------------------
 // Render Blocked Card
 // -------------------------------------------------------
-function renderBlockedCard(user) {
+function renderBlockedCard(userRaw) {
+  const user = normalizeContact(userRaw);
+
   const li = document.createElement("li");
   li.className = "blocked-card";
   li.dataset.userId = user.contact_id;
@@ -290,7 +287,7 @@ function renderBlockedCard(user) {
 
   li.querySelector(".unblock-btn").onclick = async () => {
     const data = await postJson("/contacts/unblock", {
-      contact_id: user.contact_id,
+      contact_id: user.contact_id
     });
     if (data.success) loadContacts();
   };
@@ -301,16 +298,16 @@ function renderBlockedCard(user) {
 // -------------------------------------------------------
 // Render Contact Card
 // -------------------------------------------------------
-export function renderContactCard(user) {
+export function renderContactCard(userRaw) {
+  const user = normalizeContact(userRaw);
+
   const li = document.createElement("li");
   li.className = "contact-card";
   li.dataset.contactId = String(user.contact_id);
 
   li.innerHTML = `
     <img class="contact-avatar" src="${user.contact_avatar}">
-    <span class="contact-status" title="${
-      user.online ? "Online" : "Offline"
-    }"></span>
+    <span class="contact-status" title="${user.online ? "Online" : "Offline"}"></span>
 
     <div class="contact-info">
       <div class="contact-name">${user.contact_name}</div>
@@ -339,7 +336,7 @@ export function renderContactCard(user) {
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
     const data = await postJson("/contacts/block", {
-      contact_id: user.contact_id,
+      contact_id: user.contact_id
     });
     if (data.success) loadContacts();
   };
@@ -348,7 +345,7 @@ export function renderContactCard(user) {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
     const data = await postJson("/contacts/delete", {
-      contact_id: user.contact_id,
+      contact_id: user.contact_id
     });
     if (data.success) loadContacts();
   };
@@ -359,12 +356,12 @@ export function renderContactCard(user) {
 // -------------------------------------------------------
 // FULL PROFILE MODAL
 // -------------------------------------------------------
-function openFullProfile(user) {
+function openFullProfile(userRaw) {
+  const user = normalizeContact(userRaw);
   activeContact = user;
   openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
-  if (!modal) return;
   modal.classList.add("open");
   isProfileOpen = true;
 
@@ -379,6 +376,7 @@ function openFullProfile(user) {
   const callBtn = $id("profileCallBtn");
   const videoBtn = $id("profileVideoBtn");
   const blockBtn = $id("profileBlockBtn");
+  const saveBtn = $id("saveLookupContact");
 
   callBtn?.addEventListener("click", () => {
     if (typeof window.startCall === "function")
@@ -393,7 +391,7 @@ function openFullProfile(user) {
   blockBtn?.addEventListener("click", async () => {
     if (!confirm(`Block ${user.contact_name}?`)) return;
     const data = await postJson("/contacts/block", {
-      contact_id: user.contact_id,
+      contact_id: user.contact_id
     });
     if (data.success) {
       loadContacts();
@@ -402,6 +400,20 @@ function openFullProfile(user) {
       openProfileUserId = null;
     }
   });
+
+  if (saveBtn) {
+    if (user.fromLookup) {
+      saveBtn.style.display = "block";
+      saveBtn.onclick = () => {
+        if (typeof window.saveLookupContact === "function") {
+          window.saveLookupContact(user.contact_id);
+        }
+      };
+    } else {
+      saveBtn.style.display = "none";
+      saveBtn.onclick = null;
+    }
+  }
 }
 
 // -------------------------------------------------------
@@ -422,10 +434,7 @@ function runLookup(query) {
 
       if (Array.isArray(data) && data.length) {
         data.forEach((u) => {
-          const normalized = normalizeContact({
-            ...u,
-            fromLookup: true,
-          });
+          const normalized = normalizeContact({ ...u, fromLookup: true });
           lookupResults.appendChild(renderLookupCard(normalized));
         });
       } else {
@@ -486,6 +495,8 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+
 
 
 
