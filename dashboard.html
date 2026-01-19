@@ -91,7 +91,25 @@ async function logout() {
   });
 
   window.location.href = "index.html";
+
+  
 }
+function showLogoutModal() {
+  document.getElementById("logoutModal").classList.remove("hidden");
+}
+
+document.getElementById("cancelLogout").onclick = () => {
+  document.getElementById("logoutModal").classList.add("hidden");
+};
+
+document.getElementById("confirmLogout").onclick = async () => {
+  await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+    method: "POST",
+    credentials: "include"
+  });
+
+  window.location.href = "index.html";
+};
 
     
   </script>
@@ -139,6 +157,15 @@ async function logout() {
 
     <div id="notification_container"><span id="notificationCount"></span>
 </div>
+<div id="logoutModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Log out?</h3>
+    <p>You will be signed out of your account.</p>
+
+    <button id="confirmLogout" class="btn-danger">Log Out</button>
+    <button id="cancelLogout" class="btn-secondary">Cancel</button>
+  </div>
+</div>
 
     <div id="side_nav_buttons">
   
@@ -155,9 +182,10 @@ async function logout() {
       <button id="toggleBtn" title="Theme">🌙</button>
       <hr>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<button class="logoutButton" onclick="logout()" title="Logout">
-  <img src="logout.png" alt="">
+<button onclick="showLogoutModal()" class="logoutButton">
+  <img src="logout.png">
 </button>
+
 
       <button id="btn_help" title="Help">❓</button>
     </div>
@@ -1484,6 +1512,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
