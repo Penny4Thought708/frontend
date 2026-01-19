@@ -70,6 +70,13 @@ export const notificationSound = el("notification");
 
 // Attachment preview
 export const previewDiv = el("preview");
+// -------------------------------------------------------
+// Avatar URL helper (Node backend version)
+// -------------------------------------------------------
+export function avatarUrl(filename) {
+  if (!filename) return "/img/defaultUser.png";
+  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
+}
 
 // -------------------------------------------------------
 // Lookup UI
@@ -257,6 +264,7 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+
 
 
 
