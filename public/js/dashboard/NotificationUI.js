@@ -17,7 +17,7 @@ export function initNotificationUI() {
 
   // Simulated notification
   setTimeout(() => {
-    badge.textContent = "2";
+//    badge.textContent = "2";
     triggerBellShake(bell);
   }, 2000);
 
@@ -25,3 +25,4 @@ export function initNotificationUI() {
     document.getElementById("note-message")?.classList.remove("active");
   });
 }
+
