@@ -136,10 +136,22 @@ closeMsgBtn?.addEventListener("click", () =>
 ------------------------------------------------------- */
 
 export async function loadMessages(contactId = receiver_id) {
-  if (!contactId) return [];
+  // ⭐ Prevent 400 errors: identity must be loaded first
+  const myId = getMyUserId();
+  if (!myId) {
+    console.warn("[messaging] Identity not loaded yet — delaying message load");
+    return [];
+  }
+
+  if (!contactId) {
+    console.warn("[messaging] No contactId provided");
+    return [];
+  }
 
   try {
-    const res = await getJson(`${API_BASE}/thread/${Id}`)
+    // ⭐ Correct backend route
+    const res = await getJson(`${API_BASE}/thread/${contactId}`);
+
     const messages = Array.isArray(res.messages) ? res.messages : [];
 
     if (!messages.length) {
@@ -162,11 +174,13 @@ export async function loadMessages(contactId = receiver_id) {
     lastSeenMessageId = messages[messages.length - 1].id;
 
     return messages;
+
   } catch (err) {
     console.error("Failed to load messages", err);
     return [];
   }
 }
+
 
 /* -------------------------------------------------------
    Render Message
@@ -1312,6 +1326,7 @@ socket.on("message:audio", ({ id, from, url }) => {
 
   renderMessage(msg);
 });
+
 
 
 
