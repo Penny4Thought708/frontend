@@ -94,32 +94,7 @@ async function loadUserUnified() {
   }
 }
 
-/* -------------------------------------------------------
-   DOM Ready: Bind logout buttons + load identity
-------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  loadUserUnified();
 
-  const cancelBtn = document.getElementById("cancelLogout");
-  const confirmBtn = document.getElementById("confirmLogout");
-
-  if (cancelBtn) {
-    cancelBtn.onclick = () => {
-      const modal = document.getElementById("logoutModal");
-      if (modal) modal.classList.add("hidden");
-    };
-  }
-
-  if (confirmBtn) {
-    confirmBtn.onclick = async () => {
-      await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
-        method: "POST",
-        credentials: "include"
-      });
-      window.location.href = "index.html";
-    };
-  }
-});
 </script>
 
 
@@ -931,7 +906,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 </script>
-
+<script> document.addEventListener("DOMContentLoaded", () => { loadUserUnified(); const cancelBtn = document.getElementById("cancelLogout"); const confirmBtn = document.getElementById("confirmLogout"); if (cancelBtn) { cancelBtn.onclick = () => { const modal = document.getElementById("logoutModal"); if (modal) modal.classList.add("hidden"); }; } if (confirmBtn) { confirmBtn.onclick = async () => { await fetch("https://letsee-backend.onrender.com/api/auth/logout", { method: "POST", credentials: "include" }); window.location.href = "index.html"; }; } }); </script>
 
 <script type="module">
 const API_BASE = "https://github.com/Penny4Thought708/letsee.git/api"; // ← change to your real backend base
@@ -1520,6 +1495,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
