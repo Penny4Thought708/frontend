@@ -870,6 +870,36 @@ async function loadUserUnified() {
     <div id="hiddenList"></div>
     <button onclick="closeHiddenPanel()">Close</button>
   </div>
+<!-- all your HTML here -->
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  loadUserUnified();
+
+  const cancelBtn = document.getElementById("cancelLogout");
+  const confirmBtn = document.getElementById("confirmLogout");
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      const modal = document.getElementById("logoutModal");
+      if (modal) modal.classList.add("hidden");
+    };
+  }
+
+  if (confirmBtn) {
+    confirmBtn.onclick = async () => {
+      await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "index.html";
+    };
+  }
+});
+</script>
+
+</body>
+</html>
 
 </body>
 <!-- Modules are imported inside the inline module script below to avoid duplicate loads -->
@@ -1494,6 +1524,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
