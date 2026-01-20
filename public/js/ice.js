@@ -1,3 +1,5 @@
+// public/js/ice.js
+
 const SIGNALING_BASE = "https://letsee-backend.onrender.com";
 
 export async function getIceServers() {
@@ -10,6 +12,10 @@ export async function getIceServers() {
     const data = await res.json();
     let servers = data?.v?.iceServers;
 
+    if (!servers || (Array.isArray(servers) && servers.length === 0)) {
+      throw new Error("Invalid ICE servers");
+    }
+
     if (!Array.isArray(servers)) {
       servers = [servers];
     }
@@ -20,5 +26,7 @@ export async function getIceServers() {
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 }
+
+
 
 
