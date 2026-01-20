@@ -763,7 +763,7 @@ export class WebRTCController {
           stopAudio(ringback);
           UI.apply("ending");
           try {
-            const busyTone = new Audio("/NewApp/busy.mp3");
+            const busyTone = new Audio("busy.mp3");
             busyTone.play().catch(() => {});
           } catch {}
           setTimeout(() => UI.apply("idle"), 800);
@@ -887,3 +887,4 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
