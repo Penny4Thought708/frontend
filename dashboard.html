@@ -83,32 +83,7 @@ async function loadUserUnified() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadUserUnified);
-
-async function logout() {
-  await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
-    method: "POST",
-    credentials: "include"
-  });
-
-  window.location.href = "index.html";
-}
-
-function showLogoutModal() {
-  document.getElementById("logoutModal").classList.remove("hidden");
-}
-
-document.getElementById("cancelLogout").onclick = () => {
-  document.getElementById("logoutModal").classList.add("hidden");
-};
-
-document.getElementById("confirmLogout").onclick = async () => {
-  await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
-    method: "POST",
-    credentials: "include"
-  });
-
-  window.location.href = "index.html";
+document.addEventListener("DOMContentLoaded", () => { loadUserUnified(); const cancelBtn = document.getElementById("cancelLogout"); const confirmBtn = document.getElementById("confirmLogout"); if (cancelBtn) { cancelBtn.onclick = () => { document.getElementById("logoutModal").classList.add("hidden"); }; } if (confirmBtn) { confirmBtn.onclick = async () => { await fetch("https://letsee-backend.onrender.com/api/auth/logout", { method: "POST", credentials: "include" }); window.location.href = "index.html"; }; } });dow.location.href = "index.html";
 };
 </script>
 
@@ -1509,6 +1484,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
