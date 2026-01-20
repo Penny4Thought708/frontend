@@ -134,10 +134,46 @@ emoji-picker::part(search) {
 }
 
 .modal-content-1 {
-  background: #fff;
+  corlor:black;
   padding: 20px 30px;
   border-radius: 10px;
   text-align: center;
+}
+.modal-content-1 button {
+  padding: 12px 22px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    inset 0 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.modal-content-1 button:hover {
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.35),
+    inset 0 0 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.modal-content-1 button:active {
+  transform: translateY(0);
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 rgba(255, 255, 255, 0.15);
 }
 
 /* -------------------------------------------------------
@@ -5237,6 +5273,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
