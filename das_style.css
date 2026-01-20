@@ -121,14 +121,15 @@ emoji-picker::part(search) {
   pointer-events: none;
 }
 .modal-1 {
-  position: relative;
-  inset: 0;
-  background: #fffefe42;
-  display: flex;
-  height:240px;
-  border-raduis:20px;
-  align-items: center;
-  justify-content: center;
+    position: relative;
+    inset: 0;
+    background: #fffefe42;
+    display: flex;
+    height: 240px;
+    align-items: center;
+    justify-content: center;
+    border: solid 2px white;
+    border-radius: 20px;
 }
 
 .modal-1.hidden {
@@ -5277,6 +5278,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
