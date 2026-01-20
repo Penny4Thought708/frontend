@@ -807,7 +807,7 @@ async function loadUserUnified() {
 
 </div>
 
-<div id="logoutModal" class="modal">
+<div id="logoutModal" class="modal hidden">
   <div class="modal-content">
     <h3>Log out?</h3>
     <p>You will be signed out of your account.</p>
@@ -866,6 +866,8 @@ async function loadUserUnified() {
 <!-- all your HTML here -->
 
 <script>
+function showLogoutModal() { const modal = document.getElementById("logoutModal"); if (modal) modal.classList.remove("hidden"); }
+  
 document.addEventListener("DOMContentLoaded", () => {
   loadUserUnified();
 
@@ -1514,6 +1516,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
