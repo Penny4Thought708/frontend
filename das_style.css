@@ -120,7 +120,7 @@ emoji-picker::part(search) {
 #gifPicker.hidden {
   pointer-events: none;
 }
-.modal {
+.modal-1 {
   position: relative;
   inset: 0;
   background: rgba(0,0,0,0.5);
@@ -129,7 +129,7 @@ emoji-picker::part(search) {
   justify-content: center;
 }
 
-.modal.hidden {
+.modal-1.hidden {
   display: none;
 }
 
@@ -5237,5 +5237,6 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
