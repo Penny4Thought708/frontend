@@ -23,7 +23,7 @@ import {
   localWrapper,
   remoteWrapper,
 } from "../session.js";
-import { getIceServers } from "../ice.js";
+import { getIceServers } from "/../ice.js";
 import { getReceiver } from "../messaging.js";
 
 /* -------------------------------------------------------
@@ -887,6 +887,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
