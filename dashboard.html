@@ -31,7 +31,7 @@
   <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
 
   <!-- ⭐ Load user identity FIRST -->
- <script>
+<script>
 async function loadUserUnified() {
   try {
     const res = await fetch("https://letsee-backend.onrender.com/api/auth/me", {
@@ -48,7 +48,7 @@ async function loadUserUnified() {
 
     // Global identity for session.js + sockets
     window.user = user;
-    window.user_id = user.user_id;   // ✔ FIXED
+    window.user_id = user.user_id;
     window.fullname = user.fullname;
     window.avatar = user.avatar;
 
@@ -72,7 +72,7 @@ async function loadUserUnified() {
     if (emailInput) emailInput.value = user.email;
 
     const avatarUrl = user.avatar
-      ? `https://letsee-backend.onrender.com/uploads/avatars/${user.avatar}` // ✔ FIXED
+      ? `https://letsee-backend.onrender.com/uploads/avatars/${user.avatar}`
       : "img/defaultUser.png";
 
     if (profilePreview) profilePreview.src = avatarUrl;
@@ -83,8 +83,28 @@ async function loadUserUnified() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => { loadUserUnified(); const cancelBtn = document.getElementById("cancelLogout"); const confirmBtn = document.getElementById("confirmLogout"); if (cancelBtn) { cancelBtn.onclick = () => { document.getElementById("logoutModal").classList.add("hidden"); }; } if (confirmBtn) { confirmBtn.onclick = async () => { await fetch("https://letsee-backend.onrender.com/api/auth/logout", { method: "POST", credentials: "include" }); window.location.href = "index.html"; }; } });dow.location.href = "index.html";
-};
+document.addEventListener("DOMContentLoaded", () => {
+  loadUserUnified();
+
+  const cancelBtn = document.getElementById("cancelLogout");
+  const confirmBtn = document.getElementById("confirmLogout");
+
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      document.getElementById("logoutModal").classList.add("hidden");
+    };
+  }
+
+  if (confirmBtn) {
+    confirmBtn.onclick = async () => {
+      await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      window.location.href = "index.html";
+    };
+  }
+});
 </script>
 
 
@@ -129,14 +149,7 @@ document.addEventListener("DOMContentLoaded", () => { loadUserUnified(); const c
 
     <div id="notification_container"><span id="notificationCount"></span>
 </div>
-<div id="logoutModal" class="modal hidden">
-  <div class="modal-content">
-    <h3>Log out?</h3>
-    <p>You will be signed out of your account.</p>
 
-    <button id="confirmLogout" class="btn-danger">Log Out</button>
-    <button id="cancelLogout" class="btn-secondary">Cancel</button>
-  </div>
 </div>
 
     <div id="side_nav_buttons">
@@ -161,7 +174,14 @@ document.addEventListener("DOMContentLoaded", () => { loadUserUnified(); const c
 
       <button id="btn_help" title="Help">❓</button>
     </div>
+<div id="logoutModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Log out?</h3>
+    <p>You will be signed out of your account.</p>
 
+    <button id="confirmLogout" class="btn-danger">Log Out</button>
+    <button id="cancelLogout" class="btn-secondary">Cancel</button>
+  </div>
     <div id="contact_window">
 
       <div id="leftcontent">
@@ -1484,6 +1504,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
