@@ -26,7 +26,7 @@
 
   background: rgba(255, 255, 255, 0.75);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
-  \nbackdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
 
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -121,7 +121,7 @@ emoji-picker::part(search) {
   pointer-events: none;
 }
 .modal {
-  position: fixed;
+  position: relative;
   inset: 0;
   background: rgba(0,0,0,0.5);
   display: flex;
@@ -5237,4 +5237,5 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
