@@ -2,7 +2,7 @@ const SIGNALING_BASE = "https://letsee-backend.onrender.com";
 
 export async function getIceServers() {
   try {
-    const res = await fetch(`${SIGNALING_BASE}/NewApp/get-ice`, {
+    const res = await fetch(`${SIGNALING_BASE}/api/webrtc/get-ice`, {
       method: "GET",
       credentials: "include",
     });
@@ -20,3 +20,5 @@ export async function getIceServers() {
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 }
+
+
