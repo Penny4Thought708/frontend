@@ -1,4 +1,4 @@
-// public/js/ice.js
+// public/js/ice.js  
 
 const SIGNALING_BASE = "https://letsee-backend.onrender.com";
 
@@ -10,7 +10,9 @@ export async function getIceServers() {
     });
 
     const data = await res.json();
-    let servers = data?.v?.iceServers;
+
+    // Backend returns: { iceServers: [...] }
+    let servers = data?.iceServers;
 
     if (!servers || (Array.isArray(servers) && servers.length === 0)) {
       throw new Error("Invalid ICE servers");
@@ -22,10 +24,12 @@ export async function getIceServers() {
 
     return servers;
   } catch (err) {
-    console.warn("ICE fetch failed, using fallback STUN:", err);
+    console.warn("[ICE] Fetch failed, using fallback STUN:", err);
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 }
+
+
 
 
 
