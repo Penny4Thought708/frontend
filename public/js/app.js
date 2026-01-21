@@ -500,7 +500,6 @@ socket.on("call:voicemail", () => {
     socket,
     renderMessages,
     renderIncomingMessage,
-    updateReactionUI,
     "/api/messages"
   );
 
@@ -1152,6 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
