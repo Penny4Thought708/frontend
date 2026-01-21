@@ -1,8 +1,17 @@
 // public/js/messaging/ReactionUI.js
-import { store } from "./StateStore.js";
-export function updateReactionUI(payload) {
+
+/**
+ * Update the reaction row for a specific message.
+ * Called by MessagingEngine when it receives "message:reactions".
+ *
+ * @param {Object} payload
+ * @param {number} payload.message_id
+ * @param {Array<{emoji: string, count: number}>} payload.reactions
+ */
+export function updateReactions(payload) {
   const { message_id, reactions } = payload;
 
+  // Find the reaction container for this message
   const container = document.querySelector(
     `.msg-reactions[data-msg-id="${message_id}"]`
   );
@@ -21,6 +30,7 @@ export function updateReactionUI(payload) {
   // Reset content
   container.innerHTML = "";
 
+  // Render each reaction pill
   reactions.forEach((r) => {
     const span = document.createElement("span");
     span.className = "reaction-pill";
@@ -34,12 +44,15 @@ export function updateReactionUI(payload) {
   container.classList.add("reaction-pop");
 }
 
-
-// Optional: attach click handlers for adding reactions
+/**
+ * Optional helper to attach reaction click handlers.
+ * MessagingEngine can pass its toggleReaction() method here.
+ */
 export function initReactionClickHandlers(onToggleReaction) {
   document.addEventListener("click", (evt) => {
     const bubble = evt.target.closest(".msg-bubble");
     if (!bubble) return;
+
     const msgId = bubble.dataset.msgId;
     if (!msgId) return;
 
@@ -50,4 +63,6 @@ export function initReactionClickHandlers(onToggleReaction) {
     }
   });
 }
+
+
 
