@@ -1,4 +1,5 @@
 // public/js/webrtc/CallUI.js
+// Premium call UI wiring: buttons, status, overlays, quality, and debug hooks.
 
 export function initCallUI(rtc) {
   if (!rtc) {
@@ -35,7 +36,7 @@ export function initCallUI(rtc) {
   const debugToggle = document.getElementById("call-debug-toggle");
 
   // Attach media to controller (safe even if some are null)
-  rtc.attachMediaElements({ localVideo, remoteVideo, remoteAudio });
+  rtc.attachMediaElements?.({ localVideo, remoteVideo, remoteAudio });
 
   /* -------------------------------------------------------
      Status / quality helpers
@@ -80,7 +81,7 @@ export function initCallUI(rtc) {
     el.style.bottom = "10px";
     el.style.right = "10px";
     el.style.width = "280px";
-    el.style.maxHeight = "200px";
+    el.style.maxHeight = "220px";
     el.style.overflowY = "auto";
     el.style.background = "rgba(0,0,0,0.85)";
     el.style.color = "#fff";
@@ -89,6 +90,7 @@ export function initCallUI(rtc) {
     el.style.borderRadius = "6px";
     el.style.zIndex = "9999";
     el.style.display = "none";
+    el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
     el.innerHTML = "<strong>Call Debug</strong><br/>";
     document.body.appendChild(el);
     return el;
@@ -116,41 +118,43 @@ export function initCallUI(rtc) {
   voiceBtn?.addEventListener("click", () => {
     setStatus("Starting voice call...");
     logDebug("Voice call clicked");
-    rtc.startVoiceCall();
+    rtc.startVoiceCall?.();
   });
 
   videoBtn?.addEventListener("click", () => {
     setStatus("Starting video call...");
     logDebug("Video call clicked");
-    rtc.startVideoCall();
+    rtc.startVideoCall?.();
   });
 
   answerBtn?.addEventListener("click", () => {
     setStatus("Answering call...");
     logDebug("Answer clicked");
-    rtc.answerIncomingCall();
+    rtc.answerIncomingCall?.();
   });
 
   declineBtn?.addEventListener("click", () => {
     setStatus("Declining call...");
     logDebug("Decline clicked");
-    rtc.declineIncomingCall();
+    rtc.declineIncomingCall?.();
   });
 
   endCallBtn?.addEventListener("click", () => {
     setStatus("Call ended");
     logDebug("End call clicked");
-    rtc.endCall(true);
+    rtc.endCall?.(true);
   });
 
   muteBtn?.addEventListener("click", () => {
-    const muted = rtc.toggleMute?.();
-    if (muted !== undefined) {
-      muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
-      logDebug(`Mute toggled: ${muted}`);
-    } else {
+    if (typeof rtc.toggleMute !== "function") {
       logDebug("toggleMute() not implemented on rtc");
+      return;
     }
+
+    const muted = rtc.toggleMute();
+    muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
+    muteBtn.dataset.muted = String(muted);
+    logDebug(`Mute toggled: ${muted}`);
   });
 
   cameraToggle?.addEventListener("click", () => {
@@ -166,27 +170,30 @@ export function initCallUI(rtc) {
      Controller event hooks
   ------------------------------------------------------- */
 
-  rtc.onIncomingCall = ({ fromName } = {}) => {
+  rtc.onIncomingCall = ({ fromName, audioOnly } = {}) => {
     const name = fromName || "Unknown";
-    setStatus(`Incoming call from ${name}`);
+    const mode = audioOnly ? "voice" : "video";
+
+    setStatus(`Incoming ${mode} call from ${name}`);
     if (callerOverlay) {
-      callerOverlay.textContent = `Incoming call from ${name}...`;
+      callerOverlay.textContent = `Incoming ${mode} call from ${name}...`;
       callerOverlay.style.display = "flex";
     }
-    logDebug(`Incoming call from ${name}`);
+    logDebug(`Incoming ${mode} call from ${name}`);
   };
 
   rtc.onCallStarted = () => {
     setStatus("In call");
+    setQuality("good", "Call established");
     if (callerOverlay) callerOverlay.style.display = "none";
     logDebug("Call started");
   };
 
-  rtc.onCallEnded = () => {
-    setStatus("Call ended");
+  rtc.onCallEnded = (reason = "Call ended") => {
+    setStatus(reason);
     setQuality("unknown", "No active call");
     if (callerOverlay) callerOverlay.style.display = "none";
-    logDebug("Call ended");
+    logDebug(`Call ended: ${reason}`);
   };
 
   rtc.onCallFailed = (reason = "Unknown error") => {
@@ -201,5 +208,16 @@ export function initCallUI(rtc) {
     logDebug(`Quality: ${level} (${info})`);
   };
 
+  rtc.onRemoteMuted = (muted = false) => {
+    logDebug(`Remote muted: ${muted}`);
+  };
+
+  rtc.onLocalMediaError = (errMsg = "Media error") => {
+    setStatus(errMsg);
+    setQuality("bad", errMsg);
+    logDebug(`Local media error: ${errMsg}`);
+  };
+
   logDebug("CallUI initialized");
 }
+
