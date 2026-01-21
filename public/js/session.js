@@ -251,16 +251,14 @@ socket.on("connect", () => {
       return;
     }
 
-    socket.emit("register", {
-      userId: uid,
-      fullname: getMyFullname(),
-    });
+    socket.emit("register", uid); // ← send primitive, not object
 
     console.log("[socket] Registered:", uid);
   };
 
   tryRegister();
 });
+
 
 socket.on("reconnect_attempt", (n) => {
   if (DEBUG.socket && (n === 1 || n % 5 === 0)) {
@@ -306,6 +304,7 @@ function resetInactivityTimer() {
 });
 
 resetInactivityTimer();
+
 
 
 
