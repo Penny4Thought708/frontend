@@ -1,4 +1,5 @@
 // public/js/webrtc/WebRTCController.js
+// Premium WebRTC controller: signaling, media, UI, timers, logs, and UX polish.
 
 import { rtcState } from "./WebRTCState.js";
 import { socket } from "../socket.js";
@@ -13,6 +14,7 @@ import {
   showRemoteVideo,
   showLocalVideo,
 } from "./AvatarFallback.js";
+
 import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
 import { addCallLogEntry } from "../call-log.js";
 
@@ -25,11 +27,12 @@ import {
   localWrapper,
   remoteWrapper,
 } from "../session.js";
+
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
 
 /* -------------------------------------------------------
-   Helpers
+   Small helpers
 ------------------------------------------------------- */
 
 function stopAudio(el) {
@@ -71,6 +74,11 @@ function fadeInVideo(el) {
 ------------------------------------------------------- */
 
 const UI = {
+  /**
+   * Apply a high-level call UI state.
+   * state: "idle" | "incoming" | "outgoing" | "active" | "ending"
+   * opts: { audioOnly?: boolean, callerName?: string }
+   */
   apply(state, opts = {}) {
     const { audioOnly = false, callerName = "" } = opts;
 
@@ -235,8 +243,8 @@ function stopTimer() {
 ------------------------------------------------------- */
 
 export class WebRTCController {
-  constructor(socket) {
-    this.socket = socket;
+  constructor(socketInstance) {
+    this.socket = socketInstance;
     this.pc = null;
     this.localStream = null;
 
@@ -244,24 +252,30 @@ export class WebRTCController {
     this.remoteVideo = null;
     this.remoteAudio = null;
 
+    // CallUI hooks
     this.onIncomingCall = null;
     this.onCallStarted = null;
     this.onCallEnded = null;
     this.onCallFailed = null;
     this.onQualityChange = null;
 
+    // Initial UI state
     UI.apply("idle");
+
+    // Wire socket events
     this._bindSocketEvents();
 
     // Initialize local avatar in call UI
     setLocalAvatar(getMyAvatar());
     showLocalAvatar();
-    this._initDraggableRemote?.();
-    this._bindSwapBehavior?.();
+
+    // Premium UX behaviors
+    this._initDraggableRemote();
+    this._bindSwapBehavior();
   }
 
   /* ---------------------------------------------------
-     Media elements wiring
+     Media elements wiring (from CallUI)
   --------------------------------------------------- */
   attachMediaElements({ localVideo, remoteVideo, remoteAudio }) {
     this.localVideo = localVideo;
@@ -331,13 +345,14 @@ export class WebRTCController {
       showLocalAvatar();
     }
 
+    // Voice mode: reset remote wrapper position
     if (audioOnly) {
-      const remoteWrapper = document.getElementById("remoteWrapper");
-      if (remoteWrapper) {
-        remoteWrapper.style.left = "";
-        remoteWrapper.style.top = "";
-        remoteWrapper.style.right = "";
-        remoteWrapper.style.bottom = "";
+      const remoteWrapperEl = document.getElementById("remoteWrapper");
+      if (remoteWrapperEl) {
+        remoteWrapperEl.style.left = "";
+        remoteWrapperEl.style.top = "";
+        remoteWrapperEl.style.right = "";
+        remoteWrapperEl.style.bottom = "";
       }
     }
 
@@ -387,7 +402,7 @@ export class WebRTCController {
     });
 
     ringtone?.play().catch(() => {});
-    this.onIncomingCall?.({ fromName: rtcState.peerName });
+    this.onIncomingCall?.({ fromName: rtcState.peerName, audioOnly });
   }
 
   /* ---------------------------------------------------
@@ -525,7 +540,9 @@ export class WebRTCController {
     this.endCall(false);
   }
 
-  /* End Call */
+  /* ---------------------------------------------------
+     End Call (local or remote)
+  --------------------------------------------------- */
   endCall(local = true) {
     stopAudio(ringback);
     stopAudio(ringtone);
@@ -533,6 +550,7 @@ export class WebRTCController {
 
     const peerId = rtcState.peerId;
 
+    // Tear down PeerConnection
     if (this.pc) {
       try {
         this.pc.onicecandidate = null;
@@ -544,6 +562,7 @@ export class WebRTCController {
       this.pc = null;
     }
 
+    // Stop local media
     if (this.localStream) {
       this.localStream.getTracks().forEach((t) => {
         try {
@@ -553,12 +572,13 @@ export class WebRTCController {
       this.localStream = null;
     }
 
-    const remoteWrapper = document.getElementById("remoteWrapper");
-    if (remoteWrapper) {
-      remoteWrapper.style.left = "";
-      remoteWrapper.style.top = "";
-      remoteWrapper.style.right = "";
-      remoteWrapper.style.bottom = "";
+    // Reset remote wrapper position
+    const remoteWrapperEl = document.getElementById("remoteWrapper");
+    if (remoteWrapperEl) {
+      remoteWrapperEl.style.left = "";
+      remoteWrapperEl.style.top = "";
+      remoteWrapperEl.style.right = "";
+      remoteWrapperEl.style.bottom = "";
     }
 
     const direction = rtcState.isCaller ? "outgoing" : "incoming";
@@ -632,6 +652,7 @@ export class WebRTCController {
       t.enabled = newEnabled;
     });
 
+    // Return "muted" boolean for UI
     return !newEnabled;
   }
 
@@ -735,6 +756,7 @@ export class WebRTCController {
     this.socket.on("webrtc:signal", async (data) => {
       if (!data || !data.type) return;
 
+      // Enrich peer identity + avatar if provided
       if (data.fromUser) {
         const { avatar, fullname } = data.fromUser;
 
@@ -804,8 +826,9 @@ export class WebRTCController {
     });
   }
 
-
-
+  /* ---------------------------------------------------
+     Draggable Remote Video (Video Mode Only)
+  --------------------------------------------------- */
   _initDraggableRemote() {
     const wrapper = document.getElementById("remoteWrapper");
     const container = document.getElementById("video-container");
@@ -818,11 +841,12 @@ export class WebRTCController {
     let startTop = 0;
 
     const onMouseDown = (e) => {
-      // ❗ Only draggable in VIDEO MODE
+      // Only draggable in VIDEO MODE
       if (!container.classList.contains("video-mode")) return;
 
       isDragging = true;
       wrapper.classList.add("dragging");
+      wrapper.style.transition = "none";
 
       const rect = wrapper.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
@@ -845,18 +869,14 @@ export class WebRTCController {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
-      // Proposed new position
       let newLeft = startLeft + dx;
       let newTop = startTop + dy;
 
-      // ❗ Clamp inside container
       const maxLeft = containerRect.width - wrapperRect.width;
       const maxTop = containerRect.height - wrapperRect.height;
 
-      if (newLeft < 0) newLeft = 0;
-      if (newTop < 0) newTop = 0;
-      if (newLeft > maxLeft) newLeft = maxLeft;
-      if (newTop > maxTop) newTop = maxTop;
+      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      newTop = Math.max(0, Math.min(newTop, maxTop));
 
       wrapper.style.left = `${newLeft}px`;
       wrapper.style.top = `${newTop}px`;
@@ -865,8 +885,12 @@ export class WebRTCController {
     };
 
     const onMouseUp = () => {
+      if (!isDragging) return;
+
       isDragging = false;
       wrapper.classList.remove("dragging");
+      wrapper.style.transition = "transform 0.15s ease";
+
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
@@ -874,21 +898,31 @@ export class WebRTCController {
     wrapper.addEventListener("mousedown", onMouseDown);
   }
 
+  /* ---------------------------------------------------
+     Swap Local/Remote Video (Double‑Click)
+  --------------------------------------------------- */
   _bindSwapBehavior() {
     const container = document.getElementById("video-container");
-    const remoteWrapper = document.getElementById("remoteWrapper");
-    const localWrapper = document.getElementById("localVideoWrapper");
-    if (!container || !remoteWrapper || !localWrapper) return;
+    const remoteWrapperEl = document.getElementById("remoteWrapper");
+    const localWrapperEl = document.getElementById("localVideoWrapper");
+    if (!container || !remoteWrapperEl || !localWrapperEl) return;
 
     const toggleSwap = () => {
       container.classList.toggle("swap-layout");
     };
 
-    // Double-click remote or local to swap
-    remoteWrapper.addEventListener("dblclick", toggleSwap);
-    localWrapper.addEventListener("dblclick", toggleSwap);
+    remoteWrapperEl.addEventListener("dblclick", toggleSwap);
+    localWrapperEl.addEventListener("dblclick", toggleSwap);
   }
 }
+
+/* -------------------------------------------------------
+   Default instance (optional convenience)
+------------------------------------------------------- */
+
+export const rtc = new WebRTCController(socket);
+
+
 
 
 
