@@ -19,8 +19,6 @@ async function loadIdentity() {
     if (!res.ok) throw new Error("Identity request failed");
 
     const data = await res.json();
-
-    // Backend returns: { success: true, user: {...} }
     const u = data.user;
 
     w.user_id = u.user_id;
@@ -89,7 +87,7 @@ export const lookupInput = el("lookup-input");
 export const lookupResults = el("contacts-lookup");
 
 // -------------------------------------------------------
-// Call UI Elements
+// Call UI Elements (lazy‑bound so DOM is ready)
 // -------------------------------------------------------
 export const videoContainer = el("video-container");
 export const remoteWrapper = el("remoteWrapper");
@@ -105,9 +103,16 @@ export function getVideoBtn() {
 export const localNameDiv = el("localName");
 export const remoteNameDiv = el("remoteName");
 
-export const localVideo = el("localVideo");
-export const remoteVideo = el("remoteVideo");
-export const remoteAudioEl = el("remoteAudio");
+// 🔥 Key change: declare first, assign after DOMContentLoaded
+export let localVideo;
+export let remoteVideo;
+export let remoteAudioEl;
+
+document.addEventListener("DOMContentLoaded", () => {
+  localVideo = el("localVideo");
+  remoteVideo = el("remoteVideo");
+  remoteAudioEl = el("remoteAudio");
+});
 
 export const ringtone = el("ringtone");
 export const ringback = el("ringback");
@@ -158,7 +163,7 @@ export function playNotification() {
 }
 
 // -------------------------------------------------------
-// ⭐ Node-compatible API helpers (NO /NewApp nonsense)
+// ⭐ Node-compatible API helpers
 // -------------------------------------------------------
 export async function getJson(url) {
   const res = await fetch(url, { credentials: "include" });
@@ -246,7 +251,7 @@ socket.on("connect", () => {
 
     socket.emit("register", {
       userId: uid,
-      fullname: getMyFullname()
+      fullname: getMyFullname(),
     });
 
     console.log("[socket] Registered:", uid);
@@ -254,8 +259,6 @@ socket.on("connect", () => {
 
   tryRegister();
 });
-
-
 
 socket.on("reconnect_attempt", (n) => {
   if (DEBUG.socket && (n === 1 || n % 5 === 0)) {
@@ -279,7 +282,7 @@ socket.on("error", (err) => {
 // AUTO LOGOUT AFTER INACTIVITY
 // ------------------------------
 let inactivityTimer;
-const AUTO_LOGOUT_MINUTES = 30; // change as needed
+const AUTO_LOGOUT_MINUTES = 30;
 
 function resetInactivityTimer() {
   clearTimeout(inactivityTimer);
@@ -289,20 +292,19 @@ function resetInactivityTimer() {
 
     await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
       method: "POST",
-      credentials: "include"
+      credentials: "include",
     });
 
     window.location.href = "index.html";
   }, AUTO_LOGOUT_MINUTES * 60 * 1000);
 }
 
-// Reset timer on any activity
-["click", "mousemove", "keydown", "scroll", "touchstart"].forEach(evt => {
+["click", "mousemove", "keydown", "scroll", "touchstart"].forEach((evt) => {
   window.addEventListener(evt, resetInactivityTimer);
 });
 
-// Start timer on page load
 resetInactivityTimer();
+
 
 
 
