@@ -844,7 +844,7 @@ async function loadUserUnified() {
   <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
 <!-- 1. Session (DOM must be ready first) -->
-<script src="public/js/session.js"></script>
+<script type="module" src="public/js/session.js"></script>
 
 <!-- 2. Core WebRTC modules -->
 <script type="module" src="public/js/webrtc/WebRTCMedia.js"></script>
@@ -1529,6 +1529,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
