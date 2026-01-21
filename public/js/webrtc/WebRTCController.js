@@ -1,6 +1,8 @@
 // public/js/webrtc/WebRTCController.js
 
 import { rtcState } from "./WebRTCState.js";
+import { socket } from "../socket.js";
+
 import {
   applyAvatar,
   showAvatar,
@@ -887,6 +889,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
