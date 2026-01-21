@@ -843,26 +843,26 @@ async function loadUserUnified() {
   <audio id="ringtone" src="ringtone.mp3" preload="auto"></audio>
   <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
-<!-- 1. Session (DOM must be ready first) -->
 <script type="module" src="public/js/session.js"></script>
 
-<!-- 2. Core WebRTC modules -->
 <script type="module" src="public/js/webrtc/WebRTCMedia.js"></script>
 <script type="module" src="public/js/webrtc/WebRTCController.js"></script>
 <script type="module" src="public/js/webrtc/CallUI.js"></script>
 
-<!-- 3. App logic -->
 <script type="module" src="public/js/socket.js"></script>
 <script type="module" src="public/js/messaging.js"></script>
 <script type="module" src="public/js/dashboard/contacts.js"></script>
 <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
 <script type="module" src="public/js/app.js"></script>
-
-<!-- 4. ICE servers -->
 <script type="module" src="public/js/ice.js"></script>
 
-<!-- 5. Buttons -->
 <script src="buttons-functions.js"></script>
+<script src="SettingsStore.js"></script>
+<script src="DeviceManager.js"></script>
+<script src="SettingsController.js"></script>
+<script src="MediaPreview.js"></script>
+
+
 
 
   <div id="image-viewer-overlay" aria-hidden="true">
@@ -907,42 +907,8 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </body>
-<!-- Modules are imported inside the inline module script below to avoid duplicate loads -->
-<script src="SettingsController.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof SettingsController !== "undefined" && SettingsController.init) {
-    SettingsController.init();
-  }
-  if (typeof openMainSettings === "function") {
-    openMainSettings();
-  }
-});
-</script>
-<script src="SettingsStore.js"></script>
-<script src="DeviceManager.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof DeviceManager !== "undefined" && DeviceManager.init) {
-    DeviceManager.init();
-  }
-});
-</script>
-<script src="MediaPreview.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("test_speaker_btn");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      if (typeof MediaPreview !== "undefined" && MediaPreview.testSpeaker) {
-        MediaPreview.testSpeaker(SettingsStore?.data?.speaker);
-      }
-    });
-  }
-});
-</script>
 
-<script type="module">
+<!--<script type="module">
 const API_BASE = "https://github.com/Penny4Thought708/letsee.git/api"; // ← change to your real backend base
 
 import { socket } from "./public/js/socket.js";
@@ -1523,12 +1489,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-</script>
+</script>-->
 
 
 
 
 </html>
+
 
 
 
