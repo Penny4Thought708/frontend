@@ -1,37 +1,37 @@
 // public/js/messaging/TypingUI.js
-import { msgInput } from "../session.js";
-import { store } from "./StateStore.js";
 
+// The typing indicator element in your DOM
 const typingIndicator = document.querySelector(".typing-indicator");
+
+// Timeout handler so the indicator auto-hides
 let typingTimeout = null;
 
-function showTyping(fromName) {
+/**
+ * Show the typing indicator.
+ * Called by MessagingEngine when it receives "typing:start".
+ *
+ * @param {string} fromName - The name of the user who is typing.
+ */
+export function showTyping(fromName = "Contact") {
   if (!typingIndicator) return;
+
   typingIndicator.textContent = `${fromName} is typing...`;
   typingIndicator.style.display = "block";
 
+  // Reset auto-hide timer
   clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => {
     typingIndicator.style.display = "none";
   }, 2000);
 }
 
-// Emit typing events
-if (msgInput && typeof socket !== "undefined") {
-  msgInput.addEventListener("input", () => {
-    if (!store.activeContactId) return;
-    socket.emit("typing", {
-      to: store.activeContactId,
-      from: store.myId,
-    });
-  });
+/**
+ * Hide the typing indicator.
+ * Called by MessagingEngine when it receives "typing:stop".
+ */
+export function hideTyping() {
+  if (!typingIndicator) return;
+  typingIndicator.style.display = "none";
 }
 
-// Listen for typing events
-if (typeof socket !== "undefined") {
-  socket.on("typing", (data) => {
-    if (!typingIndicator) return;
-    if (data.to !== store.myId) return;
-    showTyping(data.fromName || "Contact");
-  });
-}
+
