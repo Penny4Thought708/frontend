@@ -7,39 +7,50 @@ import { initClock } from "./Clock.js";
 import { setSignalStrength, setBatteryLevel } from "./StatusIndicators.js";
 import { initTodoList } from "./TodoList.js";
 import { initNavigationUI } from "./NavigationUI.js";
-import { initCallUI } from "../webrtc/CallUI.js";
 
-// ✔ FIXED: relative import (GitHub Pages cannot load /NewApp/... paths)
-import { socket } from "../socket.js";
-
-// ✔ FIXED: dynamic session getter
-import { getMyUserId } from "../session.js";
-
-// ✔ FIXED: contacts module path
 import { updateContactStatus, loadContacts } from "./contacts.js";
 
+// Core systems
+import { socket } from "../socket.js";
+import { getMyUserId } from "../session.js";
+
+// WebRTC
+import { WebRTCController } from "../webrtc/WebRTCController.js";
+import { initCallUI } from "../webrtc/CallUI.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  /* -------------------------------------------------------
+     Dashboard UI Initialization
+  ------------------------------------------------------- */
   initNotificationUI();
   initDraggableWidgets();
   initClock();
   initTodoList();
   initNavigationUI();
 
+  // Fake device indicators (UI only)
   setSignalStrength(3);
   setBatteryLevel(85);
 
-  // ⭐ Pass the FUNCTION, not the result
-  createPresenceClient(
-    socket,
-    getMyUserId, // <-- FIXED
-    updateContactStatus
-  );
-
+  /* -------------------------------------------------------
+     Presence + Contacts
+  ------------------------------------------------------- */
+  createPresenceClient(socket, getMyUserId, updateContactStatus);
   loadContacts();
 
-  if (window.rtc) {
-    initCallUI(window.rtc);
-  }
+  /* -------------------------------------------------------
+     WebRTC Initialization
+  ------------------------------------------------------- */
+
+  // Create the controller ONCE and expose globally for debugging
+  const rtc = new WebRTCController(socket);
+  window.rtc = rtc;
+
+  // Bind UI buttons + media elements to the controller
+  initCallUI(rtc);
+
+  console.log("[Dashboard] WebRTC initialized");
 });
+
+
 
