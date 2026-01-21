@@ -1,189 +1,132 @@
 // public/js/webrtc/WebRTCMedia.js
-// High‑end media handling: local/remote streams, avatar fallback,
+// Premium media engine: avatar fallback, local/remote media,
 // audio visualization, and speaking detection.
 
 import { rtcState } from "./WebRTCState.js";
-import {
-  localVideo,
-  remoteVideo,
-  remoteAudioEl,
-} from "../session.js";
+import { localVideo, remoteVideo, remoteAudioEl } from "../session.js";
 
 /* -------------------------------------------------------
-   Path normalization helpers
+   Logging Helper
 ------------------------------------------------------- */
+const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
-/**
- * Normalize a backend avatar value into a full, web-accessible URL.
- * Accepts:
- *  - null/undefined → default avatar
- *  - relative filename (e.g. "avatar_x.jpg")
- *  - relative path (e.g. "uploads/avatars/avatar_x.jpg")
- *  - absolute "/NewApp/..." paths
- *  - full http/https URLs
- */
+/* -------------------------------------------------------
+   Avatar Path Normalization
+------------------------------------------------------- */
 function normalizeAvatarPath(path) {
   if (!path) return "/NewApp/img/defaultUser.png";
 
-  // Full URL
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
-  // Already app-rooted
-  if (path.startsWith("/NewApp/")) {
-    return path;
-  }
-
-  // Leading slash but missing /NewApp/
-  if (path.startsWith("/uploads/avatars/")) {
-    return `/NewApp${path}`;
-  }
-
-  // Missing slash but includes uploads/avatars
-  if (path.includes("uploads/avatars/")) {
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/NewApp/")) return path;
+  if (path.startsWith("/uploads/avatars/")) return `/NewApp${path}`;
+  if (path.includes("uploads/avatars/"))
     return `/NewApp/${path.replace(/^\//, "")}`;
-  }
 
-  // Bare filename
   return `/NewApp/uploads/avatars/${path}`;
 }
 
-
 /* -------------------------------------------------------
-   Remote Avatar (Call UI)
+   Remote Avatar Controls
 ------------------------------------------------------- */
-
-/**
- * Update the remote avatar image in the call UI.
- * Falls back to a default placeholder.
- */
 export function setRemoteAvatar(rawUrl) {
   const img = document.getElementById("remoteAvatarImg");
   if (!img) return;
 
-  const normalized = normalizeAvatarPath(rawUrl);
-  img.src = normalized;
+  img.src = normalizeAvatarPath(rawUrl);
 }
 
-/**
- * Toggle visibility between remote avatar and remote video.
- */
 function toggleRemoteAvatar(show) {
   const avatar = document.getElementById("remoteAvatar");
   const video = document.getElementById("remoteVideo");
   if (!avatar || !video) return;
 
-  avatar.style.display = show ? "block" : "none";
+  avatar.style.display = show ? "flex" : "none";
   video.style.display = show ? "none" : "block";
 }
 
 /* -------------------------------------------------------
    Local Avatar Visibility
 ------------------------------------------------------- */
-
-/**
- * Show local avatar when camera is off or unavailable.
- * Hide it when video is flowing.
- */
 function updateLocalAvatarVisibility() {
   const avatar = document.getElementById("localAvatar");
   if (!avatar) return;
 
   const stream = rtcState.localStream;
   if (!stream) {
-    avatar.style.display = "block";
+    avatar.style.display = "flex";
     return;
   }
 
-  const videoTracks = stream.getVideoTracks();
-  const hasEnabledVideo = videoTracks.some((t) => t.enabled);
-
-  avatar.style.display = hasEnabledVideo ? "none" : "block";
+  const hasVideo = stream.getVideoTracks().some((t) => t.enabled);
+  avatar.style.display = hasVideo ? "none" : "flex";
 }
 
 /* -------------------------------------------------------
-   Audio Visualizer (CSS variable driven)
+   Audio Visualizer (CSS variable)
 ------------------------------------------------------- */
-
-/**
- * Attach a real‑time audio visualizer to any element.
- * Updates a CSS variable (--audio-level) for animations.
- */
-function attachAudioVisualizer(stream, targetElement, cssVarName = "--audio-level") {
-  if (!stream || !targetElement) return;
+function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
+  if (!stream || !target) return;
 
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) {
-      console.warn("[WebRTCMedia] AudioContext not supported");
-      return;
-    }
+    if (!AudioCtx) return log("AudioContext not supported");
 
-    const audioCtx = new AudioCtx();
-    const source = audioCtx.createMediaStreamSource(stream);
-    const analyser = audioCtx.createAnalyser();
+    const ctx = new AudioCtx();
+    const src = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
 
     analyser.fftSize = 256;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    source.connect(analyser);
+    const buf = new Uint8Array(analyser.frequencyBinCount);
+    src.connect(analyser);
 
     const tick = () => {
-      analyser.getByteTimeDomainData(dataArray);
+      analyser.getByteTimeDomainData(buf);
 
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) {
-        const v = (dataArray[i] - 128) / 128;
+      for (let i = 0; i < buf.length; i++) {
+        const v = (buf[i] - 128) / 128;
         sum += v * v;
       }
 
-      const rms = Math.sqrt(sum / dataArray.length);
+      const rms = Math.sqrt(sum / buf.length);
       const level = Math.min(1, rms * 4);
 
-      targetElement.style.setProperty(cssVarName, level.toString());
+      target.style.setProperty(cssVar, level.toFixed(3));
       requestAnimationFrame(tick);
     };
 
     tick();
   } catch (err) {
-    console.warn("[WebRTCMedia] Audio visualizer error:", err);
+    log("Visualizer error:", err);
   }
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection (Avatar Ring)
+   Remote Speaking Detection
 ------------------------------------------------------- */
-
-/**
- * Detect remote speaking and toggle a "speaking" class
- * on the avatar ring for visual feedback.
- */
-function startRemoteSpeakingDetection(stream, wrapperEl) {
-  const ringEl = wrapperEl?.querySelector(".avatar-ring");
-  if (!ringEl) return;
+function startRemoteSpeakingDetection(stream, wrapper) {
+  const ring = wrapper?.querySelector(".avatar-ring");
+  if (!ring) return;
 
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) {
-    console.warn("[WebRTCMedia] AudioContext not supported for speaking detection");
-    return;
-  }
+  if (!AudioCtx) return log("AudioContext not supported");
 
-  const audioCtx = new AudioCtx();
-  const analyser = audioCtx.createAnalyser();
+  const ctx = new AudioCtx();
+  const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
 
-  const source = audioCtx.createMediaStreamSource(stream);
-  source.connect(analyser);
+  const src = ctx.createMediaStreamSource(stream);
+  src.connect(analyser);
 
-  const data = new Uint8Array(analyser.frequencyBinCount);
-  let level = 0;
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  let smoothed = 0;
 
   const loop = () => {
-    analyser.getByteFrequencyData(data);
-    const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+    analyser.getByteFrequencyData(buf);
+    const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
-    level = 0.8 * level + 0.2 * avg;
-    ringEl.classList.toggle("speaking", level > 0.06);
+    smoothed = smoothed * 0.8 + avg * 0.2;
+    ring.classList.toggle("speaking", smoothed > 0.06);
 
     requestAnimationFrame(loop);
   };
@@ -194,14 +137,9 @@ function startRemoteSpeakingDetection(stream, wrapperEl) {
 /* -------------------------------------------------------
    Local Media Acquisition
 ------------------------------------------------------- */
-
-/**
- * Request local audio/video.
- * Handles avatar fallback, video preview, and visualizer.
- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
-    console.warn("[WebRTCMedia] getUserMedia not supported");
+    log("getUserMedia not supported");
     return null;
   }
 
@@ -209,8 +147,7 @@ export async function getLocalMedia(audio = true, video = true) {
     const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
     rtcState.localStream = stream;
 
-    // Attach local video preview
-    if (stream.getVideoTracks().length > 0 && localVideo) {
+    if (video && localVideo) {
       localVideo.srcObject = stream;
       localVideo.muted = true;
       await localVideo.play().catch(() => {});
@@ -223,12 +160,11 @@ export async function getLocalMedia(audio = true, video = true) {
 
     return stream;
   } catch (err) {
-    console.warn("[WebRTCMedia] Local media error:", err);
+    log("Local media error:", err);
     rtcState.localStream = null;
 
-    // Show avatar when no camera/mic available
     const avatar = document.getElementById("localAvatar");
-    if (avatar) avatar.style.display = "block";
+    if (avatar) avatar.style.display = "flex";
 
     return null;
   }
@@ -237,24 +173,18 @@ export async function getLocalMedia(audio = true, video = true) {
 /* -------------------------------------------------------
    Remote Track Handling
 ------------------------------------------------------- */
-
-/**
- * Attach incoming remote audio/video tracks.
- * Handles avatar fallback, speaking detection, and visualizer.
- */
 export function attachRemoteTrack(evt) {
   const remoteStream = rtcState.remoteStream || new MediaStream();
   rtcState.remoteStream = remoteStream;
+
   remoteStream.addTrack(evt.track);
 
   const wrapper =
     remoteVideo.closest(".remote-media-wrapper") ||
     remoteAudioEl.closest(".remote-media-wrapper");
 
-  // Always show avatar until video is confirmed playing
   toggleRemoteAvatar(true);
 
-  // VIDEO TRACK
   if (evt.track.kind === "video") {
     remoteVideo.srcObject = remoteStream;
 
@@ -263,12 +193,9 @@ export function attachRemoteTrack(evt) {
       toggleRemoteAvatar(false);
     };
 
-    evt.track.onended = () => {
-      toggleRemoteAvatar(true);
-    };
+    evt.track.onended = () => toggleRemoteAvatar(true);
   }
 
-  // AUDIO TRACK
   if (evt.track.kind === "audio") {
     remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.play().catch(() => {});
@@ -276,13 +203,14 @@ export function attachRemoteTrack(evt) {
     if (wrapper) startRemoteSpeakingDetection(remoteStream, wrapper);
   }
 
-  // Audio-reactive border for remote wrapper
   if (wrapper) attachAudioVisualizer(remoteStream, wrapper);
 }
 
 /* -------------------------------------------------------
-   Public Helper: Refresh Local Avatar
+   Public Helper
 ------------------------------------------------------- */
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
+
