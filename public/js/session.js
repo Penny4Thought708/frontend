@@ -6,7 +6,9 @@ import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
 const w = typeof window !== "undefined" ? window : {};
-
+console.log("[session] LOADED");
+window._session_debug = (window._session_debug || 0) + 1;
+console.log("session.js load count:", window._session_debug);
 // -------------------------------------------------------
 // ⭐ Load identity from backend (Node version)
 // -------------------------------------------------------
@@ -304,6 +306,7 @@ function resetInactivityTimer() {
 });
 
 resetInactivityTimer();
+
 
 
 
