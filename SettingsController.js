@@ -4,8 +4,7 @@ const SettingsController = {
     this.bindUI();
     await DeviceManager.init();
     this.applyUI();
-    this.applyLive("camera");
-    this.applyLive("microphone");
+ 
   },
 
   /* ---------------- UI Binding ---------------- */
@@ -160,4 +159,5 @@ const SettingsController = {
   },
 };
 window.SettingsController = SettingsController;
+
 
