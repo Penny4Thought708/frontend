@@ -16,7 +16,7 @@ import {
   renderMessages,
   renderIncomingMessage,
 } from "./messaging/MessageUI.js";
-import { updateReactionUI } from "./messaging/ReactionUI.js";
+import { updateReaction } from "./messaging/ReactionUI.js";
 import "./messaging/TypingUI.js";
 
 // Contacts + Call logs
@@ -1151,6 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
