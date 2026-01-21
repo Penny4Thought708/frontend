@@ -1,34 +1,39 @@
 // public/js/webrtc/AvatarFallback.js
-// Unified avatar system for CALL UI + MESSAGING UI
+// Premium unified avatar system for CALL UI + MESSAGING UI
 
 const DEFAULT_AVATAR = "img/defaultUser.png";
 const BACKEND_BASE = "https://letsee-backend.onrender.com";
 
 /* -------------------------------------------------------
    NORMALIZE AVATAR PATH
-   - Supports: absolute URLs, /uploads/..., uploads/..., filenames
+   - Handles: full URLs, /uploads/..., uploads/..., filenames
    - Works on GitHub Pages + Node backend
 ------------------------------------------------------- */
 function normalizeAvatarPath(path) {
   if (!path) return DEFAULT_AVATAR;
 
-  // Already a full URL
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
+  try {
+    // Full URL
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
 
-  // Backend returned "/uploads/avatars/filename.jpg"
-  if (path.startsWith("/uploads/avatars/")) {
-    return `${BACKEND_BASE}${path}`;
-  }
+    // "/uploads/avatars/filename.jpg"
+    if (path.startsWith("/uploads/avatars/")) {
+      return `${BACKEND_BASE}${path}`;
+    }
 
-  // Backend returned "uploads/avatars/filename.jpg"
-  if (path.includes("uploads/avatars/")) {
-    return `${BACKEND_BASE}/${path.replace(/^\//, "")}`;
-  }
+    // "uploads/avatars/filename.jpg"
+    if (path.includes("uploads/avatars/")) {
+      return `${BACKEND_BASE}/${path.replace(/^\//, "")}`;
+    }
 
-  // Backend returned just "filename.jpg"
-  return `${BACKEND_BASE}/uploads/avatars/${path}`;
+    // Bare filename
+    return `${BACKEND_BASE}/uploads/avatars/${path}`;
+  } catch (err) {
+    console.warn("[AvatarFallback] normalize error:", err);
+    return DEFAULT_AVATAR;
+  }
 }
 
 /* -------------------------------------------------------
@@ -94,7 +99,7 @@ export function showRemoteVideo() {
   const avatar = document.getElementById("remoteAvatar");
 
   if (avatar) {
-    avatar.style.display = "flex"; // stays underneath for fade-in effect
+    avatar.style.display = "flex"; // stays underneath for fade-in
     avatar.style.opacity = "1";
   }
   if (video) {
@@ -175,5 +180,7 @@ export function showVideo(wrapperEl) {
   if (video) video.style.display = "block";
   if (avatarEl) avatarEl.style.display = "none";
 }
+
+
 
 
