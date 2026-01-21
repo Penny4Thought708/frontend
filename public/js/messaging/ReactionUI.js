@@ -43,6 +43,7 @@ export function updateReactions(payload) {
   void container.offsetWidth; // force reflow
   container.classList.add("reaction-pop");
 }
+export const updateReaction = updateReactions;
 
 /**
  * Optional helper to attach reaction click handlers.
@@ -63,6 +64,7 @@ export function initReactionClickHandlers(onToggleReaction) {
     }
   });
 }
+
 
 
 
