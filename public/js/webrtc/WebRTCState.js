@@ -1,5 +1,6 @@
 // public/js/webrtc/WebRTCState.js
-// Centralized, authoritative WebRTC state + robust reset utilities
+// Premium, centralized WebRTC state container with robust teardown,
+// defensive guards, and expressive state transitions.
 
 export const rtcState = {
   /* ---------------------------------------------------
@@ -15,6 +16,7 @@ export const rtcState = {
   isCaller: false,
   audioOnly: false,
   incomingOffer: null,
+  callEstablished: false,   // NEW: true once both sides exchange SDP
 
   /* ---------------------------------------------------
      Media Streams
@@ -29,23 +31,46 @@ export const rtcState = {
   callTimerInterval: null,
 
   /* ---------------------------------------------------
-     State Mutators
+     Logging Helper
   --------------------------------------------------- */
-
-  /**
-   * Assign the active peer identity.
-   * @param {string|null} id
-   * @param {string|null} name
-   */
-  setPeer(id, name = null) {
-    this.peerId = id ?? null;
-    if (name) this.peerName = name;
+  log(...args) {
+    console.log("[rtcState]", ...args);
   },
 
-  /**
-   * Stop and clear all media streams.
-   * Ensures cameras/mics are released cleanly.
-   */
+  /* ---------------------------------------------------
+     Peer Assignment
+  --------------------------------------------------- */
+  setPeer(id, name = null) {
+    this.peerId = id ?? null;
+    this.peerName = name ?? null;
+    this.log("Peer set:", { id: this.peerId, name: this.peerName });
+  },
+
+  /* ---------------------------------------------------
+     Call State Mutators
+  --------------------------------------------------- */
+  setCallState({ inCall, isCaller, audioOnly, incomingOffer } = {}) {
+    if (inCall !== undefined) this.inCall = inCall;
+    if (isCaller !== undefined) this.isCaller = isCaller;
+    if (audioOnly !== undefined) this.audioOnly = audioOnly;
+    if (incomingOffer !== undefined) this.incomingOffer = incomingOffer;
+
+    this.log("Call state updated:", {
+      inCall: this.inCall,
+      isCaller: this.isCaller,
+      audioOnly: this.audioOnly,
+      incomingOffer: this.incomingOffer,
+    });
+  },
+
+  markCallEstablished() {
+    this.callEstablished = true;
+    this.log("Call established");
+  },
+
+  /* ---------------------------------------------------
+     Media Reset
+  --------------------------------------------------- */
   resetMedia() {
     try {
       if (this.localStream) {
@@ -57,39 +82,67 @@ export const rtcState = {
 
     this.localStream = null;
     this.remoteStream = null;
+    this.log("Media reset");
   },
 
-  /**
-   * Reset the call timer safely.
-   */
+  /* ---------------------------------------------------
+     Timer Reset
+  --------------------------------------------------- */
   resetTimer() {
     if (this.callTimerInterval) {
       clearInterval(this.callTimerInterval);
     }
     this.callTimerInterval = null;
     this.callTimerSeconds = 0;
+    this.log("Timer reset");
   },
 
-  /**
-   * Reset all call‑related flags and peer identity.
-   */
+  /* ---------------------------------------------------
+     Call State Reset
+  --------------------------------------------------- */
   resetCallState() {
     this.inCall = false;
     this.isCaller = false;
     this.audioOnly = false;
     this.incomingOffer = null;
+    this.callEstablished = false;
 
     this.peerId = null;
     this.peerName = null;
+
+    this.log("Call state reset");
   },
 
-  /**
-   * Full teardown of all WebRTC state.
-   * Use this after any call ends or fails.
-   */
+  /* ---------------------------------------------------
+     Full Teardown
+  --------------------------------------------------- */
   fullReset() {
+    this.log("Performing full WebRTC teardown…");
     this.resetMedia();
     this.resetTimer();
     this.resetCallState();
   },
+
+  /* ---------------------------------------------------
+     Debug Snapshot
+  --------------------------------------------------- */
+  debug() {
+    const snapshot = {
+      peerId: this.peerId,
+      peerName: this.peerName,
+      inCall: this.inCall,
+      isCaller: this.isCaller,
+      audioOnly: this.audioOnly,
+      incomingOffer: this.incomingOffer,
+      callEstablished: this.callEstablished,
+      hasLocalStream: !!this.localStream,
+      hasRemoteStream: !!this.remoteStream,
+      callTimerSeconds: this.callTimerSeconds,
+    };
+
+    this.log("State snapshot:", snapshot);
+    return snapshot;
+  },
 };
+
+
