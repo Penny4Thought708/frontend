@@ -1,7 +1,9 @@
 // public/js/messaging/MessageUI.js
+
 import {
   messageWin,
   notificationSound,
+  getMyUserId
 } from "../session.js";
 
 import { store } from "./StateStore.js";
@@ -17,17 +19,15 @@ const imgViewer    = document.getElementById("img-viewer");
 const imgViewerImg = document.getElementById("img-viewer-img");
 
 /* -------------------------------------------------------
-   Create Message Bubble
+   Create Message Bubble (Unified Renderer)
 ------------------------------------------------------- */
-function createMessageBubble(msg) { 
-  const isMe = msg.sender_id === store.myId || msg.is_me; const bubble = document.createElement("div"); bubble.className = isMe ? "msg-bubble me" : "msg-bubble them"; bubble.dataset.msgId = msg.id;
- 
- 
- 
- 
- 
- 
- 
+function createMessageBubble(msg) {
+  const isMe = msg.sender_id === getMyUserId() || msg.is_me;
+
+  const bubble = document.createElement("div");
+  bubble.className = isMe ? "msg-bubble me" : "msg-bubble them";
+  bubble.dataset.msgId = msg.id;
+
   /* -------------------------------
      TEXT MESSAGE
   --------------------------------*/
@@ -45,7 +45,6 @@ function createMessageBubble(msg) {
     img.src = msg.file_url;
     img.className = "msg-gif";
     img.alt = "GIF";
-
     img.addEventListener("click", () => openImageViewer(img.src));
     bubble.appendChild(img);
   }
@@ -58,7 +57,6 @@ function createMessageBubble(msg) {
     img.src = msg.file_url;
     img.className = "msg-image";
     img.alt = msg.filename || "attachment";
-
     img.addEventListener("click", () => openImageViewer(img.src));
     bubble.appendChild(img);
   }
@@ -111,32 +109,16 @@ if (imgViewer) {
 }
 
 /* -------------------------------------------------------
-   Render Full Conversation
+   Render Full Conversation (Unified)
 ------------------------------------------------------- */
 export function renderMessages(msg) {
-  if (!messageWin) return;
+  const { bubble, isMe } = createMessageBubble(msg);
 
-  const div = document.createElement("div");
-  div.className = msg.is_me ? "sender_msg" : "receiver_msg";
-
-  if (msg.id != null) div.dataset.msgId = String(msg.id);
-  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
-
-  const p = document.createElement("p");
-  const strong = document.createElement("strong");
-  strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
-  p.appendChild(strong);
-  p.appendChild(document.createTextNode(": "));
-  div.appendChild(p);
-
-  // ⭐ REQUIRED FOR REACTIONS ⭐
-  const reactionRow = document.createElement("div");
-  reactionRow.className = "msg-reactions reaction-display";
-  reactionRow.dataset.msgId = msg.id;
-  reactionRow.style.display = "none";
-  div.appendChild(reactionRow);
-
-  messageWin.appendChild(div);
+  if (isMe) {
+    senderContainer?.appendChild(bubble);
+  } else {
+    receiverContainer?.appendChild(bubble);
+  }
 }
 
 /* -------------------------------------------------------
@@ -164,3 +146,5 @@ function scrollToBottom() {
   if (!messageWin) return;
   messageWin.scrollTop = messageWin.scrollHeight;
 }
+
+
