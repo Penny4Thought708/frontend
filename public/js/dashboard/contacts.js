@@ -33,9 +33,6 @@ let autoCloseProfileOnMessages = true;
 window.UserCache = window.UserCache || {};
 window.pendingPresence = window.pendingPresence || new Map();
 
-let activeContact = null;
-let isProfileOpen = false;
-let openProfileUserId = null;
 
 /* -------------------------------------------------------
    HELPERS
@@ -473,6 +470,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
