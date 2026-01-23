@@ -303,7 +303,7 @@ export async function loadContacts() {
    Render Blocked Card
 ------------------------------------------------------- */
 
-function renderBlockedCard(userRaw) {
+export function renderBlockedCard(userRaw) {
   const user = normalizeContact(userRaw);
 
   const li = document.createElement("li");
@@ -345,16 +345,20 @@ export function renderContactCard(userRaw) {
   li.className = "contact-card";
   li.dataset.contactId = String(user.contact_id);
 
+  const lastText = user.last_message?.text || "";
+  const unread = user.unread_count > 0 ? `<span class="unread-badge">${user.unread_count}</span>` : "";
+
   li.innerHTML = `
     <img class="contact-avatar" src="${user.contact_avatar}">
-    <span class="contact-status" title="${
-      user.online ? "Online" : "Offline"
-    }"></span>
+    <span class="contact-status" title="${user.online ? "Online" : "Offline"}"></span>
 
     <div class="contact-info">
       <div class="contact-name">${user.contact_name}</div>
       <div class="contact-email">${user.contact_email}</div>
+      <div class="contact-last">${lastText}</div>
     </div>
+
+    ${unread}
 
     <div class="contact-actions">
       <button class="info-btn">ℹ️</button>
@@ -364,17 +368,20 @@ export function renderContactCard(userRaw) {
     </div>
   `;
 
+  // Info button
   li.querySelector(".info-btn").onclick = (e) => {
     e.stopPropagation();
     openFullProfile(user);
   };
 
+  // Chat button
   li.querySelector(".chat-btn").onclick = (e) => {
     e.stopPropagation();
     openMessagesFor(user);
     selectCard(li);
   };
 
+  // Block button
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
     const data = await postJson(
@@ -384,6 +391,7 @@ export function renderContactCard(userRaw) {
     if (data.success) loadContacts();
   };
 
+  // Delete button
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
@@ -396,6 +404,7 @@ export function renderContactCard(userRaw) {
 
   return li;
 }
+
 /* -------------------------------------------------------
    FULL PROFILE MODAL
 ------------------------------------------------------- */
@@ -595,6 +604,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
