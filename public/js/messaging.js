@@ -3,7 +3,7 @@
 // Messaging System (NO WebRTC, Node backend)
 
 import {
-  myUserId,
+  getMyUserId,
   messageWin,
   msgForm,
   msgInput,
@@ -988,6 +988,7 @@ setInterval(() => {
     loadMessages().catch(() => showError("Poll failed"));
   }
 }, 8000);
+
 
 
 
