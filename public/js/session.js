@@ -14,7 +14,7 @@ console.log("session.js load count:", window._session_debug);
 // -------------------------------------------------------
 async function loadIdentity() {
   try {
-    const res = await fetch("https://letsee-backend.onrender.com/src/routes/auth/me", {
+    const res = await fetch("https://letsee-backend.onrender.com/src/routes/auth/me.js", {
       credentials: "include",
     });
 
@@ -304,6 +304,7 @@ function resetInactivityTimer() {
 });
 
 resetInactivityTimer();
+
 
 
 
