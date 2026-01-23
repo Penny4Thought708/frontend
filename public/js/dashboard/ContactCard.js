@@ -2,81 +2,145 @@
 
 import { setReceiver, loadMessages } from "../messaging.js";
 
+/* -------------------------------------------------------
+   Render Contact Card (FINAL VERSION)
+------------------------------------------------------- */
 export function renderContactCard(user, pendingPresence, updateContactStatus) {
   const li = document.createElement("li");
   li.className = "contact-card";
   li.dataset.contactId = String(user.contact_id);
 
   /* -------------------------------------------------------
-     Status Dot
+     Avatar + Status
   ------------------------------------------------------- */
+  const avatarWrapper = document.createElement("div");
+  avatarWrapper.className = "avatar-wrapper";
+
+  const avatar = document.createElement("img");
+  avatar.className = "contact-avatar";
+  avatar.src = user.contact_avatar;
+  avatar.alt = "avatar";
+
+  avatar.onerror = () => {
+    avatar.src = "/img/defaultUser.png";
+  };
+
   const status = document.createElement("span");
   status.className = "contact-status";
-  status.style.backgroundColor = user.online ? "green" : "gray";
+  status.classList.toggle("online", user.online);
+  status.classList.toggle("offline", !user.online);
+
+  avatarWrapper.append(avatar, status);
 
   /* -------------------------------------------------------
-     Contact Name
+     Contact Info
   ------------------------------------------------------- */
-  const name = document.createElement("span");
+  const info = document.createElement("div");
+  info.className = "contact-info";
+
+  const name = document.createElement("div");
   name.className = "contact-name";
-  name.textContent = `${user.contact_name} (${user.contact_email})`;
+  name.textContent = user.contact_name;
 
-  name.addEventListener("click", () => {
-    window.activeContact = user;
-    window.receiver_id = user.contact_id;
+  const email = document.createElement("div");
+  email.className = "contact-email";
+  email.textContent = user.contact_email;
 
-    // Update header
-    const header = document.querySelector(".header_msg_box h2");
-    if (header) header.textContent = user.contact_name;
+  const last = document.createElement("div");
+  last.className = "contact-last";
+  last.textContent =
+    user.last_message?.text?.trim() ||
+    (user.last_message?.file_url ? "[Attachment]" : "");
 
-    // Highlight selected contact
-    document
-      .querySelectorAll(".contact-card.selected")
-      .forEach((c) => c.classList.remove("selected"));
-    li.classList.add("selected");
-  });
-
-  li.append(status, name);
+  info.append(name, email, last);
 
   /* -------------------------------------------------------
-     Actions (Chat / Block / Delete)
+     Unread Badge
+  ------------------------------------------------------- */
+  let unreadBadge = null;
+  if (user.unread_count > 0) {
+    unreadBadge = document.createElement("span");
+    unreadBadge.className = "unread-badge";
+    unreadBadge.textContent = user.unread_count;
+  }
+
+  /* -------------------------------------------------------
+     Actions (Info / Chat / Block / Delete)
   ------------------------------------------------------- */
   const actions = document.createElement("div");
   actions.className = "contact-actions";
 
-  // ✅ CHAT BUTTON
-  const chatBtn = document.createElement("button");
-  chatBtn.textContent = "💬 Chat";
+  const infoBtn = document.createElement("button");
+  infoBtn.className = "info-btn";
+  infoBtn.textContent = "ℹ️";
 
-  chatBtn.addEventListener("click", async () => {
+  infoBtn.onclick = (e) => {
+    e.stopPropagation();
+    window.openFullProfile?.(user);
+  };
+
+  const chatBtn = document.createElement("button");
+  chatBtn.className = "chat-btn";
+  chatBtn.textContent = "💬";
+
+  chatBtn.onclick = async (e) => {
+    e.stopPropagation();
+
     window.activeContact = user;
     window.receiver_id = user.contact_id;
 
-    // ✅ Open messaging panel
     document.getElementById("messaging_box")?.classList.add("active");
 
-    // ✅ Update header name
     const header = document.querySelector(".header_msg_box h2");
     if (header) header.textContent = user.contact_name;
 
-    // ✅ Tell messaging.js who the receiver is
     setReceiver(user.contact_id);
-
-    // ✅ Load messages into .message_win1
     await loadMessages();
-  });
 
-  // BLOCK BUTTON
+    document
+      .querySelectorAll(".contact-card.selected")
+      .forEach((c) => c.classList.remove("selected"));
+    li.classList.add("selected");
+  };
+
   const blockBtn = document.createElement("button");
-  blockBtn.textContent = "🚫 Block";
-  blockBtn.addEventListener("click", () => blockContact(user.contact_id));
+  blockBtn.className = "block-btn";
+  blockBtn.textContent = "🚫";
 
-  // DELETE BUTTON
+  blockBtn.onclick = async (e) => {
+    e.stopPropagation();
+    await fetch("https://letsee-backend.onrender.com/api/contacts/block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contact_id: user.contact_id }),
+    });
+    window.loadContacts?.();
+  };
+
   const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "🗑 Delete";
-  deleteBtn.addEventListener("click", () => deleteContact(user.contact_id));
+  deleteBtn.className = "delete-btn";
+  deleteBtn.textContent = "🗑";
 
-  actions.append(chatBtn, blockBtn, deleteBtn);
+  deleteBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (!confirm(`Delete ${user.contact_name}?`)) return;
+
+    await fetch("https://letsee-backend.onrender.com/api/contacts/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contact_id: user.contact_id }),
+    });
+
+    window.loadContacts?.();
+  };
+
+  actions.append(infoBtn, chatBtn, blockBtn, deleteBtn);
+
+  /* -------------------------------------------------------
+     Assemble Card
+  ------------------------------------------------------- */
+  li.append(avatarWrapper, info);
+  if (unreadBadge) li.append(unreadBadge);
   li.append(actions);
 
   /* -------------------------------------------------------
@@ -91,33 +155,6 @@ export function renderContactCard(user, pendingPresence, updateContactStatus) {
   return li;
 }
 
-/* -------------------------------------------------------
-   Contact Actions
-------------------------------------------------------- */
-
-async function blockContact(contact_id) {
-  const res = await fetch("https://letsee-backend.onrender.com/api/contacts/block", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contact_id }),
-  });
-
-  const data = await res.json();
-  if (data.success) alert("Contact blocked");
-}
-
-async function deleteContact(contact_id) {
-  if (!confirm("Delete this contact")) return;
-
-  const res = await fetch("https://letsee-backend.onrender.com/api/contacts/delete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contact_id }),
-  });
-
-  const data = await res.json();
-  if (data.success) alert("Contact deleted");
-}
 
 
 
