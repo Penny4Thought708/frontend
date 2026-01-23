@@ -59,61 +59,35 @@ function normalizeContact(raw) {
   const safe = (v, fallback = "") =>
     v === null || v === undefined || v === "null" ? fallback : String(v);
 
-  const toBool = (v) => v == 1 || v === "1" || v === true;
-
-  let avatar = safe(raw.contact_avatar || raw.avatar);
-  if (!avatar || avatar.length < 3) {
-    avatar = "/img/defaultUser.png";
-  }
-
-  let banner = safe(raw.contact_banner || raw.banner);
-  if (!banner || banner.length < 3) {
-    banner = "/img/profile-banner.jpg";
-  }
-
-  let website = safe(raw.contact_website || raw.website);
-  if (website && !website.startsWith("http")) {
-    website = "https://" + website;
-  }
-
-  let twitter = safe(raw.contact_twitter || raw.twitter);
-  if (twitter.startsWith("https://twitter.com/")) {
-    twitter = twitter.replace("https://twitter.com/", "");
-  }
-
-  let instagram = safe(raw.contact_instagram || raw.instagram);
-  if (instagram.startsWith("https://instagram.com/")) {
-    instagram = instagram.replace("https://instagram.com/", "");
-  }
-
   const user = {
-    contact_id: safe(raw.contact_id || raw.user_id),
-    contact_name: safe(raw.fullname || raw.contact_name),
-    contact_email: safe(raw.email || raw.contact_email),
-    contact_avatar: avatar,
-    contact_phone: safe(raw.phone || raw.contact_phone),
-    contact_bio: safe(raw.bio || raw.contact_bio),
-    contact_banner: banner,
+    contact_id: safe(raw.id),
+    contact_name: safe(raw.name),
+    contact_email: safe(raw.email),
 
-    contact_website: website || "",
-    contact_twitter: twitter || "",
-    contact_instagram: instagram || "",
+    contact_avatar: raw.avatar || "/img/defaultUser.png",
+    contact_banner: raw.banner || "/img/profile-banner.jpg",
 
-    contact_show_online: toBool(
-      raw.contact_show_online ?? raw.show_online ?? 1
-    ),
-    contact_allow_messages: toBool(
-      raw.contact_allow_messages ?? raw.allow_messages ?? 1
-    ),
+    contact_phone: safe(raw.phone),
+    contact_bio: safe(raw.bio),
 
-    last_message: raw.last_message ?? null,
-    last_message_at: raw.last_message_at ?? null,
-    unread_count: raw.unread_count ?? 0,
+    contact_website: safe(raw.website),
+    contact_twitter: safe(raw.twitter),
+    contact_instagram: safe(raw.instagram),
+
+    favorite: raw.favorite ?? false,
+    added_on: raw.added_on ?? null,
 
     online: raw.online ?? false,
-    fromLookup: raw.fromLookup === true,
+
+    // NEW last message structure
+    last_message: raw.last_message || null,
+    last_message_at: raw.last_message?.created_at || null,
+    unread_count: raw.last_message?.unread || 0,
+
+    fromLookup: raw.fromLookup === true
   };
 
+  // Cache it
   UserCache[user.contact_id] = {
     ...(UserCache[user.contact_id] || {}),
     ...user,
@@ -621,6 +595,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
