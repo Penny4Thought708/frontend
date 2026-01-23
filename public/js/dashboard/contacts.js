@@ -360,9 +360,8 @@ export function renderBlockedCard(userRaw) {
 }
 
 /* -------------------------------------------------------
-   Render Contact Card
+   Render Contact Card (FINAL VERSION)
 ------------------------------------------------------- */
-
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
 
@@ -370,12 +369,23 @@ export function renderContactCard(userRaw) {
   li.className = "contact-card";
   li.dataset.contactId = String(user.contact_id);
 
-  const lastText = user.last_message?.text || "";
-  const unread = user.unread_count > 0 ? `<span class="unread-badge">${user.unread_count}</span>` : "";
+  // Last message preview
+  const lastText =
+    user.last_message?.text?.trim() ||
+    (user.last_message?.file_url ? "[Attachment]" : "");
+
+  // Unread badge
+  const unreadBadge =
+    user.unread_count > 0
+      ? `<span class="unread-badge">${user.unread_count}</span>`
+      : "";
 
   li.innerHTML = `
-    <img class="contact-avatar" src="${user.contact_avatar}">
-    <span class="contact-status" title="${user.online ? "Online" : "Offline"}"></span>
+    <div class="avatar-wrapper">
+      <img class="contact-avatar" src="${user.contact_avatar}" alt="avatar">
+      <span class="contact-status ${user.online ? "online" : "offline"}"
+            title="${user.online ? "Online" : "Offline"}"></span>
+    </div>
 
     <div class="contact-info">
       <div class="contact-name">${user.contact_name}</div>
@@ -383,30 +393,34 @@ export function renderContactCard(userRaw) {
       <div class="contact-last">${lastText}</div>
     </div>
 
-    ${unread}
+    ${unreadBadge}
 
     <div class="contact-actions">
-      <button class="info-btn">ℹ️</button>
-      <button class="chat-btn">💬</button>
-      <button class="block-btn">🚫</button>
-      <button class="delete-btn">🗑</button>
+      <button class="info-btn" title="View Profile">ℹ️</button>
+      <button class="chat-btn" title="Open Chat">💬</button>
+      <button class="block-btn" title="Block Contact">🚫</button>
+      <button class="delete-btn" title="Delete Contact">🗑</button>
     </div>
   `;
 
-  // Info button
+  /* -------------------------------------------------------
+     Event Handlers
+  ------------------------------------------------------- */
+
+  // Info button → open profile
   li.querySelector(".info-btn").onclick = (e) => {
     e.stopPropagation();
     openFullProfile(user);
   };
 
-  // Chat button
+  // Chat button → open messages
   li.querySelector(".chat-btn").onclick = (e) => {
     e.stopPropagation();
     openMessagesFor(user);
     selectCard(li);
   };
 
-  // Block button
+  // Block contact
   li.querySelector(".block-btn").onclick = async (e) => {
     e.stopPropagation();
     const data = await postJson(
@@ -416,15 +430,25 @@ export function renderContactCard(userRaw) {
     if (data.success) loadContacts();
   };
 
-  // Delete button
+  // Delete contact
   li.querySelector(".delete-btn").onclick = async (e) => {
     e.stopPropagation();
     if (!confirm(`Delete ${user.contact_name}?`)) return;
+
     const data = await postJson(
       "https://letsee-backend.onrender.com/api/contacts/delete",
       { contact_id: user.contact_id }
     );
+
     if (data.success) loadContacts();
+  };
+
+  /* -------------------------------------------------------
+     Avatar fallback (prevents broken layout)
+  ------------------------------------------------------- */
+  const img = li.querySelector(".contact-avatar");
+  img.onerror = () => {
+    img.src = "/img/defaultUser.png";
   };
 
   return li;
@@ -629,6 +653,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
