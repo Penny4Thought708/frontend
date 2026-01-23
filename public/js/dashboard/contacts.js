@@ -4,18 +4,18 @@
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
-
-import { socket } from "./dashboard/socket.js";
+import { socket } from "./socket.js";
 import {
   getMyUserId,
   lookupBtn,
   lookupInput,
   lookupResults,
   messageBox
-} from "./dashboard/session.js";
+} from "./session.js";
 
-import { setReceiver, loadMessages } from "./dashboard/messaging.js";
-import { setContactLookup } from "./dashboard/call-log.js";
+import { setReceiver, loadMessages } from "./messaging.js";
+import { setContactLookup } from "./call-log.js";
+
 
 /* -------------------------------------------------------
    GLOBAL STATE
@@ -463,6 +463,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
