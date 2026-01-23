@@ -18,7 +18,19 @@ import { getMyUserId } from "../session.js";
 import { WebRTCController } from "../webrtc/WebRTCController.js";
 import { initCallUI } from "../webrtc/CallUI.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+/* -------------------------------------------------------
+   Wait for Identity (prevents early initialization)
+------------------------------------------------------- */
+async function waitForIdentity() {
+  let id = getMyUserId();
+  while (!id) {
+    await new Promise(r => setTimeout(r, 50));
+    id = getMyUserId();
+  }
+  return id;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   /* -------------------------------------------------------
      Dashboard UI Initialization
   ------------------------------------------------------- */
@@ -33,24 +45,32 @@ document.addEventListener("DOMContentLoaded", () => {
   setBatteryLevel(85);
 
   /* -------------------------------------------------------
-     Presence + Contacts
+     Identity MUST load before anything else
   ------------------------------------------------------- */
-  createPresenceClient(socket, getMyUserId, updateContactStatus);
-  loadContacts();
+  const myId = await waitForIdentity();
+  console.log("[Dashboard] Identity ready:", myId);
+
+  /* -------------------------------------------------------
+     Presence + Contacts (AFTER identity)
+  ------------------------------------------------------- */
+  window.pendingPresence = new Map();
+
+  await createPresenceClient(
+    socket,
+    getMyUserId,
+    updateContactStatus,
+    window.pendingPresence
+  );
+
+  await loadContacts();
 
   /* -------------------------------------------------------
      WebRTC Initialization
   ------------------------------------------------------- */
-
-  // Create the controller ONCE and expose globally for debugging
   const rtc = new WebRTCController(socket);
   window.rtc = rtc;
 
-  // Bind UI buttons + media elements to the controller
   initCallUI(rtc);
 
   console.log("[Dashboard] WebRTC initialized");
 });
-
-
-
