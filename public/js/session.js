@@ -277,6 +277,27 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
+export async function postForm(path, payload) {
+  const cleanPath = path.replace(".php", "");
+  const url = cleanPath.startsWith("http")
+    ? cleanPath
+    : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response from", url, ":", text);
+    throw new Error("Invalid JSON response");
+  }
+}
 
 // ------------------------------
 // AUTO LOGOUT AFTER INACTIVITY
@@ -304,6 +325,7 @@ function resetInactivityTimer() {
 });
 
 resetInactivityTimer();
+
 
 
 
