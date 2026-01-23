@@ -1,9 +1,23 @@
 // public/js/dashboard/PresenceClient.js
 
 /* -------------------------------------------------------
-   Presence Client (FINAL VERSION)
+   Wait for Identity (prevents early initialization)
 ------------------------------------------------------- */
-export function createPresenceClient(
+async function waitForIdentity(getMyUserId) {
+  let id = getMyUserId();
+
+  while (!id) {
+    await new Promise(r => setTimeout(r, 50));
+    id = getMyUserId();
+  }
+
+  return id;
+}
+
+/* -------------------------------------------------------
+   Presence Client (FINAL FIXED VERSION)
+------------------------------------------------------- */
+export async function createPresenceClient(
   socket,
   getMyUserId,
   updateContactStatus,
@@ -14,11 +28,10 @@ export function createPresenceClient(
     return;
   }
 
-  const myId = getMyUserId();
-  if (!myId) {
-    console.warn("[PresenceClient] No user ID available");
-    return;
-  }
+  // ⭐ Wait until identity is fully loaded
+  const myId = await waitForIdentity(getMyUserId);
+
+  console.log("[PresenceClient] Identity ready:", myId);
 
   // ⭐ Register this user with the backend
   socket.emit("session:init", { userId: myId });
@@ -54,4 +67,3 @@ export function createPresenceClient(
   ------------------------------------------------------- */
   socket.emit("presence:get", { userId: myId });
 }
-
