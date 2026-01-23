@@ -5,17 +5,17 @@
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
 
-import { socket } from "./socket.js";
+import { socket } from "./dashboard/socket.js";
 import {
   getMyUserId,
   lookupBtn,
   lookupInput,
   lookupResults,
   messageBox
-} from "./session.js";
+} from "./dashboard/session.js";
 
-import { setReceiver, loadMessages } from "./messaging.js";
-import { setContactLookup } from "./call-log.js";
+import { setReceiver, loadMessages } from "./dashboard/messaging.js";
+import { setContactLookup } from "./dashboard/call-log.js";
 
 /* -------------------------------------------------------
    GLOBAL STATE
@@ -463,6 +463,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
