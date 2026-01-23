@@ -1151,6 +1151,11 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+(async () => {
+  await waitForIdentity();
+  loadContacts();
+})();
+
 
 
 
