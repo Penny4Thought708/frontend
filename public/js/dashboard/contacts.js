@@ -4,17 +4,27 @@
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
-import { socket } from "./socket.js";
+import { socket } from "../socket.js";
+
+
 import {
   getMyUserId,
   lookupBtn,
   lookupInput,
   lookupResults,
-  messageBox
-} from "./session.js";
+  getVoiceBtn,
+  getVideoBtn,
+  messageBox,
+} from "../session.js";
 
-import { setReceiver, loadMessages } from "./messaging.js";
-import { setContactLookup } from "./call-log.js";
+import { setReceiver, loadMessages } from "../messaging.js";
+import { setContactLookup } from "../call-log.js";
+
+let activeContact = null;
+let isProfileOpen = false;
+let isMessagesOpen = false;
+let openProfileUserId = null;
+let autoCloseProfileOnMessages = true;
 
 
 /* -------------------------------------------------------
@@ -463,6 +473,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
