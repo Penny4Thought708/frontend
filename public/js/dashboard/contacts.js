@@ -50,22 +50,47 @@ async function postJson(url, body = {}) {
 }
 
 /* -------------------------------------------------------
-   Normalize Contact Object
+   Normalize Contact Object (NEW)
 ------------------------------------------------------- */
-
 function normalizeContact(raw) {
   if (!raw) return {};
 
+  // Safe string helper
   const safe = (v, fallback = "") =>
     v === null || v === undefined || v === "null" ? fallback : String(v);
+
+  // Build avatar URL
+  const avatar = raw.avatar
+    ? (raw.avatar.startsWith("/uploads")
+        ? raw.avatar
+        : `/uploads/avatars/${raw.avatar}`)
+    : "/img/defaultUser.png";
+
+  // Build banner URL
+  const banner = raw.banner
+    ? (raw.banner.startsWith("/uploads")
+        ? raw.banner
+        : `/uploads/banners/${raw.banner}`)
+    : "/img/profile-banner.jpg";
+
+  // Normalize last message
+  const last = raw.last_message || {};
+  const lastMessage = {
+    id: last.id ?? null,
+    text: last.text ?? "",
+    type: last.type ?? "text",
+    file_url: last.file_url ?? null,
+    created_at: last.created_at ?? null,
+    unread: Number(last.unread ?? 0)
+  };
 
   const user = {
     contact_id: safe(raw.id),
     contact_name: safe(raw.name),
     contact_email: safe(raw.email),
 
-    contact_avatar: raw.avatar || "/img/defaultUser.png",
-    contact_banner: raw.banner || "/img/profile-banner.jpg",
+    contact_avatar: avatar,
+    contact_banner: banner,
 
     contact_phone: safe(raw.phone),
     contact_bio: safe(raw.bio),
@@ -79,18 +104,18 @@ function normalizeContact(raw) {
 
     online: raw.online ?? false,
 
-    // NEW last message structure
-    last_message: raw.last_message || null,
-    last_message_at: raw.last_message?.created_at || null,
-    unread_count: raw.last_message?.unread || 0,
+    last_message: lastMessage,
+    last_message_at: lastMessage.created_at,
+    unread_count: lastMessage.unread,
 
     fromLookup: raw.fromLookup === true
   };
 
-  // Cache it
-  UserCache[user.contact_id] = {
-    ...(UserCache[user.contact_id] || {}),
-    ...user,
+  // Cache it globally
+  window.UserCache = window.UserCache || {};
+  window.UserCache[user.contact_id] = {
+    ...(window.UserCache[user.contact_id] || {}),
+    ...user
   };
 
   return user;
@@ -604,6 +629,7 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
 
 
 
