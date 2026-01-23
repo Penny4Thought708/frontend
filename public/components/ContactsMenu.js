@@ -9,7 +9,7 @@ this.innerHTML = `
     <div class="dropdown-content" aria-label="Contacts menu">
 
       <button id="toggle_Btn" data-action="contacts">
-        <img src="img/Contacts.png" alt="contacts"> Contacts
+        <img src="Contacts.png" alt="contacts"> Contacts
       </button>
       <button id="messaging_Btn" data-action="messages">
       <img src="img/messages.png" alt="messages"> Messages
@@ -66,3 +66,4 @@ this.innerHTML = `
 }
 
 customElements.define("contacts-menu", ContactsMenu);
+
