@@ -29,7 +29,7 @@ import {
 } from "../session.js";
 
 import { getIceServers } from "../ice.js";
-import { getReceiver } from "../messaging.js";
+
 
 /* -------------------------------------------------------
    Small helpers
@@ -921,6 +921,7 @@ export class WebRTCController {
 ------------------------------------------------------- */
 
 export const rtc = new WebRTCController(socket);
+
 
 
 
