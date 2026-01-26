@@ -4,9 +4,7 @@
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
-
 import { socket } from "../socket.js";
-
 import {
   getMyUserId,
   lookupBtn,
@@ -14,9 +12,9 @@ import {
   lookupResults,
   messageBox
 } from "../session.js";
-
 import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
+
 
 let activeContact = null;
 let isProfileOpen = false;
@@ -490,6 +488,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
