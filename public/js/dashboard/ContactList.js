@@ -3,14 +3,14 @@
 import { renderContactCard } from "./ContactCard.js";
 
 /* -------------------------------------------------------
-   Render Contact List (FINAL VERSION)
+   Render Contact List — Compatible with contacts.js
 ------------------------------------------------------- */
 export function renderContactList(
   users,
   pendingPresence,
   updateContactStatus
 ) {
-  const list = document.getElementById("contacts"); // FIXED
+  const list = document.getElementById("contacts");
   if (!list) return;
 
   list.innerHTML = "";
@@ -32,6 +32,8 @@ export function renderContactList(
     list.appendChild(card);
   });
 }
+
+
 
 
 
