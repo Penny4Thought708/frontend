@@ -73,7 +73,7 @@ export function normalizeContact(raw) {
   const last = raw.last_message || {};
   const lastMessage = {
     id: last.id ?? null,
-    text: last.text ?? "",
+    text: last.message ?? last.text ?? "",
     type: last.type ?? "text",
     file_url: last.file_url ?? null,
     created_at: last.created_at ?? null,
@@ -195,7 +195,7 @@ export function renderContactCard(userRaw) {
    RENDER CONTACT LIST
 ------------------------------------------------------- */
 export function renderContactList(users) {
-  const list = $id("contacts"); // FIXED to match your HTML
+  const list = $id("contacts"); // matches your HTML
   if (!list) return;
 
   list.innerHTML = "";
@@ -459,6 +459,8 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+
 
 
 
