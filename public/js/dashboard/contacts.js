@@ -4,17 +4,15 @@
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
-import { socket } from "../socket.js";
 
+import { socket } from "../socket.js";
 
 import {
   getMyUserId,
   lookupBtn,
   lookupInput,
   lookupResults,
-  getVoiceBtn,
-  getVideoBtn,
-  messageBox,
+  messageBox
 } from "../session.js";
 
 import { setReceiver, loadMessages } from "../messaging.js";
@@ -22,17 +20,13 @@ import { setContactLookup } from "../call-log.js";
 
 let activeContact = null;
 let isProfileOpen = false;
-let isMessagesOpen = false;
 let openProfileUserId = null;
-let autoCloseProfileOnMessages = true;
-
 
 /* -------------------------------------------------------
    GLOBAL STATE
 ------------------------------------------------------- */
 window.UserCache = window.UserCache || {};
 window.pendingPresence = window.pendingPresence || new Map();
-
 
 /* -------------------------------------------------------
    HELPERS
@@ -142,9 +136,8 @@ export function renderContactCard(userRaw) {
 
   li.innerHTML = `
     <div class="avatar-wrapper">
-      <img class="contact-avatar" src="${user.contact_avatar}" alt="avatar">
-      <span class="contact-status ${user.online ? "online" : "offline"}"
-            title="${user.online ? "Online" : "Offline"}"></span>
+      <img class="contact-avatar" src="${user.contact_avatar}">
+      <span class="contact-status ${user.online ? "online" : "offline"}"></span>
     </div>
 
     <div class="contact-info">
@@ -195,10 +188,6 @@ export function renderContactCard(userRaw) {
     if (data.success) loadContacts();
   };
 
-  li.querySelector(".contact-avatar").onerror = () => {
-    li.querySelector(".contact-avatar").src = "/img/defaultUser.png";
-  };
-
   return li;
 }
 
@@ -206,7 +195,7 @@ export function renderContactCard(userRaw) {
    RENDER CONTACT LIST
 ------------------------------------------------------- */
 export function renderContactList(users) {
-  const list = $id("contact_list");
+  const list = $id("contacts"); // FIXED to match your HTML
   if (!list) return;
 
   list.innerHTML = "";
@@ -217,7 +206,7 @@ export function renderContactList(users) {
 }
 
 /* -------------------------------------------------------
-   UPDATE CONTACT STATUS (presence)
+   UPDATE CONTACT STATUS
 ------------------------------------------------------- */
 export function updateContactStatus(contactId, online) {
   const id = String(contactId);
@@ -470,6 +459,8 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+
 
 
 
