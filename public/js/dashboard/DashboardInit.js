@@ -12,7 +12,7 @@ import { initNavigationUI } from "./NavigationUI.js";
 import {
   updateContactStatus,
   loadContacts
-} from "../contacts.js";
+} from "./contacts.js";
 
 // Core systems
 import { socket } from "../socket.js";
@@ -80,5 +80,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   console.log("[Dashboard] WebRTC initialized");
 });
+
 
 
