@@ -1,9 +1,7 @@
 // public/js/dashboard/ContactCard.js
 
-import { setReceiver, loadMessages } from "../messaging.js";
-
 /* -------------------------------------------------------
-   Render Contact Card (FINAL VERSION)
+   Render Contact Card — Compatible with contacts.js
 ------------------------------------------------------- */
 export function renderContactCard(user, pendingPresence, updateContactStatus) {
   const li = document.createElement("li");
@@ -83,19 +81,9 @@ export function renderContactCard(user, pendingPresence, updateContactStatus) {
   chatBtn.className = "chat-btn";
   chatBtn.textContent = "💬";
 
-  chatBtn.onclick = async (e) => {
+  chatBtn.onclick = (e) => {
     e.stopPropagation();
-
-    window.activeContact = user;
-    window.receiver_id = user.contact_id;
-
-    document.getElementById("messaging_box")?.classList.add("active");
-
-    const header = document.querySelector(".header_msg_box h2");
-    if (header) header.textContent = user.contact_name;
-
-    setReceiver(user.contact_id);
-    await loadMessages();
+    window.openMessagesFor?.(user);
 
     document
       .querySelectorAll(".contact-card.selected")
@@ -154,6 +142,8 @@ export function renderContactCard(user, pendingPresence, updateContactStatus) {
 
   return li;
 }
+
+
 
 
 
