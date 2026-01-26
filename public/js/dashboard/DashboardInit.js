@@ -8,7 +8,11 @@ import { setSignalStrength, setBatteryLevel } from "./StatusIndicators.js";
 import { initTodoList } from "./TodoList.js";
 import { initNavigationUI } from "./NavigationUI.js";
 
-import { updateContactStatus, loadContacts } from "./contacts.js";
+// IMPORTANT — contacts.js is NOT in /dashboard/
+import {
+  updateContactStatus,
+  loadContacts
+} from "../contacts.js";
 
 // Core systems
 import { socket } from "../socket.js";
@@ -55,13 +59,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   ------------------------------------------------------- */
   window.pendingPresence = new Map();
 
-  await createPresenceClient(
+  // Presence client now works with your monolithic contacts.js
+  createPresenceClient(
     socket,
     getMyUserId,
     updateContactStatus,
     window.pendingPresence
   );
 
+  // Load contacts AFTER presence client is ready
   await loadContacts();
 
   /* -------------------------------------------------------
@@ -74,3 +80,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   console.log("[Dashboard] WebRTC initialized");
 });
+
+
