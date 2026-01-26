@@ -843,26 +843,34 @@ async function loadUserUnified() {
   <audio id="ringtone" src="ringtone.mp3" preload="auto"></audio>
   <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
+<!-- Core systems -->
 <script type="module" src="public/js/session.js"></script>
+<script type="module" src="public/js/socket.js"></script>
+<script type="module" src="public/js/messaging.js"></script>
+<script type="module" src="public/js/call-log.js"></script>
 
+<!-- WebRTC -->
 <script type="module" src="public/js/webrtc/WebRTCMedia.js"></script>
 <script type="module" src="public/js/webrtc/WebRTCController.js"></script>
 <script type="module" src="public/js/webrtc/CallUI.js"></script>
+
+<!-- Contacts (must load AFTER session, socket, messaging, call-log) -->
 <script type="module" src="public/js/dashboard/contacts.js"></script>
 
-<script type="module" src="public/js/socket.js"></script>
-<script type="module" src="public/js/messaging.js"></script>
-
+<!-- Dashboard -->
 <script type="module" src="public/js/dashboard/DashboardInit.js"></script>
 
+<!-- App extras -->
 <script type="module" src="public/js/app.js"></script>
 <script type="module" src="public/js/ice.js"></script>
 
+<!-- Legacy scripts -->
 <script src="buttons-functions.js"></script>
 <script src="SettingsStore.js"></script>
 <script src="DeviceManager.js"></script>
 <script src="SettingsController.js"></script>
 <script src="MediaPreview.js"></script>
+
 
 
 
@@ -1497,6 +1505,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
