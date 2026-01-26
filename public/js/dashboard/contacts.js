@@ -116,7 +116,7 @@ export function normalizeContact(raw) {
 }
 
 /* -------------------------------------------------------
-   RENDER CONTACT CARD
+   RENDER CONTACT CARD (inline version, used by renderContactList)
 ------------------------------------------------------- */
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
@@ -195,7 +195,7 @@ export function renderContactCard(userRaw) {
    RENDER CONTACT LIST
 ------------------------------------------------------- */
 export function renderContactList(users) {
-  const list = $id("contacts"); // matches your HTML
+  const list = $id("contacts");
   if (!list) return;
 
   list.innerHTML = "";
@@ -329,49 +329,72 @@ export function openFullProfile(userRaw) {
   openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
+  if (!modal) return;
+
   modal.classList.add("open");
   isProfileOpen = true;
 
-  $id("fullProfileAvatar").src = user.contact_avatar;
-  $id("fullProfileBanner").src = user.contact_banner;
+  const avatarEl = $id("fullProfileAvatar");
+  const bannerEl = $id("fullProfileBanner");
+  const nameEl = $id("fullProfileName");
+  const emailEl = $id("fullProfileEmail");
+  const phoneEl = $id("fullProfilePhone");
+  const bioEl = $id("fullProfileBio");
+  const webEl = $id("fullProfileWebsite");
+  const twEl = $id("fullProfileTwitter");
+  const igEl = $id("fullProfileInstagram");
+  const copyEmailBtn = $id("copyEmailBtn");
+  const copyPhoneBtn = $id("copyPhoneBtn");
 
-  $id("fullProfileName").textContent = user.contact_name;
-  $id("fullProfileEmail").textContent = user.contact_email;
-  $id("fullProfilePhone").textContent = user.contact_phone || "No phone";
-  $id("fullProfileBio").textContent = user.contact_bio || "No bio";
+  if (avatarEl) avatarEl.src = user.contact_avatar;
+  if (bannerEl) bannerEl.src = user.contact_banner;
 
-  const w = $id("fullProfileWebsite");
-  if (user.contact_website) {
-    w.textContent = user.contact_website;
-    w.href = user.contact_website;
-  } else {
-    w.textContent = "None";
-    w.removeAttribute("href");
+  if (nameEl) nameEl.textContent = user.contact_name;
+  if (emailEl) emailEl.textContent = user.contact_email;
+  if (phoneEl) phoneEl.textContent = user.contact_phone || "No phone";
+  if (bioEl) bioEl.textContent = user.contact_bio || "No bio";
+
+  if (webEl) {
+    if (user.contact_website) {
+      webEl.textContent = user.contact_website;
+      webEl.href = user.contact_website;
+    } else {
+      webEl.textContent = "None";
+      webEl.removeAttribute("href");
+    }
   }
 
-  const t = $id("fullProfileTwitter");
-  if (user.contact_twitter) {
-    t.textContent = user.contact_twitter;
-    t.href = "https://twitter.com/" + user.contact_twitter.replace("@", "");
-  } else {
-    t.textContent = "None";
-    t.removeAttribute("href");
+  if (twEl) {
+    if (user.contact_twitter) {
+      twEl.textContent = user.contact_twitter;
+      twEl.href =
+        "https://twitter.com/" + user.contact_twitter.replace("@", "");
+    } else {
+      twEl.textContent = "None";
+      twEl.removeAttribute("href");
+    }
   }
 
-  const i = $id("fullProfileInstagram");
-  if (user.contact_instagram) {
-    i.textContent = user.contact_instagram;
-    i.href = "https://instagram.com/" + user.contact_instagram.replace("@", "");
-  } else {
-    i.textContent = "None";
-    i.removeAttribute("href");
+  if (igEl) {
+    if (user.contact_instagram) {
+      igEl.textContent = user.contact_instagram;
+      igEl.href =
+        "https://instagram.com/" + user.contact_instagram.replace("@", "");
+    } else {
+      igEl.textContent = "None";
+      igEl.removeAttribute("href");
+    }
   }
 
-  $id("copyEmailBtn").onclick = () =>
-    navigator.clipboard.writeText(user.contact_email);
+  if (copyEmailBtn) {
+    copyEmailBtn.onclick = () =>
+      navigator.clipboard.writeText(user.contact_email);
+  }
 
-  $id("copyPhoneBtn").onclick = () =>
-    navigator.clipboard.writeText(user.contact_phone || "");
+  if (copyPhoneBtn) {
+    copyPhoneBtn.onclick = () =>
+      navigator.clipboard.writeText(user.contact_phone || "");
+  }
 }
 
 /* -------------------------------------------------------
@@ -459,6 +482,16 @@ export function renderLookupCard(user) {
 
   return li;
 }
+
+/* -------------------------------------------------------
+   EXPOSE GLOBALS FOR DASHBOARD COMPONENTS
+------------------------------------------------------- */
+window.openFullProfile = openFullProfile;
+window.openMessagesFor = openMessagesFor;
+window.loadContacts = loadContacts;
+window.updateContactStatus = updateContactStatus;
+
+
 
 
 
