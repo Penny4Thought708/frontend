@@ -10,7 +10,7 @@ export function renderContactList(
   pendingPresence,
   updateContactStatus
 ) {
-  const list = document.getElementById("contact_list");
+  const list = document.getElementById("contacts"); // FIXED
   if (!list) return;
 
   list.innerHTML = "";
@@ -32,5 +32,7 @@ export function renderContactList(
     list.appendChild(card);
   });
 }
+
+
 
 
