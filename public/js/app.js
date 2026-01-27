@@ -23,6 +23,7 @@ import { initCallLogs } from "./call-log.js";
 // WebRTC
 import { WebRTCController } from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
+import "../components/ContactsMenu.js";
 
 // Backend base
 const API_BASE = "https://letsee-backend.onrender.com/api";
@@ -666,6 +667,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
