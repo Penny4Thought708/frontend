@@ -527,11 +527,8 @@ socket.on("call:voicemail", () => {
 ------------------------------------------------------- */
 (async () => {
   await waitForIdentity();
-
-  // Load contacts (new unified system)
   await loadContacts();
 
-  // Messaging engine
   const messaging = new MessagingEngine(
     socket,
     renderMessages,
@@ -539,23 +536,23 @@ socket.on("call:voicemail", () => {
     "/api/messages"
   );
 
-  // WebRTC
   const rtc = new WebRTCController(socket);
   initCallUI(rtc);
 
-  // Call logs
   initCallLogs({ socket });
 
-  // Message list + voicemail
   loadMessageList();
   loadVoicemails();
 
-  // Expose chat opener
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
     await messaging.loadMessages(contactId);
   };
+
+  // ⭐ FIX: restore content menu functionality
+  initContentMenu();
 })();
+
 
 /* -------------------------------------------------------
    Contact window toggle
@@ -716,6 +713,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
