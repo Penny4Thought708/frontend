@@ -451,6 +451,9 @@ export function renderBlockedCard(user) {
 ------------------------------------------------------- */
 export function openMessagesFor(user) {
   console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", user);
+import { userNames } from "../messaging.js";
+
+userNames[String(user.contact_id)] = user.contact_name;
 
   activeContact = user;
   window.currentChatUserId = user.contact_id;
@@ -663,6 +666,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
