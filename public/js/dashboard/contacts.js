@@ -1,9 +1,8 @@
 // public/js/contacts.js
 // -------------------------------------------------------
-// CONTACT SYSTEM — ULTRA DIAGNOSTIC VERSION
+// CONTACT SYSTEM — ULTRA DIAGNOSTIC VERSION (FIXED)
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
-// Every step logs clearly.
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -32,6 +31,8 @@ window.pendingPresence = window.pendingPresence || new Map();
 ------------------------------------------------------- */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
+
+const BACKEND_BASE = "https://letsee-backend.onrender.com";
 
 async function getJson(url) {
   console.log("%c[contacts] GET → " + url, "color: #00bfff");
@@ -91,7 +92,7 @@ async function postJson(url, body = {}) {
 }
 
 /* -------------------------------------------------------
-   NORMALIZE CONTACT
+   NORMALIZE CONTACT (RAW FROM BACKEND ONLY)
 ------------------------------------------------------- */
 export function normalizeContact(raw) {
   console.log("%c[contacts] normalizeContact(raw):", "color: #9b59b6", raw);
@@ -104,17 +105,34 @@ export function normalizeContact(raw) {
   const safe = (v, fallback = "") =>
     v === null || v === undefined || v === "null" ? fallback : String(v);
 
-  const avatar = raw.avatar
-    ? (raw.avatar.startsWith("/uploads")
-        ? raw.avatar
-        : `/uploads/avatars/${raw.avatar}`)
-    : "/img/defaultUser.png";
+  // Avatar path: backend uploads or default (relative for GitHub Pages)
+  let avatar;
+  if (raw.avatar) {
+    if (raw.avatar.startsWith("http")) {
+      avatar = raw.avatar;
+    } else if (raw.avatar.startsWith("/uploads")) {
+      avatar = BACKEND_BASE + raw.avatar;
+    } else {
+      avatar = `${BACKEND_BASE}/uploads/avatars/${raw.avatar}`;
+    }
+  } else {
+    // no leading slash so it works on GitHub Pages
+    avatar = "img/defaultUser.png";
+  }
 
-  const banner = raw.banner
-    ? (raw.banner.startsWith("/uploads")
-        ? raw.banner
-        : `/uploads/banners/${raw.banner}`)
-    : "/img/profile-banner.jpg";
+  // Banner path
+  let banner;
+  if (raw.banner) {
+    if (raw.banner.startsWith("http")) {
+      banner = raw.banner;
+    } else if (raw.banner.startsWith("/uploads")) {
+      banner = BACKEND_BASE + raw.banner;
+    } else {
+      banner = `${BACKEND_BASE}/uploads/banners/${raw.banner}`;
+    }
+  } else {
+    banner = "img/profile-banner.jpg";
+  }
 
   const last = raw.last_message || {};
   const lastMessage = {
@@ -203,12 +221,10 @@ export function updateContactStatus(contactId, online) {
 }
 
 /* -------------------------------------------------------
-   RENDER CONTACT CARD
+   RENDER CONTACT CARD (TAKES NORMALIZED USER)
 ------------------------------------------------------- */
-export function renderContactCard(userRaw) {
-  console.log("%c[contacts] renderContactCard()", "color: #2ecc71", userRaw);
-
-  const user = normalizeContact(userRaw);
+export function renderContactCard(user) {
+  console.log("%c[contacts] renderContactCard()", "color: #2ecc71", user);
 
   const li = document.createElement("li");
   li.className = "contact-card";
@@ -266,7 +282,7 @@ export function renderContactCard(userRaw) {
     console.log("[contacts] block-btn clicked for", user.contact_id);
 
     const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/block",
+      `${BACKEND_BASE}/api/contacts/block`,
       { contact_id: user.contact_id }
     );
 
@@ -286,7 +302,7 @@ export function renderContactCard(userRaw) {
     if (!confirm(`Delete ${user.contact_name}?`)) return;
 
     const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/delete",
+      `${BACKEND_BASE}/api/contacts/delete`,
       { contact_id: user.contact_id }
     );
 
@@ -324,7 +340,7 @@ export async function loadContacts() {
   console.log("%c[contacts] loadContacts() START", "color: #e67e22");
 
   try {
-    const url = "https://letsee-backend.onrender.com/api/contacts";
+    const url = `${BACKEND_BASE}/api/contacts`;
 
     console.log("%c[contacts] Fetching contacts…", "color: #e67e22");
 
@@ -372,7 +388,7 @@ export async function loadContacts() {
     } else {
       blockedList.innerHTML = "";
       (data.blocked || [])
-        .map(normalizeContact)
+        .map((c) => normalizeContact(c))
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
@@ -391,10 +407,8 @@ export async function loadContacts() {
 /* -------------------------------------------------------
    BLOCKED CARD
 ------------------------------------------------------- */
-export function renderBlockedCard(userRaw) {
-  console.log("%c[contacts] renderBlockedCard()", "color: #c0392b", userRaw);
-
-  const user = normalizeContact(userRaw);
+export function renderBlockedCard(user) {
+  console.log("%c[contacts] renderBlockedCard()", "color: #c0392b", user);
 
   const li = document.createElement("li");
   li.className = "blocked-card";
@@ -417,7 +431,7 @@ export function renderBlockedCard(userRaw) {
     console.log("[contacts] unblock-btn clicked for", user.contact_id);
 
     const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/unblock",
+      `${BACKEND_BASE}/api/contacts/unblock`,
       { contact_id: user.contact_id }
     );
 
@@ -435,10 +449,8 @@ export function renderBlockedCard(userRaw) {
 /* -------------------------------------------------------
    OPEN MESSAGES
 ------------------------------------------------------- */
-export function openMessagesFor(userRaw) {
-  console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", userRaw);
-
-  const user = normalizeContact(userRaw);
+export function openMessagesFor(user) {
+  console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", user);
 
   activeContact = user;
   window.currentChatUserId = user.contact_id;
@@ -477,10 +489,9 @@ function selectCard(li) {
 /* -------------------------------------------------------
    FULL PROFILE MODAL
 ------------------------------------------------------- */
-export function openFullProfile(userRaw) {
-  console.log("%c[contacts] openFullProfile()", "color: #f39c12", userRaw);
+export function openFullProfile(user) {
+  console.log("%c[contacts] openFullProfile()", "color: #f39c12", user);
 
-  const user = normalizeContact(userRaw);
   activeContact = user;
   openProfileUserId = user.contact_id;
 
@@ -563,9 +574,7 @@ function runLookup(query) {
   lookupResults.innerHTML = `<li class="empty">Searching...</li>`;
 
   getJson(
-    `https://letsee-backend.onrender.com/api/users/search?query=${encodeURIComponent(
-      query
-    )}`
+    `${BACKEND_BASE}/api/users/search?query=${encodeURIComponent(query)}`
   )
     .then((data) => {
       console.log("%c[contacts] Lookup response:", "color: #16a085", data);
@@ -654,6 +663,8 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
+
 
 
 
