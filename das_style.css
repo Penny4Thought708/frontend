@@ -2149,7 +2149,7 @@ main {
 
 /* Message windows */
 .message_win1 {
-  height: 480px;
+  height: 580px;
   width: 98%;
   display: flex;
   margin: auto 8px;
@@ -5336,6 +5336,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
