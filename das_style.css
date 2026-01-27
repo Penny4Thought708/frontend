@@ -4178,6 +4178,47 @@ top: 20px;
 .sender_msg .sender-avatar {
   right: -35px;
 }
+.msg-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+}
+
+.msg-sender-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 2px;
+  padding-left: 4px;
+}
+
+.sender_msg .msg-wrapper {
+  margin-left: auto;
+  align-items: flex-end;
+}
+
+.receiver_msg .msg-wrapper {
+  margin-right: auto;
+  align-items: flex-start;
+}
+
+.msg-bubble-text {
+  background: var(--bubble-bg, #f1f1f1);
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.sender_msg .msg-bubble-text {
+  background: #007aff;
+  color: white;
+}
+
+.receiver_msg .msg-bubble-text {
+  background: #e9e9e9;
+  color: #111;
+}
 
 /* Status flags */
 .status-flags {
@@ -5278,6 +5319,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
