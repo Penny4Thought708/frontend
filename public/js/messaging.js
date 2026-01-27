@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO WebRTC, Node backend)
+// Messaging System (NO WebRTC, Node backend, FULL LOGGING)
 
 import {
   getMyUserId,
@@ -9,7 +9,6 @@ import {
   msgInput,
   badge,
   messageBox,
-  notificationSound,
   msgOpenBtn,
   closeMsgBtn,
   attachmentInput,
@@ -23,20 +22,17 @@ import { socket } from "./socket.js";
 
 // ===== CONFIG =====
 const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
+console.log("[messaging] Loaded messaging.js");
 
-// ===== State =====
+// ===== STATE =====
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
-const userNames = {}; // cache of userId → fullname
-
-// Single IntersectionObserver instance for read receipts
+const userNames = {};
 let readObserver = null;
-
-// Convenience alias for preview element
 const previewEl = previewDiv;
 
-// ===== RTC accessors =====
+// ===== RTC ACCESSORS =====
 function getDataChannel() {
   return typeof window !== "undefined" ? window.dataChannel : undefined;
 }
@@ -47,14 +43,14 @@ function isChannelOpen(dc) {
   return !!dc && dc.readyState === "open";
 }
 
-// ===== Helpers =====
+// ===== HELPERS =====
 export function setReceiver(id) {
   receiver_id = id;
-  console.log("[messaging] Receiver set to:", receiver_id);
+  console.log("[messaging] Receiver set:", receiver_id);
 }
 
 function showError(msg) {
-  console.error(msg);
+  console.error("[messaging] ERROR:", msg);
   if (badge) {
     badge.textContent = "!";
     badge.style.display = "inline-block";
@@ -65,7 +61,6 @@ function $(sel, root = document) {
   return root.querySelector(sel);
 }
 
-// Smooth auto-scroll: only scroll if user is near bottom
 function smartScroll() {
   if (!messageWin) return;
   const nearBottom =
@@ -73,92 +68,93 @@ function smartScroll() {
       messageWin.scrollTop -
       messageWin.clientHeight <
     80;
-  if (nearBottom) {
-    messageWin.scrollTop = messageWin.scrollHeight;
-  }
+  if (nearBottom) messageWin.scrollTop = messageWin.scrollHeight;
 }
 
-// ===== Network helpers (Node backend) =====
+// ===== NETWORK HELPERS =====
 async function apiGet(path) {
   const url = `${MESSAGES_API_BASE}${path}`;
-  const res = await fetch(url, {
-    method: "GET",
-    credentials: "include",
-  });
-  const text = await res.text();
+  console.log("[messaging] GET:", url);
+
   try {
+    const res = await fetch(url, { method: "GET", credentials: "include" });
+    const text = await res.text();
+    console.log("[messaging] GET response:", text);
     return JSON.parse(text);
-  } catch (e) {
-    console.error("[messages] Non-JSON response from", url, ":", text);
-    throw e;
+  } catch (err) {
+    console.error("[messaging] GET failed:", err);
+    throw err;
   }
 }
 
 async function apiPost(path, body) {
   const url = `${MESSAGES_API_BASE}${path}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(body || {}),
-  });
-  const text = await res.text();
+  console.log("[messaging] POST:", url, "BODY:", body);
+
   try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body || {}),
+    });
+
+    const text = await res.text();
+    console.log("[messaging] POST response:", text);
     return JSON.parse(text);
-  } catch (e) {
-    console.error("[messages] Non-JSON response from", url, ":", text);
-    throw e;
+  } catch (err) {
+    console.error("[messaging] POST failed:", err);
+    throw err;
   }
 }
 
-// Delete a message (UI and server)
+// ===== DELETE MESSAGE =====
 async function deleteMessage(messageId) {
-  if (!messageId) return;
+  console.log("[messaging] deleteMessage:", messageId);
 
-  // Optimistically remove from DOM
-  const el = document.querySelector(`[data-msg-id="${String(messageId)}"]`);
-  if (el && el.parentNode) {
-    el.parentNode.removeChild(el);
-  }
+  if (!messageId) return console.error("[messaging] deleteMessage missing ID");
+
+  const el = document.querySelector(`[data-msg-id="${messageId}"]`);
+  if (el) el.remove();
 
   try {
-    // Backend must implement POST /api/messages/delete
     await apiPost("/delete", { id: messageId });
-    console.log("[messaging] Deleted message", messageId);
+    console.log("[messaging] deleteMessage success");
   } catch (err) {
-    console.warn("Failed to delete message", err);
+    console.error("[messaging] deleteMessage failed:", err);
   }
 }
 
-// Global reaction helper
+// ===== REACTIONS =====
 function addReactionToMessage(id, emoji) {
+  console.log("[messaging] addReaction:", id, emoji);
+
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
   );
-  if (!container) return;
+  if (!container) return console.warn("[messaging] reaction container missing");
 
   let bubble = container.querySelector(`[data-emoji="${emoji}"]`);
 
   if (bubble) {
     const countEl = bubble.querySelector(".react-count");
-    const current = parseInt(countEl.textContent, 10) || 1;
-    countEl.textContent = current + 1;
+    countEl.textContent = (parseInt(countEl.textContent, 10) || 1) + 1;
   } else {
     bubble = document.createElement("span");
     bubble.className = "reaction-bubble pop";
     bubble.dataset.emoji = emoji;
-
     bubble.innerHTML = `
       <span class="emoji-safe">${emoji}</span>
       <span class="react-count">1</span>
     `;
-
     container.appendChild(bubble);
     setTimeout(() => bubble.classList.remove("pop"), 250);
   }
 }
 
 function removeReactionFromMessage(id, emoji) {
+  console.log("[messaging] removeReaction:", id, emoji);
+
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
   );
@@ -170,111 +166,60 @@ function removeReactionFromMessage(id, emoji) {
   const countEl = bubble.querySelector(".react-count");
   const current = parseInt(countEl.textContent, 10);
 
-  if (current > 1) {
-    countEl.textContent = current - 1;
-  } else {
-    bubble.remove();
-  }
+  if (current > 1) countEl.textContent = current - 1;
+  else bubble.remove();
 }
 
-// ===== UI open/close =====
+// ===== OPEN MESSAGE WINDOW =====
 msgOpenBtn?.addEventListener("click", async () => {
+  console.log("[messaging] msgOpenBtn clicked");
+
   messageBox?.classList.add("active");
-  if (receiver_id) {
-    try {
-      const messages = await loadMessages();
-      if (Array.isArray(messages) && messages.length) {
-        lastSeenMessageId = messages[messages.length - 1].id ?? 0;
-      }
-      if (badge) badge.style.display = "none";
 
-      // Mark all received messages as read on open
-      const myUserId = getMyUserId();
-      messages
-        .filter((m) => !m.is_me && typeof m.id !== "undefined")
-        .forEach((m) => {
-          socket.emit("message:read", {
-            from: m.sender_id,
-            to: myUserId,
-            messageId: m.id,
-          });
-        });
-
-      observeMessagesForRead();
-    } catch {
-      showError("Failed to load messages on open");
-    }
-  } else {
-    console.warn("[messaging] msgOpenBtn clicked with no receiver set");
-  }
-});
-
-closeMsgBtn?.addEventListener("click", () =>
-  messageBox?.classList.remove("active")
-);
-
-export function showMessageWindow() {
-  messageBox?.classList.add("active");
-}
-
-// ===== File rendering helpers =====
-function appendFileContentToParagraph(p, options) {
-  const { name, url, comment = "" } = options;
-
-  const src = url;
-  if (!src) {
-    console.warn("Missing file URL/data for:", name);
+  if (!receiver_id) {
+    console.warn("[messaging] msgOpenBtn: no receiver");
     return;
   }
 
-  if (/\.(png|jpe?g|gif|webp)$/i.test(name || "")) {
-    const img = document.createElement("img");
-    img.src = src;
-    img.alt = name;
-    img.style.maxWidth = "200px";
-    img.style.display = "block";
-    p.appendChild(img);
+  try {
+    const messages = await loadMessages();
+    console.log("[messaging] msgOpenBtn loaded messages:", messages);
 
-    const caption = document.createElement("span");
-    caption.textContent = name;
-    caption.className = "file-caption";
-    p.appendChild(caption);
+    if (messages.length) {
+      lastSeenMessageId = messages[messages.length - 1].id ?? 0;
+    }
 
-    // Full-screen viewer hook (assumes #img-viewer & #img-viewer-img exist in HTML)
-    img.onclick = () => {
-      const viewer = document.getElementById("img-viewer");
-      const viewerImg = document.getElementById("img-viewer-img");
-      if (viewer && viewerImg) {
-        viewerImg.src = img.src;
-        viewer.style.display = "flex";
-      }
-    };
-  } else {
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = name;
-    a.textContent = name;
-    a.target = "_blank";
-    p.appendChild(a);
+    if (badge) badge.style.display = "none";
+
+    const myUserId = getMyUserId();
+
+    messages
+      .filter((m) => !m.is_me && m.id !== undefined)
+      .forEach((m) => {
+        socket.emit("message:read", {
+          from: m.sender_id,
+          to: myUserId,
+          messageId: m.id,
+        });
+      });
+
+    observeMessagesForRead();
+  } catch (err) {
+    console.error("[messaging] msgOpenBtn load failed:", err);
+    showError("Failed to load messages");
   }
-
-  if (comment) {
-    const cmt = document.createElement("div");
-    cmt.className = "file-comment";
-    cmt.textContent = comment;
-    p.appendChild(cmt);
-  }
-}
-
-// Close full-screen viewer when clicking overlay
-document.getElementById("img-viewer")?.addEventListener("click", () => {
-  const viewer = document.getElementById("img-viewer");
-  if (viewer) viewer.style.display = "none";
 });
 
-// ===== Core render =====
+closeMsgBtn?.addEventListener("click", () => {
+  console.log("[messaging] closeMsgBtn clicked");
+  messageBox?.classList.remove("active");
+});
+
+// ===== RENDER MESSAGE =====
 function renderMessage(msg) {
-  if (!messageWin) return;
+  console.log("[messaging] renderMessage:", msg);
+
+  if (!messageWin) return console.error("[messaging] messageWin missing");
 
   const isFileMessage =
     msg.type === "file" ||
@@ -284,13 +229,8 @@ function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.is_me ? "sender_msg" : "receiver_msg";
 
-  // For dedupe and receipts
-  if (msg.id !== undefined && msg.id !== null) {
-    div.dataset.msgId = String(msg.id);
-  }
-  if (!msg.is_me && msg.sender_id) {
-    div.dataset.senderId = String(msg.sender_id);
-  }
+  if (msg.id != null) div.dataset.msgId = String(msg.id);
+  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
 
   const strong = document.createElement("strong");
   strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
@@ -299,7 +239,6 @@ function renderMessage(msg) {
   p.appendChild(strong);
   p.appendChild(document.createTextNode(": "));
 
-  // FILE MESSAGES
   if (isFileMessage) {
     const name =
       msg.name ||
@@ -314,12 +253,12 @@ function renderMessage(msg) {
       comment: msg.comment,
     });
   } else {
-    // TEXT MESSAGES
     p.appendChild(document.createTextNode(msg.message ?? ""));
 
-    // Editing only for text messages YOU sent
     if (msg.is_me && msg.id) {
       p.ondblclick = () => {
+        console.log("[messaging] edit dblclick:", msg.id);
+
         const original = msg.message ?? "";
         const input = document.createElement("input");
         input.type = "text";
@@ -341,17 +280,16 @@ function renderMessage(msg) {
               return;
             }
 
-            // Optimistic update
             p.textContent = `You: ${newText}`;
 
-            // Persist (Node backend must implement /edit)
             try {
-              await apiPost("/edit", {
+              const res = await apiPost("/edit", {
                 id: msg.id,
                 message: newText,
               });
+              console.log("[messaging] edit success:", res);
             } catch (err) {
-              console.warn("Failed to edit message", err);
+              console.error("[messaging] edit failed:", err);
             }
           }
         };
@@ -359,7 +297,7 @@ function renderMessage(msg) {
     }
   }
 
-  // ✅ REACTIONS (applies to ALL messages)
+  // Reaction bar
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -374,31 +312,30 @@ function renderMessage(msg) {
     const emoji = e.target.closest(".react-emoji")?.textContent;
     if (!emoji || !msg.id) return;
 
+    console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
+
     try {
-      // Node backend must implement /react
       const res = await apiPost("/react", {
         id: msg.id,
         emoji,
       });
 
-      if (res.removed) {
-        removeReactionFromMessage(msg.id, emoji);
-      } else {
-        addReactionToMessage(msg.id, emoji);
-      }
+      console.log("[messaging] reaction response:", res);
+
+      if (res.removed) removeReactionFromMessage(msg.id, emoji);
+      else addReactionToMessage(msg.id, emoji);
     } catch (err) {
-      console.warn("Failed to add reaction", err);
+      console.error("[messaging] reaction failed:", err);
     }
   });
 
   div.appendChild(reactionBar);
 
-  // ✅ Reaction display container
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
   div.appendChild(reactionDisplay);
 
-  // META (timestamp + delete)
+  // META
   const ts =
     msg.created_at instanceof Date
       ? msg.created_at
@@ -410,7 +347,6 @@ function renderMessage(msg) {
   const statusSpan = document.createElement("span");
   statusSpan.className = "status-flags";
 
-  // Delete button
   if (msg.id) {
     const del = document.createElement("button");
     del.type = "button";
@@ -433,10 +369,13 @@ function renderMessage(msg) {
   observeMessagesForRead();
 }
 
-// ===== Preview handling =====
+// ===== FILE PREVIEW =====
 function renderPreviews(files) {
+  console.log("[messaging] renderPreviews:", files);
+
   if (!previewEl) return;
   previewEl.innerHTML = "";
+
   files.forEach((file) => {
     const wrapper = document.createElement("div");
     wrapper.className = "preview-wrapper";
@@ -464,6 +403,8 @@ function renderPreviews(files) {
     removeBtn.textContent = "✖";
     removeBtn.className = "remove-preview";
     removeBtn.onclick = () => {
+      console.log("[messaging] removePreview:", file.name);
+
       const current = Array.from(attachmentInput.files || []);
       const newFiles = current.filter((f) => f !== file);
       const dt = new DataTransfer();
@@ -478,15 +419,17 @@ function renderPreviews(files) {
 }
 
 attachmentBtn?.addEventListener("click", () => {
+  console.log("[messaging] attachmentBtn clicked");
   attachmentInput?.click();
 });
 
 attachmentInput?.addEventListener("change", () => {
+  console.log("[messaging] attachmentInput changed");
   const files = Array.from(attachmentInput.files || []);
   renderPreviews(files);
 });
 
-// ===== Drag & drop upload on message window =====
+// ===== DRAG & DROP =====
 if (messageWin) {
   messageWin.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -494,9 +437,7 @@ if (messageWin) {
   });
 
   messageWin.addEventListener("dragleave", (e) => {
-    if (e.target === messageWin) {
-      messageWin.classList.remove("drag-over");
-    }
+    if (e.target === messageWin) messageWin.classList.remove("drag-over");
   });
 
   messageWin.addEventListener("drop", (e) => {
@@ -511,10 +452,11 @@ if (messageWin) {
   });
 }
 
-// ===== Sending messages (text + files) =====
+// ===== SEND MESSAGES =====
 if (msgForm) {
   msgForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    console.log("[messaging] msgForm submit");
 
     const message = (msgInput?.value ?? "").trim();
     const files = Array.from(attachmentInput?.files || []);
@@ -529,11 +471,14 @@ if (msgForm) {
       return;
     }
 
-    // 1. Send files
+    // FILES
     if (files.length > 0) {
+      console.log("[messaging] sending files:", files);
+
       for (const file of files) {
         if (isChannelOpen(dc)) {
-          // WebRTC path: send base64, persist separately
+          console.log("[messaging] sending file via WebRTC:", file.name);
+
           const reader = new FileReader();
           reader.onload = async () => {
             const payload = {
@@ -546,9 +491,8 @@ if (msgForm) {
             };
             dc.send(JSON.stringify(payload));
 
-            // Persist to DB (best-effort) via Node
             try {
-              await apiPost("/send", {
+              const res = await apiPost("/send", {
                 receiver_id: targetId,
                 message: `File: ${file.name}`,
                 transport: "webrtc",
@@ -556,11 +500,11 @@ if (msgForm) {
                 filename: file.name,
                 file_url: null,
               });
+              console.log("[messaging] persist P2P file:", res);
             } catch (err) {
-              console.warn("Persist outgoing P2P file failed:", err);
+              console.error("[messaging] persist P2P file failed:", err);
             }
 
-            // Optimistic render for sender (fast display)
             renderMessage({
               is_me: true,
               type: "file",
@@ -574,7 +518,8 @@ if (msgForm) {
           };
           reader.readAsDataURL(file);
         } else {
-          // HTTP upload path → Node /audio + /send
+          console.log("[messaging] uploading file via HTTP:", file.name);
+
           const fd = new FormData();
           fd.append("audio", file);
 
@@ -584,7 +529,9 @@ if (msgForm) {
               body: fd,
               credentials: "include",
             });
+
             const uploadData = await uploadRes.json();
+            console.log("[messaging] upload response:", uploadData);
 
             if (uploadData?.success && uploadData.url) {
               const msgRes = await apiPost("/send", {
@@ -596,37 +543,25 @@ if (msgForm) {
                 file_url: uploadData.url,
               });
 
-              if (msgRes?.success) {
-                renderMessage({
-                  id: msgRes.id,
-                  is_me: true,
-                  type: "file",
-                  filename: msgRes.filename || file.name,
-                  url: msgRes.url || uploadData.url,
-                  comment: msgRes.comment || "",
-                  created_at: msgRes.created_at,
-                  sender_id: myUserId,
-                  sender_name: "You",
-                  file: 1,
-                });
-              } else {
-                // Fallback optimistic render
-                renderMessage({
-                  is_me: true,
-                  type: "file",
-                  filename: file.name,
-                  url: uploadData.url,
-                  created_at: new Date(),
-                  sender_id: myUserId,
-                  sender_name: "You",
-                  file: 1,
-                });
-              }
+              console.log("[messaging] send file response:", msgRes);
+
+              renderMessage({
+                id: msgRes.id,
+                is_me: true,
+                type: "file",
+                filename: msgRes.filename || file.name,
+                url: msgRes.url || uploadData.url,
+                comment: msgRes.comment || "",
+                created_at: msgRes.created_at,
+                sender_id: myUserId,
+                sender_name: "You",
+                file: 1,
+              });
             } else {
               showError("Upload failed");
             }
           } catch (err) {
-            console.error("Upload HTTP file failed", err);
+            console.error("[messaging] upload HTTP failed:", err);
             showError("Upload failed");
           }
         }
@@ -636,11 +571,13 @@ if (msgForm) {
       if (previewEl) previewEl.innerHTML = "";
     }
 
-    // 2. Send text
+    // TEXT
     if (message && targetId) {
+      console.log("[messaging] sending text:", message);
+
       if (isChannelOpen(dc)) {
         dc.send(message);
-        // Optimistic render
+
         renderMessage({
           is_me: true,
           message,
@@ -653,106 +590,97 @@ if (msgForm) {
           receiver_id: targetId,
           message,
           transport: "webrtc",
-        }).catch((err) =>
-          console.warn("Persist outgoing P2P text failed:", err)
-        );
-      } else {
-        const data = await apiPost("/send", {
-          receiver_id: targetId,
-          message,
-        });
-        if (data?.success) {
-          renderMessage({
-            id: data.id,
-            is_me: true,
-            message: data.message,
-            created_at: data.created_at,
-            sender_id: myUserId,
-            sender_name: "You",
+        })
+          .then((res) => {
+            console.log("[messaging] P2P text persisted:", res);
+          })
+          .catch((err) => {
+            console.error("[messaging] P2P text persist failed:", err);
           });
-        } else {
-          showError(data?.error || "Failed to send message");
-        }
-      }
-    }
 
-    msgInput.value = "";
+      } else {
+        console.log("[messaging] sending text via HTTP:", message);
+
+        try {
+          const data = await apiPost("/send", {
+            receiver_id: targetId,
+            message,
+          });
+
+          console.log("[messaging] HTTP text send response:", data);
+
+       if (data?.success) {
+  renderMessage({
+    id: data.id,
+    is_me: true,
+    message: data.message,
+    created_at: data.created_at,
+    sender_id: myUserId,
+    sender_name: "You",
   });
 } else {
-  console.warn("msgForm not found — submit handler not attached");
+  console.error("[messaging] HTTP text send failed:", data);
+  showError(data?.error || "Failed to send message");
+}
+} catch (err) {
+  console.error("[messaging] HTTP text send exception:", err);
+  showError("Failed to send message");
+}
+}
+
+msgInput.value = "";
+});
+} else {
+console.warn("[messaging] msgForm not found — submit handler not attached");
 }
 
 // ===== Receiving messages via DataChannel (text + files) =====
 export function setupDataChannel(channel) {
-  if (!channel) return;
-  if (typeof window !== "undefined") window.dataChannel = channel;
+console.log("[messaging] setupDataChannel called");
 
-  channel.onmessage = async (e) => {
-    let payload = e.data;
+if (!channel) {
+  console.error("[messaging] setupDataChannel: no channel");
+  return;
+}
 
-    if (typeof e.data === "string") {
-      try {
-        payload = JSON.parse(e.data);
-      } catch {
-        payload = e.data;
-      }
+if (typeof window !== "undefined") window.dataChannel = channel;
+
+channel.onmessage = async (e) => {
+  console.log("[messaging] DataChannel message:", e.data);
+
+  let payload = e.data;
+
+  if (typeof e.data === "string") {
+    try {
+      payload = JSON.parse(e.data);
+    } catch {
+      console.warn("[messaging] DataChannel payload not JSON");
+      payload = e.data;
     }
+  }
 
-    playNotification();
-    const myUserId = getMyUserId();
+  playNotification();
+  const myUserId = getMyUserId();
 
-    // File payload
-    if (payload && payload.type === "file") {
-      const unified = {
-        id: null,
-        type: "file",
-        name: payload.name,
-        url: payload.url || null,
-        data: payload.data || null,
-        comment: payload.comment || "",
-        sender_id: getPeerId(),
-        sender_name: payload.sender_name || "Peer",
-        created_at: new Date(),
-        is_me: false,
-        file: 1,
-      };
+  // FILE
+  if (payload && payload.type === "file") {
+    console.log("[messaging] Incoming P2P file:", payload);
 
-      renderMessage(unified);
-
-      socket.emit("message:delivered", {
-        from: getPeerId() || "",
-        to: myUserId,
-        messageId: null,
-      });
-
-      try {
-        await apiPost("/send", {
-          sender_id: getPeerId() || "",
-          receiver_id: myUserId || "",
-          message: `File: ${payload.name}`,
-          transport: "webrtc",
-          file: 1,
-          filename: payload.name,
-          file_url: null,
-          comment: payload.comment || "",
-        });
-      } catch (err) {
-        console.warn("Persist incoming P2P file failed:", err);
-      }
-
-      return;
-    }
-
-    // Text payload
-    const text =
-      typeof payload === "string" ? payload : safeJSON(payload);
-
-    renderMessage({
-      is_me: false,
-      message: text,
+    const unified = {
+      id: null,
+      type: "file",
+      name: payload.name,
+      url: payload.url || null,
+      data: payload.data || null,
+      comment: payload.comment || "",
+      sender_id: getPeerId(),
+      sender_name: payload.sender_name || "Peer",
       created_at: new Date(),
-      sender_name: "Peer",
-    });
+      is_me: false,
+      file: 1,
+    };
+
+    renderMessage(unified);
 
     socket.emit("message:delivered", {
       from: getPeerId() || "",
@@ -760,258 +688,287 @@ export function setupDataChannel(channel) {
       messageId: null,
     });
 
-    observeMessagesForRead();
-  };
+    try {
+      const res = await apiPost("/send", {
+        sender_id: getPeerId() || "",
+        receiver_id: myUserId || "",
+        message: `File: ${payload.name}`,
+        transport: "webrtc",
+        file: 1,
+        filename: payload.name,
+        file_url: null,
+        comment: payload.comment || "",
+      });
+
+      console.log("[messaging] Persist incoming P2P file:", res);
+    } catch (err) {
+      console.error("[messaging] Persist incoming P2P file failed:", err);
+    }
+
+    return;
+  }
+
+  // TEXT
+  const text =
+    typeof payload === "string" ? payload : safeJSON(payload);
+
+  console.log("[messaging] Incoming P2P text:", text);
+
+  renderMessage({
+    is_me: false,
+    message: text,
+    created_at: new Date(),
+    sender_name: "Peer",
+  });
+
+  socket.emit("message:delivered", {
+    from: getPeerId() || "",
+    to: myUserId,
+    messageId: null,
+  });
+
+  observeMessagesForRead();
+};
 }
 
 // ===== Loading messages =====
 export async function loadMessages() {
-  if (!receiver_id) {
-    console.warn("[messaging] loadMessages called with no receiver_id");
-    return [];
-  }
+console.log("[messaging] loadMessages called for receiver:", receiver_id);
 
-  try {
-    // Node backend: /thread/:contactId
-    const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
-    if (!Array.isArray(messages)) return [];
+if (!receiver_id) {
+  console.warn("[messaging] loadMessages: no receiver_id");
+  return [];
+}
 
-    lastLoadedMessages = messages;
-    const myUserId = getMyUserId();
+try {
+  const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+  console.log("[messaging] loadMessages response:", messages);
 
-    if (messageWin) {
-      messages.forEach((msg) => {
-        const msgId =
-          msg.id !== undefined && msg.id !== null ? String(msg.id) : null;
+  if (!Array.isArray(messages)) return [];
 
-        const exists = msgId
-          ? document.querySelector(`[data-msg-id="${msgId}"]`)
-          : null;
+  lastLoadedMessages = messages;
+  const myUserId = getMyUserId();
 
-        // ✅ Render message if not already in DOM
-        if (!exists) {
-          renderMessage(msg);
+  if (messageWin) {
+    messages.forEach((msg) => {
+      const msgId =
+        msg.id !== undefined && msg.id !== null ? String(msg.id) : null;
 
-          if (!msg.is_me && msg.id !== undefined) {
-            socket.emit("message:delivered", {
-              from: msg.sender_id,
-              to: myUserId,
-              messageId: msg.id,
-            });
-          }
-        }
+      const exists = msgId
+        ? document.querySelector(`[data-msg-id="${msgId}"]`)
+        : null;
 
-        // ✅ ALWAYS hydrate reactions (new OR existing messages)
-        const display = document.querySelector(
-          `[data-msg-id="${msg.id}"] .reaction-display`
-        );
-        if (display) display.innerHTML = ""; // clear old reactions
+      if (!exists) {
+        renderMessage(msg);
 
-        if (msg.reactions) {
-          const arr = [...msg.reactions];
-          const counts = {};
-
-          // Count occurrences
-          arr.forEach((emoji) => {
-            counts[emoji] = (counts[emoji] || 0) + 1;
-          });
-
-          // Rebuild bubbles
-          Object.entries(counts).forEach(([emoji, count]) => {
-            for (let i = 0; i < count; i++) {
-              addReactionToMessage(msg.id, emoji);
-            }
+        if (!msg.is_me && msg.id !== undefined) {
+          socket.emit("message:delivered", {
+            from: msg.sender_id,
+            to: myUserId,
+            messageId: msg.id,
           });
         }
-      });
-    }
-
-    // ✅ Notification logic
-    const last = messages[messages.length - 1];
-    if (
-      last &&
-      typeof last.id === "number" &&
-      last.id > lastSeenMessageId &&
-      !last.is_me
-    ) {
-      playNotification();
-      const bell = document.querySelector(".notification-bell");
-      if (bell) {
-        bell.classList.add("active");
-        setTimeout(() => bell.classList.remove("active"), 1000);
       }
-    }
 
-    if (last && typeof last.id === "number") {
-      lastSeenMessageId = last.id;
-    }
+      const display = document.querySelector(
+        `[data-msg-id="${msg.id}"] .reaction-display`
+      );
+      if (display) display.innerHTML = "";
 
-    observeMessagesForRead();
-    return messages;
-  } catch (err) {
-    console.error("Failed to load messages", err);
-    return [];
+      if (msg.reactions) {
+        const arr = [...msg.reactions];
+        const counts = {};
+
+        arr.forEach((emoji) => {
+          counts[emoji] = (counts[emoji] || 0) + 1;
+        });
+
+        Object.entries(counts).forEach(([emoji, count]) => {
+          for (let i = 0; i < count; i++) {
+            addReactionToMessage(msg.id, emoji);
+          }
+        });
+      }
+    });
   }
+
+  const last = messages[messages.length - 1];
+  if (
+    last &&
+    typeof last.id === "number" &&
+    last.id > lastSeenMessageId &&
+    !last.is_me
+  ) {
+    playNotification();
+    const bell = document.querySelector(".notification-bell");
+    if (bell) {
+      bell.classList.add("active");
+      setTimeout(() => bell.classList.remove("active"), 1000);
+    }
+  }
+
+  if (last && typeof last.id === "number") {
+    lastSeenMessageId = last.id;
+  }
+
+  observeMessagesForRead();
+  return messages;
+
+} catch (err) {
+  console.error("[messaging] loadMessages failed:", err);
+  return [];
 }
-
-function updateReactionSummary(id) {
-  const container = document.querySelector(
-    `[data-msg-id="${id}"] .reaction-display`
-  );
-  const summary = document.querySelector(
-    `[data-msg-id="${id}"] .reaction-summary`
-  );
-
-  if (!container || !summary) return;
-
-  const bubbles = [...container.querySelectorAll(".reaction-bubble")];
-  const total = bubbles.reduce((sum, b) => {
-    return sum + parseInt(b.querySelector(".react-count").textContent, 10);
-  }, 0);
-
-  const emojis = bubbles.map((b) => b.dataset.emoji).join(" ");
-
-  summary.textContent = total > 0 ? `${emojis}  •  ${total} reacted` : "";
 }
-
-// ===== Names cache =====
-socket.on("user:name", ({ userId, fullname }) => {
-  userNames[String(userId)] = fullname;
-  console.log("[messaging] cached name:", userId, "→", fullname);
-});
 
 // ===== Typing indicators =====
 const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
 
 msgInput?.addEventListener("input", () => {
-  const myUserId = getMyUserId();
-  const targetId = getPeerId() || receiver_id;
-  if (!targetId) return;
-  socket.emit("typing:start", { from: myUserId, to: targetId });
-  if (typingStopTimer) clearTimeout(typingStopTimer);
-  typingStopTimer = setTimeout(() => {
-    socket.emit("typing:stop", { from: myUserId, to: targetId });
-  }, 800);
+const myUserId = getMyUserId();
+const targetId = getPeerId() || receiver_id;
+if (!targetId) return;
+
+socket.emit("typing:start", { from: myUserId, to: targetId });
+
+if (typingStopTimer) clearTimeout(typingStopTimer);
+typingStopTimer = setTimeout(() => {
+  socket.emit("typing:stop", { from: myUserId, to: targetId });
+}, 800);
 });
 
 socket.on("typing:start", ({ from, fullname }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-  if (String(from) === String(currentChatPartner)) {
-    const name =
-      fullname || userNames[String(from)] || `User ${from}`;
-    typingIndicator.classList.add("active");
-    typingIndicator.textContent = `${name} is typing...`;
-  }
+const currentChatPartner = receiver_id || getPeerId();
+if (!typingIndicator || !currentChatPartner) return;
+
+if (String(from) === String(currentChatPartner)) {
+  const name =
+    fullname || userNames[String(from)] || `User ${from}`;
+  typingIndicator.classList.add("active");
+  typingIndicator.textContent = `${name} is typing...`;
+}
 });
 
 socket.on("typing:stop", ({ from }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-  if (String(from) === String(currentChatPartner)) {
-    typingIndicator.classList.remove("active");
-    typingIndicator.textContent = "";
-  }
+const currentChatPartner = receiver_id || getPeerId();
+if (!typingIndicator || !currentChatPartner) return;
+
+if (String(from) === String(currentChatPartner)) {
+  typingIndicator.classList.remove("active");
+  typingIndicator.textContent = "";
+}
 });
 
-// ===== Receipt listeners =====
+// ===== Read receipts =====
 socket.on("message:delivered", ({ messageId }) => {
-  if (!messageId) return;
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ delivered")) {
-    el.textContent += " ✓ delivered";
-  }
+if (!messageId) return;
+
+const el = document.querySelector(
+  `[data-msg-id="${String(messageId)}"] small`
+);
+if (el && !el.textContent.includes("✓ delivered")) {
+  el.textContent += " ✓ delivered";
+}
 });
 
 socket.on("message:read", ({ messageId }) => {
-  if (!messageId) return;
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ read")) {
-    el.textContent += " ✓ read";
-  }
+if (!messageId) return;
+
+const el = document.querySelector(
+  `[data-msg-id="${String(messageId)}"] small`
+);
+if (el && !el.textContent.includes("✓ read")) {
+  el.textContent += " ✓ read";
+}
 });
 
-// ===== Presence / Status updates =====
+// ===== Presence updates =====
 socket.on("statusUpdate", ({ contact_id, online, away }) => {
-  const statusText = away ? "Away" : online ? "Online" : "Offline";
-  console.log(`Contact ${contact_id} is ${statusText}`);
-  const el = document.querySelector(
-    `[data-contact-id="${contact_id}"] .status`
-  );
-  if (el) {
-    el.textContent = statusText;
-    el.className = `status ${statusText.toLowerCase()}`;
-  }
+const statusText = away ? "Away" : online ? "Online" : "Offline";
+console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
+
+const el = document.querySelector(
+  `[data-contact-id="${contact_id}"] .status`
+);
+if (el) {
+  el.textContent = statusText;
+  el.className = `status ${statusText.toLowerCase()}`;
+}
 });
 
-// ===== Read receipts on visibility =====
+// ===== Read observer =====
 function createReadObserver() {
-  if (!messageWin) return null;
+if (!messageWin) return null;
 
-  return new IntersectionObserver(
-    (entries, observer) => {
-      const myUserId = getMyUserId();
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const msgEl = entry.target;
-        const msgId = msgEl.dataset.msgId;
-        const senderId = msgEl.dataset.senderId;
-        if (msgId && senderId && senderId !== String(myUserId)) {
-          socket.emit("message:read", {
-            from: senderId,
-            to: myUserId,
-            messageId: msgId,
-          });
-          observer.unobserve(msgEl);
-          delete msgEl.dataset.observing;
-        }
-      });
-    },
-    { root: messageWin, threshold: 0.8 }
-  );
+return new IntersectionObserver(
+  (entries, observer) => {
+    const myUserId = getMyUserId();
+
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+
+      const msgEl = entry.target;
+      const msgId = msgEl.dataset.msgId;
+      const senderId = msgEl.dataset.senderId;
+
+      if (msgId && senderId && senderId !== String(myUserId)) {
+        socket.emit("message:read", {
+          from: senderId,
+          to: myUserId,
+          messageId: msgId,
+        });
+
+        observer.unobserve(msgEl);
+        delete msgEl.dataset.observing;
+      }
+    });
+  },
+  { root: messageWin, threshold: 0.8 }
+);
 }
 
 function observeMessagesForRead() {
-  if (!messageWin) return;
+if (!messageWin) return;
 
-  if (!readObserver) {
-    readObserver = createReadObserver();
-    if (!readObserver) return;
+if (!readObserver) {
+  readObserver = createReadObserver();
+  if (!readObserver) return;
+}
+
+messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
+  if (!el.dataset.observing) {
+    readObserver.observe(el);
+    el.dataset.observing = "1";
   }
-
-  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
-    if (!el.dataset.observing) {
-      readObserver.observe(el);
-      el.dataset.observing = "1";
-    }
-  });
+});
 }
 
 // ===== Activity tracking =====
 let activityTimeout;
 ["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
-  document.addEventListener(evt, () => {
-    clearTimeout(activityTimeout);
-    activityTimeout = setTimeout(() => {
-      if (socket && socket.connected) {
-        socket.emit("activity");
-      }
-    }, 750);
-    observeMessagesForRead();
-  });
+document.addEventListener(evt, () => {
+  clearTimeout(activityTimeout);
+  activityTimeout = setTimeout(() => {
+    if (socket && socket.connected) {
+      socket.emit("activity");
+    }
+  }, 750);
+
+  observeMessagesForRead();
+});
 });
 
 // ===== Polling =====
 setInterval(() => {
-  if (receiver_id) {
-    loadMessages().catch(() => showError("Poll failed"));
-  }
+if (receiver_id) {
+  loadMessages().catch((err) =>
+    console.error("[messaging] Poll failed:", err)
+  );
+}
 }, 8000);
+
+
+
 
 
 
