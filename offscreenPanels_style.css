@@ -790,7 +790,7 @@ Search Panel Containers: .search_ - .map-container
 #messaging_box_container {
   position: relative;
   width: 100%;
-  height: calc(100% - 20px);
+  height:100%;
   padding: 14px;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.03);
@@ -1675,4 +1675,5 @@ body.dark-mode {
   --border: var(--border-dark);
   --shadow: var(--shadow-dark);
 }
+
 
