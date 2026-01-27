@@ -13,8 +13,9 @@ import {
   lookupResults,
   messageBox
 } from "../session.js";
-import { setReceiver, loadMessages,userNames } from "../messaging.js";
+import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
+import { userNames, userAvatars } from "../shared/user-cache.js";
 
 let activeContact = null;
 let isProfileOpen = false;
@@ -478,6 +479,7 @@ export function openMessagesFor(user) {
 }
 
 
+
 /* -------------------------------------------------------
    SELECT CARD
 ------------------------------------------------------- */
@@ -668,6 +670,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
