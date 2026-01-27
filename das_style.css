@@ -4178,7 +4178,7 @@ top: 20px;
 .sender_msg .sender-avatar {
   right: -35px;
 }
- 
+ .msg-sender-name { font-size: 0.75rem; font-weight: 600; color: #888; margin-bottom: 2px; padding-left: 4px; }
 /* Status flags */
 .status-flags {
   font-size: 0.8em;
@@ -5278,6 +5278,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
