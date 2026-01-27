@@ -19,6 +19,7 @@ import { setContactLookup } from "../call-log.js";
 let activeContact = null;
 let isProfileOpen = false;
 let openProfileUserId = null;
+export const userNames = {};
 
 /* -------------------------------------------------------
    GLOBAL STATE
@@ -667,6 +668,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
