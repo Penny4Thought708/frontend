@@ -15,7 +15,6 @@ import {
 import { setReceiver, loadMessages } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
 
-
 let activeContact = null;
 let isProfileOpen = false;
 let openProfileUserId = null;
@@ -114,7 +113,7 @@ export function normalizeContact(raw) {
 }
 
 /* -------------------------------------------------------
-   RENDER CONTACT CARD (inline version, used by renderContactList)
+   RENDER CONTACT CARD
 ------------------------------------------------------- */
 export function renderContactCard(userRaw) {
   const user = normalizeContact(userRaw);
@@ -482,12 +481,14 @@ export function renderLookupCard(user) {
 }
 
 /* -------------------------------------------------------
-   EXPOSE GLOBALS FOR DASHBOARD COMPONENTS
+   EXPOSE GLOBALS
 ------------------------------------------------------- */
 window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
+
 
 
 
