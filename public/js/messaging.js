@@ -28,10 +28,10 @@ console.log("[messaging] Loaded messaging.js");
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
-const userNames = {};
+ecport const userNames = {};
 let readObserver = null;
 const previewEl = previewDiv;
-export const userNames = {};
+
 // ===== RTC ACCESSORS =====
 function getDataChannel() {
   return typeof window !== "undefined" ? window.dataChannel : undefined;
@@ -1050,6 +1050,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
