@@ -48,42 +48,94 @@ function initContentMenu() {
 
   console.log("[content-menu] Initialized");
 
-menu.addEventListener("menu-select", (e) => {
-  const action = e.detail.action;
-  console.log("[content-menu] Selected:", action);
+  // Track toggle state for the Contacts/Call Log button
+  let showingContacts = false;
 
-  // Hide all your real containers
-  document.querySelector("#sav_con").style.display = "none";
-  document.querySelector("#bl_con").style.display = "none";
-  document.querySelector("#voicemail_list").style.display = "none";
-  document.querySelector("#messaging_box_container").style.display = "none";
-
-  switch (action) {
-    case "contacts":
-      document.querySelector("#bl_con").style.display = "block";
-      break;
-
-    case "messages":
-      document.querySelector("#messaging_box_container").style.display = "block";
-      break;
-
-    case "voicemail":
-      document.querySelector("#voicemail_list").style.display = "block";
-      break;
-
-    case "dnd":
-    case "hidden":
-    case "block":
-      // You did NOT show these containers, so we skip them.
-      break;
-
-    default:
-      console.warn("[content-menu] Unknown action:", action);
+  // Helper: force all children to display block if hidden
+  function forceChildrenDisplay(container) {
+    const elements = container.querySelectorAll("*");
+    elements.forEach(el => {
+      const current = window.getComputedStyle(el).display;
+      if (current === "none") {
+        el.style.display = "block";
+      }
+    });
   }
-});
 
+  // Helper: hide all your real containers
+  function hideAll() {
+    document.querySelector("#sav_con").style.display = "none";
+    document.querySelector("#bl_con").style.display = "none";
+    document.querySelector("#voicemail_list").style.display = "none";
+    document.querySelector("#messaging_box_container").style.display = "none";
+  }
 
+  // Helper: update the Contacts button label + icon
+  function updateContactsButton() {
+    const btn = menu.querySelector("#toggle_Btn");
+    if (!btn) return;
 
+    if (showingContacts) {
+      btn.innerHTML = `<img src="img/calllog.png" alt="call-log"> Call Log`;
+    } else {
+      btn.innerHTML = `<img src="img/Contacts.png" alt="contacts"> Contacts`;
+    }
+  }
+
+  // Default state: Call Log is active (but window may be hidden)
+  hideAll();
+  document.querySelector("#sav_con").style.display = "block";
+  forceChildrenDisplay(document.querySelector("#sav_con"));
+  updateContactsButton();
+
+  // Main menu handler
+  menu.addEventListener("menu-select", (e) => {
+    const action = e.detail.action;
+    console.log("[content-menu] Selected:", action);
+
+    hideAll();
+
+    switch (action) {
+      case "contacts":
+        // Toggle between Call Log ↔ Contacts
+        showingContacts = !showingContacts;
+        updateContactsButton();
+
+        if (showingContacts) {
+          // Show Contacts
+          const c = document.querySelector("#bl_con");
+          c.style.display = "block";
+          forceChildrenDisplay(c);
+        } else {
+          // Show Call Log
+          const c = document.querySelector("#sav_con");
+          c.style.display = "block";
+          forceChildrenDisplay(c);
+        }
+        break;
+
+      case "messages":
+        const msg = document.querySelector("#messaging_box_container");
+        msg.style.display = "block";
+        forceChildrenDisplay(msg);
+        break;
+
+      case "voicemail":
+        const vm = document.querySelector("#voicemail_list");
+        vm.style.display = "block";
+        forceChildrenDisplay(vm);
+        break;
+
+      // You did NOT show containers for these, so we skip them
+      case "block":
+      case "hidden":
+      case "dnd":
+        break;
+
+      default:
+        console.warn("[content-menu] Unknown action:", action);
+    }
+  });
 }
 
 /* -------------------------------------------------------
@@ -713,6 +765,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
