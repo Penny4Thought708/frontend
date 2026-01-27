@@ -1,35 +1,28 @@
-// app.js — Unified dashboard wiring: session + socket + messaging + contacts + call logs + UI
+// public/js/app.js
+// -------------------------------------------------------
+// Unified dashboard wiring: session + socket + messaging
+// + contacts + call logs + voicemail + UI
+// -------------------------------------------------------
 
-// -------------------------------------------------------
-// Core session + socket
-// -------------------------------------------------------
-import {
-  getMyUserId,
-  getJson,
-} from "./session.js";
+import { getMyUserId, getJson } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
-// Messaging (modern engine + UI)
+// Messaging engine + UI
 import { MessagingEngine } from "./messaging/MessagingEngine.js";
-import {
-  renderMessages,
-  renderIncomingMessage,
-} from "./messaging/MessageUI.js";
+import { renderMessages, renderIncomingMessage } from "./messaging/MessageUI.js";
 import { updateReactions } from "./messaging/ReactionUI.js";
-
 import "./messaging/TypingUI.js";
 
-// Contacts + Call logs
+// Contacts (new unified system)
 import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
+
+// Call logs
 import { initCallLogs } from "./call-log.js";
 
 // WebRTC
 import { WebRTCController } from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
-
-// Dashboard UI
-import "./dashboard/DashboardInit.js";
 
 // Backend base
 const API_BASE = "https://letsee-backend.onrender.com/api";
@@ -44,7 +37,7 @@ async function waitForIdentity() {
 }
 
 /* -------------------------------------------------------
-   Simple form helper (JSON) for /api/* endpoints
+   Global POST helper
 ------------------------------------------------------- */
 window.postForm = async function (path, payload) {
   const cleanPath = path.replace(".php", "");
@@ -68,15 +61,14 @@ window.postForm = async function (path, payload) {
   }
 };
 
-// Make renderMessage globally available for GIF sender, etc.
+// Expose message renderer for GIF sender
 window.renderMessage = function (msg) {
   renderIncomingMessage(msg);
 };
 
 /* -------------------------------------------------------
-   Speaking Detection (Local User)
+   Speaking Detection
 ------------------------------------------------------- */
-
 let speakingDetector = null;
 
 function startSpeakingDetection(stream, wrapperEl) {
@@ -122,13 +114,7 @@ function startSpeakingDetection(stream, wrapperEl) {
 
   loop();
 
-  speakingDetector = {
-    audioCtx,
-    source,
-    analyser,
-    avatarEl,
-    rafId,
-  };
+  speakingDetector = { audioCtx, source, analyser, avatarEl, rafId };
 }
 
 function stopSpeakingDetection() {
@@ -148,7 +134,7 @@ window.startSpeakingDetection = startSpeakingDetection;
 window.stopSpeakingDetection = stopSpeakingDetection;
 
 /* -------------------------------------------------------
-   Unified Message List (Dashboard)
+   Message List Loader
 ------------------------------------------------------- */
 async function loadMessageList() {
   await waitForIdentity();
@@ -215,7 +201,7 @@ function buildMessageCard(conv) {
 }
 
 /* -------------------------------------------------------
-   Voicemail loading + rendering (Node-ready, placeholder-friendly)
+   Voicemail Loader + UI
 ------------------------------------------------------- */
 async function loadVoicemails() {
   await waitForIdentity();
@@ -269,9 +255,7 @@ function renderVoicemail(vm) {
   li.innerHTML = `
     <div class="vm-header">
       <strong>From: ${vm.from_id}</strong>
-      <span>${
-        vm.timestamp ? new Date(vm.timestamp).toLocaleString() : ""
-      }</span>
+      <span>${vm.timestamp ? new Date(vm.timestamp).toLocaleString() : ""}</span>
     </div>
 
     ${
@@ -440,7 +424,7 @@ function showVoicemailToast(vm) {
 }
 
 /* -------------------------------------------------------
-   Voicemail recorder → backend (Node-ready)
+   Voicemail Recorder
 ------------------------------------------------------- */
 let vmRecorder;
 let vmChunks = [];
@@ -489,13 +473,15 @@ socket.on("call:voicemail", () => {
 });
 
 /* -------------------------------------------------------
-   Core async bootstrap
+   Unified Dashboard Bootstrap
 ------------------------------------------------------- */
 (async () => {
   await waitForIdentity();
 
+  // Load contacts (new unified system)
   await loadContacts();
 
+  // Messaging engine
   const messaging = new MessagingEngine(
     socket,
     renderMessages,
@@ -503,14 +489,18 @@ socket.on("call:voicemail", () => {
     "/api/messages"
   );
 
+  // WebRTC
   const rtc = new WebRTCController(socket);
   initCallUI(rtc);
 
+  // Call logs
   initCallLogs({ socket });
 
+  // Message list + voicemail
   loadMessageList();
   loadVoicemails();
 
+  // Expose chat opener
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
     await messaging.loadMessages(contactId);
@@ -546,41 +536,13 @@ document.addEventListener("DOMContentLoaded", () => {
 ------------------------------------------------------- */
 function startIntroTour() {
   const steps = [
-    {
-      element: "#btn_search",
-      text: "Use Search to find local help, resources, and contacts instantly.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_chat_main",
-      text: "Start a chat with anyone in your contacts.",
-      arrow: "right",
-    },
-    {
-      element: "#contacts_btn",
-      text: "View and manage your contacts here.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_notifications",
-      text: "Check your notifications — messages, calls, alerts.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_settings",
-      text: "Customize your settings and preferences.",
-      arrow: "right",
-    },
-    {
-      element: "#toggleBtn",
-      text: "Switch between light and dark themes.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_help",
-      text: "Need help? Open the help center anytime.",
-      arrow: "right",
-    },
+    { element: "#btn_search", text: "Use Search to find local help, resources, and contacts instantly.", arrow: "right" },
+    { element: "#btn_chat_main", text: "Start a chat with anyone in your contacts.", arrow: "right" },
+    { element: "#contacts_btn", text: "View and manage your contacts here.", arrow: "right" },
+    { element: "#btn_notifications", text: "Check your notifications — messages, calls, alerts.", arrow: "right" },
+    { element: "#btn_settings", text: "Customize your settings and preferences.", arrow: "right" },
+    { element: "#toggleBtn", text: "Switch between light and dark themes.", arrow: "right" },
+    { element: "#btn_help", text: "Need help? Open the help center anytime.", arrow: "right" },
   ];
 
   const introBox = document.getElementById("introduction");
@@ -603,7 +565,7 @@ function startIntroTour() {
     introBox.style.display = "block";
     introBox.innerHTML = step.text;
 
-    introBox.style.top = rect.top + "px";
+       introBox.style.top = rect.top + "px";
     introBox.style.left = rect.right + 20 + "px";
 
     arrow.style.display = "block";
@@ -622,6 +584,7 @@ function startIntroTour() {
 
       const nav = document.getElementById("side_nav_buttons");
       if (nav) nav.classList.remove("open");
+
       localStorage.setItem("tourCompleted", "true");
     }
   }
@@ -704,453 +667,6 @@ if (contactMenu && menuWidget) {
   });
 }
 
-/* -------------------------------------------------------
-   PANEL REGISTRY
-------------------------------------------------------- */
-const Panels = {
-  contacts: document.getElementById("contacts"),
-  blocked: document.getElementById("bloc_box"),
-  settings: document.getElementById("settings_container"),
-  addContact: document.querySelector(".sidebar"),
-  profile: document.querySelector(".profile_card"),
-};
-
-/* -------------------------------------------------------
-   MENU BUTTONS
-------------------------------------------------------- */
-const Buttons = {
-  block: document.getElementById("block_contact"),
-  addContact: document.getElementById("add_contact"),
-  settings: document.getElementById("settings"),
-  closeSettings: document.getElementById("close_contact_settings"),
-  openProfile: document.getElementById("view_profile"),
-};
-
-function hideAllPanels() {
-  if (Panels.contacts) Panels.contacts.style.display = "none";
-  if (Panels.blocked) Panels.blocked.style.display = "none";
-  if (Panels.settings) Panels.settings.classList.remove("active");
-  if (Panels.profile) Panels.profile.classList.remove("active");
-}
-
-function showContacts() {
-  hideAllPanels();
-  if (Panels.contacts) Panels.contacts.style.display = "block";
-}
-
-function togglePanel(panelName) {
-  const panel = Panels[panelName];
-  if (!panel) return;
-
-  const isOpen =
-    panel.classList.contains("active") || panel.style.display === "block";
-
-  if (isOpen) {
-    showContacts();
-    return;
-  }
-
-  hideAllPanels();
-
-  if (panelName === "settings" || panelName === "profile") {
-    panel.classList.add("active");
-  } else {
-    panel.style.display = "block";
-  }
-}
-
-showContacts();
-
-if (Buttons.block) {
-  Buttons.block.addEventListener("click", () => {
-    togglePanel("blocked");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.settings) {
-  Buttons.settings.addEventListener("click", () => {
-    togglePanel("settings");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.closeSettings) {
-  Buttons.closeSettings.addEventListener("click", () => {
-    if (Panels.settings && Panels.settings.classList)
-      Panels.settings.classList.remove("open");
-    showContacts();
-  });
-}
-
-if (Buttons.openProfile) {
-  Buttons.openProfile.addEventListener("click", () => {
-    togglePanel("profile");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-function loadBlockedContacts(list) {
-  const ul = document.getElementById("blocked-contacts");
-  if (!ul) return;
-  ul.innerHTML = "";
-
-  list.forEach((name) => {
-    const li = document.createElement("li");
-    li.textContent = name;
-    ul.appendChild(li);
-  });
-}
-
-loadBlockedContacts(["John Doe", "Spam Caller", "Unknown Number"]);
-
-/* -------------------------------------------------------
-   Voicemail + DND + Wavesurfer UI logic (panel switching)
-------------------------------------------------------- */
-window.addEventListener("load", function () {
-  customElements.whenDefined("contacts-menu").then(() => {
-    const toggleBtn = document.getElementById("toggle_Btn");
-    const messagingBtn = document.getElementById("messaging_Btn");
-    const blockBtn = document.getElementById("block_Btn");
-    const voicemailBtn = document.getElementById("voicemail_Btn");
-    const donotBtn = document.getElementById("donot_Btn");
-
-    const panelTitle = document.getElementById("panelTitle");
-    const messagingBox2 = document.getElementById("messaging_box_container");
-    const vmListPanel = document.getElementById("voicemail_list");
-    const savedCon = document.getElementById("sav_con");
-    const blockedCon = document.getElementById("bl_con");
-    const blockListBox = document.getElementById("bloc_box");
-
-    function showSection(section) {
-      [savedCon, blockedCon, vmListPanel, blockListBox, messagingBox2].forEach(
-        (sec) => {
-          if (!sec) return;
-          sec.style.display = "none";
-        }
-      );
-      if (section) section.style.display = "block";
-    }
-
-    toggleBtn?.addEventListener("click", function () {
-      if (savedCon && savedCon.style.display !== "none") {
-        showSection(blockedCon);
-        panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="Contacts.png" alt="contacts"> Contacts';
-      } else {
-        showSection(savedCon);
-        panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="calllog.png" alt="call-log"> Call Log';
-      }
-    });
-
-    messagingBtn?.addEventListener("click", () => {
-      showSection(messagingBox2);
-      panelTitle.textContent = "Messaging";
-      loadMessageList();
-    });
-
-    blockBtn?.addEventListener("click", () => {
-      showSection(blockListBox);
-      panelTitle.textContent = "Blocked Contacts";
-    });
-
-    voicemailBtn?.addEventListener("click", () => {
-      showSection(vmListPanel);
-      panelTitle.textContent = "Voicemail";
-      loadVoicemails();
-    });
-
-    const icon = donotBtn?.querySelector("img");
-    let dndActive = false;
-
-    donotBtn?.addEventListener("click", () => {
-      dndActive = !dndActive;
-      icon?.classList.toggle("active", dndActive);
-
-      socket.emit("dnd:update", {
-        userId: getMyUserId(),
-        active: dndActive,
-      });
-    });
-
-    showSection(savedCon);
-    panelTitle.textContent = "Call History";
-    loadVoicemails();
-  });
-});
-
-window.openMessagingPanel = function () {
-  const messagingBox2 = document.getElementById("messaging_box_container");
-  const panelTitle = document.getElementById("panelTitle");
-
-  if (!messagingBox2 || !panelTitle) return;
-
-  const showSection = (section) => {
-    document
-      .querySelectorAll(".panel")
-      .forEach((p) => p.classList.remove("active"));
-    section.classList.add("active");
-  };
-
-  showSection(messagingBox2);
-  panelTitle.textContent = "Messaging";
-  loadMessageList();
-};
-
-/* -------------------------------------------------------
-   Helpers
-------------------------------------------------------- */
-function isDarkMode() {
-  return document.body.classList.contains("dark-mode");
-}
-
-/* -------------------------------------------------------
-   Bottom sheet + emoji + GIF + send
-------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
-  const plusBtn = document.getElementById("plusBtn");
-  const bottomSheet = document.getElementById("bottomSheet");
-
-  const sheetCamera = document.getElementById("sheetCamera");
-  const sheetGallery = document.getElementById("sheetGallery");
-  const sheetFile = document.getElementById("sheetFile");
-  const sheetAudio = document.getElementById("sheetAudio");
-  const sheetEmoji = document.getElementById("sheetEmoji");
-  const sheetGif = document.getElementById("sheetGif");
-
-  const emojiPicker = document.getElementById("emojiPicker");
-  const gifPicker = document.getElementById("gifPicker");
-  const gifSearch = document.getElementById("gifSearch");
-  const gifResults = document.getElementById("gifResults");
-
-  const messageInput = document.getElementById("message_input");
-  const form = document.getElementById("text_box_reply");
-  const attachmentInput = document.getElementById("attachment_input");
-  if (!messageInput || !form) return;
-
-  const closeAll = () => {
-    bottomSheet?.classList.remove("visible");
-    emojiPicker?.classList.add("hidden");
-    gifPicker?.classList.add("hidden");
-  };
-
-  const moveCaretToEnd = (el) => {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  };
-
-  plusBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    emojiPicker?.classList.add("hidden");
-    gifPicker?.classList.add("hidden");
-    bottomSheet?.classList.toggle("visible");
-  });
-
-  document.addEventListener("click", (e) => {
-    const target = e.target;
-    const clickedInsideSheet = bottomSheet?.contains(target);
-    const clickedPlus = target === plusBtn;
-    const clickedEmojiShadow =
-      target.closest && target.closest("emoji-picker") !== null;
-    const clickedGifPicker = gifPicker?.contains(target);
-
-    if (
-      !clickedInsideSheet &&
-      !clickedPlus &&
-      !clickedEmojiShadow &&
-      !clickedGifPicker
-    ) {
-      closeAll();
-    }
-  });
-
-  sheetCamera?.addEventListener("click", () => {
-    closeAll();
-  });
-
-  sheetGallery?.addEventListener("click", () => {
-    closeAll();
-    attachmentInput?.click();
-  });
-
-  sheetFile?.addEventListener("click", () => {
-    closeAll();
-    attachmentInput?.click();
-  });
-
-  sheetAudio?.addEventListener("click", () => {
-    closeAll();
-    window.micBtn?.click();
-  });
-
-  sheetEmoji?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    bottomSheet?.classList.remove("visible");
-    gifPicker?.classList.add("hidden");
-    emojiPicker?.classList.toggle("hidden");
-  });
-
-  emojiPicker?.addEventListener("emoji-click", (event) => {
-    const emoji = event.detail.unicode;
-    messageInput.innerHTML += emoji;
-    moveCaretToEnd(messageInput);
-    messageInput.focus();
-  });
-
-  sheetGif?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    bottomSheet?.classList.remove("visible");
-    emojiPicker?.classList.add("hidden");
-    gifPicker?.classList.toggle("hidden");
-    loadTrendingGIFs();
-  });
-
-  const TENOR_KEY = "AIzaSyCdGnnQLWc8TnlSHcVgW2xlFzM1v1KyuPQ";
-  const TENOR_TRENDING = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=30`;
-  const TENOR_SEARCH = (q) =>
-    `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
-      q
-    )}&key=${TENOR_KEY}&limit=30`;
-
-  async function loadTrendingGIFs() {
-    if (!gifResults) return;
-    try {
-      const res = await fetch(TENOR_TRENDING);
-      if (!res.ok) return;
-      const data = await res.json();
-      renderGIFs(data.results || []);
-    } catch (err) {
-      console.error("[GIF] trending error:", err);
-    }
-  }
-
-  async function searchGIFs(query) {
-    if (!gifResults) return;
-    try {
-      const url = TENOR_SEARCH(query);
-      const res = await fetch(url);
-      if (!res.ok) return;
-      const data = await res.json();
-      renderGIFs(data.results || []);
-    } catch (err) {
-      console.error("[GIF] search error:", err);
-    }
-  }
-
-  function renderGIFs(gifs) {
-    if (!gifResults) return;
-    gifResults.innerHTML = "";
-
-    gifs.forEach((gif) => {
-      const url =
-        gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
-      if (!url) return;
-
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = "GIF";
-
-      img.addEventListener("click", () => {
-        messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
-        moveCaretToEnd(messageInput);
-        messageInput.focus();
-        gifPicker?.classList.add("hidden");
-      });
-
-      gifResults.appendChild(img);
-    });
-  }
-
-  gifSearch?.addEventListener("input", (e) => {
-    const q = e.target.value.trim();
-    if (!q) loadTrendingGIFs();
-    else searchGIFs(q);
-  });
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const targetId = window.receiver_id;
-    if (!targetId) {
-      window.showError?.("No receiver selected");
-      return;
-    }
-
-    const raw = messageInput.innerHTML.trim();
-    if (!raw) return;
-
-    const temp = document.createElement("div");
-    temp.innerHTML = raw;
-    const text = (temp.textContent || "").trim();
-
-    const gifMatch = raw.match(/<img[^>]+src="([^"]+\.gif)"/i);
-    const gifUrl = gifMatch ? gifMatch[1] : null;
-
-    try {
-      if (gifUrl && !text) {
-        const data = await window.postForm("/messages/send", {
-          receiver_id: targetId,
-          file: 1,
-          file_url: gifUrl,
-          message: "",
-        });
-
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success && typeof window.renderMessage === "function") {
-          window.renderMessage({
-            id: data.id,
-            is_me: true,
-            file: 1,
-            file_url: gifUrl,
-            created_at: data.created_at,
-            sender_id: getMyUserId(),
-            sender_name: "You",
-            type: "gif",
-            message: "",
-          });
-        } else if (!success) {
-          const errMsg = data?.error || "Failed to send GIF";
-          window.showError?.(errMsg);
-        }
-      } else if (text) {
-        const data = await window.postForm("/messages/send", {
-          receiver_id: targetId,
-          message: text,
-        });
-
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success && typeof window.renderMessage === "function") {
-          window.renderMessage({
-            id: data.id,
-            is_me: true,
-            message: data.message,
-            created_at: data.created_at,
-            sender_id: getMyUserId(),
-            sender_name: "You",
-            type: "text",
-          });
-        } else {
-          const msg = data?.error || "Failed to send message";
-          window.showError?.(msg);
-        }
-      }
-    } catch (err) {
-      console.error("[SEND] error:", err);
-      window.showError?.("Failed to send message");
-    }
-
-    messageInput.innerHTML = "";
-  });
-});
 
 
 
