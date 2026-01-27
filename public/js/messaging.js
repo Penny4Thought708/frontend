@@ -296,18 +296,14 @@ function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.is_me ? "sender_msg" : "receiver_msg";
 
-  if (msg.id !== undefined && msg.id !== null) {
-    div.dataset.msgId = String(msg.id);
-  }
-  if (!msg.is_me && msg.sender_id) {
-    div.dataset.senderId = String(msg.sender_id);
-  }
+  if (msg.id != null) div.dataset.msgId = String(msg.id);
+  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
 
-  // Modern name rendering
+  // ===== Modern wrapper =====
   const wrapper = document.createElement("div");
   wrapper.className = "msg-wrapper";
 
-  // Show name ONLY for received messages
+  // ===== Name (only for received messages) =====
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
@@ -315,12 +311,12 @@ function renderMessage(msg) {
     wrapper.appendChild(nameEl);
   }
 
-  // Bubble
+  // ===== Bubble =====
   const p = document.createElement("p");
   p.className = "msg-bubble-text";
   wrapper.appendChild(p);
 
-  // FILE MESSAGE
+  // ===== File or Text =====
   if (isFileMessage) {
     const name =
       msg.name ||
@@ -334,10 +330,11 @@ function renderMessage(msg) {
       url: fileUrl,
       comment: msg.comment,
     });
+
   } else {
-    // TEXT MESSAGE
     p.appendChild(document.createTextNode(msg.message ?? ""));
 
+    // ===== Inline editing for your messages =====
     if (msg.is_me && msg.id) {
       p.ondblclick = () => {
         console.log("[messaging] edit dblclick:", msg.id);
@@ -380,18 +377,7 @@ function renderMessage(msg) {
     }
   }
 
-  // ⭐ THIS WAS MISSING — append wrapper into the message div
-  div.appendChild(wrapper);
-
-  // Append message to window
-  messageWin.appendChild(div);
-
-  smartScroll();
-  observeMessagesForRead();
-}
-
-
-  // Reaction bar
+  // ===== Reaction bar =====
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -409,30 +395,22 @@ function renderMessage(msg) {
     console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
 
     try {
-      const res = await apiPost("/react", {
-        id: msg.id,
-        emoji,
-      });
-
+      const res = await apiPost("/react", { id: msg.id, emoji });
       console.log("[messaging] reaction response:", res);
 
-      if (res.removed) {
-        removeReactionFromMessage(msg.id, emoji);
-      } else {
-        addReactionToMessage(msg.id, emoji);
-      }
+      if (res.removed) removeReactionFromMessage(msg.id, emoji);
+      else addReactionToMessage(msg.id, emoji);
+
     } catch (err) {
       console.error("[messaging] reaction failed:", err);
     }
   });
 
-  div.appendChild(reactionBar);
-
+  // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
-  div.appendChild(reactionDisplay);
 
-  // META
+  // ===== Meta (timestamp + delete) =====
   const ts =
     msg.created_at instanceof Date
       ? msg.created_at
@@ -458,13 +436,17 @@ function renderMessage(msg) {
   meta.appendChild(small);
   meta.appendChild(statusSpan);
 
-  div.appendChild(p);
-  div.appendChild(meta);
+  // ===== Append everything in correct order =====
+  div.appendChild(wrapper);          // name + bubble
+  div.appendChild(reactionBar);      // emoji bar
+  div.appendChild(reactionDisplay);  // reaction counts
+  div.appendChild(meta);             // timestamp + delete
+
   messageWin.appendChild(div);
 
   smartScroll();
   observeMessagesForRead();
-
+}
 
 // ===== FILE PREVIEW =====
 function renderPreviews(files) {
@@ -1067,6 +1049,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
