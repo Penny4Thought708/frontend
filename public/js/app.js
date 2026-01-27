@@ -36,6 +36,55 @@ async function waitForIdentity() {
     await new Promise((r) => setTimeout(r, 100));
   }
 }
+// -------------------------------------------------------
+// CONTENT MENU INITIALIZATION
+// -------------------------------------------------------
+function initContentMenu() {
+  const menu = document.querySelector("contacts-menu");
+  if (!menu) {
+    console.error("[content-menu] <contacts-menu> element not found");
+    return;
+  }
+
+  console.log("[content-menu] Initialized");
+
+  menu.addEventListener("menu-select", (e) => {
+    const action = e.detail.action;
+    console.log("[content-menu] Selected:", action);
+
+    // Hide all panels
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+
+    switch (action) {
+      case "contacts":
+        document.getElementById("contactsPanel")?.classList.add("active");
+        break;
+
+      case "messages":
+        document.getElementById("messagesPanel")?.classList.add("active");
+        break;
+
+      case "block":
+        document.getElementById("blockedPanel")?.classList.add("active");
+        break;
+
+      case "voicemail":
+        document.getElementById("voicemailPanel")?.classList.add("active");
+        break;
+
+      case "hidden":
+        document.getElementById("hiddenPanel")?.classList.add("active");
+        break;
+
+      case "dnd":
+        document.getElementById("dndPanel")?.classList.add("active");
+        break;
+
+      default:
+        console.warn("[content-menu] Unknown action:", action);
+    }
+  });
+}
 
 /* -------------------------------------------------------
    Global POST helper
@@ -667,6 +716,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
