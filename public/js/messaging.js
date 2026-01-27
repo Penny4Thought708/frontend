@@ -303,12 +303,23 @@ function renderMessage(msg) {
     div.dataset.senderId = String(msg.sender_id);
   }
 
-  const strong = document.createElement("strong");
-  strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
+// Modern name rendering
+const wrapper = document.createElement("div");
+wrapper.className = "msg-wrapper";
 
-  const p = document.createElement("p");
-  p.appendChild(strong);
-  p.appendChild(document.createTextNode(": "));
+// Show name ONLY for received messages
+if (!msg.is_me) {
+  const nameEl = document.createElement("div");
+  nameEl.className = "msg-sender-name";
+  nameEl.textContent = msg.sender_name || "Unknown";
+  wrapper.appendChild(nameEl);
+}
+
+// Bubble
+const p = document.createElement("p");
+p.className = "msg-bubble-text";
+wrapper.appendChild(p);
+
 
   if (isFileMessage) {
     const name =
@@ -1039,6 +1050,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
