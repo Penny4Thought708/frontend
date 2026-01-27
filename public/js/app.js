@@ -48,42 +48,45 @@ function initContentMenu() {
 
   console.log("[content-menu] Initialized");
 
-  menu.addEventListener("menu-select", (e) => {
-    const action = e.detail.action;
-    console.log("[content-menu] Selected:", action);
+menu.addEventListener("menu-select", (e) => {
+  const action = e.detail.action;
+  console.log("[content-menu] Selected:", action);
 
-    // Hide all panels
-    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+  // Hide all panels
+  document.querySelectorAll(".panel, .contacts-panel").forEach((p) =>
+    p.classList.remove("active")
+  );
 
-    switch (action) {
-      case "contacts":
-        document.getElementById("contactsPanel")?.classList.add("active");
-        break;
+  switch (action) {
+    case "contacts":
+      document.getElementById("contacts_panel")?.classList.add("active");
+      break;
 
-      case "messages":
-        document.getElementById("messagesPanel")?.classList.add("active");
-        break;
+    case "messages":
+      document.getElementById("messages_panel")?.classList.add("active");
+      break;
 
-      case "block":
-        document.getElementById("blockedPanel")?.classList.add("active");
-        break;
+    case "block":
+      document.getElementById("blockList_box")?.classList.add("active");
+      break;
 
-      case "voicemail":
-        document.getElementById("voicemailPanel")?.classList.add("active");
-        break;
+    case "voicemail":
+      document.getElementById("voicemail_list")?.classList.add("active");
+      break;
 
-      case "hidden":
-        document.getElementById("hiddenPanel")?.classList.add("active");
-        break;
+    case "hidden":
+      document.getElementById("hidden_messages_panel")?.classList.add("active");
+      break;
 
-      case "dnd":
-        document.getElementById("dndPanel")?.classList.add("active");
-        break;
+    case "dnd":
+      document.getElementById("dnd_panel")?.classList.add("active");
+      break;
 
-      default:
-        console.warn("[content-menu] Unknown action:", action);
-    }
-  });
+    default:
+      console.warn("[content-menu] Unknown action:", action);
+  }
+});
+
 }
 
 /* -------------------------------------------------------
@@ -713,6 +716,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
