@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO WebRTC, Node backend, FULL LOGGING)
+// Messaging System (NO PHP, Node backend, FULL LOGGING)
 
 import {
   getMyUserId,
@@ -108,13 +108,70 @@ async function apiPost(path, body) {
   }
 }
 
+// ===== FILE RENDERING HELPER =====
+function appendFileContentToParagraph(p, options) {
+  const { name, url, comment = "" } = options;
+
+  const src = url;
+  if (!src) {
+    console.warn("[messaging] Missing file URL/data for:", name);
+    return;
+  }
+
+  if (/\.(png|jpe?g|gif|webp)$/i.test(name || "")) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = name;
+    img.style.maxWidth = "200px";
+    img.style.display = "block";
+    p.appendChild(img);
+
+    const caption = document.createElement("span");
+    caption.textContent = name;
+    caption.className = "file-caption";
+    p.appendChild(caption);
+
+    img.onclick = () => {
+      const viewer = document.getElementById("img-viewer");
+      const viewerImg = document.getElementById("img-viewer-img");
+      if (viewer && viewerImg) {
+        viewerImg.src = img.src;
+        viewer.style.display = "flex";
+      }
+    };
+  } else {
+    const a = document.createElement("a");
+    a.href = src;
+    a.download = name;
+    a.textContent = name;
+    a.target = "_blank";
+    p.appendChild(a);
+  }
+
+  if (comment) {
+    const cmt = document.createElement("div");
+    cmt.className = "file-comment";
+    cmt.textContent = comment;
+    p.appendChild(cmt);
+  }
+}
+
+// Close full-screen viewer when clicking overlay
+document.getElementById("img-viewer")?.addEventListener("click", () => {
+  const viewer = document.getElementById("img-viewer");
+  if (viewer) viewer.style.display = "none";
+});
+
 // ===== DELETE MESSAGE =====
 async function deleteMessage(messageId) {
   console.log("[messaging] deleteMessage:", messageId);
 
-  if (!messageId) return console.error("[messaging] deleteMessage missing ID");
+  if (!messageId) {
+    console.error("[messaging] deleteMessage missing ID");
+    return;
+  }
 
-  const el = document.querySelector(`[data-msg-id="${messageId}"]`);
+  const el = document.querySelector(`[data-msg-id="${String(messageId)}"]`);
   if (el) el.remove();
 
   try {
@@ -132,13 +189,17 @@ function addReactionToMessage(id, emoji) {
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
   );
-  if (!container) return console.warn("[messaging] reaction container missing");
+  if (!container) {
+    console.warn("[messaging] reaction container missing");
+    return;
+  }
 
   let bubble = container.querySelector(`[data-emoji="${emoji}"]`);
 
   if (bubble) {
     const countEl = bubble.querySelector(".react-count");
-    countEl.textContent = (parseInt(countEl.textContent, 10) || 1) + 1;
+    const current = parseInt(countEl.textContent, 10) || 1;
+    countEl.textContent = current + 1;
   } else {
     bubble = document.createElement("span");
     bubble.className = "reaction-bubble pop";
@@ -166,8 +227,11 @@ function removeReactionFromMessage(id, emoji) {
   const countEl = bubble.querySelector(".react-count");
   const current = parseInt(countEl.textContent, 10);
 
-  if (current > 1) countEl.textContent = current - 1;
-  else bubble.remove();
+  if (current > 1) {
+    countEl.textContent = current - 1;
+  } else {
+    bubble.remove();
+  }
 }
 
 // ===== OPEN MESSAGE WINDOW =====
@@ -185,7 +249,7 @@ msgOpenBtn?.addEventListener("click", async () => {
     const messages = await loadMessages();
     console.log("[messaging] msgOpenBtn loaded messages:", messages);
 
-    if (messages.length) {
+    if (Array.isArray(messages) && messages.length) {
       lastSeenMessageId = messages[messages.length - 1].id ?? 0;
     }
 
@@ -194,7 +258,7 @@ msgOpenBtn?.addEventListener("click", async () => {
     const myUserId = getMyUserId();
 
     messages
-      .filter((m) => !m.is_me && m.id !== undefined)
+      .filter((m) => !m.is_me && typeof m.id !== "undefined")
       .forEach((m) => {
         socket.emit("message:read", {
           from: m.sender_id,
@@ -219,7 +283,10 @@ closeMsgBtn?.addEventListener("click", () => {
 function renderMessage(msg) {
   console.log("[messaging] renderMessage:", msg);
 
-  if (!messageWin) return console.error("[messaging] messageWin missing");
+  if (!messageWin) {
+    console.error("[messaging] messageWin missing");
+    return;
+  }
 
   const isFileMessage =
     msg.type === "file" ||
@@ -229,8 +296,12 @@ function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.is_me ? "sender_msg" : "receiver_msg";
 
-  if (msg.id != null) div.dataset.msgId = String(msg.id);
-  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
+  if (msg.id !== undefined && msg.id !== null) {
+    div.dataset.msgId = String(msg.id);
+  }
+  if (!msg.is_me && msg.sender_id) {
+    div.dataset.senderId = String(msg.sender_id);
+  }
 
   const strong = document.createElement("strong");
   strong.textContent = msg.is_me ? "You" : msg.sender_name ?? "Them";
@@ -322,8 +393,11 @@ function renderMessage(msg) {
 
       console.log("[messaging] reaction response:", res);
 
-      if (res.removed) removeReactionFromMessage(msg.id, emoji);
-      else addReactionToMessage(msg.id, emoji);
+      if (res.removed) {
+        removeReactionFromMessage(msg.id, emoji);
+      } else {
+        addReactionToMessage(msg.id, emoji);
+      }
     } catch (err) {
       console.error("[messaging] reaction failed:", err);
     }
@@ -437,7 +511,9 @@ if (messageWin) {
   });
 
   messageWin.addEventListener("dragleave", (e) => {
-    if (e.target === messageWin) messageWin.classList.remove("drag-over");
+    if (e.target === messageWin) {
+      messageWin.classList.remove("drag-over");
+    }
   });
 
   messageWin.addEventListener("drop", (e) => {
@@ -597,7 +673,6 @@ if (msgForm) {
           .catch((err) => {
             console.error("[messaging] P2P text persist failed:", err);
           });
-
       } else {
         console.log("[messaging] sending text via HTTP:", message);
 
@@ -609,78 +684,118 @@ if (msgForm) {
 
           console.log("[messaging] HTTP text send response:", data);
 
-       if (data?.success) {
-  renderMessage({
-    id: data.id,
-    is_me: true,
-    message: data.message,
-    created_at: data.created_at,
-    sender_id: myUserId,
-    sender_name: "You",
+          if (data?.success) {
+            renderMessage({
+              id: data.id,
+              is_me: true,
+              message: data.message,
+              created_at: data.created_at,
+              sender_id: myUserId,
+              sender_name: "You",
+            });
+          } else {
+            console.error("[messaging] HTTP text send failed:", data);
+            showError(data?.error || "Failed to send message");
+          }
+        } catch (err) {
+          console.error("[messaging] HTTP text send exception:", err);
+          showError("Failed to send message");
+        }
+      }
+    }
+
+    if (msgInput) msgInput.value = "";
   });
 } else {
-  console.error("[messaging] HTTP text send failed:", data);
-  showError(data?.error || "Failed to send message");
-}
-} catch (err) {
-  console.error("[messaging] HTTP text send exception:", err);
-  showError("Failed to send message");
-}
-}
-
-msgInput.value = "";
-});
-} else {
-console.warn("[messaging] msgForm not found — submit handler not attached");
+  console.warn("[messaging] msgForm not found — submit handler not attached");
 }
 
 // ===== Receiving messages via DataChannel (text + files) =====
 export function setupDataChannel(channel) {
-console.log("[messaging] setupDataChannel called");
+  console.log("[messaging] setupDataChannel called");
 
-if (!channel) {
-  console.error("[messaging] setupDataChannel: no channel");
-  return;
-}
-
-if (typeof window !== "undefined") window.dataChannel = channel;
-
-channel.onmessage = async (e) => {
-  console.log("[messaging] DataChannel message:", e.data);
-
-  let payload = e.data;
-
-  if (typeof e.data === "string") {
-    try {
-      payload = JSON.parse(e.data);
-    } catch {
-      console.warn("[messaging] DataChannel payload not JSON");
-      payload = e.data;
-    }
+  if (!channel) {
+    console.error("[messaging] setupDataChannel: no channel");
+    return;
   }
 
-  playNotification();
-  const myUserId = getMyUserId();
+  if (typeof window !== "undefined") window.dataChannel = channel;
 
-  // FILE
-  if (payload && payload.type === "file") {
-    console.log("[messaging] Incoming P2P file:", payload);
+  channel.onmessage = async (e) => {
+    console.log("[messaging] DataChannel message:", e.data);
 
-    const unified = {
-      id: null,
-      type: "file",
-      name: payload.name,
-      url: payload.url || null,
-      data: payload.data || null,
-      comment: payload.comment || "",
-      sender_id: getPeerId(),
-      sender_name: payload.sender_name || "Peer",
-      created_at: new Date(),
+    let payload = e.data;
+
+    if (typeof e.data === "string") {
+      try {
+        payload = JSON.parse(e.data);
+      } catch {
+        console.warn("[messaging] DataChannel payload not JSON");
+        payload = e.data;
+      }
+    }
+
+    playNotification();
+    const myUserId = getMyUserId();
+
+    // FILE
+    if (payload && payload.type === "file") {
+      console.log("[messaging] Incoming P2P file:", payload);
+
+      const unified = {
+        id: null,
+        type: "file",
+        name: payload.name,
+        url: payload.url || null,
+        data: payload.data || null,
+        comment: payload.comment || "",
+        sender_id: getPeerId(),
+        sender_name: payload.sender_name || "Peer",
+        created_at: new Date(),
+        is_me: false,
+        file: 1,
+      };
+
+      renderMessage(unified);
+
+      socket.emit("message:delivered", {
+        from: getPeerId() || "",
+        to: myUserId,
+        messageId: null,
+      });
+
+      try {
+        const res = await apiPost("/send", {
+          sender_id: getPeerId() || "",
+          receiver_id: myUserId || "",
+          message: `File: ${payload.name}`,
+          transport: "webrtc",
+          file: 1,
+          filename: payload.name,
+          file_url: null,
+          comment: payload.comment || "",
+        });
+
+        console.log("[messaging] Persist incoming P2P file:", res);
+      } catch (err) {
+        console.error("[messaging] Persist incoming P2P file failed:", err);
+      }
+
+      return;
+    }
+
+    // TEXT
+    const text =
+      typeof payload === "string" ? payload : safeJSON(payload);
+
+    console.log("[messaging] Incoming P2P text:", text);
+
+    renderMessage({
       is_me: false,
-      file: 1,
-    };
-
-    renderMessage(unified);
+      message: text,
+      created_at: new Date(),
+      sender_name: "Peer",
+    });
 
     socket.emit("message:delivered", {
       from: getPeerId() || "",
@@ -688,136 +803,96 @@ channel.onmessage = async (e) => {
       messageId: null,
     });
 
-    try {
-      const res = await apiPost("/send", {
-        sender_id: getPeerId() || "",
-        receiver_id: myUserId || "",
-        message: `File: ${payload.name}`,
-        transport: "webrtc",
-        file: 1,
-        filename: payload.name,
-        file_url: null,
-        comment: payload.comment || "",
-      });
-
-      console.log("[messaging] Persist incoming P2P file:", res);
-    } catch (err) {
-      console.error("[messaging] Persist incoming P2P file failed:", err);
-    }
-
-    return;
-  }
-
-  // TEXT
-  const text =
-    typeof payload === "string" ? payload : safeJSON(payload);
-
-  console.log("[messaging] Incoming P2P text:", text);
-
-  renderMessage({
-    is_me: false,
-    message: text,
-    created_at: new Date(),
-    sender_name: "Peer",
-  });
-
-  socket.emit("message:delivered", {
-    from: getPeerId() || "",
-    to: myUserId,
-    messageId: null,
-  });
-
-  observeMessagesForRead();
-};
+    observeMessagesForRead();
+  };
 }
 
 // ===== Loading messages =====
 export async function loadMessages() {
-console.log("[messaging] loadMessages called for receiver:", receiver_id);
+  console.log("[messaging] loadMessages called for receiver:", receiver_id);
 
-if (!receiver_id) {
-  console.warn("[messaging] loadMessages: no receiver_id");
-  return [];
-}
+  if (!receiver_id) {
+    console.warn("[messaging] loadMessages: no receiver_id");
+    return [];
+  }
 
-try {
-  const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
-  console.log("[messaging] loadMessages response:", messages);
+  try {
+    const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+    console.log("[messaging] loadMessages response:", messages);
 
-  if (!Array.isArray(messages)) return [];
+    if (!Array.isArray(messages)) return [];
 
-  lastLoadedMessages = messages;
-  const myUserId = getMyUserId();
+    lastLoadedMessages = messages;
+    const myUserId = getMyUserId();
 
-  if (messageWin) {
-    messages.forEach((msg) => {
-      const msgId =
-        msg.id !== undefined && msg.id !== null ? String(msg.id) : null;
+    if (messageWin) {
+      messages.forEach((msg) => {
+        const msgId =
+          msg.id !== undefined && msg.id !== null ? String(msg.id) : null;
 
-      const exists = msgId
-        ? document.querySelector(`[data-msg-id="${msgId}"]`)
-        : null;
+        const exists = msgId
+          ? document.querySelector(`[data-msg-id="${msgId}"]`)
+          : null;
 
-      if (!exists) {
-        renderMessage(msg);
+        if (!exists) {
+          renderMessage(msg);
 
-        if (!msg.is_me && msg.id !== undefined) {
-          socket.emit("message:delivered", {
-            from: msg.sender_id,
-            to: myUserId,
-            messageId: msg.id,
+          if (!msg.is_me && msg.id !== undefined) {
+            socket.emit("message:delivered", {
+              from: msg.sender_id,
+              to: myUserId,
+              messageId: msg.id,
+            });
+          }
+        }
+
+        const display = document.querySelector(
+          `[data-msg-id="${msg.id}"] .reaction-display`
+        );
+        if (display) display.innerHTML = "";
+
+        if (msg.reactions) {
+          const arr = [...msg.reactions];
+          const counts = {};
+
+          arr.forEach((emoji) => {
+            counts[emoji] = (counts[emoji] || 0) + 1;
+          });
+
+          Object.entries(counts).forEach(([emoji, count]) => {
+            for (let i = 0; i < count; i++) {
+              addReactionToMessage(msg.id, emoji);
+            }
           });
         }
-      }
-
-      const display = document.querySelector(
-        `[data-msg-id="${msg.id}"] .reaction-display`
-      );
-      if (display) display.innerHTML = "";
-
-      if (msg.reactions) {
-        const arr = [...msg.reactions];
-        const counts = {};
-
-        arr.forEach((emoji) => {
-          counts[emoji] = (counts[emoji] || 0) + 1;
-        });
-
-        Object.entries(counts).forEach(([emoji, count]) => {
-          for (let i = 0; i < count; i++) {
-            addReactionToMessage(msg.id, emoji);
-          }
-        });
-      }
-    });
-  }
-
-  const last = messages[messages.length - 1];
-  if (
-    last &&
-    typeof last.id === "number" &&
-    last.id > lastSeenMessageId &&
-    !last.is_me
-  ) {
-    playNotification();
-    const bell = document.querySelector(".notification-bell");
-    if (bell) {
-      bell.classList.add("active");
-      setTimeout(() => bell.classList.remove("active"), 1000);
+      });
     }
+
+    const last = messages[messages.length - 1];
+    if (
+      last &&
+      typeof last.id === "number" &&
+      last.id > lastSeenMessageId &&
+      !last.is_me
+    ) {
+      playNotification();
+      const bell = document.querySelector(".notification-bell");
+      if (bell) {
+        bell.classList.add("active");
+        setTimeout(() => bell.classList.remove("active"), 1000);
+      }
+    }
+
+    if (last && typeof last.id === "number") {
+      lastSeenMessageId = last.id;
+    }
+
+    observeMessagesForRead();
+    return messages;
+  } catch (err) {
+    console.error("[messaging] loadMessages failed:", err);
+    return [];
   }
-
-  if (last && typeof last.id === "number") {
-    lastSeenMessageId = last.id;
-  }
-
-  observeMessagesForRead();
-  return messages;
-
-} catch (err) {
-  console.error("[messaging] loadMessages failed:", err);
-  return [];
-}
 }
 
 // ===== Typing indicators =====
@@ -825,147 +900,148 @@ const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
 
 msgInput?.addEventListener("input", () => {
-const myUserId = getMyUserId();
-const targetId = getPeerId() || receiver_id;
-if (!targetId) return;
+  const myUserId = getMyUserId();
+  const targetId = getPeerId() || receiver_id;
+  if (!targetId) return;
 
-socket.emit("typing:start", { from: myUserId, to: targetId });
+  socket.emit("typing:start", { from: myUserId, to: targetId });
 
-if (typingStopTimer) clearTimeout(typingStopTimer);
-typingStopTimer = setTimeout(() => {
-  socket.emit("typing:stop", { from: myUserId, to: targetId });
-}, 800);
+  if (typingStopTimer) clearTimeout(typingStopTimer);
+  typingStopTimer = setTimeout(() => {
+    socket.emit("typing:stop", { from: myUserId, to: targetId });
+  }, 800);
 });
 
 socket.on("typing:start", ({ from, fullname }) => {
-const currentChatPartner = receiver_id || getPeerId();
-if (!typingIndicator || !currentChatPartner) return;
+  const currentChatPartner = receiver_id || getPeerId();
+  if (!typingIndicator || !currentChatPartner) return;
 
-if (String(from) === String(currentChatPartner)) {
-  const name =
-    fullname || userNames[String(from)] || `User ${from}`;
-  typingIndicator.classList.add("active");
-  typingIndicator.textContent = `${name} is typing...`;
-}
+  if (String(from) === String(currentChatPartner)) {
+    const name =
+      fullname || userNames[String(from)] || `User ${from}`;
+    typingIndicator.classList.add("active");
+    typingIndicator.textContent = `${name} is typing...`;
+  }
 });
 
 socket.on("typing:stop", ({ from }) => {
-const currentChatPartner = receiver_id || getPeerId();
-if (!typingIndicator || !currentChatPartner) return;
+  const currentChatPartner = receiver_id || getPeerId();
+  if (!typingIndicator || !currentChatPartner) return;
 
-if (String(from) === String(currentChatPartner)) {
-  typingIndicator.classList.remove("active");
-  typingIndicator.textContent = "";
-}
+  if (String(from) === String(currentChatPartner)) {
+    typingIndicator.classList.remove("active");
+    typingIndicator.textContent = "";
+  }
 });
 
 // ===== Read receipts =====
 socket.on("message:delivered", ({ messageId }) => {
-if (!messageId) return;
+  if (!messageId) return;
 
-const el = document.querySelector(
-  `[data-msg-id="${String(messageId)}"] small`
-);
-if (el && !el.textContent.includes("✓ delivered")) {
-  el.textContent += " ✓ delivered";
-}
+  const el = document.querySelector(
+    `[data-msg-id="${String(messageId)}"] small`
+  );
+  if (el && !el.textContent.includes("✓ delivered")) {
+    el.textContent += " ✓ delivered";
+  }
 });
 
 socket.on("message:read", ({ messageId }) => {
-if (!messageId) return;
+  if (!messageId) return;
 
-const el = document.querySelector(
-  `[data-msg-id="${String(messageId)}"] small`
-);
-if (el && !el.textContent.includes("✓ read")) {
-  el.textContent += " ✓ read";
-}
+  const el = document.querySelector(
+    `[data-msg-id="${String(messageId)}"] small`
+  );
+  if (el && !el.textContent.includes("✓ read")) {
+    el.textContent += " ✓ read";
+  }
 });
 
 // ===== Presence updates =====
 socket.on("statusUpdate", ({ contact_id, online, away }) => {
-const statusText = away ? "Away" : online ? "Online" : "Offline";
-console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
+  const statusText = away ? "Away" : online ? "Online" : "Offline";
+  console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
 
-const el = document.querySelector(
-  `[data-contact-id="${contact_id}"] .status`
-);
-if (el) {
-  el.textContent = statusText;
-  el.className = `status ${statusText.toLowerCase()}`;
-}
+  const el = document.querySelector(
+    `[data-contact-id="${contact_id}"] .status`
+  );
+  if (el) {
+    el.textContent = statusText;
+    el.className = `status ${statusText.toLowerCase()}`;
+  }
 });
 
 // ===== Read observer =====
 function createReadObserver() {
-if (!messageWin) return null;
+  if (!messageWin) return null;
 
-return new IntersectionObserver(
-  (entries, observer) => {
-    const myUserId = getMyUserId();
+  return new IntersectionObserver(
+    (entries, observer) => {
+      const myUserId = getMyUserId();
 
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
 
-      const msgEl = entry.target;
-      const msgId = msgEl.dataset.msgId;
-      const senderId = msgEl.dataset.senderId;
+        const msgEl = entry.target;
+        const msgId = msgEl.dataset.msgId;
+        const senderId = msgEl.dataset.senderId;
 
-      if (msgId && senderId && senderId !== String(myUserId)) {
-        socket.emit("message:read", {
-          from: senderId,
-          to: myUserId,
-          messageId: msgId,
-        });
+        if (msgId && senderId && senderId !== String(myUserId)) {
+          socket.emit("message:read", {
+            from: senderId,
+            to: myUserId,
+            messageId: msgId,
+          });
 
-        observer.unobserve(msgEl);
-        delete msgEl.dataset.observing;
-      }
-    });
-  },
-  { root: messageWin, threshold: 0.8 }
-);
+          observer.unobserve(msgEl);
+          delete msgEl.dataset.observing;
+        }
+      });
+    },
+    { root: messageWin, threshold: 0.8 }
+  );
 }
 
 function observeMessagesForRead() {
-if (!messageWin) return;
+  if (!messageWin) return;
 
-if (!readObserver) {
-  readObserver = createReadObserver();
-  if (!readObserver) return;
-}
-
-messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
-  if (!el.dataset.observing) {
-    readObserver.observe(el);
-    el.dataset.observing = "1";
+  if (!readObserver) {
+    readObserver = createReadObserver();
+    if (!readObserver) return;
   }
-});
+
+  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
+    if (!el.dataset.observing) {
+      readObserver.observe(el);
+      el.dataset.observing = "1";
+    }
+  });
 }
 
 // ===== Activity tracking =====
 let activityTimeout;
 ["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
-document.addEventListener(evt, () => {
-  clearTimeout(activityTimeout);
-  activityTimeout = setTimeout(() => {
-    if (socket && socket.connected) {
-      socket.emit("activity");
-    }
-  }, 750);
+  document.addEventListener(evt, () => {
+    clearTimeout(activityTimeout);
+    activityTimeout = setTimeout(() => {
+      if (socket && socket.connected) {
+        socket.emit("activity");
+      }
+    }, 750);
 
-  observeMessagesForRead();
-});
+    observeMessagesForRead();
+  });
 });
 
 // ===== Polling =====
 setInterval(() => {
-if (receiver_id) {
-  loadMessages().catch((err) =>
-    console.error("[messaging] Poll failed:", err)
-  );
-}
+  if (receiver_id) {
+    loadMessages().catch((err) =>
+      console.error("[messaging] Poll failed:", err)
+    );
+  }
 }, 8000);
+
 
 
 
