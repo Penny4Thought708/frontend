@@ -815,6 +815,7 @@ export function setupDataChannel(channel) {
 // ===== Loading messages =====
 export async function loadMessages() {
   console.log("[messaging] loadMessages called for receiver:", receiver_id);
+console.log("userNames cache right now:", userNames);
 
   if (!receiver_id) {
     console.warn("[messaging] loadMessages: no receiver_id");
@@ -1049,6 +1050,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
