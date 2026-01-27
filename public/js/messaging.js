@@ -28,7 +28,7 @@ console.log("[messaging] Loaded messaging.js");
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
-ecport const userNames = {};
+export const userNames = {};
 let readObserver = null;
 const previewEl = previewDiv;
 
@@ -1050,6 +1050,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
