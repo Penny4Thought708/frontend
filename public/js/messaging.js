@@ -303,24 +303,24 @@ function renderMessage(msg) {
     div.dataset.senderId = String(msg.sender_id);
   }
 
-// Modern name rendering
-const wrapper = document.createElement("div");
-wrapper.className = "msg-wrapper";
+  // Modern name rendering
+  const wrapper = document.createElement("div");
+  wrapper.className = "msg-wrapper";
 
-// Show name ONLY for received messages
-if (!msg.is_me) {
-  const nameEl = document.createElement("div");
-  nameEl.className = "msg-sender-name";
-  nameEl.textContent = msg.sender_name || "Unknown";
-  wrapper.appendChild(nameEl);
-}
+  // Show name ONLY for received messages
+  if (!msg.is_me) {
+    const nameEl = document.createElement("div");
+    nameEl.className = "msg-sender-name";
+    nameEl.textContent = msg.sender_name || "Unknown";
+    wrapper.appendChild(nameEl);
+  }
 
-// Bubble
-const p = document.createElement("p");
-p.className = "msg-bubble-text";
-wrapper.appendChild(p);
+  // Bubble
+  const p = document.createElement("p");
+  p.className = "msg-bubble-text";
+  wrapper.appendChild(p);
 
-
+  // FILE MESSAGE
   if (isFileMessage) {
     const name =
       msg.name ||
@@ -335,6 +335,7 @@ wrapper.appendChild(p);
       comment: msg.comment,
     });
   } else {
+    // TEXT MESSAGE
     p.appendChild(document.createTextNode(msg.message ?? ""));
 
     if (msg.is_me && msg.id) {
@@ -353,16 +354,16 @@ wrapper.appendChild(p);
 
         input.onkeydown = async (e) => {
           if (e.key === "Escape") {
-            p.textContent = `You: ${original}`;
+            p.textContent = original;
           }
           if (e.key === "Enter") {
             const newText = input.value.trim();
             if (!newText || newText === original) {
-              p.textContent = `You: ${original}`;
+              p.textContent = original;
               return;
             }
 
-            p.textContent = `You: ${newText}`;
+            p.textContent = newText;
 
             try {
               const res = await apiPost("/edit", {
@@ -378,6 +379,17 @@ wrapper.appendChild(p);
       };
     }
   }
+
+  // ⭐ THIS WAS MISSING — append wrapper into the message div
+  div.appendChild(wrapper);
+
+  // Append message to window
+  messageWin.appendChild(div);
+
+  smartScroll();
+  observeMessagesForRead();
+}
+
 
   // Reaction bar
   const reactionBar = document.createElement("div");
@@ -1055,6 +1067,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
