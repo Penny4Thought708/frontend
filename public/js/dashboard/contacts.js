@@ -13,7 +13,7 @@ import {
   lookupResults,
   messageBox
 } from "../session.js";
-import { setReceiver, loadMessages } from "../messaging.js";
+import { setReceiver, loadMessages,userNames } from "../messaging.js";
 import { setContactLookup } from "../call-log.js";
 
 let activeContact = null;
@@ -451,9 +451,9 @@ export function renderBlockedCard(user) {
 ------------------------------------------------------- */
 export function openMessagesFor(user) {
   console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", user);
-import { userNames } from "../messaging.js";
 
-userNames[String(user.contact_id)] = user.contact_name;
+  // ⭐ Correct name injection
+  userNames[String(user.contact_id)] = user.contact_name;
 
   activeContact = user;
   window.currentChatUserId = user.contact_id;
@@ -475,6 +475,7 @@ userNames[String(user.contact_id)] = user.contact_name;
 
   loadMessages();
 }
+
 
 /* -------------------------------------------------------
    SELECT CARD
@@ -666,6 +667,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
