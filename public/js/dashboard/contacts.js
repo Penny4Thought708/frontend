@@ -1,6 +1,6 @@
 // public/js/contacts.js
 // -------------------------------------------------------
-// CONTACT SYSTEM — CLEAN PRODUCTION VERSION
+// CONTACT SYSTEM — PRODUCTION VERSION WITH ERROR LOGGING
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
@@ -33,18 +33,28 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 async function getJson(url) {
-  const res = await fetch(url, { credentials: "include" });
-  return res.json();
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    return res.json();
+  } catch (err) {
+    console.error("[contacts] Network error fetching:", url, err);
+    return null;
+  }
 }
 
 async function postJson(url, body = {}) {
-  const res = await fetch(url, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  return res.json();
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    return res.json();
+  } catch (err) {
+    console.error("[contacts] Network POST error:", url, err);
+    return null;
+  }
 }
 
 /* -------------------------------------------------------
@@ -171,7 +181,11 @@ export function renderContactCard(userRaw) {
       "https://letsee-backend.onrender.com/api/contacts/block",
       { contact_id: user.contact_id }
     );
-    if (data.success) loadContacts();
+    if (!data?.success) {
+      console.error("[contacts] Failed to block contact:", data?.error);
+      return;
+    }
+    loadContacts();
   };
 
   li.querySelector(".delete-btn").onclick = async (e) => {
@@ -183,7 +197,12 @@ export function renderContactCard(userRaw) {
       { contact_id: user.contact_id }
     );
 
-    if (data.success) loadContacts();
+    if (!data?.success) {
+      console.error("[contacts] Failed to delete contact:", data?.error);
+      return;
+    }
+
+    loadContacts();
   };
 
   return li;
@@ -225,7 +244,7 @@ export function updateContactStatus(contactId, online) {
 }
 
 /* -------------------------------------------------------
-   LOAD CONTACTS — production mode
+   LOAD CONTACTS — with essential error logs
 ------------------------------------------------------- */
 export async function loadContacts() {
   try {
@@ -233,15 +252,22 @@ export async function loadContacts() {
       "https://letsee-backend.onrender.com/api/contacts"
     );
 
-    if (!data || data.success === false) {
-      console.warn("[contacts] Could not load contacts:", data?.error);
+    if (!data) {
+      console.error("[contacts] ERROR: No response from backend");
       return;
     }
 
-    const contacts = Array.isArray(data.contacts)
-      ? data.contacts.map(normalizeContact)
-      : [];
+    if (data.success === false) {
+      console.error("[contacts] Backend error:", data.error);
+      return;
+    }
 
+    if (!Array.isArray(data.contacts)) {
+      console.error("[contacts] Invalid contacts array:", data.contacts);
+      return;
+    }
+
+    const contacts = data.contacts.map(normalizeContact);
     renderContactList(contacts);
 
     const blockedList = $id("blocked-contacts");
@@ -254,6 +280,7 @@ export async function loadContacts() {
 
     setContactLookup(contacts);
     socket.emit("presence:get", { userId: getMyUserId() });
+
   } catch (err) {
     console.error("[contacts] loadContacts failed:", err);
   }
@@ -287,7 +314,13 @@ export function renderBlockedCard(userRaw) {
       "https://letsee-backend.onrender.com/api/contacts/unblock",
       { contact_id: user.contact_id }
     );
-    if (data.success) loadContacts();
+
+    if (!data?.success) {
+      console.error("[contacts] Failed to unblock:", data?.error);
+      return;
+    }
+
+    loadContacts();
   };
 
   return li;
@@ -430,7 +463,8 @@ function runLookup(query) {
         lookupResults.innerHTML = `<li class="empty">No contacts found</li>`;
       }
     })
-    .catch(() => {
+    .catch((err) => {
+      console.error("[contacts] Lookup error:", err);
       lookupResults.innerHTML = `<li class="empty">Lookup error</li>`;
     });
 }
@@ -492,6 +526,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
