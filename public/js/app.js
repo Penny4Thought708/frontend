@@ -76,9 +76,9 @@ function initContentMenu() {
     if (!btn) return;
 
     if (showingContacts) {
-      btn.innerHTML = `<img src="img/calllog.png" alt="call-log"> Call Log`;
+      btn.innerHTML = `<img src="calllog.png" alt="call-log"> Call Log`;
     } else {
-      btn.innerHTML = `<img src="img/Contacts.png" alt="contacts"> Contacts`;
+      btn.innerHTML = `<img src="Contacts.png" alt="contacts"> Contacts`;
     }
   }
 
@@ -765,6 +765,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
