@@ -464,7 +464,7 @@ function renderMessage(msg) {
 
   smartScroll();
   observeMessagesForRead();
-}
+
 
 // ===== FILE PREVIEW =====
 function renderPreviews(files) {
@@ -1067,6 +1067,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
