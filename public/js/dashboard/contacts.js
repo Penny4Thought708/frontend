@@ -1,9 +1,10 @@
 // public/js/contacts.js
 // -------------------------------------------------------
-// FULL CONTACT SYSTEM — ONE GIANT FILE
+// CONTACT SYSTEM — CLEAN PRODUCTION VERSION
 // Rendering, presence, lookup, profile modal, messaging,
 // blocked list, local updates, and backend integration.
 // -------------------------------------------------------
+
 import { socket } from "../socket.js";
 import {
   getMyUserId,
@@ -196,10 +197,7 @@ export function renderContactList(users) {
   if (!list) return;
 
   list.innerHTML = "";
-
-  users.forEach((u) => {
-    list.appendChild(renderContactCard(u));
-  });
+  users.forEach((u) => list.appendChild(renderContactCard(u)));
 }
 
 /* -------------------------------------------------------
@@ -227,99 +225,35 @@ export function updateContactStatus(contactId, online) {
 }
 
 /* -------------------------------------------------------
-   LOAD CONTACTS — with robust error handling
+   LOAD CONTACTS — production mode
 ------------------------------------------------------- */
 export async function loadContacts() {
-  console.log(
-    "%c[contacts] loadContacts() called",
-    "color: cyan; font-weight: bold"
-  );
-
   try {
-    console.log(
-      "%c[contacts] Fetching from backend...",
-      "color: yellow"
-    );
     const data = await getJson(
       "https://letsee-backend.onrender.com/api/contacts"
     );
 
-    console.log(
-      "%c[contacts] Raw backend response:",
-      "color: orange",
-      data
-    );
-
-    if (!data) {
-      console.error("[contacts] ERROR: Backend returned null/undefined");
+    if (!data || data.success === false) {
+      console.warn("[contacts] Could not load contacts:", data?.error);
       return;
     }
 
-    if (data.success === false) {
-      console.error(
-        "[contacts] ERROR: Backend reported failure:",
-        data.error
-      );
-      return;
-    }
-
-    if (!Array.isArray(data.contacts)) {
-      console.error(
-        "[contacts] ERROR: data.contacts is not an array:",
-        data.contacts
-      );
-      return;
-    }
-
-    console.log(
-      "%c[contacts] Normalizing contacts...",
-      "color: lightgreen"
-    );
-    const contacts = data.contacts.map((c) => {
-      console.log("[contacts] Raw contact:", c);
-      return normalizeContact(c);
-    });
-
-    console.log(
-      "%c[contacts] Normalized contacts:",
-      "color: lightblue",
-      contacts
-    );
+    const contacts = Array.isArray(data.contacts)
+      ? data.contacts.map(normalizeContact)
+      : [];
 
     renderContactList(contacts);
-    console.log(
-      "%c[contacts] renderContactList() completed",
-      "color: violet"
-    );
 
     const blockedList = $id("blocked-contacts");
     if (blockedList) {
-      console.log(
-        "%c[contacts] Rendering blocked contacts...",
-        "color: pink"
-      );
       blockedList.innerHTML = "";
       (data.blocked || [])
         .map(normalizeContact)
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
-    console.log(
-      "%c[contacts] Setting lookup cache...",
-      "color: gold"
-    );
     setContactLookup(contacts);
-
-    console.log(
-      "%c[contacts] Requesting presence update...",
-      "color: lightcoral"
-    );
     socket.emit("presence:get", { userId: getMyUserId() });
-
-    console.log(
-      "%c[contacts] loadContacts() finished successfully",
-      "color: lime"
-    );
   } catch (err) {
     console.error("[contacts] loadContacts failed:", err);
   }
