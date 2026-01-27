@@ -19,6 +19,7 @@ import {
 } from "./session.js";
 
 import { socket } from "./socket.js";
+import { userNames, userAvatars } from "./shared/user-cache.js";
 
 // ===== CONFIG =====
 const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
@@ -28,7 +29,6 @@ console.log("[messaging] Loaded messaging.js");
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
-export const userNames = {};
 let readObserver = null;
 const previewEl = previewDiv;
 
@@ -842,6 +842,8 @@ messages.forEach((msg) => {
     userNames[String(msg.sender_id)] || `User ${msg.sender_id}`;
 
   msg.is_me = msg.sender_id === myUserId;
+msg.sender_avatar =
+  userAvatars[String(msg.sender_id)] || "img/defaultUser.png";
 
   const msgId = msg.id != null ? String(msg.id) : null;
 
@@ -1050,6 +1052,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
