@@ -227,32 +227,59 @@ export function updateContactStatus(contactId, online) {
 }
 
 /* -------------------------------------------------------
-   LOAD CONTACTS
+   LOAD CONTACTS — with debugging logs
 ------------------------------------------------------- */
 export async function loadContacts() {
-  try {
-    const data = await getJson(
-      "https://letsee-backend.onrender.com/api/contacts"
-    );
+  console.log("%c[contacts] loadContacts() called", "color: cyan; font-weight: bold");
 
-    const contacts = data.contacts.map(normalizeContact);
+  try {
+    console.log("%c[contacts] Fetching from backend...", "color: yellow");
+    const data = await getJson("https://letsee-backend.onrender.com/api/contacts");
+
+    console.log("%c[contacts] Raw backend response:", "color: orange", data);
+
+    if (!data) {
+      console.error("[contacts] ERROR: Backend returned null/undefined");
+      return;
+    }
+
+    if (!Array.isArray(data.contacts)) {
+      console.error("[contacts] ERROR: data.contacts is not an array:", data.contacts);
+      return;
+    }
+
+    console.log("%c[contacts] Normalizing contacts...", "color: lightgreen");
+    const contacts = data.contacts.map((c) => {
+      console.log("[contacts] Raw contact:", c);
+      return normalizeContact(c);
+    });
+
+    console.log("%c[contacts] Normalized contacts:", "color: lightblue", contacts);
+
     renderContactList(contacts);
+    console.log("%c[contacts] renderContactList() completed", "color: violet");
 
     const blockedList = $id("blocked-contacts");
     if (blockedList) {
+      console.log("%c[contacts] Rendering blocked contacts...", "color: pink");
       blockedList.innerHTML = "";
       data.blocked
         .map(normalizeContact)
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
+    console.log("%c[contacts] Setting lookup cache...", "color: gold");
     setContactLookup(contacts);
 
+    console.log("%c[contacts] Requesting presence update...", "color: lightcoral");
     socket.emit("presence:get", { userId: getMyUserId() });
+
+    console.log("%c[contacts] loadContacts() finished successfully", "color: lime");
   } catch (err) {
     console.error("[contacts] loadContacts failed:", err);
   }
 }
+
 
 /* -------------------------------------------------------
    BLOCKED CARD
@@ -487,6 +514,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
