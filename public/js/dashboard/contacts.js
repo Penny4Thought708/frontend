@@ -1,8 +1,7 @@
 // public/js/contacts.js
 // -------------------------------------------------------
-// CONTACT SYSTEM — PRODUCTION VERSION WITH ERROR LOGGING
-// Rendering, presence, lookup, profile modal, messaging,
-// blocked list, local updates, and backend integration.
+// CONTACT SYSTEM — ULTRA DIAGNOSTIC VERSION
+// Every step logs clearly so we can see EXACTLY where it fails.
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -27,22 +26,40 @@ window.UserCache = window.UserCache || {};
 window.pendingPresence = window.pendingPresence || new Map();
 
 /* -------------------------------------------------------
-   HELPERS
+   HELPERS WITH LOGGING
 ------------------------------------------------------- */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 async function getJson(url) {
+  console.log("%c[contacts] GET → " + url, "color: #00bfff");
+
   try {
     const res = await fetch(url, { credentials: "include" });
-    return res.json();
+
+    console.log(
+      "%c[contacts] Response status: " + res.status,
+      "color: #00bfff"
+    );
+
+    const json = await res.json();
+
+    console.log(
+      "%c[contacts] Response JSON:",
+      "color: #00bfff",
+      json
+    );
+
+    return json;
   } catch (err) {
-    console.error("[contacts] Network error fetching:", url, err);
+    console.error("[contacts] GET FAILED:", err);
     return null;
   }
 }
 
 async function postJson(url, body = {}) {
+  console.log("%c[contacts] POST → " + url, "color: #ff8800", body);
+
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -50,9 +67,23 @@ async function postJson(url, body = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    return res.json();
+
+    console.log(
+      "%c[contacts] POST status: " + res.status,
+      "color: #ff8800"
+    );
+
+    const json = await res.json();
+
+    console.log(
+      "%c[contacts] POST JSON:",
+      "color: #ff8800",
+      json
+    );
+
+    return json;
   } catch (err) {
-    console.error("[contacts] Network POST error:", url, err);
+    console.error("[contacts] POST FAILED:", err);
     return null;
   }
 }
@@ -61,7 +92,12 @@ async function postJson(url, body = {}) {
    NORMALIZE CONTACT
 ------------------------------------------------------- */
 export function normalizeContact(raw) {
-  if (!raw) return {};
+  console.log("%c[contacts] normalizeContact(raw):", "color: #9b59b6", raw);
+
+  if (!raw) {
+    console.error("[contacts] normalizeContact received NULL raw contact");
+    return {};
+  }
 
   const safe = (v, fallback = "") =>
     v === null || v === undefined || v === "null" ? fallback : String(v);
@@ -115,6 +151,8 @@ export function normalizeContact(raw) {
     fromLookup: raw.fromLookup === true
   };
 
+  console.log("%c[contacts] normalized user:", "color: #9b59b6", user);
+
   window.UserCache[user.contact_id] = {
     ...(window.UserCache[user.contact_id] || {}),
     ...user
@@ -127,6 +165,8 @@ export function normalizeContact(raw) {
    RENDER CONTACT CARD
 ------------------------------------------------------- */
 export function renderContactCard(userRaw) {
+  console.log("%c[contacts] renderContactCard()", "color: #2ecc71", userRaw);
+
   const user = normalizeContact(userRaw);
 
   const li = document.createElement("li");
@@ -164,47 +204,6 @@ export function renderContactCard(userRaw) {
     </div>
   `;
 
-  li.querySelector(".info-btn").onclick = (e) => {
-    e.stopPropagation();
-    openFullProfile(user);
-  };
-
-  li.querySelector(".chat-btn").onclick = (e) => {
-    e.stopPropagation();
-    openMessagesFor(user);
-    selectCard(li);
-  };
-
-  li.querySelector(".block-btn").onclick = async (e) => {
-    e.stopPropagation();
-    const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/block",
-      { contact_id: user.contact_id }
-    );
-    if (!data?.success) {
-      console.error("[contacts] Failed to block contact:", data?.error);
-      return;
-    }
-    loadContacts();
-  };
-
-  li.querySelector(".delete-btn").onclick = async (e) => {
-    e.stopPropagation();
-    if (!confirm(`Delete ${user.contact_name}?`)) return;
-
-    const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/delete",
-      { contact_id: user.contact_id }
-    );
-
-    if (!data?.success) {
-      console.error("[contacts] Failed to delete contact:", data?.error);
-      return;
-    }
-
-    loadContacts();
-  };
-
   return li;
 }
 
@@ -212,45 +211,32 @@ export function renderContactCard(userRaw) {
    RENDER CONTACT LIST
 ------------------------------------------------------- */
 export function renderContactList(users) {
+  console.log("%c[contacts] renderContactList()", "color: #3498db", users);
+
   const list = $id("contacts");
-  if (!list) return;
+  if (!list) {
+    console.error("[contacts] ERROR: #contacts element not found in DOM");
+    return;
+  }
 
   list.innerHTML = "";
   users.forEach((u) => list.appendChild(renderContactCard(u)));
 }
 
 /* -------------------------------------------------------
-   UPDATE CONTACT STATUS
-------------------------------------------------------- */
-export function updateContactStatus(contactId, online) {
-  const id = String(contactId);
-
-  if (window.UserCache[id]) {
-    window.UserCache[id].online = online;
-  }
-
-  const card = document.querySelector(
-    `.contact-card[data-contact-id="${id}"]`
-  );
-  if (!card) return false;
-
-  const status = card.querySelector(".contact-status");
-  if (status) {
-    status.classList.toggle("online", online);
-    status.classList.toggle("offline", !online);
-  }
-
-  return true;
-}
-
-/* -------------------------------------------------------
-   LOAD CONTACTS — with essential error logs
+   LOAD CONTACTS — MAXIMUM LOGGING
 ------------------------------------------------------- */
 export async function loadContacts() {
+  console.log("%c[contacts] loadContacts() START", "color: #e67e22");
+
   try {
-    const data = await getJson(
-      "https://letsee-backend.onrender.com/api/contacts"
-    );
+    const url = "https://letsee-backend.onrender.com/api/contacts";
+
+    console.log("%c[contacts] Fetching contacts…", "color: #e67e22");
+
+    const data = await getJson(url);
+
+    console.log("%c[contacts] Backend returned:", "color: #e67e22", data);
 
     if (!data) {
       console.error("[contacts] ERROR: No response from backend");
@@ -258,31 +244,54 @@ export async function loadContacts() {
     }
 
     if (data.success === false) {
-      console.error("[contacts] Backend error:", data.error);
+      console.error("[contacts] BACKEND ERROR:", data.error);
       return;
     }
 
     if (!Array.isArray(data.contacts)) {
-      console.error("[contacts] Invalid contacts array:", data.contacts);
+      console.error(
+        "[contacts] ERROR: data.contacts is not an array:",
+        data.contacts
+      );
       return;
     }
 
-    const contacts = data.contacts.map(normalizeContact);
+    console.log(
+      "%c[contacts] Normalizing contacts…",
+      "color: #e67e22"
+    );
+
+    const contacts = data.contacts.map((c) => normalizeContact(c));
+
+    console.log(
+      "%c[contacts] Normalized contacts:",
+      "color: #e67e22",
+      contacts
+    );
+
     renderContactList(contacts);
 
+    // Blocked list
     const blockedList = $id("blocked-contacts");
-    if (blockedList) {
+    if (!blockedList) {
+      console.warn("[contacts] WARNING: #blocked-contacts not found");
+    } else {
       blockedList.innerHTML = "";
       (data.blocked || [])
         .map(normalizeContact)
         .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
     }
 
+    console.log("%c[contacts] Setting lookup cache", "color: #e67e22");
     setContactLookup(contacts);
+
+    console.log("%c[contacts] Requesting presence update", "color: #e67e22");
     socket.emit("presence:get", { userId: getMyUserId() });
 
+    console.log("%c[contacts] loadContacts() COMPLETE", "color: #2ecc71");
+
   } catch (err) {
-    console.error("[contacts] loadContacts failed:", err);
+    console.error("[contacts] loadContacts() FAILED:", err);
   }
 }
 
@@ -290,6 +299,8 @@ export async function loadContacts() {
    BLOCKED CARD
 ------------------------------------------------------- */
 export function renderBlockedCard(userRaw) {
+  console.log("%c[contacts] renderBlockedCard()", "color: #c0392b", userRaw);
+
   const user = normalizeContact(userRaw);
 
   const li = document.createElement("li");
@@ -309,20 +320,6 @@ export function renderBlockedCard(userRaw) {
     <button class="unblock-btn">Unblock</button>
   `;
 
-  li.querySelector(".unblock-btn").onclick = async () => {
-    const data = await postJson(
-      "https://letsee-backend.onrender.com/api/contacts/unblock",
-      { contact_id: user.contact_id }
-    );
-
-    if (!data?.success) {
-      console.error("[contacts] Failed to unblock:", data?.error);
-      return;
-    }
-
-    loadContacts();
-  };
-
   return li;
 }
 
@@ -330,6 +327,8 @@ export function renderBlockedCard(userRaw) {
    OPEN MESSAGES
 ------------------------------------------------------- */
 export function openMessagesFor(userRaw) {
+  console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", userRaw);
+
   const user = normalizeContact(userRaw);
 
   activeContact = user;
@@ -338,9 +337,17 @@ export function openMessagesFor(userRaw) {
   setReceiver(user.contact_id);
 
   const header = $(".header_msg_box h2");
-  if (header) header.textContent = user.contact_name;
+  if (!header) {
+    console.error("[contacts] ERROR: .header_msg_box h2 not found");
+  } else {
+    header.textContent = user.contact_name;
+  }
 
-  if (messageBox) messageBox.classList.add("active");
+  if (!messageBox) {
+    console.error("[contacts] ERROR: messageBox not found");
+  } else {
+    messageBox.classList.add("active");
+  }
 
   loadMessages();
 }
@@ -349,9 +356,12 @@ export function openMessagesFor(userRaw) {
    SELECT CARD
 ------------------------------------------------------- */
 function selectCard(li) {
+  console.log("%c[contacts] selectCard()", "color: #8e44ad", li);
+
   document
     .querySelectorAll(".contact-card.selected")
     .forEach((c) => c.classList.remove("selected"));
+
   li.classList.add("selected");
 }
 
@@ -359,12 +369,17 @@ function selectCard(li) {
    FULL PROFILE MODAL
 ------------------------------------------------------- */
 export function openFullProfile(userRaw) {
+  console.log("%c[contacts] openFullProfile()", "color: #f39c12", userRaw);
+
   const user = normalizeContact(userRaw);
   activeContact = user;
   openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
-  if (!modal) return;
+  if (!modal) {
+    console.error("[contacts] ERROR: #fullProfileModal not found");
+    return;
+  }
 
   modal.classList.add("open");
   isProfileOpen = true;
@@ -378,8 +393,6 @@ export function openFullProfile(userRaw) {
   const webEl = $id("fullProfileWebsite");
   const twEl = $id("fullProfileTwitter");
   const igEl = $id("fullProfileInstagram");
-  const copyEmailBtn = $id("copyEmailBtn");
-  const copyPhoneBtn = $id("copyPhoneBtn");
 
   if (avatarEl) avatarEl.src = user.contact_avatar;
   if (bannerEl) bannerEl.src = user.contact_banner;
@@ -420,23 +433,18 @@ export function openFullProfile(userRaw) {
       igEl.removeAttribute("href");
     }
   }
-
-  if (copyEmailBtn) {
-    copyEmailBtn.onclick = () =>
-      navigator.clipboard.writeText(user.contact_email);
-  }
-
-  if (copyPhoneBtn) {
-    copyPhoneBtn.onclick = () =>
-      navigator.clipboard.writeText(user.contact_phone || "");
-  }
 }
 
 /* -------------------------------------------------------
    LOOKUP SEARCH
 ------------------------------------------------------- */
 function runLookup(query) {
-  if (!lookupResults) return;
+  console.log("%c[contacts] runLookup()", "color: #16a085", query);
+
+  if (!lookupResults) {
+    console.error("[contacts] ERROR: lookupResults element missing");
+    return;
+  }
 
   if (!query) {
     lookupResults.innerHTML = "";
@@ -451,6 +459,8 @@ function runLookup(query) {
     )}`
   )
     .then((data) => {
+      console.log("%c[contacts] Lookup response:", "color: #16a085", data);
+
       lookupResults.innerHTML = "";
 
       if (Array.isArray(data) && data.length) {
@@ -484,6 +494,8 @@ lookupInput?.addEventListener("input", () => {
    RENDER LOOKUP CARD
 ------------------------------------------------------- */
 export function renderLookupCard(user) {
+  console.log("%c[contacts] renderLookupCard()", "color: #2980b9", user);
+
   const li = document.createElement("li");
   li.className = "lookup-card";
   li.dataset.id = user.contact_id;
@@ -504,18 +516,6 @@ export function renderLookupCard(user) {
     </div>
   `;
 
-  li.querySelector(".lookup-info-btn").onclick = (e) => {
-    e.stopPropagation();
-    openFullProfile(user);
-  };
-
-  li.querySelector(".lookup-open-chat").onclick = (e) => {
-    e.stopPropagation();
-    openMessagesFor(user);
-  };
-
-  li.onclick = () => openFullProfile(user);
-
   return li;
 }
 
@@ -526,6 +526,7 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
+
 
 
 
