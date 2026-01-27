@@ -819,6 +819,28 @@ export function setupDataChannel(channel) {
 }
 
 // ===== Loading messages =====
+export async function loadMessages() {
+  console.log("[messaging] loadMessages called for receiver:", receiver_id);
+
+  if (!receiver_id) {
+    console.warn("[messaging] loadMessages: no receiver_id");
+    return [];
+  }
+
+  try {
+    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+    console.log("[messaging] loadMessages raw:", res);
+
+    if (!res || !res.success || !Array.isArray(res.messages)) {
+      console.error("[messaging] loadMessages: invalid response format");
+      return [];
+    }
+
+    const messages = res.messages;
+    lastLoadedMessages = messages;
+    const myUserId = getMyUserId();
+
+    if (messageWin) {
 messages.forEach((msg) => {
   // Modern name injection
   msg.sender_name =
@@ -863,6 +885,30 @@ messages.forEach((msg) => {
   }
 });
 
+    }
+
+    const last = messages[messages.length - 1];
+    if (last && typeof last.id === "number" && last.id > lastSeenMessageId && !last.is_me) {
+      playNotification();
+      const bell = document.querySelector(".notification-bell");
+      if (bell) {
+        bell.classList.add("active");
+        setTimeout(() => bell.classList.remove("active"), 1000);
+      }
+    }
+
+    if (last && typeof last.id === "number") {
+      lastSeenMessageId = last.id;
+    }
+
+    observeMessagesForRead();
+    return messages;
+
+  } catch (err) {
+    console.error("[messaging] loadMessages failed:", err);
+    return [];
+  }
+}
 // ===== Typing indicators =====
 const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
@@ -1009,6 +1055,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
