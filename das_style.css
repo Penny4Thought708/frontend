@@ -4178,11 +4178,69 @@ top: 20px;
 .sender_msg .sender-avatar {
   right: -35px;
 }
- .msg-sender-name { font-size: 0.75rem; font-weight: 600; color: #888; margin-bottom: 2px; padding-left: 4px; }
+
 /* Status flags */
 .status-flags {
   font-size: 0.8em;
   color: #2a7; /* green for delivered/read */
+}
+/* Wrapper for each message */
+.msg-wrapper {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+  margin-bottom: 6px;
+}
+
+/* Sender name above bubble */
+.msg-sender-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.3px;
+  width: fit-content;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.15);
+}
+
+/* Receiver messages (left) */
+.receiver_msg .msg-wrapper {
+  align-items: flex-start;
+}
+
+/* Sender messages (right) */
+.sender_msg .msg-wrapper {
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+/* Message bubble */
+.msg-bubble-text {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* Receiver bubble (glass gray) */
+.receiver_msg .msg-bubble-text {
+  background: rgba(255, 255, 255, 0.18);
+  color: #f1f1f1;
+}
+
+/* Sender bubble (neon glass blue) */
+.sender_msg .msg-bubble-text {
+  background: rgba(0, 122, 255, 0.25);
+  border: 1px solid rgba(0, 122, 255, 0.35);
+  color: white;
+  box-shadow: 0 0 12px rgba(0, 122, 255, 0.45);
 }
 
 /* Different states if you want */
@@ -5278,6 +5336,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
