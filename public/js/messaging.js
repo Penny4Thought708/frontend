@@ -17,11 +17,12 @@ import {
   previewDiv,
   safeJSON,
   playNotification,
-  getJson,
-  postForm,
 } from "./session.js";
 
 import { socket } from "./socket.js";
+
+// ===== CONFIG =====
+const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
 
 // ===== State =====
 let receiver_id = null;
@@ -77,6 +78,39 @@ function smartScroll() {
   }
 }
 
+// ===== Network helpers (Node backend) =====
+async function apiGet(path) {
+  const url = `${MESSAGES_API_BASE}${path}`;
+  const res = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+  });
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("[messages] Non-JSON response from", url, ":", text);
+    throw e;
+  }
+}
+
+async function apiPost(path, body) {
+  const url = `${MESSAGES_API_BASE}${path}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body || {}),
+  });
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("[messages] Non-JSON response from", url, ":", text);
+    throw e;
+  }
+}
+
 // Delete a message (UI and server)
 async function deleteMessage(messageId) {
   if (!messageId) return;
@@ -88,7 +122,8 @@ async function deleteMessage(messageId) {
   }
 
   try {
-    await postForm("messages_delete.php", { id: messageId });
+    // Backend must implement POST /api/messages/delete
+    await apiPost("/delete", { id: messageId });
     console.log("[messaging] Deleted message", messageId);
   } catch (err) {
     console.warn("Failed to delete message", err);
@@ -123,7 +158,6 @@ function addReactionToMessage(id, emoji) {
   }
 }
 
-
 function removeReactionFromMessage(id, emoji) {
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
@@ -155,6 +189,7 @@ msgOpenBtn?.addEventListener("click", async () => {
       if (badge) badge.style.display = "none";
 
       // Mark all received messages as read on open
+      const myUserId = getMyUserId();
       messages
         .filter((m) => !m.is_me && typeof m.id !== "undefined")
         .forEach((m) => {
@@ -309,9 +344,9 @@ function renderMessage(msg) {
             // Optimistic update
             p.textContent = `You: ${newText}`;
 
-            // Persist
+            // Persist (Node backend must implement /edit)
             try {
-              await postForm("messages_edit.php", {
+              await apiPost("/edit", {
                 id: msg.id,
                 message: newText,
               });
@@ -324,49 +359,44 @@ function renderMessage(msg) {
     }
   }
 
+  // ✅ REACTIONS (applies to ALL messages)
+  const reactionBar = document.createElement("div");
+  reactionBar.className = "reaction-bar";
+  reactionBar.innerHTML = `
+    <span class="react-emoji">👍</span>
+    <span class="react-emoji">❤️</span>
+    <span class="react-emoji">😂</span>
+    <span class="react-emoji">😮</span>
+    <span class="react-emoji">😢</span>
+  `;
 
-// ✅ REACTIONS (applies to ALL messages)
-const reactionBar = document.createElement("div");
+  reactionBar.addEventListener("click", async (e) => {
+    const emoji = e.target.closest(".react-emoji")?.textContent;
+    if (!emoji || !msg.id) return;
 
-reactionBar.className = "reaction-bar";
-reactionBar.innerHTML = `
-  <span class="react-emoji">👍</span>
-  <span class="react-emoji">❤️</span>
-  <span class="react-emoji">😂</span>
-  <span class="react-emoji">😮</span>
-  <span class="react-emoji">😢</span>
-`;
+    try {
+      // Node backend must implement /react
+      const res = await apiPost("/react", {
+        id: msg.id,
+        emoji,
+      });
 
-
-
-reactionBar.addEventListener("click", async (e) => {
-  const emoji = e.target.closest(".react-emoji")?.textContent;
-  if (!emoji || !msg.id) return;
-
-  try {
-    const res = await postForm("messages_react.php", {
-      id: msg.id,
-      emoji,
-    });
-
-    if (res.removed) {
-      removeReactionFromMessage(msg.id, emoji);
-    } else {
-      addReactionToMessage(msg.id, emoji);
+      if (res.removed) {
+        removeReactionFromMessage(msg.id, emoji);
+      } else {
+        addReactionToMessage(msg.id, emoji);
+      }
+    } catch (err) {
+      console.warn("Failed to add reaction", err);
     }
-  } catch (err) {
-    console.warn("Failed to add reaction", err);
-  }
-});
+  });
 
+  div.appendChild(reactionBar);
 
-div.appendChild(reactionBar);
-
-// ✅ Reaction display container
-const reactionDisplay = document.createElement("div");
-reactionDisplay.className = "reaction-display";
-div.appendChild(reactionDisplay);
-
+  // ✅ Reaction display container
+  const reactionDisplay = document.createElement("div");
+  reactionDisplay.className = "reaction-display";
+  div.appendChild(reactionDisplay);
 
   // META (timestamp + delete)
   const ts =
@@ -492,6 +522,7 @@ if (msgForm) {
     const dc = getDataChannel();
     const peerId = getPeerId();
     const targetId = peerId || receiver_id;
+    const myUserId = getMyUserId();
 
     if (!targetId && (!message && !files.length)) {
       showError("No receiver selected");
@@ -515,9 +546,9 @@ if (msgForm) {
             };
             dc.send(JSON.stringify(payload));
 
-            // Persist to DB (best-effort)
+            // Persist to DB (best-effort) via Node
             try {
-              await postForm("messages.php", {
+              await apiPost("/send", {
                 receiver_id: targetId,
                 message: `File: ${file.name}`,
                 transport: "webrtc",
@@ -543,38 +574,35 @@ if (msgForm) {
           };
           reader.readAsDataURL(file);
         } else {
-          // HTTP upload path
+          // HTTP upload path → Node /audio + /send
           const fd = new FormData();
-          fd.append("attachment", file);
-          fd.append("receiver_id", targetId || "");
-          fd.append("sender_id", myUserId);
+          fd.append("audio", file);
 
           try {
-            const res = await fetch("upload.php", {
+            const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
               method: "POST",
               body: fd,
-              credentials: "same-origin",
+              credentials: "include",
             });
-            const data = await res.json();
-            if (data?.success && data.url) {
-              // Insert message row via messages.php
-              const msgRes = await postForm("messages.php", {
-                receiver_id: targetId || "",
+            const uploadData = await uploadRes.json();
+
+            if (uploadData?.success && uploadData.url) {
+              const msgRes = await apiPost("/send", {
+                receiver_id: targetId,
                 message: `File: ${file.name}`,
                 transport: "http",
                 file: 1,
                 filename: file.name,
-                file_url: data.url,
+                file_url: uploadData.url,
               });
 
-              // Render using server response when available
               if (msgRes?.success) {
                 renderMessage({
                   id: msgRes.id,
                   is_me: true,
                   type: "file",
                   filename: msgRes.filename || file.name,
-                  url: msgRes.url || data.url,
+                  url: msgRes.url || uploadData.url,
                   comment: msgRes.comment || "",
                   created_at: msgRes.created_at,
                   sender_id: myUserId,
@@ -587,7 +615,7 @@ if (msgForm) {
                   is_me: true,
                   type: "file",
                   filename: file.name,
-                  url: data.url,
+                  url: uploadData.url,
                   created_at: new Date(),
                   sender_id: myUserId,
                   sender_name: "You",
@@ -621,20 +649,15 @@ if (msgForm) {
           sender_name: "You",
         });
 
-        fetch("messages.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            receiver_id: targetId || "",
-            message,
-            transport: "webrtc",
-          }),
-          credentials: "same-origin",
+        apiPost("/send", {
+          receiver_id: targetId,
+          message,
+          transport: "webrtc",
         }).catch((err) =>
           console.warn("Persist outgoing P2P text failed:", err)
         );
       } else {
-        const data = await postForm("messages.php", {
+        const data = await apiPost("/send", {
           receiver_id: targetId,
           message,
         });
@@ -676,6 +699,7 @@ export function setupDataChannel(channel) {
     }
 
     playNotification();
+    const myUserId = getMyUserId();
 
     // File payload
     if (payload && payload.type === "file") {
@@ -702,7 +726,7 @@ export function setupDataChannel(channel) {
       });
 
       try {
-        await postForm("messages.php", {
+        await apiPost("/send", {
           sender_id: getPeerId() || "",
           receiver_id: myUserId || "",
           message: `File: ${payload.name}`,
@@ -748,12 +772,12 @@ export async function loadMessages() {
   }
 
   try {
-    const messages = await getJson(
-      `messages.php?contact_id=${encodeURIComponent(receiver_id)}`
-    );
+    // Node backend: /thread/:contactId
+    const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
     if (!Array.isArray(messages)) return [];
 
     lastLoadedMessages = messages;
+    const myUserId = getMyUserId();
 
     if (messageWin) {
       messages.forEach((msg) => {
@@ -784,8 +808,7 @@ export async function loadMessages() {
         if (display) display.innerHTML = ""; // clear old reactions
 
         if (msg.reactions) {
-         const arr = [...msg.reactions];
-
+          const arr = [...msg.reactions];
           const counts = {};
 
           // Count occurrences
@@ -825,7 +848,6 @@ export async function loadMessages() {
 
     observeMessagesForRead();
     return messages;
-
   } catch (err) {
     console.error("Failed to load messages", err);
     return [];
@@ -847,7 +869,7 @@ function updateReactionSummary(id) {
     return sum + parseInt(b.querySelector(".react-count").textContent, 10);
   }, 0);
 
-  const emojis = bubbles.map(b => b.dataset.emoji).join(" ");
+  const emojis = bubbles.map((b) => b.dataset.emoji).join(" ");
 
   summary.textContent = total > 0 ? `${emojis}  •  ${total} reacted` : "";
 }
@@ -863,6 +885,7 @@ const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
 
 msgInput?.addEventListener("input", () => {
+  const myUserId = getMyUserId();
   const targetId = getPeerId() || receiver_id;
   if (!targetId) return;
   socket.emit("typing:start", { from: myUserId, to: targetId });
@@ -932,6 +955,7 @@ function createReadObserver() {
 
   return new IntersectionObserver(
     (entries, observer) => {
+      const myUserId = getMyUserId();
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
         const msgEl = entry.target;
@@ -988,6 +1012,8 @@ setInterval(() => {
     loadMessages().catch(() => showError("Poll failed"));
   }
 }, 8000);
+
+
 
 
 
