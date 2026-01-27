@@ -793,13 +793,6 @@ Search Panel Containers: .search_ - .map-container
   height:100%;
   padding: 14px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35),
-    inset 0 0 12px rgba(255, 255, 255, 0.06);
 }
 
 #messaging_box_container h2 {
@@ -1675,5 +1668,6 @@ body.dark-mode {
   --border: var(--border-dark);
   --shadow: var(--shadow-dark);
 }
+
 
 
