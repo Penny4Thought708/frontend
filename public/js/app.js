@@ -52,40 +52,43 @@ menu.addEventListener("menu-select", (e) => {
   const action = e.detail.action;
   console.log("[content-menu] Selected:", action);
 
-  // Hide all panels
-  document.querySelectorAll(".panel, .contacts-panel").forEach((p) =>
-    p.classList.remove("active")
-  );
+  // Hide all containers
+  document.querySelector("#sav_con").style.display = "none";
+  document.querySelector("#bl_con").style.display = "none";
+  document.querySelector("#voicemail_list").style.display = "none";
+  document.querySelector("#messaging_box_container").style.display = "none";
 
   switch (action) {
     case "contacts":
-      document.getElementById("contacts_panel")?.classList.add("active");
+      document.querySelector("#bl_con").style.display = "block";
       break;
 
     case "messages":
-      document.getElementById("messages_panel")?.classList.add("active");
+      document.querySelector("#messaging_box_container").style.display = "block";
       break;
 
     case "block":
-      document.getElementById("blockList_box")?.classList.add("active");
+      // You didn’t show this container, but if it exists:
+      document.querySelector("#blockList_box")?.style.display = "block";
       break;
 
     case "voicemail":
-      document.getElementById("voicemail_list")?.classList.add("active");
+      document.querySelector("#voicemail_list").style.display = "block";
       break;
 
     case "hidden":
-      document.getElementById("hidden_messages_panel")?.classList.add("active");
+      document.querySelector("#hidden_messages_panel")?.style.display = "block";
       break;
 
     case "dnd":
-      document.getElementById("dnd_panel")?.classList.add("active");
+      document.querySelector("#dnd_panel")?.style.display = "block";
       break;
 
     default:
       console.warn("[content-menu] Unknown action:", action);
   }
 });
+
 
 }
 
@@ -716,6 +719,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
