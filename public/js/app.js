@@ -52,7 +52,7 @@ menu.addEventListener("menu-select", (e) => {
   const action = e.detail.action;
   console.log("[content-menu] Selected:", action);
 
-  // Hide all containers
+  // Hide all your real containers
   document.querySelector("#sav_con").style.display = "none";
   document.querySelector("#bl_con").style.display = "none";
   document.querySelector("#voicemail_list").style.display = "none";
@@ -67,27 +67,21 @@ menu.addEventListener("menu-select", (e) => {
       document.querySelector("#messaging_box_container").style.display = "block";
       break;
 
-    case "block":
-      // You didn’t show this container, but if it exists:
-      document.querySelector("#blockList_box")?.style.display = "block";
-      break;
-
     case "voicemail":
       document.querySelector("#voicemail_list").style.display = "block";
       break;
 
-    case "hidden":
-      document.querySelector("#hidden_messages_panel")?.style.display = "block";
-      break;
-
     case "dnd":
-      document.querySelector("#dnd_panel")?.style.display = "block";
+    case "hidden":
+    case "block":
+      // You did NOT show these containers, so we skip them.
       break;
 
     default:
       console.warn("[content-menu] Unknown action:", action);
   }
 });
+
 
 
 }
@@ -719,6 +713,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
