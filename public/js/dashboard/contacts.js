@@ -1,7 +1,9 @@
 // public/js/contacts.js
 // -------------------------------------------------------
 // CONTACT SYSTEM — ULTRA DIAGNOSTIC VERSION
-// Every step logs clearly so we can see EXACTLY where it fails.
+// Rendering, presence, lookup, profile modal, messaging,
+// blocked list, local updates, and backend integration.
+// Every step logs clearly.
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -162,6 +164,45 @@ export function normalizeContact(raw) {
 }
 
 /* -------------------------------------------------------
+   UPDATE CONTACT STATUS
+------------------------------------------------------- */
+export function updateContactStatus(contactId, online) {
+  console.log(
+    "%c[contacts] updateContactStatus()",
+    "color: #e84393",
+    contactId,
+    online
+  );
+
+  const id = String(contactId);
+
+  if (window.UserCache[id]) {
+    window.UserCache[id].online = online;
+  } else {
+    console.warn("[contacts] updateContactStatus: no UserCache entry for", id);
+  }
+
+  const card = document.querySelector(
+    `.contact-card[data-contact-id="${id}"]`
+  );
+
+  if (!card) {
+    console.warn("[contacts] updateContactStatus: no card found for", id);
+    return false;
+  }
+
+  const status = card.querySelector(".contact-status");
+  if (status) {
+    status.classList.toggle("online", online);
+    status.classList.toggle("offline", !online);
+  } else {
+    console.warn("[contacts] updateContactStatus: no .contact-status for", id);
+  }
+
+  return true;
+}
+
+/* -------------------------------------------------------
    RENDER CONTACT CARD
 ------------------------------------------------------- */
 export function renderContactCard(userRaw) {
@@ -203,6 +244,59 @@ export function renderContactCard(userRaw) {
       <button class="delete-btn">🗑</button>
     </div>
   `;
+
+  // Info
+  li.querySelector(".info-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    console.log("[contacts] info-btn clicked for", user.contact_id);
+    openFullProfile(user);
+  });
+
+  // Chat
+  li.querySelector(".chat-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    console.log("[contacts] chat-btn clicked for", user.contact_id);
+    openMessagesFor(user);
+    selectCard(li);
+  });
+
+  // Block
+  li.querySelector(".block-btn")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    console.log("[contacts] block-btn clicked for", user.contact_id);
+
+    const data = await postJson(
+      "https://letsee-backend.onrender.com/api/contacts/block",
+      { contact_id: user.contact_id }
+    );
+
+    if (!data?.success) {
+      console.error("[contacts] Failed to block contact:", data?.error);
+      return;
+    }
+
+    loadContacts();
+  });
+
+  // Delete
+  li.querySelector(".delete-btn")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    console.log("[contacts] delete-btn clicked for", user.contact_id);
+
+    if (!confirm(`Delete ${user.contact_name}?`)) return;
+
+    const data = await postJson(
+      "https://letsee-backend.onrender.com/api/contacts/delete",
+      { contact_id: user.contact_id }
+    );
+
+    if (!data?.success) {
+      console.error("[contacts] Failed to delete contact:", data?.error);
+      return;
+    }
+
+    loadContacts();
+  });
 
   return li;
 }
@@ -289,7 +383,6 @@ export async function loadContacts() {
     socket.emit("presence:get", { userId: getMyUserId() });
 
     console.log("%c[contacts] loadContacts() COMPLETE", "color: #2ecc71");
-
   } catch (err) {
     console.error("[contacts] loadContacts() FAILED:", err);
   }
@@ -319,6 +412,22 @@ export function renderBlockedCard(userRaw) {
 
     <button class="unblock-btn">Unblock</button>
   `;
+
+  li.querySelector(".unblock-btn")?.addEventListener("click", async () => {
+    console.log("[contacts] unblock-btn clicked for", user.contact_id);
+
+    const data = await postJson(
+      "https://letsee-backend.onrender.com/api/contacts/unblock",
+      { contact_id: user.contact_id }
+    );
+
+    if (!data?.success) {
+      console.error("[contacts] Failed to unblock:", data?.error);
+      return;
+    }
+
+    loadContacts();
+  });
 
   return li;
 }
@@ -480,12 +589,14 @@ function runLookup(query) {
 }
 
 lookupBtn?.addEventListener("click", () => {
+  console.log("[contacts] lookupBtn clicked");
   runLookup(lookupInput?.value?.trim() ?? "");
 });
 
 lookupInput?.addEventListener("input", () => {
   clearTimeout(window.lookupTimer);
   window.lookupTimer = setTimeout(() => {
+    console.log("[contacts] lookupInput changed:", lookupInput.value.trim());
     runLookup(lookupInput.value.trim());
   }, 300);
 });
@@ -516,6 +627,23 @@ export function renderLookupCard(user) {
     </div>
   `;
 
+  li.querySelector(".lookup-info-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    console.log("[contacts] lookup info clicked for", user.contact_id);
+    openFullProfile(user);
+  });
+
+  li.querySelector(".lookup-open-chat")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    console.log("[contacts] lookup chat clicked for", user.contact_id);
+    openMessagesFor(user);
+  });
+
+  li.addEventListener("click", () => {
+    console.log("[contacts] lookup card clicked for", user.contact_id);
+    openFullProfile(user);
+  });
+
   return li;
 }
 
@@ -526,7 +654,6 @@ window.openFullProfile = openFullProfile;
 window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
-
 
 
 
