@@ -817,18 +817,21 @@ export async function loadMessages() {
   }
 
   try {
-    const messages = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
-    console.log("[messaging] loadMessages response:", messages);
+    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+    console.log("[messaging] loadMessages raw:", res);
 
-    if (!Array.isArray(messages)) return [];
+    if (!res || !res.success || !Array.isArray(res.messages)) {
+      console.error("[messaging] loadMessages: invalid response format");
+      return [];
+    }
 
+    const messages = res.messages;
     lastLoadedMessages = messages;
     const myUserId = getMyUserId();
 
     if (messageWin) {
       messages.forEach((msg) => {
-        const msgId =
-          msg.id !== undefined && msg.id !== null ? String(msg.id) : null;
+        const msgId = msg.id != null ? String(msg.id) : null;
 
         const exists = msgId
           ? document.querySelector(`[data-msg-id="${msgId}"]`)
@@ -852,10 +855,8 @@ export async function loadMessages() {
         if (display) display.innerHTML = "";
 
         if (msg.reactions) {
-          const arr = [...msg.reactions];
           const counts = {};
-
-          arr.forEach((emoji) => {
+          msg.reactions.forEach((emoji) => {
             counts[emoji] = (counts[emoji] || 0) + 1;
           });
 
@@ -869,12 +870,7 @@ export async function loadMessages() {
     }
 
     const last = messages[messages.length - 1];
-    if (
-      last &&
-      typeof last.id === "number" &&
-      last.id > lastSeenMessageId &&
-      !last.is_me
-    ) {
+    if (last && typeof last.id === "number" && last.id > lastSeenMessageId && !last.is_me) {
       playNotification();
       const bell = document.querySelector(".notification-bell");
       if (bell) {
@@ -889,11 +885,13 @@ export async function loadMessages() {
 
     observeMessagesForRead();
     return messages;
+
   } catch (err) {
     console.error("[messaging] loadMessages failed:", err);
     return [];
   }
 }
+
 
 // ===== Typing indicators =====
 const typingIndicator = $(".typing-indicator");
@@ -1041,6 +1039,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
