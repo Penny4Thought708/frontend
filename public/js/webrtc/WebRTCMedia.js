@@ -149,6 +149,7 @@ export function attachRemoteTrack(evt) {
 
   const remoteVideo = document.getElementById("remoteVideo");
   const remoteAudioEl = document.getElementById("remoteAudio");
+console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.readyState);
 
   const wrapper =
     remoteVideo?.closest(".remote-media-wrapper") ||
@@ -198,6 +199,7 @@ console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
