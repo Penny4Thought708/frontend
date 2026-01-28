@@ -246,7 +246,7 @@ async function loadMessageList() {
   header.textContent = "Messages";
 
   try {
-    const res = await getJson(`${API_BASE}/messages/list?user_id=${userId}`);
+    const res = await getJson(`${API_BASE}/messages/list`);
     const conversations = res.threads || [];
 
     conversations.forEach((conv) => {
@@ -305,7 +305,7 @@ async function loadVoicemails() {
   if (!userId) return;
 
   try {
-    const res = await getJson(`${API_BASE}/voicemail/list?user_id=${userId}`);
+    const res = await getJson(`${API_BASE}/voicemail/list`);
     const data = res || {};
 
     const listEl = document.getElementById("voiceMList");
@@ -758,6 +758,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
