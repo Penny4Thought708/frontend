@@ -127,11 +127,21 @@ function openDetails(id) {
   const log = callLogCache.find((l) => String(l.logId) === String(id));
   if (!log) return;
 
+  // Try to find the details UI (your layout does NOT have this)
+  const overlay = document.getElementById("callDetailsOverlay");
+  const content = document.getElementById("callDetailsContent");
+
+  // If missing → skip safely instead of crashing
+  if (!overlay || !content) {
+    console.warn("[call-log] No call-details UI in this layout. Log:", log);
+    return;
+  }
+
   const dur = log.duration || 0;
   const m = Math.floor(dur / 60);
   const s = String(dur % 60).padStart(2, "0");
 
-  detailsContent.innerHTML = `
+  content.innerHTML = `
     <div class="call-details-row"><span>Caller</span><span>${log.caller_name || ""}</span></div>
     <div class="call-details-row"><span>Receiver</span><span>${log.receiver_name || ""}</span></div>
     <div class="call-details-row"><span>Type</span><span>${log.call_type}</span></div>
@@ -141,7 +151,7 @@ function openDetails(id) {
     <div class="call-details-row"><span>Time</span><span>${new Date(log.timestamp).toLocaleString()}</span></div>
   `;
 
-  detailsOverlay.classList.add("active");
+  overlay.classList.add("active");
 }
 
 // =======================================================
@@ -623,6 +633,7 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
 
 
 
