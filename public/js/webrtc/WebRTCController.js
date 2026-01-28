@@ -486,22 +486,30 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Remote Answer
   --------------------------------------------------- */
-  async handleAnswer(data) {
-    if (!this.pc) {
-      console.warn("[WebRTC] handleAnswer: no peer connection");
-      return;
-    }
-    if (!data || !data.answer) {
-      console.warn("[WebRTC] handleAnswer: invalid data", data);
-      return;
-    }
-
-    await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-    stopAudio(ringback);
-    this.onCallStarted?.();
-    startTimer();
+async handleAnswer(data) {
+  if (!this.pc) {
+    console.warn("[WebRTC] handleAnswer: no peer connection");
+    return;
   }
+
+  // 🚨 Prevent duplicate answers
+  if (this.pc.signalingState !== "have-local-offer") {
+    console.warn("[WebRTC] Ignoring duplicate answer, state:", this.pc.signalingState);
+    return;
+  }
+
+  if (!data || !data.answer) {
+    console.warn("[WebRTC] handleAnswer: invalid data", data);
+    return;
+  }
+
+  await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+  stopAudio(ringback);
+  this.onCallStarted?.();
+  startTimer();
+}
+
 
   /* ---------------------------------------------------
      ICE Candidate
@@ -887,6 +895,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
