@@ -1,102 +1,94 @@
 // public/js/globals.js
-// Clean ES-module helpers used by WebRTCController + CallUI
+// EXACT exports required by WebRTCController.js
 
 import { getIceServers as loadIce } from "./ice.js";
-import { getMyUserId, getMyFullname } from "./session.js";
+import { getMyUserId as sessionUserId, getMyFullname as sessionFullname } from "./session.js";
 
-const GL_TAG = "[globals]";
+const GL = "[globals]";
 
 // -----------------------------------------------------
-// Identity helpers (WebRTCController depends on these)
+// Identity helpers
 // -----------------------------------------------------
-export function getMyUserIdSafe() {
-  const id = getMyUserId();
-  if (!id) {
-    console.warn(`${GL_TAG} getMyUserId(): no user_id available`);
-  } else {
-    console.debug(`${GL_TAG} getMyUserId():`, id);
-  }
+export function getMyUserId() {
+  const id = sessionUserId();
+  console.debug(`${GL} getMyUserId():`, id);
   return id;
 }
 
-export function getMyFullnameSafe() {
-  const name = getMyFullname();
-  if (!name) {
-    console.warn(`${GL_TAG} getMyFullname(): no fullname available`);
-  } else {
-    console.debug(`${GL_TAG} getMyFullname():`, name);
-  }
+export function getMyFullname() {
+  const name = sessionFullname();
+  console.debug(`${GL} getMyFullname():`, name);
   return name;
 }
 
-// -----------------------------------------------------
-// Receiver helper (messaging.js sets window.currentReceiverId)
-// -----------------------------------------------------
 export function getReceiver() {
-  const receiver = window.currentReceiverId ?? null;
-  if (!receiver) {
-    console.warn(`${GL_TAG} getReceiver(): no currentReceiverId`);
-  } else {
-    console.debug(`${GL_TAG} getReceiver():`, receiver);
-  }
-  return receiver;
+  const r = window.currentReceiverId ?? null;
+  console.debug(`${GL} getReceiver():`, r);
+  return r;
 }
 
 // -----------------------------------------------------
-// ICE / TURN configuration (WebRTCController calls this)
+// ICE servers
 // -----------------------------------------------------
 export async function getIceServers() {
   try {
     const servers = await loadIce();
-    console.debug(`${GL_TAG} ICE servers loaded:`, servers);
+    console.debug(`${GL} ICE servers:`, servers);
     return servers;
   } catch (err) {
-    console.warn(`${GL_TAG} ICE fallback STUN used`, err);
+    console.warn(`${GL} ICE fallback STUN`, err);
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 }
 
 // -----------------------------------------------------
-// UI state machine hook (WebRTCController triggers this)
-// CallUI.js handles the actual DOM updates
+// Call logs
+// -----------------------------------------------------
+export function addCallLogEntry(entry) {
+  console.debug(`${GL} addCallLogEntry():`, entry);
+  // You can wire this to backend later if needed
+}
+
+// -----------------------------------------------------
+// UI state machine (WebRTCController triggers this)
+// CallUI handles the real DOM
 // -----------------------------------------------------
 export const UI = {
   apply(state, data) {
     console.log("[UI.apply]", state, data);
-    // CallUI.js handles real UI transitions
   }
 };
 
 // -----------------------------------------------------
 // Media + avatar helpers (WebRTCController calls these)
-// CallUI.js handles actual DOM work
+// CallUI handles actual DOM work
 // -----------------------------------------------------
 export function showLocalVideo() {
-  console.log(`${GL_TAG} showLocalVideo()`);
+  console.log(`${GL} showLocalVideo()`);
 }
 
 export function fadeInVideo(el) {
-  console.log(`${GL_TAG} fadeInVideo()`, el);
+  console.log(`${GL} fadeInVideo()`, el);
 }
 
 export function showLocalAvatar() {
-  console.log(`${GL_TAG} showLocalAvatar()`);
+  console.log(`${GL} showLocalAvatar()`);
 }
 
 export function showRemoteAvatar() {
-  console.log(`${GL_TAG} showRemoteAvatar()`);
+  console.log(`${GL} showRemoteAvatar()`);
 }
 
 export function showRemoteVideo() {
-  console.log(`${GL_TAG} showRemoteVideo()`);
+  console.log(`${GL} showRemoteVideo()`);
 }
 
 export function setRemoteAvatar(avatar) {
-  console.log(`${GL_TAG} setRemoteAvatar():`, avatar);
+  console.log(`${GL} setRemoteAvatar():`, avatar);
 }
 
 // -----------------------------------------------------
-// Audio helpers (WebRTCController uses these)
+// Audio helpers
 // -----------------------------------------------------
 export function getRingtone() {
   return window.ringtone || null;
@@ -112,17 +104,17 @@ export function stopAudio(audio) {
     audio.pause();
     audio.currentTime = 0;
   } catch (err) {
-    console.warn(`${GL_TAG} stopAudio(): error`, err);
+    console.warn(`${GL} stopAudio() error`, err);
   }
 }
 
 // -----------------------------------------------------
-// Timer helpers (WebRTCController calls these)
+// Timer helpers
 // -----------------------------------------------------
 export function startTimer() {
-  console.log(`${GL_TAG} startTimer()`);
+  console.log(`${GL} startTimer()`);
 }
 
 export function stopTimer() {
-  console.log(`${GL_TAG} stopTimer()`);
+  console.log(`${GL} stopTimer()`);
 }
