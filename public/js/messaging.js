@@ -331,6 +331,15 @@ function renderMessage(msg) {
       };
     }
   }
+const reactionBar = document.createElement("div");
+reactionBar.className = "reaction-bar";
+reactionBar.innerHTML = `
+  <span class="react-emoji">👍</span>
+  <span class="react-emoji">❤️</span>
+  <span class="react-emoji">😂</span>
+  <span class="react-emoji">😮</span>
+  <span class="react-emoji">😢</span>
+`;
 
   // ===== Reaction bar =====
 reactionBar.addEventListener("click", (e) => {
@@ -1000,6 +1009,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
