@@ -1010,6 +1010,92 @@ setInterval(() => {
   }
 }, 8000);
 
+// -------------------------------------------------------
+// ⭐ COMPOSER UI CONTROLS
+// -------------------------------------------------------
+
+const plusBtn = document.getElementById("plusBtn");
+const bottomSheet = document.getElementById("bottomSheet");
+const sheetEmoji = document.getElementById("sheetEmoji");
+const sheetGif = document.getElementById("sheetGif");
+const sheetFile = document.getElementById("sheetFile");
+const sheetAudio = document.getElementById("sheetAudio");
+const emojiPicker = document.getElementById("emojiPicker");
+const gifPicker = document.getElementById("gifPicker");
+const gifSearch = document.getElementById("gifSearch");
+const gifResults = document.getElementById("gifResults");
+const micBtn = document.getElementById("micBtn");
+
+// ===== Toggle bottom sheet =====
+plusBtn?.addEventListener("click", () => {
+  bottomSheet.classList.toggle("active");
+});
+
+// ===== Emoji Picker =====
+sheetEmoji?.addEventListener("click", () => {
+  bottomSheet.classList.remove("active");
+  emojiPicker.classList.toggle("active");
+});
+
+emojiPicker?.addEventListener("emoji-click", (e) => {
+  msgInput.textContent += e.detail.unicode;
+  emojiPicker.classList.remove("active");
+});
+
+// ===== GIF Picker =====
+sheetGif?.addEventListener("click", () => {
+  bottomSheet.classList.remove("active");
+  gifPicker.classList.toggle("hidden");
+  gifSearch.focus();
+});
+
+// Simple GIF search using Tenor API
+gifSearch?.addEventListener("input", async () => {
+  const q = gifSearch.value.trim();
+  if (!q) return;
+
+  gifResults.innerHTML = "Searching…";
+
+  try {
+    const res = await fetch(
+      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&limit=20`
+    );
+    const data = await res.json();
+
+    gifResults.innerHTML = "";
+
+    data.results.forEach((gif) => {
+      const img = document.createElement("img");
+      img.src = gif.media_formats?.tinygif?.url;
+      img.className = "gif-thumb";
+      img.onclick = () => {
+        msgInput.textContent += gif.media_formats?.tinygif?.url;
+        gifPicker.classList.add("hidden");
+      };
+      gifResults.appendChild(img);
+    });
+  } catch (err) {
+    gifResults.innerHTML = "Error loading GIFs";
+  }
+});
+
+// ===== File Picker =====
+sheetFile?.addEventListener("click", () => {
+  bottomSheet.classList.remove("active");
+  attachmentInput.click();
+});
+
+// ===== Audio Recording (placeholder) =====
+sheetAudio?.addEventListener("click", () => {
+  bottomSheet.classList.remove("active");
+  console.log("[composer] Voice message coming soon");
+});
+
+// ===== Mic Button (same as sheetAudio for now) =====
+micBtn?.addEventListener("click", () => {
+  console.log("[composer] Mic button clicked");
+});
+
 
 
 
