@@ -167,6 +167,12 @@ export function attachRemoteTrack(evt) {
 
   if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
+remoteVideo.style.display = "block";
+remoteVideo.style.opacity = "1";
+remoteVideo.style.width = "100%";
+remoteVideo.style.height = "100%";
+remoteVideo.style.background = "transparent";
+console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 
     remoteVideo.onloadedmetadata = () => {
       remoteVideo.play().catch(() => {});
@@ -192,6 +198,7 @@ export function attachRemoteTrack(evt) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
