@@ -1,281 +1,47 @@
 // public/js/webrtc/WebRTCController.js
-// Premium WebRTC controller: signaling, media, UI, timers, logs, and UX polish.
+// Premium, production‑grade WebRTC controller
 
 import { rtcState } from "./WebRTCState.js";
-import { socket } from "../socket.js";
-
-import {
-  applyAvatar,
-  showAvatar,
-  setRemoteAvatar,
-  setLocalAvatar,
-  showRemoteAvatar,
-  showLocalAvatar,
-  showRemoteVideo,
-  showLocalVideo,
-} from "./AvatarFallback.js";
-
 import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
-import { addCallLogEntry } from "../call-log.js";
 
+// Global helpers (adjust path if needed)
 import {
   getMyUserId,
   getMyFullname,
-  getMyAvatar,
-  ringback,
+  getReceiver,
+  getIceServers,
+  addCallLogEntry,
+  showLocalVideo,
+  fadeInVideo,
+  showLocalAvatar,
+  showRemoteAvatar,
+  showRemoteVideo,
+  setRemoteAvatar,
+  UI,
   ringtone,
-  localWrapper,
-  remoteWrapper,
-} from "../session.js";
+  ringback,
+  startTimer,
+  stopTimer,
+  stopAudio
+} from "../globals.js";
 
-import { getIceServers } from "../ice.js";
-import { getReceiver } from "../messaging.js";
-
-/* -------------------------------------------------------
-   Small helpers
-------------------------------------------------------- */
-
-function stopAudio(el) {
-  if (!el) return;
-  try {
-    el.pause();
-    el.currentTime = 0;
-  } catch {}
-}
-
-function hide(el) {
-  if (el) el.style.display = "none";
-}
-
-function show(el, type = "flex") {
-  if (el) el.style.display = type;
-}
-
-/**
- * 400ms opacity + slight scale fade-in.
- * Used for BOTH local and remote video.
- */
-function fadeInVideo(el) {
-  if (!el) return;
-
-  el.style.opacity = "0";
-  el.style.transform = "scale(0.96)";
-  el.style.transition = "opacity 0.4s ease, transform 0.4s ease";
-  el.style.display = "block";
-
-  requestAnimationFrame(() => {
-    el.style.opacity = "1";
-    el.style.transform = "scale(1)";
-  });
-}
-
-/* -------------------------------------------------------
-   UI Engine — matches neon / voice+video modes
-------------------------------------------------------- */
-
-const UI = {
-  /**
-   * Apply a high-level call UI state.
-   * state: "idle" | "incoming" | "outgoing" | "active" | "ending"
-   * opts: { audioOnly?: boolean, callerName?: string }
-   */
-  apply(state, opts = {}) {
-    const { audioOnly = false, callerName = "" } = opts;
-
-    const videoContainer = document.getElementById("video-container");
-    const messagingBox = document.getElementById("messaging_box");
-    const callControls = document.getElementById("call-controls");
-    const callerOverlay = document.getElementById("callerOverlay");
-    const answerBtn = document.getElementById("answer-call");
-    const declineBtn = document.getElementById("decline-call");
-    const endBtn = document.getElementById("end-call");
-    const camBtn = document.getElementById("camera-toggle");
-    const callStatusEl = document.getElementById("call-status");
-
-    // Status text
-    if (callStatusEl) {
-      switch (state) {
-        case "incoming":
-          callStatusEl.textContent = "Incoming call…";
-          break;
-        case "outgoing":
-          callStatusEl.textContent = "Calling…";
-          break;
-        case "active":
-          callStatusEl.textContent = "Connected";
-          break;
-        case "ending":
-          callStatusEl.textContent = "Call ended";
-          break;
-        case "idle":
-        default:
-          callStatusEl.textContent = "Ready";
-          break;
-      }
-    }
-
-    if (!videoContainer || !messagingBox || !callControls) {
-      console.warn("[WebRTC UI] Missing core elements");
-      return;
-    }
-
-    // Reset core visual state
-    callControls.classList.remove("active");
-    videoContainer.classList.remove("active", "voice-mode", "video-mode");
-    hide(answerBtn);
-    hide(declineBtn);
-    hide(endBtn);
-    hide(camBtn);
-    hide(callerOverlay);
-
-    // IDLE → messaging visible, call UI reset
-    if (state === "idle") {
-      messagingBox.style.opacity = "1";
-      messagingBox.style.pointerEvents = "auto";
-
-      // Messaging avatars (local + remote) via wrapper system
-      applyAvatar(localWrapper, getMyAvatar(), getMyFullname());
-      showAvatar(localWrapper);
-
-      applyAvatar(remoteWrapper, null, "");
-      showAvatar(remoteWrapper);
-
-      // Call UI: ensure local avatar visible, videos hidden
-      const localAvatar = document.getElementById("localAvatar");
-      const remoteAvatar = document.getElementById("remoteAvatar");
-      const localVideo = document.getElementById("localVideo");
-      const remoteVideo = document.getElementById("remoteVideo");
-
-      if (localAvatar) localAvatar.style.display = "flex";
-      if (remoteAvatar) remoteAvatar.style.display = "flex";
-      if (localVideo) {
-        localVideo.style.display = "none";
-        localVideo.style.opacity = "0";
-      }
-      if (remoteVideo) {
-        remoteVideo.style.display = "none";
-        remoteVideo.style.opacity = "0";
-      }
-
-      return;
-    }
-
-    // NON-IDLE → hide messaging panel instantly
-    messagingBox.style.opacity = "0";
-    messagingBox.style.pointerEvents = "none";
-
-    // Show video container in voice/video mode
-    videoContainer.classList.add("active");
-    videoContainer.classList.add(audioOnly ? "voice-mode" : "video-mode");
-
-    switch (state) {
-      case "incoming":
-        callControls.classList.add("active");
-
-        show(answerBtn, "inline-flex");
-        show(declineBtn, "inline-flex");
-        hide(endBtn);
-        hide(camBtn);
-
-        if (callerOverlay) {
-          callerOverlay.style.display = "flex";
-          callerOverlay.textContent = callerName
-            ? `Incoming call from ${callerName}...`
-            : "Incoming call...";
-        }
-        break;
-
-      case "outgoing":
-        callControls.classList.add("active");
-        show(endBtn, "inline-flex");
-        if (!audioOnly) show(camBtn, "inline-flex");
-        break;
-
-      case "active":
-        callControls.classList.add("active");
-        show(endBtn, "inline-flex");
-        if (!audioOnly) show(camBtn, "inline-flex");
-        break;
-
-      case "ending":
-        videoContainer.classList.remove("active");
-        break;
-    }
-  },
-};
-
-/* -------------------------------------------------------
-   Timer
-------------------------------------------------------- */
-
-const callTimerEl = document.getElementById("call-timer");
-
-function startTimer() {
-  if (!callTimerEl) return;
-
-  if (rtcState.callTimerInterval) {
-    clearInterval(rtcState.callTimerInterval);
-  }
-
-  rtcState.callTimerSeconds = 0;
-  callTimerEl.textContent = "00:00";
-
-  rtcState.callTimerInterval = setInterval(() => {
-    rtcState.callTimerSeconds++;
-    const s = rtcState.callTimerSeconds;
-    const m = String(Math.floor(s / 60)).padStart(2, "0");
-    const sec = String(s % 60).padStart(2, "0");
-    callTimerEl.textContent = `${m}:${sec}`;
-  }, 1000);
-}
-
-function stopTimer() {
-  if (rtcState.callTimerInterval) {
-    clearInterval(rtcState.callTimerInterval);
-  }
-  rtcState.callTimerInterval = null;
-  rtcState.callTimerSeconds = 0;
-  if (callTimerEl) callTimerEl.textContent = "00:00";
-}
-
-/* -------------------------------------------------------
-   WebRTC Controller
-------------------------------------------------------- */
-
-export class WebRTCController {
-  constructor(socketInstance) {
-    this.socket = socketInstance;
+export default class WebRTCController {
+  constructor(socket) {
+    this.socket = socket;
     this.pc = null;
-    this.localStream = null;
 
     this.localVideo = null;
     this.remoteVideo = null;
     this.remoteAudio = null;
+    this.localStream = null;
 
-    // CallUI hooks
-    this.onIncomingCall = null;
-    this.onCallStarted = null;
-    this.onCallEnded = null;
-    this.onCallFailed = null;
-    this.onQualityChange = null;
-
-    // Initial UI state
-    UI.apply("idle");
-
-    // Wire socket events
     this._bindSocketEvents();
-
-    // Initialize local avatar in call UI
-    setLocalAvatar(getMyAvatar());
-    showLocalAvatar();
-
-    // Premium UX behaviors
     this._initDraggableRemote();
     this._bindSwapBehavior();
   }
 
   /* ---------------------------------------------------
-     Media elements wiring (from CallUI)
+     Media elements wiring
   --------------------------------------------------- */
   attachMediaElements({ localVideo, remoteVideo, remoteAudio }) {
     this.localVideo = localVideo;
@@ -284,30 +50,43 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Entry points: voice / video
+     Resolve peer ID
+  --------------------------------------------------- */
+  _resolvePeer(explicitPeerId) {
+    const peerId =
+      explicitPeerId ||
+      getReceiver?.() ||
+      window.currentReceiverId;
+
+    if (!peerId) {
+      console.warn("[WebRTC] No receiver selected", {
+        explicitPeerId,
+        getReceiver: getReceiver?.(),
+        currentReceiverId: window.currentReceiverId
+      });
+      return null;
+    }
+
+    return String(peerId);
+  }
+
+  /* ---------------------------------------------------
+     Start voice / video call
   --------------------------------------------------- */
   startVoiceCall(explicitPeerId) {
-    const peerId =
-      explicitPeerId || getReceiver() || window.currentReceiverId;
-    if (!peerId) {
-      console.warn("[WebRTC] startVoiceCall: no receiver selected");
-      return;
-    }
+    const peerId = this._resolvePeer(explicitPeerId);
+    if (!peerId) return;
     this.startCall(peerId, true);
   }
 
   startVideoCall(explicitPeerId) {
-    const peerId =
-      explicitPeerId || getReceiver() || window.currentReceiverId;
-    if (!peerId) {
-      console.warn("[WebRTC] startVideoCall: no receiver selected");
-      return;
-    }
+    const peerId = this._resolvePeer(explicitPeerId);
+    if (!peerId) return;
     this.startCall(peerId, false);
   }
 
   /* ---------------------------------------------------
-     Outgoing Call
+     Outgoing call
   --------------------------------------------------- */
   async startCall(peerId, audioOnly) {
     const myId = getMyUserId();
@@ -335,27 +114,16 @@ export class WebRTCController {
 
       if (this.localVideo && !audioOnly) {
         this.localVideo.srcObject = stream;
+        this.localVideo.muted = true;
+        this.localVideo.play().catch(() => {});
         showLocalVideo();
         fadeInVideo(this.localVideo);
       } else {
         showLocalAvatar();
       }
     } else {
-      console.warn(
-        "[WebRTC] No local media stream; proceeding with no mic/camera"
-      );
+      console.warn("[WebRTC] No local media stream");
       showLocalAvatar();
-    }
-
-    // Voice mode: reset remote wrapper position
-    if (audioOnly) {
-      const remoteWrapperEl = document.getElementById("remoteWrapper");
-      if (remoteWrapperEl) {
-        remoteWrapperEl.style.left = "";
-        remoteWrapperEl.style.top = "";
-        remoteWrapperEl.style.right = "";
-        remoteWrapperEl.style.bottom = "";
-      }
     }
 
     const offer = await pc.createOffer();
@@ -366,15 +134,15 @@ export class WebRTCController {
       to: peerId,
       from: myId,
       offer,
-      audioOnly: !!audioOnly,
-      fromName: getMyFullname(),
+      audioOnly,
+      fromName: getMyFullname()
     });
 
     ringback?.play().catch(() => {});
   }
 
   /* ---------------------------------------------------
-     Incoming Offer
+     Incoming offer
   --------------------------------------------------- */
   async handleOffer(data) {
     const { from, offer, fromName, audioOnly, fromUser } = data || {};
@@ -400,7 +168,7 @@ export class WebRTCController {
 
     UI.apply("incoming", {
       audioOnly: rtcState.audioOnly,
-      callerName: rtcState.peerName,
+      callerName: rtcState.peerName
     });
 
     ringtone?.play().catch(() => {});
@@ -408,7 +176,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Answer Incoming Call
+     Answer incoming call
   --------------------------------------------------- */
   async answerIncomingCall() {
     const offerData = rtcState.incomingOffer;
@@ -438,6 +206,8 @@ export class WebRTCController {
 
       if (this.localVideo && !rtcState.audioOnly) {
         this.localVideo.srcObject = stream;
+        this.localVideo.muted = true;
+        this.localVideo.play().catch(() => {});
         showLocalVideo();
         fadeInVideo(this.localVideo);
       } else {
@@ -455,7 +225,7 @@ export class WebRTCController {
       type: "answer",
       to: from,
       from: getMyUserId(),
-      answer,
+      answer
     });
 
     UI.apply("active", { audioOnly: rtcState.audioOnly });
@@ -485,14 +255,14 @@ export class WebRTCController {
       direction: "incoming",
       status: "rejected",
       duration: 0,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
 
     this.socket.emit("webrtc:signal", {
       type: "end",
       to: from,
       from: getMyUserId(),
-      reason: "rejected",
+      reason: "rejected"
     });
 
     rtcState.incomingOffer = null;
@@ -503,7 +273,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Remote Answer
+     Remote answer
   --------------------------------------------------- */
   async handleAnswer(data) {
     if (!this.pc) {
@@ -523,7 +293,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     ICE Candidate
+     ICE candidate
   --------------------------------------------------- */
   async handleRemoteIceCandidate(data) {
     if (!this.pc || !data || !data.candidate) return;
@@ -536,14 +306,14 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Remote End
+     Remote end
   --------------------------------------------------- */
   handleRemoteEnd() {
     this.endCall(false);
   }
 
   /* ---------------------------------------------------
-     End Call (local or remote)
+     End call
   --------------------------------------------------- */
   endCall(local = true) {
     stopAudio(ringback);
@@ -552,7 +322,7 @@ export class WebRTCController {
 
     const peerId = rtcState.peerId;
 
-    // Tear down PeerConnection
+    // Close PC
     if (this.pc) {
       try {
         this.pc.onicecandidate = null;
@@ -565,16 +335,18 @@ export class WebRTCController {
     }
 
     // Stop local media
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((t) => {
+    const stream = this.localStream || rtcState.localStream;
+    if (stream) {
+      stream.getTracks().forEach((t) => {
         try {
           t.stop();
         } catch {}
       });
-      this.localStream = null;
     }
+    this.localStream = null;
+    rtcState.localStream = null;
 
-    // Reset remote wrapper position
+    // Reset remote wrapper
     const remoteWrapperEl = document.getElementById("remoteWrapper");
     if (remoteWrapperEl) {
       remoteWrapperEl.style.left = "";
@@ -589,7 +361,7 @@ export class WebRTCController {
     if (!rtcState.inCall && !local) status = "missed";
     if (!rtcState.inCall && local && !rtcState.isCaller) status = "rejected";
 
-    const logEntry = {
+    addCallLogEntry({
       logId: Date.now(),
       caller_id: rtcState.isCaller ? getMyUserId() : peerId,
       receiver_id: rtcState.isCaller ? peerId : getMyUserId(),
@@ -599,10 +371,8 @@ export class WebRTCController {
       direction,
       status,
       duration: rtcState.callTimerSeconds || 0,
-      timestamp: new Date().toISOString(),
-    };
-
-    addCallLogEntry(logEntry);
+      timestamp: new Date().toISOString()
+    });
 
     rtcState.inCall = false;
     rtcState.peerId = null;
@@ -630,7 +400,7 @@ export class WebRTCController {
         type: "end",
         to: peerId,
         from: getMyUserId(),
-        reason: "hangup",
+        reason: "hangup"
       });
     }
 
@@ -638,7 +408,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Mute toggle (for CallUI mute button)
+     Mute toggle
   --------------------------------------------------- */
   toggleMute() {
     const stream = this.localStream || rtcState.localStream;
@@ -654,12 +424,11 @@ export class WebRTCController {
       t.enabled = newEnabled;
     });
 
-    // Return "muted" boolean for UI
     return !newEnabled;
   }
 
   /* ---------------------------------------------------
-     Camera toggle / switch (for CallUI camera button)
+     Camera toggle
   --------------------------------------------------- */
   switchCamera() {
     const stream = this.localStream || rtcState.localStream;
@@ -691,7 +460,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     PeerConnection Factory (TURN‑enabled)
+     Create PeerConnection
   --------------------------------------------------- */
   async _createPC() {
     if (this.pc) {
@@ -711,7 +480,7 @@ export class WebRTCController {
           type: "ice",
           to: rtcState.peerId,
           from: getMyUserId(),
-          candidate: event.candidate,
+          candidate: event.candidate
         });
       }
     };
@@ -758,7 +527,6 @@ export class WebRTCController {
     this.socket.on("webrtc:signal", async (data) => {
       if (!data || !data.type) return;
 
-      // Enrich peer identity + avatar if provided
       if (data.fromUser) {
         const { avatar, fullname } = data.fromUser;
 
@@ -829,7 +597,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Draggable Remote Video (Video Mode Only)
+     Draggable remote video
   --------------------------------------------------- */
   _initDraggableRemote() {
     const wrapper = document.getElementById("remoteWrapper");
@@ -843,7 +611,6 @@ export class WebRTCController {
     let startTop = 0;
 
     const onMouseDown = (e) => {
-      // Only draggable in VIDEO MODE
       if (!container.classList.contains("video-mode")) return;
 
       isDragging = true;
@@ -880,7 +647,7 @@ export class WebRTCController {
       newLeft = Math.max(0, Math.min(newLeft, maxLeft));
       newTop = Math.max(0, Math.min(newTop, maxTop));
 
-      wrapper.style.left = `${newLeft}px`;
+         wrapper.style.left = `${newLeft}px`;
       wrapper.style.top = `${newTop}px`;
       wrapper.style.right = "auto";
       wrapper.style.bottom = "auto";
@@ -922,9 +689,7 @@ export class WebRTCController {
    Default instance (optional convenience)
 ------------------------------------------------------- */
 
-export const rtc = new WebRTCController(socket);
-
-
+export const rtc = new WebRTCController(window.socket);
 
 
 
