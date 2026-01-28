@@ -1,6 +1,5 @@
 // messaging.js
 import {
-  myUserId,
   messageWin,
   msgForm,
   msgInput,
@@ -936,6 +935,7 @@ setInterval(() => {
     loadMessages().catch(() => showError("Poll failed"));
   }
 }, 8000);
+
 
 
 
