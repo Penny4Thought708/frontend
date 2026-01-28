@@ -308,44 +308,53 @@ function renderItem(log) {
     </div>
   `;
 
-  div.querySelector(".call-icon-click")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const userRaw = {
-      contact_id: log.other_party_id,
-      contact_name: log.display_name,
-      avatar: log.avatar
-    };
+div.querySelector(".call-icon-click")?.addEventListener("click", (e) => {
+  e.stopPropagation();
 
-    window.showMessageBoxOnly?.();
-    window.openMessagesFor?.(userRaw);
-  });
+  window.setReceiver?.(log.other_party_id);
 
-  div.querySelector(".call-chat-btn")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const userRaw = {
-      contact_id: log.other_party_id,
-      contact_name: log.display_name,
-      avatar: log.avatar
-    };
+  const userRaw = {
+    contact_id: log.other_party_id,
+    contact_name: log.display_name,
+    avatar: log.avatar
+  };
 
-    window.showMessageBoxOnly?.();
-    window.openMessagesFor?.(userRaw);
-  });
+  window.showMessageBoxOnly?.();
+  window.openMessagesFor?.(userRaw);
+});
 
-  div.querySelector(".call-log-main")?.addEventListener("click", (e) => {
-    if (e.target.closest(".call-actions") || e.target.closest(".call-delete-btn")) {
-      return;
-    }
+div.querySelector(".call-chat-btn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
 
-    const userRaw = {
-      contact_id: log.other_party_id,
-      contact_name: log.display_name,
-      avatar: log.avatar
-    };
+  window.setReceiver?.(log.other_party_id);
 
-    window.showMessageBoxOnly?.();
-    window.openMessagesFor?.(userRaw);
-  });
+  const userRaw = {
+    contact_id: log.other_party_id,
+    contact_name: log.display_name,
+    avatar: log.avatar
+  };
+
+  window.showMessageBoxOnly?.();
+  window.openMessagesFor?.(userRaw);
+});
+
+div.querySelector(".call-log-main")?.addEventListener("click", (e) => {
+  if (e.target.closest(".call-actions") || e.target.closest(".call-delete-btn")) {
+    return;
+  }
+
+  window.setReceiver?.(log.other_party_id);
+
+  const userRaw = {
+    contact_id: log.other_party_id,
+    contact_name: log.display_name,
+    avatar: log.avatar
+  };
+
+  window.showMessageBoxOnly?.();
+  window.openMessagesFor?.(userRaw);
+});
+
 
   div.querySelector(".call-details-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -607,6 +616,7 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
 
 
 
