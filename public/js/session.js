@@ -40,7 +40,6 @@ async function loadIdentity() {
   }
 }
 
-// Load identity immediately
 loadIdentity();
 
 // -------------------------------------------------------
@@ -59,7 +58,7 @@ export function getMyAvatar() {
 }
 
 // -------------------------------------------------------
-// Avatar URL helper (Node backend)
+// Avatar URL helper
 // -------------------------------------------------------
 export function avatarUrl(filename) {
   if (!filename) return "/img/defaultUser.png";
@@ -73,20 +72,26 @@ const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 
 // -------------------------------------------------------
-// Messaging UI Elements
+// ⭐ Messaging UI Elements (UPDATED TO MATCH YOUR HTML)
 // -------------------------------------------------------
+export const msgForm = el("text_box_reply");               // <form>
+export const msgInput = el("message_input");               // contenteditable div
+export const messageWin = qs(".message_win1");             // message window
+
+export const attachmentInput = el("attachment_input");     // <input type="file">
+export const previewDiv = el("attachmentPreview");         // preview container
+
+// You can choose which button opens the file picker:
+// Option A: bottom sheet "File" button
+export const attachmentBtn = el("sheetFile");
+
+// Option B: the + button (uncomment if you prefer)
+// export const attachmentBtn = el("plusBtn");
+
+export const badge = qs(".notification-badge .badge");
 export const messageBox = el("messaging_box");
 export const msgOpenBtn = el("msg_open_btn");
-export const msgInput = el("message_input"); // contenteditable in layout
 export const closeMsgBtn = el("close_msg_box");
-export const msgForm = el("text_box_reply");
-export const messageWin = qs(".message_win1");
-export const msgCounter = qs("#msg_header h3:last-child");
-export const badge = qs(".notification-badge .badge");
-export const notificationSound = el("notification");
-
-// Attachment preview
-export const previewDiv = el("preview");
 
 // -------------------------------------------------------
 // Lookup UI
@@ -112,7 +117,6 @@ export function getVideoBtn() {
 export const localNameDiv = el("localName");
 export const remoteNameDiv = el("remoteName");
 
-// Lazy-bound media elements
 export let localVideo;
 export let remoteVideo;
 export let remoteAudioEl;
@@ -148,10 +152,6 @@ export const messagesContainer = messageWin;
 // Top bar
 export const topBar = el("topBar");
 
-// Attachments
-export const attachmentBtn = el("attachmentBtn");
-export const attachmentInput = el("attachment_input");
-
 // -------------------------------------------------------
 // Helpers
 // -------------------------------------------------------
@@ -172,7 +172,7 @@ export function playNotification() {
 }
 
 // -------------------------------------------------------
-// ⭐ Node-compatible API helpers
+// Node-compatible API helpers
 // -------------------------------------------------------
 export async function getJson(url) {
   const res = await fetch(url, { credentials: "include" });
@@ -192,7 +192,6 @@ export async function postJson(url, body = {}) {
   return res.json();
 }
 
-// Generic POST helper that respects API_BASE and strips .php
 export async function postForm(path, payload) {
   const cleanPath = path.replace(".php", "");
   const url = cleanPath.startsWith("http")
@@ -330,8 +329,9 @@ function resetInactivityTimer() {
 ["click", "mousemove", "keydown", "scroll", "touchstart"].forEach((evt) => {
   window.addEventListener(evt, resetInactivityTimer);
 });
-
 resetInactivityTimer();
+
+
 
 
 
