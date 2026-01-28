@@ -21,7 +21,7 @@ import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
 import { initCallLogs } from "./call-log.js";
 
 // WebRTC
-import WebRTCController from "./webrtc/WebRTCController.js";
+import { WebRTCController } from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
 import "../components/ContactsMenu.js";
 
@@ -1008,6 +1008,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
