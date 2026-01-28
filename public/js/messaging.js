@@ -1,9 +1,12 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO PHP, Node backend, FULL LOGGING)
+// Messaging System (NO WebRTC)
+
+import { socket } from "./socket.js";
 
 import {
   getMyUserId,
+  getMyFullname,
   messageWin,
   msgForm,
   msgInput,
@@ -14,239 +17,349 @@ import {
   attachmentInput,
   attachmentBtn,
   previewDiv,
-  safeJSON,
   playNotification,
+  getJson,
+  postForm,
+  postJson,
 } from "./session.js";
 
-import { socket } from "./socket.js";
-import { userNames, userAvatars } from "./shared/user-cache.js";
+/* -------------------------------------------------------
+   Messaging State
+------------------------------------------------------- */
 
-// ===== CONFIG =====
-const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
-console.log("[messaging] Loaded messaging.js");
-
-// ===== STATE =====
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
 let readObserver = null;
+
+const userNames = {};
 const previewEl = previewDiv;
 
-// ===== RTC ACCESSORS =====
-function getDataChannel() {
-  return typeof window !== "undefined" ? window.dataChannel : undefined;
-}
-function getPeerId() {
-  return typeof window !== "undefined" ? window.peerId : undefined;
-}
-function isChannelOpen(dc) {
-  return !!dc && dc.readyState === "open";
-}
-
-// ===== HELPERS =====
-export function setReceiver(id) {
-  receiver_id = id;
-  console.log("[messaging] Receiver set:", receiver_id);
-}
+/* -------------------------------------------------------
+   UI Helpers
+------------------------------------------------------- */
 
 function showError(msg) {
-  console.error("[messaging] ERROR:", msg);
+  console.error(msg);
   if (badge) {
     badge.textContent = "!";
     badge.style.display = "inline-block";
   }
 }
 
-function $(sel, root = document) {
-  return root.querySelector(sel);
-}
-
-function smartScroll() {
+function smartScroll(force = false) {
   if (!messageWin) return;
+
   const nearBottom =
-    messageWin.scrollHeight -
-      messageWin.scrollTop -
-      messageWin.clientHeight <
+    messageWin.scrollHeight - messageWin.scrollTop - messageWin.clientHeight <
     80;
-  if (nearBottom) messageWin.scrollTop = messageWin.scrollHeight;
-}
 
-// ===== NETWORK HELPERS =====
-async function apiGet(path) {
-  const url = `${MESSAGES_API_BASE}${path}`;
-  console.log("[messaging] GET:", url);
-
-  try {
-    const res = await fetch(url, { method: "GET", credentials: "include" });
-    const text = await res.text();
-    console.log("[messaging] GET response:", text);
-    return JSON.parse(text);
-  } catch (err) {
-    console.error("[messaging] GET failed:", err);
-    throw err;
+  if (force || nearBottom) {
+    messageWin.scrollTop = messageWin.scrollHeight;
   }
 }
 
-async function apiPost(path, body) {
-  const url = `${MESSAGES_API_BASE}${path}`;
-  console.log("[messaging] POST:", url, "BODY:", body);
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(body || {}),
-    });
-
-    const text = await res.text();
-    console.log("[messaging] POST response:", text);
-    return JSON.parse(text);
-  } catch (err) {
-    console.error("[messaging] POST failed:", err);
-    throw err;
-  }
+export function showMessageWindow() {
+  messageBox?.classList.add("active");
 }
 
-// ===== FILE RENDERING HELPER =====
-function appendFileContentToParagraph(p, options) {
-  const { name, url, comment = "" } = options;
+/* -------------------------------------------------------
+   Socket registration
+------------------------------------------------------- */
 
-  const src = url;
-  if (!src) {
-    console.warn("[messaging] Missing file URL/data for:", name);
-    return;
-  }
+socket.on("connect", () => {
+  console.log("Socket connected:", socket.id);
 
-  if (/\.(png|jpe?g|gif|webp)$/i.test(name || "")) {
-    const img = document.createElement("img");
-    img.src = src;
-    img.alt = name;
-    img.style.maxWidth = "200px";
-    img.style.display = "block";
-    p.appendChild(img);
-
-    const caption = document.createElement("span");
-    caption.textContent = name;
-    caption.className = "file-caption";
-    p.appendChild(caption);
-
-    img.onclick = () => {
-      const viewer = document.getElementById("img-viewer");
-      const viewerImg = document.getElementById("img-viewer-img");
-      if (viewer && viewerImg) {
-        viewerImg.src = img.src;
-        viewer.style.display = "flex";
-      }
-    };
-  } else {
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = name;
-    a.textContent = name;
-    a.target = "_blank";
-    p.appendChild(a);
-  }
-
-  if (comment) {
-    const cmt = document.createElement("div");
-    cmt.className = "file-comment";
-    cmt.textContent = comment;
-    p.appendChild(cmt);
-  }
-}
-
-// Close full-screen viewer when clicking overlay
-document.getElementById("img-viewer")?.addEventListener("click", () => {
-  const viewer = document.getElementById("img-viewer");
-  if (viewer) viewer.style.display = "none";
+  socket.emit("register", {
+    userId: getMyUserId(),
+    fullname: getMyFullname(),
+  });
 });
 
-// ===== DELETE MESSAGE =====
-async function deleteMessage(messageId) {
-  console.log("[messaging] deleteMessage:", messageId);
+/* -------------------------------------------------------
+   Receiver Setter
+------------------------------------------------------- */
 
-  if (!messageId) {
-    console.error("[messaging] deleteMessage missing ID");
-    return;
-  }
+export function setReceiver(id) {
+  receiver_id = id;
+  window.receiver_id = id;
+  window.currentReceiverId = id;
+  console.log("[messaging] Receiver set:", receiver_id);
+  console.log("[GLOBAL] window.receiver_id =", window.receiver_id);
+}
 
-  const el = document.querySelector(`[data-msg-id="${String(messageId)}"]`);
-  if (el) el.remove();
+export function getReceiver() {
+  return receiver_id;
+}
+
+/* -------------------------------------------------------
+   Open / Close Message Window
+------------------------------------------------------- */
+
+msgOpenBtn?.addEventListener("click", async () => {
+  messageBox?.classList.add("active");
+
+  if (!receiver_id) return;
 
   try {
-    await apiPost("/delete", { id: messageId });
-    console.log("[messaging] deleteMessage success");
+    const messages = await loadMessages();
+    if (Array.isArray(messages) && messages.length) {
+      lastSeenMessageId = messages[messages.length - 1].id ?? 0;
+    }
+    if (badge) badge.style.display = "none";
+
+    const unread = messages.filter(
+      (m) => !m.is_me && typeof m.id !== "undefined",
+    );
+
+    for (const m of unread) {
+      await postJson("/messages/mark-read", {
+        messageId: m.id,
+      });
+    }
+
+    observeMessagesForRead();
+  } catch {
+    showError("Failed to load messages on open");
+  }
+});
+
+closeMsgBtn?.addEventListener("click", () =>
+  messageBox?.classList.remove("active"),
+);
+
+/* -------------------------------------------------------
+   Load Messages (Node backend)
+------------------------------------------------------- */
+
+export async function loadMessages(contactId = window.receiver_id) {
+  if (!contactId) return [];
+
+  try {
+    const res = await getJson(`/messages/thread/${contactId}`);
+    const messages = Array.isArray(res.messages) ? res.messages : [];
+
+    if (!messages.length) {
+      lastLoadedMessages = [];
+      return [];
+    }
+
+    lastLoadedMessages = messages;
+
+    const newest = messages[messages.length - 1];
+
+    if (newest.id <= lastSeenMessageId) {
+      return messages;
+    }
+
+    const newMessages = messages.filter((m) => m.id > lastSeenMessageId);
+
+    newMessages.forEach((msg) => {
+      renderMessage(msg);
+
+      if (msg.id && Array.isArray(msg.reactions)) {
+        renderReactionsForMessage(msg.id, msg.reactions);
+      }
+    });
+
+    smartScroll(true);
+    lastSeenMessageId = newest.id;
+
+    return messages;
   } catch (err) {
-    console.error("[messaging] deleteMessage failed:", err);
+    console.error("Failed to load messages", err);
+    return [];
   }
 }
 
-// ===== REACTIONS =====
-function addReactionToMessage(id, emoji) {
-  console.log("[messaging] addReaction:", id, emoji);
+/* -------------------------------------------------------
+   Image Viewer (Lightbox)
+------------------------------------------------------- */
 
-  const container = document.querySelector(
-    `[data-msg-id="${id}"] .reaction-display`
-  );
-  if (!container) {
-    console.warn("[messaging] reaction container missing");
-    return;
+const imageOverlay = document.getElementById("image-viewer-overlay");
+const imageOverlayImg = document.getElementById("image-viewer-img");
+
+let imageGallery = [];
+let currentImageIndex = 0;
+
+function buildGalleryFromMessages() {
+  return lastLoadedMessages
+    .filter((m) => m.file === 1 && (m.url || m.file_url))
+    .map((m) => m.url || m.file_url);
+}
+
+function openImageViewer(src) {
+  imageGallery = buildGalleryFromMessages();
+  currentImageIndex = imageGallery.indexOf(src);
+
+  imageOverlayImg.classList.remove("loaded");
+  imageOverlayImg.src = src;
+
+  imageOverlay.style.display = "flex";
+  requestAnimationFrame(() => {
+    imageOverlay.classList.add("visible");
+  });
+
+  imageOverlayImg.onload = () => {
+    imageOverlayImg.classList.add("loaded");
+  };
+
+  preloadNeighbors();
+}
+
+function showImageAt(index) {
+  if (index < 0 || index >= imageGallery.length) return;
+
+  currentImageIndex = index;
+
+  imageOverlayImg.classList.remove("loaded");
+  imageOverlayImg.src = imageGallery[currentImageIndex];
+
+  imageOverlayImg.onload = () => {
+    imageOverlayImg.classList.add("loaded");
+  };
+
+  preloadNeighbors();
+}
+
+function preloadNeighbors() {
+  const prev = imageGallery[currentImageIndex - 1];
+  const next = imageGallery[currentImageIndex + 1];
+
+  [prev, next].forEach((src) => {
+    if (!src) return;
+    const img = new Image();
+    img.src = src;
+  });
+}
+
+function closeImageViewer() {
+  imageOverlay.classList.remove("visible");
+
+  setTimeout(() => {
+    imageOverlay.style.display = "none";
+    imageOverlayImg.src = "";
+  }, 250);
+}
+
+imageOverlay?.addEventListener("click", (e) => {
+  if (e.target === imageOverlay) closeImageViewer();
+});
+
+document.getElementById("image-prev")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  showImageAt(currentImageIndex - 1);
+});
+
+document.getElementById("image-next")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  showImageAt(currentImageIndex + 1);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (!imageOverlay.classList.contains("visible")) return;
+
+  if (e.key === "ArrowLeft") showImageAt(currentImageIndex - 1);
+  else if (e.key === "ArrowRight") showImageAt(currentImageIndex + 1);
+  else if (e.key === "Escape") closeImageViewer();
+});
+
+let touchStartX = 0;
+
+imageOverlay?.addEventListener("touchstart", (e) => {
+  touchStartX = e.touches[0].clientX;
+});
+
+imageOverlay?.addEventListener("touchend", (e) => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+
+  if (Math.abs(dx) > 50) {
+    if (dx > 0) showImageAt(currentImageIndex - 1);
+    else showImageAt(currentImageIndex + 1);
   }
+});
 
-  let bubble = container.querySelector(`[data-emoji="${emoji}"]`);
+/* -------------------------------------------------------
+   File Message Helper
+------------------------------------------------------- */
 
-  if (bubble) {
-    const countEl = bubble.querySelector(".react-count");
-    const current = parseInt(countEl.textContent, 10) || 1;
-    countEl.textContent = current + 1;
+function appendFileContentToParagraph(p, file) {
+  const name = file.name || "file";
+  const url = file.url || null;
+  const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(name);
+
+  if (isImage && url) {
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = name;
+    img.className = "chat-inline-image";
+    img.style.maxWidth = "200px";
+    img.style.borderRadius = "8px";
+    img.style.display = "block";
+    img.style.marginTop = "6px";
+    img.style.cursor = "zoom-in";
+
+    img.onclick = () => openImageViewer(url);
+
+    const label = document.createElement("span");
+    label.textContent = name + " ";
+    label.style.fontWeight = "bold";
+
+    p.appendChild(label);
+    p.appendChild(img);
+  } else if (url) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.textContent = name;
+    link.style.marginLeft = "6px";
+    p.appendChild(link);
   } else {
-    bubble = document.createElement("span");
-    bubble.className = "reaction-bubble pop";
-    bubble.dataset.emoji = emoji;
-    bubble.innerHTML = `
-      <span class="emoji-safe">${emoji}</span>
-      <span class="react-count">1</span>
-    `;
-    container.appendChild(bubble);
-    setTimeout(() => bubble.classList.remove("pop"), 250);
+    p.appendChild(document.createTextNode(` [${name}]`));
+  }
+
+  if (file.comment) {
+    const comment = document.createElement("em");
+    comment.textContent = ` — ${file.comment}`;
+    comment.style.marginLeft = "4px";
+    p.appendChild(comment);
   }
 }
 
-function removeReactionFromMessage(id, emoji) {
-  console.log("[messaging] removeReaction:", id, emoji);
+/* -------------------------------------------------------
+   Reactions rendering
+------------------------------------------------------- */
 
+function renderReactionsForMessage(messageId, reactions) {
   const container = document.querySelector(
-    `[data-msg-id="${id}"] .reaction-display`
+    `[data-msg-id="${messageId}"] .reaction-display`,
   );
   if (!container) return;
 
-  const bubble = container.querySelector(`[data-emoji="${emoji}"]`);
-  if (!bubble) return;
+  container.innerHTML = "";
+  if (!Array.isArray(reactions) || reactions.length === 0) return;
 
-  const countEl = bubble.querySelector(".react-count");
-  const current = parseInt(countEl.textContent, 10);
+  const counts = {};
+  reactions.forEach((r) => {
+    const emoji = r.emoji;
+    if (!emoji) return;
+    counts[emoji] = (counts[emoji] || 0) + 1;
+  });
 
-  if (current > 1) {
-    countEl.textContent = current - 1;
-  } else {
-    bubble.remove();
-  }
+  Object.entries(counts).forEach(([emoji, count]) => {
+    const span = document.createElement("span");
+    span.className = "reaction-pill";
+    span.textContent = count > 1 ? `${emoji} ${count}` : emoji;
+    container.appendChild(span);
+  });
 }
 
-// ===== RENDER MESSAGE =====
-function renderMessage(msg) {
-  console.log("[messaging] renderMessage:", msg);
+/* -------------------------------------------------------
+   Render Message
+------------------------------------------------------- */
 
-  if (!messageWin) {
-    console.error("[messaging] messageWin missing");
-    return;
-  }
-
-  const isFileMessage =
-    msg.type === "file" ||
-    msg.file ||
-    /^File:/i.test(msg.message || "");
+export function renderMessage(msg) {
+  if (!messageWin) return;
 
   const div = document.createElement("div");
   div.className = msg.is_me ? "sender_msg" : "receiver_msg";
@@ -254,156 +367,472 @@ function renderMessage(msg) {
   if (msg.id != null) div.dataset.msgId = String(msg.id);
   if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
 
-  // ===== Modern wrapper =====
-  const wrapper = document.createElement("div");
-  wrapper.className = "msg-wrapper";
-
-  // ===== Name (only for received messages) =====
-  if (!msg.is_me) {
-    const nameEl = document.createElement("div");
-    nameEl.className = "msg-sender-name";
-    nameEl.textContent = msg.sender_name || "Unknown";
-    wrapper.appendChild(nameEl);
-  }
-
-  // ===== Bubble =====
   const p = document.createElement("p");
-  p.className = "msg-bubble-text";
-  wrapper.appendChild(p);
+  const strong = document.createElement("strong");
+  strong.textContent = msg.is_me ? "You" : (msg.sender_name ?? "Them");
+  p.appendChild(strong);
+  p.appendChild(document.createTextNode(": "));
 
-  // ===== File or Text =====
-  if (isFileMessage) {
-    const name =
-      msg.name ||
-      msg.filename ||
-      (msg.message || "").replace(/^File:\s*/, "");
-
-    const fileUrl = msg.url || msg.file_url || msg.data || null;
-
+  if (msg.type === "audio" && msg.url) {
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.src = msg.url;
+    p.appendChild(audio);
+  } else if (msg.file && (msg.url || msg.file_url)) {
     appendFileContentToParagraph(p, {
-      name,
-      url: fileUrl,
-      comment: msg.comment,
+      name: msg.filename || "file",
+      url: msg.url || msg.file_url,
+      comment: msg.comment || "",
     });
-
   } else {
-    p.appendChild(document.createTextNode(msg.message ?? ""));
-
-    // ===== Inline editing for your messages =====
-    if (msg.is_me && msg.id) {
-      p.ondblclick = () => {
-        console.log("[messaging] edit dblclick:", msg.id);
-
-        const original = msg.message ?? "";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = original;
-        input.className = "edit-input";
-
-        p.innerHTML = "";
-        p.appendChild(input);
-        input.focus();
-
-        input.onkeydown = async (e) => {
-          if (e.key === "Escape") {
-            p.textContent = original;
-          }
-          if (e.key === "Enter") {
-            const newText = input.value.trim();
-            if (!newText || newText === original) {
-              p.textContent = original;
-              return;
-            }
-
-            p.textContent = newText;
-
-            try {
-              const res = await apiPost("/edit", {
-                id: msg.id,
-                message: newText,
-              });
-              console.log("[messaging] edit success:", res);
-            } catch (err) {
-              console.error("[messaging] edit failed:", err);
-            }
-          }
-        };
-      };
-    }
+    p.appendChild(document.createTextNode(msg.message || ""));
   }
-const reactionBar = document.createElement("div");
-reactionBar.className = "reaction-bar";
-reactionBar.innerHTML = `
-  <span class="react-emoji">👍</span>
-  <span class="react-emoji">❤️</span>
-  <span class="react-emoji">😂</span>
-  <span class="react-emoji">😮</span>
-  <span class="react-emoji">😢</span>
-`;
 
-  // ===== Reaction bar =====
-reactionBar.addEventListener("click", (e) => {
-  const emoji = e.target.closest(".react-emoji")?.textContent;
-  if (!emoji || !msg.id) return;
+  const meta = document.createElement("small");
+  meta.textContent = msg.created_at
+    ? ` ${new Date(msg.created_at).toLocaleString()}`
+    : "";
 
-  console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
-
-  socket.emit("message:reaction", {
-    messageId: msg.id,
-    from: getMyUserId(),
-    emoji
-  });
-
-  addReactionToMessage(msg.id, emoji);
-});
-
-
-  // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
 
-  // ===== Meta (timestamp + delete) =====
-  const ts =
-    msg.created_at instanceof Date
-      ? msg.created_at
-      : new Date(msg.created_at || Date.now());
+  div.appendChild(p);
+  div.appendChild(meta);
+  div.appendChild(reactionDisplay);
 
-  const small = document.createElement("small");
-  small.textContent = ts.toLocaleString();
+  div.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    showDeleteMenu(msg, e.clientX, e.clientY);
+  });
 
-  const statusSpan = document.createElement("span");
-  statusSpan.className = "status-flags";
-
-  if (msg.id) {
-    const del = document.createElement("button");
-    del.type = "button";
-    del.className = "delete-msg";
-    del.textContent = "🗑";
-    del.addEventListener("click", () => deleteMessage(msg.id));
-    statusSpan.appendChild(del);
-  }
-
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.appendChild(small);
-  meta.appendChild(statusSpan);
-
-  // ===== Append everything in correct order =====
-  div.appendChild(wrapper);          // name + bubble
-  div.appendChild(reactionBar);      // emoji bar
-  div.appendChild(reactionDisplay);  // reaction counts
-  div.appendChild(meta);             // timestamp + delete
+  div.addEventListener("click", (e) => {
+    if (e.target.closest(".reaction-display")) return;
+    showReactionPicker(msg, div, e.clientX, e.clientY);
+  });
 
   messageWin.appendChild(div);
-
   smartScroll();
-  observeMessagesForRead();
 }
 
-// ===== FILE PREVIEW =====
-function renderPreviews(files) {
-  console.log("[messaging] renderPreviews:", files);
+/* -------------------------------------------------------
+   Delete / Hide / Restore
+------------------------------------------------------- */
 
+function deleteMessageLocal(id) {
+  const el = document.querySelector(`[data-msg-id="${id}"]`);
+  if (el) el.remove();
+
+  postJson("/messages/hide", { messageId: id });
+  showUndoDelete(id);
+}
+
+async function restoreMessage(id) {
+  try {
+    const res = await postJson("/messages/restore", { messageId: id });
+    if (res.success) {
+      loadMessages();
+    }
+  } catch (err) {
+    console.warn("Failed to restore message", err);
+  }
+}
+
+async function deleteMessageForEveryone(id) {
+  if (!id) return;
+
+  try {
+    const res = await postJson("/messages/delete", {
+      messageId: id,
+      everyone: true,
+    });
+
+    if (res.success) {
+      const el = document.querySelector(`[data-msg-id="${id}"]`);
+      if (el) el.remove();
+    } else {
+      console.warn("Delete error:", res.error);
+    }
+  } catch (err) {
+    console.warn("Delete for everyone failed", err);
+  }
+}
+
+socket.on("call:voicemail", () => {
+  showVoicemailRecordingUI();
+  startVoicemailRecorder();
+});
+
+/* -------------------------------------------------------
+   Undo Toast
+------------------------------------------------------- */
+
+function showUndoDelete(id) {
+  const toast = document.createElement("div");
+  toast.className = "undo-toast";
+  toast.textContent = "Message hidden";
+
+  const undoBtn = document.createElement("button");
+  undoBtn.textContent = "Undo";
+
+  let timer = null;
+
+  undoBtn.onclick = () => {
+    restoreMessage(id);
+    toast.remove();
+    if (timer) clearTimeout(timer);
+  };
+
+  toast.appendChild(undoBtn);
+  document.body.appendChild(toast);
+
+  timer = setTimeout(() => {
+    toast.remove();
+  }, 5000);
+}
+
+/* -------------------------------------------------------
+   Hidden Messages Panel
+------------------------------------------------------- */
+
+const manageHiddenBtn = document.getElementById("manageHiddenBtn");
+if (manageHiddenBtn) {
+  manageHiddenBtn.onclick = loadHiddenMessages;
+}
+
+async function loadHiddenMessages() {
+  const res = await getJson("/messages/hidden");
+  const list = Array.isArray(res) ? res : [];
+
+  const container = document.getElementById("hiddenList");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  list.forEach((msg) => {
+    const div = document.createElement("div");
+    div.className = "hidden-item";
+
+    const p = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = msg.sender_name;
+    p.appendChild(strong);
+    p.appendChild(document.createTextNode(`: ${msg.message}`));
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Restore";
+    btn.addEventListener("click", () => restoreMessage(msg.id));
+
+    div.appendChild(p);
+    div.appendChild(btn);
+    container.appendChild(div);
+  });
+
+  const panel = document.getElementById("hiddenMessagesPanel");
+  if (panel) panel.style.display = "block";
+}
+
+/* -------------------------------------------------------
+   Delete Menu
+------------------------------------------------------- */
+
+function showDeleteMenu(msg, x, y) {
+  const existing = document.querySelector(".delete-menu");
+  if (existing) existing.remove();
+
+  const menu = document.createElement("div");
+  menu.className = "delete-menu";
+
+  const delMe = document.createElement("button");
+  delMe.textContent = "Delete for Me";
+  delMe.onclick = () => {
+    deleteMessageLocal(msg.id);
+    menu.remove();
+  };
+  menu.appendChild(delMe);
+
+  if (msg.is_me) {
+    const delAll = document.createElement("button");
+    delAll.textContent = "Delete for Everyone";
+    delAll.onclick = () => {
+      deleteMessageForEveryone(msg.id);
+      menu.remove();
+    };
+    menu.appendChild(delAll);
+  }
+
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancel";
+  cancel.onclick = () => menu.remove();
+  menu.appendChild(cancel);
+
+  document.body.appendChild(menu);
+
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener(
+      "click",
+      function close(e) {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener("click", close);
+        }
+      },
+      { once: true },
+    );
+  }, 10);
+}
+
+/* -------------------------------------------------------
+   Typing Indicator
+------------------------------------------------------- */
+
+const typingIndicator = document.querySelector(".typing-indicator");
+let typingStopTimer = null;
+let lastTypingTarget = null;
+
+function getTargetId() {
+  return receiver_id;
+}
+
+msgInput?.addEventListener("input", () => {
+  const targetId = getTargetId();
+  if (!targetId) return;
+
+  if (lastTypingTarget !== targetId) {
+    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
+    lastTypingTarget = targetId;
+  }
+
+  socket.emit("typing:start", { from: getMyUserId(), to: targetId });
+
+  if (typingStopTimer) clearTimeout(typingStopTimer);
+
+  typingStopTimer = setTimeout(() => {
+    socket.emit("typing:stop", { from: getMyUserId(), to: targetId });
+  }, 900);
+});
+
+socket.on("typing:start", ({ from, getMyFullname, avatar }) => {
+  const partner = getTargetId();
+  if (!partner) return;
+
+  if (String(from) === String(partner)) {
+    const name = getMyFullname || userNames[from] || `User ${from}`;
+
+    const avatarEl = typingIndicator.querySelector(".typing-avatar");
+    const bubble = typingIndicator.querySelector(".typing-bubble");
+
+    bubble.dataset.name = name;
+
+    if (avatar) {
+      avatarEl.src = avatar;
+      avatarEl.style.display = "block";
+    } else {
+      avatarEl.style.display = "none";
+    }
+
+    typingIndicator.classList.add("active");
+  }
+});
+
+socket.on("typing:stop", ({ from }) => {
+  const partner = getTargetId();
+  if (!partner) return;
+
+  if (String(from) === String(partner)) {
+    typingIndicator.classList.remove("active");
+  }
+});
+
+/* -------------------------------------------------------
+   Recording Indicator + Audio Recording + Waveform + Timer
+------------------------------------------------------- */
+
+const recordingIndicator = document.querySelector(".recording-indicator");
+const micBtn = document.getElementById("micBtn");
+
+let isRecording = false;
+let mediaRecorder;
+let audioChunks = [];
+let audioStream;
+let analyser;
+let dataArray;
+let animationId;
+
+let cancelRecording = false;
+let startX = 0;
+
+const waveformCanvas = document.getElementById("waveformCanvas");
+const ctx = waveformCanvas?.getContext("2d");
+
+const recordTimer = document.getElementById("recordTimer");
+let timerInterval;
+let secondsElapsed = 0;
+
+const slideCancel = document.getElementById("slideCancel");
+
+/* -------------------------------------------------------
+   Delivered / Read / Deleted
+------------------------------------------------------- */
+
+function updateStatus(messageId, text) {
+  const el = document.querySelector(`[data-msg-id="${messageId}"] small`);
+  if (!el) return;
+
+  if (!el.textContent.includes(text)) {
+    el.textContent += ` ${text}`;
+  }
+}
+
+socket.on("message:delivered", ({ messageId }) => {
+  if (messageId) updateStatus(messageId, "✓ delivered");
+});
+
+socket.on("message:read", ({ messageId }) => {
+  if (messageId) updateStatus(messageId, "✓ read");
+});
+
+socket.on("message:deleted", ({ messageId }) => {
+  const msgEl = document.querySelector(`[data-msg-id="${messageId}"]`);
+  if (!msgEl) return;
+
+  const p = msgEl.querySelector("p");
+  if (p) p.textContent = "⚠️ Message deleted";
+
+  msgEl.classList.add("deleted-message");
+});
+
+/* -------------------------------------------------------
+   Presence
+------------------------------------------------------- */
+
+socket.on("statusUpdate", ({ contact_id, online, away }) => {
+  const el = document.querySelector(
+    `[data-contact-id="${contact_id}"] .status`,
+  );
+  if (!el) return;
+
+  const status = away ? "Away" : online ? "Online" : "Offline";
+  el.textContent = status;
+  el.className = `status ${status.toLowerCase()}`;
+});
+
+/* -------------------------------------------------------
+   Read Observer
+------------------------------------------------------- */
+
+function createReadObserver() {
+  if (!messageWin) return null;
+
+  return new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+
+        const msgEl = entry.target;
+        const msgId = msgEl.dataset.msgId;
+        const senderId = msgEl.dataset.senderId;
+
+        if (msgId && senderId && senderId !== String(getMyUserId())) {
+          postJson("/messages/mark-read", {
+            messageId: msgId,
+          });
+
+          observer.unobserve(msgEl);
+          msgEl.dataset.observing = "0";
+        }
+      });
+    },
+    { root: messageWin, threshold: 0.75 },
+  );
+}
+
+function observeMessagesForRead() {
+  if (!messageWin) return;
+
+  if (!readObserver) readObserver = createReadObserver();
+  if (!readObserver) return;
+
+  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
+    if (!el.dataset.observing) {
+      readObserver.observe(el);
+      el.dataset.observing = "1";
+    }
+  });
+}
+
+/* -------------------------------------------------------
+   Activity Tracking
+------------------------------------------------------- */
+
+let activityTimeout = null;
+
+["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
+  document.addEventListener(evt, () => {
+    clearTimeout(activityTimeout);
+
+    activityTimeout = setTimeout(() => {
+      socket.emit("activity");
+    }, 600);
+
+    observeMessagesForRead();
+  });
+});
+
+/* -------------------------------------------------------
+   Polling
+------------------------------------------------------- */
+
+let polling = false;
+
+setInterval(async () => {
+  if (!receiver_id || polling) return;
+
+  polling = true;
+  try {
+    await loadMessages();
+  } catch (err) {
+    showError("Poll failed");
+  }
+  polling = false;
+}, 8000);
+
+/* -------------------------------------------------------
+   Drag & Drop Upload
+------------------------------------------------------- */
+
+if (messageWin) {
+  messageWin.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    messageWin.classList.add("drag-over");
+  });
+
+  messageWin.addEventListener("dragleave", (e) => {
+    if (e.target === messageWin) {
+      messageWin.classList.remove("drag-over");
+    }
+  });
+
+  messageWin.addEventListener("drop", (e) => {
+    e.preventDefault();
+    messageWin.classList.remove("drag-over");
+
+    const dt = new DataTransfer();
+    [...e.dataTransfer.files].forEach((f) => dt.items.add(f));
+    attachmentInput.files = dt.files;
+
+    renderPreviews([...dt.files]);
+  });
+}
+
+/* -------------------------------------------------------
+   File Previews
+------------------------------------------------------- */
+
+function renderPreviews(files) {
   if (!previewEl) return;
   previewEl.innerHTML = "";
 
@@ -434,8 +863,6 @@ function renderPreviews(files) {
     removeBtn.textContent = "✖";
     removeBtn.className = "remove-preview";
     removeBtn.onclick = () => {
-      console.log("[messaging] removePreview:", file.name);
-
       const current = Array.from(attachmentInput.files || []);
       const newFiles = current.filter((f) => f !== file);
       const dt = new DataTransfer();
@@ -443,658 +870,504 @@ function renderPreviews(files) {
       attachmentInput.files = dt.files;
       renderPreviews(newFiles);
     };
-    wrapper.appendChild(removeBtn);
 
+    wrapper.appendChild(removeBtn);
     previewEl.appendChild(wrapper);
   });
 }
 
 attachmentBtn?.addEventListener("click", () => {
-  console.log("[messaging] attachmentBtn clicked");
   attachmentInput?.click();
 });
 
 attachmentInput?.addEventListener("change", () => {
-  console.log("[messaging] attachmentInput changed");
   const files = Array.from(attachmentInput.files || []);
   renderPreviews(files);
 });
 
-// ===== DRAG & DROP =====
-if (messageWin) {
-  messageWin.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    messageWin.classList.add("drag-over");
-  });
+/* -------------------------------------------------------
+   File Upload (HTTP)
+------------------------------------------------------- */
 
-  messageWin.addEventListener("dragleave", (e) => {
-    if (e.target === messageWin) {
-      messageWin.classList.remove("drag-over");
+async function sendFileViaHttp(file, targetId) {
+  const fd = new FormData();
+  fd.append("attachment", file);
+  fd.append("receiver_id", targetId || "");
+  fd.append("sender_id", getMyUserId());
+
+  try {
+    const res = await fetch("/messages/upload", {
+      method: "POST",
+      body: fd,
+      credentials: "same-origin",
+    });
+
+    const data = await res.json();
+    if (data?.success && data.url) {
+      const msgRes = await postJson("/messages/send", {
+        sender_id: getMyUserId(),
+        receiver_id: targetId,
+        message: `File: ${file.name}`,
+        transport: "http",
+        file: 1,
+        filename: file.name,
+        file_url: data.url,
+      });
+
+      const msgId = msgRes?.id || null;
+
+      renderMessage({
+        id: msgId,
+        is_me: true,
+        type: "file",
+        filename: msgRes?.filename || file.name,
+        url: msgRes?.file_url || data.url,
+        comment: msgRes?.comment || "",
+        created_at: msgRes?.created_at || new Date(),
+        sender_id: getMyUserId(),
+        sender_name: "You",
+        file: 1,
+      });
+    } else {
+      showError("Upload failed");
     }
-  });
-
-  messageWin.addEventListener("drop", (e) => {
-    e.preventDefault();
-    messageWin.classList.remove("drag-over");
-
-    const dt = new DataTransfer();
-    [...e.dataTransfer.files].forEach((f) => dt.items.add(f));
-    attachmentInput.files = dt.files;
-
-    renderPreviews([...dt.files]);
-  });
+  } catch (err) {
+    console.error("Upload HTTP file failed", err);
+    showError("Upload failed");
+  }
 }
 
-// ===== SEND MESSAGES =====
+/* -------------------------------------------------------
+   Sending Messages (text + files)
+------------------------------------------------------- */
+
 if (msgForm) {
   msgForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    console.log("[messaging] msgForm submit");
 
     const message = (msgInput?.value ?? "").trim();
     const files = Array.from(attachmentInput?.files || []);
 
-    const dc = getDataChannel();
-    const peerId = getPeerId();
-    const targetId = peerId || receiver_id;
-    const myUserId = getMyUserId();
+    const targetId = receiver_id;
 
-    if (!targetId && (!message && !files.length)) {
+    if (!targetId && !message && !files.length) {
       showError("No receiver selected");
       return;
     }
 
-    // FILES
     if (files.length > 0) {
-      console.log("[messaging] sending files:", files);
-
       for (const file of files) {
-        if (isChannelOpen(dc)) {
-          console.log("[messaging] sending file via WebRTC:", file.name);
-
-          const reader = new FileReader();
-          reader.onload = async () => {
-            const payload = {
-              type: "file",
-              name: file.name,
-              mime: file.type,
-              size: file.size,
-              data: reader.result,
-              sender_name: "You",
-            };
-            dc.send(JSON.stringify(payload));
-
-            try {
-              const res = await apiPost("/send", {
-                receiver_id: targetId,
-                message: `File: ${file.name}`,
-                transport: "webrtc",
-                file: 1,
-                filename: file.name,
-                file_url: null,
-              });
-              console.log("[messaging] persist P2P file:", res);
-            } catch (err) {
-              console.error("[messaging] persist P2P file failed:", err);
-            }
-
-            renderMessage({
-              is_me: true,
-              type: "file",
-              name: file.name,
-              data: reader.result,
-              created_at: new Date(),
-              sender_id: myUserId,
-              sender_name: "You",
-              file: 1,
-            });
-          };
-          reader.readAsDataURL(file);
-        } else {
-          console.log("[messaging] uploading file via HTTP:", file.name);
-
-          const fd = new FormData();
-          fd.append("audio", file);
-
-          try {
-            const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
-              method: "POST",
-              body: fd,
-              credentials: "include",
-            });
-
-            const uploadData = await uploadRes.json();
-            console.log("[messaging] upload response:", uploadData);
-
-            if (uploadData?.success && uploadData.url) {
-              const msgRes = await apiPost("/send", {
-                receiver_id: targetId,
-                message: `File: ${file.name}`,
-                transport: "http",
-                file: 1,
-                filename: file.name,
-                file_url: uploadData.url,
-              });
-
-              console.log("[messaging] send file response:", msgRes);
-
-              renderMessage({
-                id: msgRes.id,
-                is_me: true,
-                type: "file",
-                filename: msgRes.filename || file.name,
-                url: msgRes.url || uploadData.url,
-                comment: msgRes.comment || "",
-                created_at: msgRes.created_at,
-                sender_id: myUserId,
-                sender_name: "You",
-                file: 1,
-              });
-            } else {
-              showError("Upload failed");
-            }
-          } catch (err) {
-            console.error("[messaging] upload HTTP failed:", err);
-            showError("Upload failed");
-          }
-        }
+        await sendFileViaHttp(file, targetId);
       }
 
       attachmentInput.value = "";
       if (previewEl) previewEl.innerHTML = "";
     }
 
-    // TEXT
     if (message && targetId) {
-      console.log("[messaging] sending text:", message);
-
-      if (isChannelOpen(dc)) {
-        dc.send(message);
-
-        renderMessage({
-          is_me: true,
-          message,
-          created_at: new Date(),
-          sender_id: myUserId,
-          sender_name: "You",
-        });
-
-        apiPost("/send", {
+      try {
+        const data = await postJson("/messages/send", {
+          sender_id: getMyUserId(),
           receiver_id: targetId,
           message,
-          transport: "webrtc",
-        })
-          .then((res) => {
-            console.log("[messaging] P2P text persisted:", res);
-          })
-          .catch((err) => {
-            console.error("[messaging] P2P text persist failed:", err);
-          });
-      } else {
-        console.log("[messaging] sending text via HTTP:", message);
+        });
 
-        try {
-          const data = await apiPost("/send", {
-            receiver_id: targetId,
-            message,
-          });
-          console.log("[messaging] HTTP text send response:", data);
+        const success =
+          data && (data.success === true || typeof data.id !== "undefined");
 
-          if (data?.success) {
-            renderMessage({
-              id: data.id,
-              is_me: true,
-              message: data.message,
-              created_at: data.created_at,
-              sender_id: myUserId,
-              sender_name: "You",
-            });
-          } else {
-            console.error("[messaging] HTTP text send failed:", data);
-            showError(data?.error || "Failed to send message");
-          }
-        } catch (err) {
-          console.error("[messaging] HTTP text send exception:", err);
-          showError("Failed to send message");
+        if (success) {
+          renderMessage({
+            id: data.id,
+            is_me: true,
+            message: data.message,
+            created_at: data.created_at,
+            sender_id: getMyUserId(),
+            sender_name: "You",
+          });
+        } else {
+          showError(data?.error || "Failed to send message");
         }
+      } catch (err) {
+        console.error("Send message failed", err);
+        showError("Failed to send message");
       }
     }
 
     if (msgInput) msgInput.value = "";
   });
 } else {
-  console.warn("[messaging] msgForm not found — submit handler not attached");
+  console.warn("msgForm not found — submit handler not attached");
 }
 
-// ===== Receiving messages via DataChannel (text + files) =====
-export function setupDataChannel(channel) {
-  console.log("[messaging] setupDataChannel called");
+/* -------------------------------------------------------
+   Voice Messages: Recording + Upload + Playback
+------------------------------------------------------- */
 
-  if (!channel) {
-    console.error("[messaging] setupDataChannel: no channel");
+function startTimer() {
+  if (!recordTimer) return;
+
+  secondsElapsed = 0;
+  recordTimer.style.display = "inline-block";
+  recordTimer.textContent = "00:00";
+
+  timerInterval = setInterval(() => {
+    secondsElapsed++;
+    const m = String(Math.floor(secondsElapsed / 60)).padStart(2, "0");
+    const s = String(secondsElapsed % 60).padStart(2, "0");
+    recordTimer.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  if (recordTimer) recordTimer.style.display = "none";
+}
+
+function startWaveform(stream) {
+  if (!waveformCanvas || !ctx) return;
+
+  waveformCanvas.style.display = "inline-block";
+
+  const audioCtx = new AudioContext();
+  const source = audioCtx.createMediaStreamSource(stream);
+
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+  source.connect(analyser);
+
+  function draw() {
+    animationId = requestAnimationFrame(draw);
+
+    analyser.getByteFrequencyData(dataArray);
+
+    ctx.clearRect(0, 0, waveformCanvas.width, waveformCanvas.height);
+
+    const barWidth = 3;
+    let x = 0;
+
+    for (let i = 0; i < dataArray.length; i += 4) {
+      const barHeight = dataArray[i] / 3;
+      const volume = dataArray[i] / 255;
+
+      ctx.fillStyle =
+        volume < 0.3 ? "#ffb3b3" : volume < 0.6 ? "#ff4d4d" : "#ff9900";
+
+      ctx.fillRect(x, waveformCanvas.height - barHeight, barWidth, barHeight);
+
+      x += barWidth + 2;
+    }
+  }
+
+  draw();
+}
+
+function stopWaveform() {
+  if (!waveformCanvas) return;
+  waveformCanvas.style.display = "none";
+  if (animationId) cancelAnimationFrame(animationId);
+  animationId = null;
+}
+
+async function startRecording() {
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    console.error("Microphone error:", err);
+    showError?.("Microphone access denied");
     return;
   }
 
-  if (typeof window !== "undefined") window.dataChannel = channel;
+  try {
+    mediaRecorder = new MediaRecorder(audioStream);
+  } catch (err) {
+    console.error("MediaRecorder init failed:", err);
+    showError?.("Audio recording not supported");
+    return;
+  }
 
-  channel.onmessage = async (e) => {
-    console.log("[messaging] DataChannel message:", e.data);
+  audioChunks = [];
 
-    let payload = e.data;
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data?.size > 0) audioChunks.push(e.data);
+  };
 
-    if (typeof e.data === "string") {
-      try {
-        payload = JSON.parse(e.data);
-      } catch {
-        console.warn("[messaging] DataChannel payload not JSON");
-        payload = e.data;
-      }
-    }
+  mediaRecorder.onstop = () => {
+    stopWaveform();
+    stopTimer();
 
-    playNotification();
-    const myUserId = getMyUserId();
-
-    // FILE
-    if (payload && payload.type === "file") {
-      console.log("[messaging] Incoming P2P file:", payload);
-
-      const unified = {
-        id: null,
-        type: "file",
-        name: payload.name,
-        url: payload.url || null,
-        data: payload.data || null,
-        comment: payload.comment || "",
-        sender_id: getPeerId(),
-        sender_name: payload.sender_name || "Peer",
-        created_at: new Date(),
-        is_me: false,
-        file: 1,
-      };
-
-      renderMessage(unified);
-
-      socket.emit("message:delivered", {
-        from: getPeerId() || "",
-        to: myUserId,
-        messageId: null,
-      });
-
-      try {
-        const res = await apiPost("/send", {
-          sender_id: getPeerId() || "",
-          receiver_id: myUserId || "",
-          message: `File: ${payload.name}`,
-          transport: "webrtc",
-          file: 1,
-          filename: payload.name,
-          file_url: null,
-          comment: payload.comment || "",
-        });
-
-        console.log("[messaging] Persist incoming P2P file:", res);
-      } catch (err) {
-        console.error("[messaging] Persist incoming P2P file failed:", err);
-      }
-
+    if (cancelRecording) {
+      cleanupStream();
       return;
     }
 
-    // TEXT
-    const text =
-      typeof payload === "string" ? payload : safeJSON(payload);
+    if (!audioChunks.length) {
+      cleanupStream();
+      return;
+    }
 
-    console.log("[messaging] Incoming P2P text:", text);
-
-    renderMessage({
-      is_me: false,
-      message: text,
-      created_at: new Date(),
-      sender_name: "Peer",
-    });
-
-    socket.emit("message:delivered", {
-      from: getPeerId() || "",
-      to: myUserId,
-      messageId: null,
-    });
-
-    observeMessagesForRead();
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    cleanupStream();
+    sendAudioMessage(audioBlob);
   };
+
+  mediaRecorder.start();
+  startWaveform(audioStream);
+  startTimer();
 }
 
-// ===== Normalization =====
-function normalizeMessage(msg) {
-  const myUserId = getMyUserId();
-
-  return {
-    ...msg,
-    is_me: msg.sender_id === myUserId,
-    sender_name:
-      userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
-    sender_avatar:
-      userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
-  };
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  } else {
+    stopWaveform();
+    stopTimer();
+  }
 }
 
-// ===== Loading messages =====
-export async function loadMessages() {
-  console.log("[messaging] loadMessages called for receiver:", receiver_id);
-  console.log("userNames cache right now:", userNames);
+function cleanupStream() {
+  audioStream?.getTracks()?.forEach((t) => t.stop());
+  audioStream = null;
+  mediaRecorder = null;
+}
 
-  if (!receiver_id) {
-    console.warn("[messaging] loadMessages: no receiver_id");
-    return [];
+/* -------------------------------------------------------
+   PRESS + HOLD + SLIDE CANCEL
+------------------------------------------------------- */
+
+function handleRecordStart(e) {
+  const targetId = getTargetId?.() ?? receiver_id;
+  if (!targetId || !getMyUserId()) return;
+
+  cancelRecording = false;
+  isRecording = true;
+
+  startX = e.touches ? e.touches[0].clientX : e.clientX;
+
+  if (slideCancel) {
+    slideCancel.style.display = "inline-block";
+    slideCancel.style.opacity = "1";
   }
 
-  try {
-    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
-    console.log("[messaging] loadMessages raw:", res);
+  startRecording();
 
-    if (!res || !res.success || !Array.isArray(res.messages)) {
-      console.error("[messaging] loadMessages: invalid response format");
-      return [];
-    }
+  socket.emit("recording:start", {
+    from: getMyUserId(),
+    to: targetId,
+  });
+}
 
-    let messages = res.messages.map(normalizeMessage);
-    lastLoadedMessages = messages;
-    const myUserId = getMyUserId();
+function handleRecordStop() {
+  const targetId = getTargetId?.() ?? receiver_id;
+  if (!targetId || !getMyUserId()) return;
+  if (!isRecording) return;
 
-    if (messageWin) {
-      messages.forEach((msg) => {
-        const msgId = msg.id != null ? String(msg.id) : null;
+  isRecording = false;
 
-        const exists = msgId
-          ? document.querySelector(`[data-msg-id="${msgId}"]`)
-          : null;
+  if (slideCancel) {
+    slideCancel.style.display = "none";
+    slideCancel.style.opacity = "1";
+  }
 
-        if (!exists) {
-          renderMessage(msg);
+  stopRecording();
 
-          if (!msg.is_me && msg.id !== undefined) {
-            socket.emit("message:delivered", {
-              from: msg.sender_id,
-              to: myUserId,
-              messageId: msg.id,
-            });
-          }
-        }
+  socket.emit("recording:stop", {
+    from: getMyUserId(),
+    to: targetId,
+  });
+}
 
-        const display = document.querySelector(
-          `[data-msg-id="${msg.id}"] .reaction-display`
-        );
-        if (display) display.innerHTML = "";
+function handleSlideCancel(e) {
+  if (!isRecording || !slideCancel) return;
 
-        if (msg.reactions) {
-          const counts = {};
-          msg.reactions.forEach((emoji) => {
-            counts[emoji] = (counts[emoji] || 0) + 1;
-          });
+  const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+  const slidFarEnough = startX - currentX > 80;
 
-          Object.entries(counts).forEach(([emoji, count]) => {
-            for (let i = 0; i < count; i++) {
-              addReactionToMessage(msg.id, emoji);
-            }
-          });
-        }
-      });
-    }
+  cancelRecording = slidFarEnough;
+  slideCancel.style.opacity = slidFarEnough ? "0.3" : "1";
+}
 
-    const last = messages[messages.length - 1];
-    if (last && typeof last.id === "number" && last.id > lastSeenMessageId && !last.is_me) {
-      playNotification();
-      const bell = document.querySelector(".notification-bell");
-      if (bell) {
-        bell.classList.add("active");
-        setTimeout(() => bell.classList.remove("active"), 1000);
+// Mouse
+micBtn?.addEventListener("mousedown", handleRecordStart);
+micBtn?.addEventListener("mousemove", handleSlideCancel);
+micBtn?.addEventListener("mouseup", handleRecordStop);
+micBtn?.addEventListener("mouseleave", handleRecordStop);
+
+// Touch
+micBtn?.addEventListener("touchstart", handleRecordStart);
+micBtn?.addEventListener("touchmove", handleSlideCancel);
+micBtn?.addEventListener("touchend", handleRecordStop);
+micBtn?.addEventListener("touchcancel", handleRecordStop);
+
+/* -------------------------------------------------------
+   RECORDING INDICATOR (RECEIVER)
+------------------------------------------------------- */
+
+socket.on("recording:start", ({ from }) => {
+  const partner = getTargetId?.() ?? receiver_id;
+  if (String(from) === String(partner)) {
+    recordingIndicator?.classList.add("active");
+  }
+});
+
+socket.on("recording:stop", ({ from }) => {
+  const partner = getTargetId?.() ?? receiver_id;
+  if (String(from) === String(partner)) {
+    recordingIndicator?.classList.remove("active");
+  }
+});
+
+/* -------------------------------------------------------
+   UPLOAD + SEND AUDIO MESSAGE
+------------------------------------------------------- */
+
+async function sendAudioMessage(blob) {
+  const targetId = getTargetId?.() ?? receiver_id;
+
+  if (!targetId || !getMyUserId()) {
+    showError?.("No recipient selected");
+    return;
+  }
+
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+
+    formData.append("audio", blob, "audio.webm");
+    formData.append("from", getMyUserId());
+    formData.append("to", targetId);
+
+    const progressBar = document.createElement("div");
+    progressBar.className = "upload-progress";
+    progressBar.textContent = "Uploading… 0%";
+    messageWin?.appendChild(progressBar);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        progressBar.textContent = `Uploading… ${percent}%`;
       }
-    }
+    };
 
-    if (last && typeof last.id === "number") {
-      lastSeenMessageId = last.id;
-    }
+    xhr.onload = () => {
+      progressBar.remove();
 
-    observeMessagesForRead();
-    return messages;
+      let result = {};
+      try {
+        result = JSON.parse(xhr.responseText || "{}");
+      } catch (err) {
+        console.error("audio JSON parse error:", err, xhr.responseText);
+      }
 
-  } catch (err) {
-    console.error("[messaging] loadMessages failed:", err);
-    return [];
-  }
-}
+      resolve(result);
+    };
 
-// ===== Typing indicators =====
-const typingIndicator = $(".typing-indicator");
-let typingStopTimer = null;
+    xhr.onerror = () => {
+      progressBar.remove();
+      resolve({ success: false, error: "Network error" });
+    };
 
-msgInput?.addEventListener("input", () => {
-  const myUserId = getMyUserId();
-  const targetId = getPeerId() || receiver_id;
-  if (!targetId) return;
-
-  socket.emit("typing:start", { from: myUserId, to: targetId });
-
-  if (typingStopTimer) clearTimeout(typingStopTimer);
-  typingStopTimer = setTimeout(() => {
-    socket.emit("typing:stop", { from: myUserId, to: targetId });
-  }, 800);
-});
-
-socket.on("typing:start", ({ from, fullname }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-
-  if (String(from) === String(currentChatPartner)) {
-    const name =
-      fullname || userNames[String(from)] || `User ${from}`;
-    typingIndicator.classList.add("active");
-    typingIndicator.textContent = `${name} is typing...`;
-  }
-});
-
-socket.on("typing:stop", ({ from }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-
-  if (String(from) === String(currentChatPartner)) {
-    typingIndicator.classList.remove("active");
-    typingIndicator.textContent = "";
-  }
-});
-
-// ===== Read receipts =====
-socket.on("message:delivered", ({ messageId }) => {
-  if (!messageId) return;
-
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ delivered")) {
-    el.textContent += " ✓ delivered";
-  }
-});
-
-socket.on("message:read", ({ messageId }) => {
-  if (!messageId) return;
-
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ read")) {
-    el.textContent += " ✓ read";
-  }
-});
-
-// ===== Presence updates =====
-socket.on("statusUpdate", ({ contact_id, online, away }) => {
-  const statusText = away ? "Away" : online ? "Online" : "Offline";
-  console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
-
-  const el = document.querySelector(
-    `[data-contact-id="${contact_id}"] .status`
-  );
-  if (el) {
-    el.textContent = statusText;
-    el.className = `status ${statusText.toLowerCase()}`;
-  }
-});
-
-// ===== Read observer =====
-function createReadObserver() {
-  if (!messageWin) return null;
-
-  return new IntersectionObserver(
-    (entries, observer) => {
-      const myUserId = getMyUserId();
-
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-
-        const msgEl = entry.target;
-        const msgId = msgEl.dataset.msgId;
-        const senderId = msgEl.dataset.senderId;
-
-        if (msgId && senderId && senderId !== String(myUserId)) {
-          socket.emit("message:read", {
-            from: senderId,
-            to: myUserId,
-            messageId: msgId,
-          });
-
-          observer.unobserve(msgEl);
-          delete msgEl.dataset.observing;
-        }
+    xhr.open("POST", "/messages/audio");
+    xhr.send(formData);
+  }).then((result) => {
+    if (result?.success && result.url) {
+      socket.emit("message:audio", {
+        from: getMyUserId(),
+        to: targetId,
+        url: result.url,
       });
-    },
-    { root: messageWin, threshold: 0.8 }
-  );
-}
-
-function observeMessagesForRead() {
-  if (!messageWin) return;
-
-  if (!readObserver) {
-    readObserver = createReadObserver();
-    if (!readObserver) return;
-  }
-
-  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
-    if (!el.dataset.observing) {
-      readObserver.observe(el);
-      el.dataset.observing = "1";
+    } else {
+      console.error("Audio upload failed:", result);
+      showError?.("Audio upload failed");
     }
   });
 }
 
-// ===== Activity tracking =====
-let activityTimeout;
-["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
-  document.addEventListener(evt, () => {
-    clearTimeout(activityTimeout);
-    activityTimeout = setTimeout(() => {
-      if (socket && socket.connected) {
-        socket.emit("activity");
+/* -------------------------------------------------------
+   RENDER AUDIO MESSAGE (socket)
+------------------------------------------------------- */
+
+socket.on("message:audio", ({ id, from, url }) => {
+  if (!url) return;
+
+  const isMine = String(from) === String(getMyUserId());
+
+  const msg = {
+    id: id ?? null,
+    sender_id: from,
+    receiver_id: getTargetId?.() ?? receiver_id,
+    sender_name: isMine ? "You" : null,
+    receiver_name: null,
+    message: "",
+    transport: "socket",
+    file: 1,
+    filename: url.split("/").pop(),
+    url: url,
+    comment: "",
+    created_at: new Date().toISOString(),
+    is_read: isMine ? 1 : 0,
+    is_me: isMine,
+    type: "audio",
+    reactions: [],
+  };
+
+  renderMessage(msg);
+});
+
+/* -------------------------------------------------------
+   Reaction Picker (simple)
+------------------------------------------------------- */
+
+function showReactionPicker(msg, msgEl, x, y) {
+  const existing = document.querySelector(".reaction-picker");
+  if (existing) existing.remove();
+
+  const picker = document.createElement("div");
+  picker.className = "reaction-picker";
+
+  const emojis = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+
+  emojis.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = emoji;
+    btn.onclick = async () => {
+      try {
+        const res = await postJson("/messages/react", {
+          messageId: msg.id,
+          emoji,
+        });
+        if (Array.isArray(res.reactions)) {
+          renderReactionsForMessage(msg.id, res.reactions);
+        }
+      } catch (err) {
+        console.error("React failed", err);
       }
-    }, 750);
-
-    observeMessagesForRead();
+      picker.remove();
+    };
+    picker.appendChild(btn);
   });
-});
 
-// ===== Polling =====
-setInterval(() => {
-  if (receiver_id) {
-    loadMessages().catch((err) =>
-      console.error("[messaging] Poll failed:", err)
+  document.body.appendChild(picker);
+  picker.style.left = x + "px";
+  picker.style.top = y + "px";
+
+  setTimeout(() => {
+    document.addEventListener(
+      "click",
+      function close(e) {
+        if (!picker.contains(e.target)) {
+          picker.remove();
+          document.removeEventListener("click", close);
+        }
+      },
+      { once: true },
     );
-  }
-}, 8000);
+  }, 10);
+}
 
-// -------------------------------------------------------
-// ⭐ COMPOSER UI CONTROLS
-// -------------------------------------------------------
-
-const plusBtn = document.getElementById("plusBtn");
-const bottomSheet = document.getElementById("bottomSheet");
-const sheetEmoji = document.getElementById("sheetEmoji");
-const sheetGif = document.getElementById("sheetGif");
-const sheetFile = document.getElementById("sheetFile");
-const sheetAudio = document.getElementById("sheetAudio");
-const emojiPicker = document.getElementById("emojiPicker");
-const gifPicker = document.getElementById("gifPicker");
-const gifSearch = document.getElementById("gifSearch");
-const gifResults = document.getElementById("gifResults");
-const micBtn = document.getElementById("micBtn");
-
-// ===== Toggle bottom sheet =====
-plusBtn?.addEventListener("click", () => {
-  bottomSheet.classList.toggle("active");
-});
-
-// ===== Emoji Picker =====
-sheetEmoji?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  emojiPicker.classList.toggle("active");
-});
-
-emojiPicker?.addEventListener("emoji-click", (e) => {
-  msgInput.textContent += e.detail.unicode;
-  emojiPicker.classList.remove("active");
-});
-
-// ===== GIF Picker =====
-sheetGif?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  gifPicker.classList.toggle("hidden");
-  gifSearch.focus();
-});
-
-// Simple GIF search using Tenor API
-gifSearch?.addEventListener("input", async () => {
-  const q = gifSearch.value.trim();
-  if (!q) return;
-
-  gifResults.innerHTML = "Searching…";
-
-  try {
-    const res = await fetch(
-      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&limit=20`
-    );
-    const data = await res.json();
-
-    gifResults.innerHTML = "";
-
-    data.results.forEach((gif) => {
-      const img = document.createElement("img");
-      img.src = gif.media_formats?.tinygif?.url;
-      img.className = "gif-thumb";
-      img.onclick = () => {
-        msgInput.textContent += gif.media_formats?.tinygif?.url;
-        gifPicker.classList.add("hidden");
-      };
-      gifResults.appendChild(img);
-    });
-  } catch (err) {
-    gifResults.innerHTML = "Error loading GIFs";
-  }
-});
-
-// ===== File Picker =====
-sheetFile?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  attachmentInput.click();
-});
-
-// ===== Audio Recording (placeholder) =====
-sheetAudio?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  console.log("[composer] Voice message coming soon");
-});
-
-// ===== Mic Button (same as sheetAudio for now) =====
-micBtn?.addEventListener("click", () => {
-  console.log("[composer] Mic button clicked");
-});
 
 
 
