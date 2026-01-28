@@ -41,8 +41,8 @@ export default class WebRTCController {
     this._initDraggableRemote();
     this._bindSwapBehavior();
   }
-const ringtone = getRingtone();
-const ringback = getRingback();
+
+ 
 
   /* ---------------------------------------------------
      Media elements wiring
@@ -141,7 +141,7 @@ const ringback = getRingback();
       audioOnly,
       fromName: getMyFullname()
     });
-
+const ringback = getRingback();
     ringback?.play().catch(() => {});
   }
 
@@ -174,7 +174,7 @@ const ringback = getRingback();
       audioOnly: rtcState.audioOnly,
       callerName: rtcState.peerName
     });
-
+const ringtone = getRingtone();
     ringtone?.play().catch(() => {});
     this.onIncomingCall?.({ fromName: rtcState.peerName, audioOnly });
   }
@@ -694,6 +694,7 @@ const ringback = getRingback();
 ------------------------------------------------------- */
 
 export const rtc = new WebRTCController(window.socket);
+
 
 
 
