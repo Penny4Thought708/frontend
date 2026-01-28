@@ -234,51 +234,6 @@ function removeReactionFromMessage(id, emoji) {
   }
 }
 
-// ===== OPEN MESSAGE WINDOW =====
-msgOpenBtn?.addEventListener("click", async () => {
-  console.log("[messaging] msgOpenBtn clicked");
-
-  messageBox?.classList.add("active");
-
-  if (!receiver_id) {
-    console.warn("[messaging] msgOpenBtn: no receiver");
-    return;
-  }
-
-  try {
-    const messages = await loadMessages();
-    console.log("[messaging] msgOpenBtn loaded messages:", messages);
-
-    if (Array.isArray(messages) && messages.length) {
-      lastSeenMessageId = messages[messages.length - 1].id ?? 0;
-    }
-
-    if (badge) badge.style.display = "none";
-
-    const myUserId = getMyUserId();
-
-    messages
-      .filter((m) => !m.is_me && typeof m.id !== "undefined")
-      .forEach((m) => {
-        socket.emit("message:read", {
-          from: m.sender_id,
-          to: myUserId,
-          messageId: m.id,
-        });
-      });
-
-    observeMessagesForRead();
-  } catch (err) {
-    console.error("[messaging] msgOpenBtn load failed:", err);
-    showError("Failed to load messages");
-  }
-});
-
-closeMsgBtn?.addEventListener("click", () => {
-  console.log("[messaging] closeMsgBtn clicked");
-  messageBox?.classList.remove("active");
-});
-
 // ===== RENDER MESSAGE =====
 function renderMessage(msg) {
   console.log("[messaging] renderMessage:", msg);
@@ -686,7 +641,6 @@ if (msgForm) {
             receiver_id: targetId,
             message,
           });
-
           console.log("[messaging] HTTP text send response:", data);
 
           if (data?.success) {
@@ -812,10 +766,24 @@ export function setupDataChannel(channel) {
   };
 }
 
+// ===== Normalization =====
+function normalizeMessage(msg) {
+  const myUserId = getMyUserId();
+
+  return {
+    ...msg,
+    is_me: msg.sender_id === myUserId,
+    sender_name:
+      userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
+    sender_avatar:
+      userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
+  };
+}
+
 // ===== Loading messages =====
 export async function loadMessages() {
   console.log("[messaging] loadMessages called for receiver:", receiver_id);
-console.log("userNames cache right now:", userNames);
+  console.log("userNames cache right now:", userNames);
 
   if (!receiver_id) {
     console.warn("[messaging] loadMessages: no receiver_id");
@@ -831,57 +799,48 @@ console.log("userNames cache right now:", userNames);
       return [];
     }
 
-    const messages = res.messages;
+    let messages = res.messages.map(normalizeMessage);
     lastLoadedMessages = messages;
     const myUserId = getMyUserId();
 
     if (messageWin) {
-messages.forEach((msg) => {
-  // Modern name injection
-  msg.sender_name =
-    userNames[String(msg.sender_id)] || `User ${msg.sender_id}`;
+      messages.forEach((msg) => {
+        const msgId = msg.id != null ? String(msg.id) : null;
 
-  msg.is_me = msg.sender_id === myUserId;
-msg.sender_avatar =
-  userAvatars[String(msg.sender_id)] || "img/defaultUser.png";
+        const exists = msgId
+          ? document.querySelector(`[data-msg-id="${msgId}"]`)
+          : null;
 
-  const msgId = msg.id != null ? String(msg.id) : null;
+        if (!exists) {
+          renderMessage(msg);
 
-  const exists = msgId
-    ? document.querySelector(`[data-msg-id="${msgId}"]`)
-    : null;
+          if (!msg.is_me && msg.id !== undefined) {
+            socket.emit("message:delivered", {
+              from: msg.sender_id,
+              to: myUserId,
+              messageId: msg.id,
+            });
+          }
+        }
 
-  if (!exists) {
-    renderMessage(msg);
+        const display = document.querySelector(
+          `[data-msg-id="${msg.id}"] .reaction-display`
+        );
+        if (display) display.innerHTML = "";
 
-    if (!msg.is_me && msg.id !== undefined) {
-      socket.emit("message:delivered", {
-        from: msg.sender_id,
-        to: myUserId,
-        messageId: msg.id,
+        if (msg.reactions) {
+          const counts = {};
+          msg.reactions.forEach((emoji) => {
+            counts[emoji] = (counts[emoji] || 0) + 1;
+          });
+
+          Object.entries(counts).forEach(([emoji, count]) => {
+            for (let i = 0; i < count; i++) {
+              addReactionToMessage(msg.id, emoji);
+            }
+          });
+        }
       });
-    }
-  }
-
-  const display = document.querySelector(
-    `[data-msg-id="${msg.id}"] .reaction-display`
-  );
-  if (display) display.innerHTML = "";
-
-  if (msg.reactions) {
-    const counts = {};
-    msg.reactions.forEach((emoji) => {
-      counts[emoji] = (counts[emoji] || 0) + 1;
-    });
-
-    Object.entries(counts).forEach(([emoji, count]) => {
-      for (let i = 0; i < count; i++) {
-        addReactionToMessage(msg.id, emoji);
-      }
-    });
-  }
-});
-
     }
 
     const last = messages[messages.length - 1];
@@ -906,6 +865,7 @@ msg.sender_avatar =
     return [];
   }
 }
+
 // ===== Typing indicators =====
 const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
@@ -1052,6 +1012,8 @@ setInterval(() => {
     );
   }
 }, 8000);
+
+
 
 
 
