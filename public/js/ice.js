@@ -29,6 +29,8 @@ export async function getIceServers() {
   }
 }
 
+window.getIceServers = getIceServers;
+
 
 
 
