@@ -3,6 +3,7 @@
 // with runtime diagnostics for easier debugging.
 
 const GL_TAG = "[globals]";
+const BACKEND_BASE = "https://letsee-backend.onrender.com";
 
 // -----------------------------------------------------
 // Identity helpers
@@ -60,9 +61,11 @@ export async function getIceServers() {
     return window.ICE_SERVERS;
   }
 
-  console.debug(`${GL_TAG} getIceServers(): fetching /api/webrtc/ice`);
+  console.debug(`${GL_TAG} getIceServers(): fetching backend /api/webrtc/ice`);
   try {
-    const res = await fetch("/api/webrtc/ice");
+    const res = await fetch(`${BACKEND_BASE}/api/webrtc/ice`, {
+      credentials: "include"
+    });
     if (!res.ok) {
       console.warn(`${GL_TAG} getIceServers(): non-200 response`, res.status);
       return [];
@@ -90,9 +93,10 @@ export function addCallLogEntry(entry) {
   window.callLogs.push(entry);
 
   try {
-    fetch("/api/call-logs", {
+    fetch(`${BACKEND_BASE}/api/call-logs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(entry)
     }).catch(err => {
       console.warn(`${GL_TAG} addCallLogEntry(): network error persisting call log`, err);
@@ -176,7 +180,6 @@ export function setRemoteAvatar(avatar) {
 // -----------------------------------------------------
 // Audio helpers
 // -----------------------------------------------------
-// Use getters instead of freezing values at module load time
 export function getRingtone() {
   if (!window.ringtone) {
     console.warn(`${GL_TAG} getRingtone(): window.ringtone is missing`);
@@ -229,5 +232,6 @@ export function stopTimer() {
     console.warn(`${GL_TAG} stopTimer(): window.stopTimer is missing`);
   }
 }
+
 
 
