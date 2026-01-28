@@ -361,23 +361,30 @@ div.querySelector(".call-log-main")?.addEventListener("click", (e) => {
     openDetails(log.logId);
   });
 
-  div.querySelector(".call-redial-btn")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const id = e.currentTarget.dataset.id;
-    if (log.call_type === "video") {
-      const btn = getVideoBtn();
-      if (btn) {
-        btn.dataset.targetId = id;
-        btn.click();
-      }
-    } else {
-      const btn = getVoiceBtn();
-      if (btn) {
-        btn.dataset.targetId = id;
-        btn.click();
-      }
-    }
-  });
+div.querySelector(".call-redial-btn")?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const id = e.currentTarget.dataset.id;
+
+  // Set receiver globally
+  window.setReceiver?.(id);
+
+  // Open chat UI
+  const userRaw = {
+    contact_id: id,
+    contact_name: log.display_name,
+    avatar: log.avatar
+  };
+  window.showMessageBoxOnly?.();
+  window.openMessagesFor?.(userRaw);
+
+  // DIRECT WebRTC call — bypass CallUI buttons
+  if (log.call_type === "video") {
+    window.rtc?.startVideoCall(id);
+  } else {
+    window.rtc?.startVoiceCall(id);
+  }
+});
+
 
   attachSwipeHandlers(div, log.logId);
   listEl.appendChild(div);
@@ -616,6 +623,7 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
 
 
 
