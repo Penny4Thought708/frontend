@@ -1,48 +1,13 @@
 // public/js/webrtc/WebRTCMedia.js
-// Premium media engine: avatar fallback, local/remote media,
+// Premium media engine: local/remote media,
 // audio visualization, and speaking detection.
 
 import { rtcState } from "./WebRTCState.js";
-import { localVideo, remoteVideo, remoteAudioEl } from "../session.js";
 
 /* -------------------------------------------------------
    Logging Helper
 ------------------------------------------------------- */
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
-
-/* -------------------------------------------------------
-   Avatar Path Normalization
-------------------------------------------------------- */
-function normalizeAvatarPath(path) {
-  if (!path) return "/NewApp/img/defaultUser.png";
-
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.startsWith("/NewApp/")) return path;
-  if (path.startsWith("/uploads/avatars/")) return `/NewApp${path}`;
-  if (path.includes("uploads/avatars/"))
-    return `/NewApp/${path.replace(/^\//, "")}`;
-
-  return `/NewApp/uploads/avatars/${path}`;
-}
-
-/* -------------------------------------------------------
-   Remote Avatar Controls
-------------------------------------------------------- */
-export function setRemoteAvatar(rawUrl) {
-  const img = document.getElementById("remoteAvatarImg");
-  if (!img) return;
-
-  img.src = normalizeAvatarPath(rawUrl);
-}
-
-function toggleRemoteAvatar(show) {
-  const avatar = document.getElementById("remoteAvatar");
-  const video = document.getElementById("remoteVideo");
-  if (!avatar || !video) return;
-
-  avatar.style.display = show ? "flex" : "none";
-  video.style.display = show ? "none" : "block";
-}
 
 /* -------------------------------------------------------
    Local Avatar Visibility
@@ -147,6 +112,7 @@ export async function getLocalMedia(audio = true, video = true) {
     const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
     rtcState.localStream = stream;
 
+    const localVideo = document.getElementById("localVideo");
     if (video && localVideo) {
       localVideo.srcObject = stream;
       localVideo.muted = true;
@@ -155,7 +121,9 @@ export async function getLocalMedia(audio = true, video = true) {
 
     updateLocalAvatarVisibility();
 
-    const wrapper = localVideo?.closest(".local-media-wrapper");
+    const wrapper =
+      localVideo?.closest(".local-media-wrapper") ||
+      document.getElementById("localVideoWrapper");
     if (wrapper) attachAudioVisualizer(stream, wrapper);
 
     return stream;
@@ -179,24 +147,36 @@ export function attachRemoteTrack(evt) {
 
   remoteStream.addTrack(evt.track);
 
+  const remoteVideo = document.getElementById("remoteVideo");
+  const remoteAudioEl = document.getElementById("remoteAudio");
+
   const wrapper =
-    remoteVideo.closest(".remote-media-wrapper") ||
-    remoteAudioEl.closest(".remote-media-wrapper");
+    remoteVideo?.closest(".remote-media-wrapper") ||
+    remoteAudioEl?.closest(".remote-media-wrapper") ||
+    document.getElementById("remoteWrapper");
 
-  toggleRemoteAvatar(true);
+  const remoteAvatar = document.getElementById("remoteAvatar");
 
-  if (evt.track.kind === "video") {
+  const showAvatar = (show) => {
+    if (!remoteAvatar || !remoteVideo) return;
+    remoteAvatar.style.display = show ? "flex" : "none";
+    remoteVideo.style.display = show ? "none" : "block";
+  };
+
+  showAvatar(true);
+
+  if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
 
     remoteVideo.onloadedmetadata = () => {
       remoteVideo.play().catch(() => {});
-      toggleRemoteAvatar(false);
+      showAvatar(false);
     };
 
-    evt.track.onended = () => toggleRemoteAvatar(true);
+    evt.track.onended = () => showAvatar(true);
   }
 
-  if (evt.track.kind === "audio") {
+  if (evt.track.kind === "audio" && remoteAudioEl) {
     remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.play().catch(() => {});
 
@@ -212,5 +192,6 @@ export function attachRemoteTrack(evt) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
