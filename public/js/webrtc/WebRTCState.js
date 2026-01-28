@@ -16,7 +16,7 @@ export const rtcState = {
   isCaller: false,
   audioOnly: false,
   incomingOffer: null,
-  callEstablished: false,   // NEW: true once both sides exchange SDP
+  callEstablished: false, // true once both sides exchange SDP
 
   /* ---------------------------------------------------
      Media Streams
@@ -144,5 +144,7 @@ export const rtcState = {
     return snapshot;
   },
 };
+
+
 
 
