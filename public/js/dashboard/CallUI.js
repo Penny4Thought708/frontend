@@ -13,19 +13,19 @@ export function initCallUI(rtc) {
   }
 
   // DOM elements
-  const callStatus     = document.getElementById("call-status");
-  const callTimerEl    = document.getElementById("call-timer");
-  const callerOverlay  = document.getElementById("callerOverlay");
+  const callStatus = document.getElementById("call-status");
+  const callTimerEl = document.getElementById("call-timer");
+  const callerOverlay = document.getElementById("callerOverlay");
 
-  const answerBtn      = document.getElementById("answer-call");
-  const declineBtn     = document.getElementById("decline-call");
-  const endBtn         = document.getElementById("end-call");
-  const muteBtn        = document.getElementById("mute-call");
-  const cameraToggle   = document.getElementById("camera-toggle");
+  const answerBtn = document.getElementById("answer-call");
+  const declineBtn = document.getElementById("decline-call");
+  const endBtn = document.getElementById("end-call");
+  const muteBtn = document.getElementById("mute-call");
+  const cameraToggle = document.getElementById("camera-toggle");
 
-  const localVideo     = document.getElementById("localVideo");
-  const remoteVideo    = document.getElementById("remoteVideo");
-  const remoteAudio    = document.getElementById("remoteAudio");
+  const localVideo = document.getElementById("localVideo");
+  const remoteVideo = document.getElementById("remoteVideo");
+  const remoteAudio = document.getElementById("remoteAudio");
 
   // Attach media elements if controller supports it
   if (typeof rtc.attachMediaElements === "function") {
@@ -142,4 +142,35 @@ export function initCallUI(rtc) {
       stopTimer();
     });
   }
+
+  // ---------------------------------------------
+  // MESSAGE WINDOW CALL BUTTONS (voice + video)
+  // ---------------------------------------------
+  const msgVoiceBtn = document.getElementById("voiceBtn");
+  const msgVideoBtn = document.getElementById("videoBtn");
+
+  // Determine the active chat partner
+  function getTargetId() {
+    return window.peerId || window.currentReceiverId || null;
+  }
+
+  msgVoiceBtn?.addEventListener("click", () => {
+    const target = getTargetId();
+    if (!target) {
+      console.warn("[CallUI] No receiver selected for voice call");
+      return;
+    }
+    rtc.startVoiceCall?.(target);
+    setStatus("Calling...");
+  });
+
+  msgVideoBtn?.addEventListener("click", () => {
+    const target = getTargetId();
+    if (!target) {
+      console.warn("[CallUI] No receiver selected for video call");
+      return;
+    }
+    rtc.startVideoCall?.(target);
+    setStatus("Calling...");
+  });
 }
