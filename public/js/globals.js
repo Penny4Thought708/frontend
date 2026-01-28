@@ -7,12 +7,12 @@ import { getMyUserId, getMyFullname } from "./session.js";
 const GL_TAG = "[globals]";
 
 // -----------------------------------------------------
-// Identity helpers (safe wrappers around session.js)
+// Identity helpers (WebRTCController depends on these)
 // -----------------------------------------------------
 export function getMyUserIdSafe() {
   const id = getMyUserId();
   if (!id) {
-    console.warn(`${GL_TAG} No user_id available`);
+    console.warn(`${GL_TAG} getMyUserId(): no user_id available`);
   } else {
     console.debug(`${GL_TAG} getMyUserId():`, id);
   }
@@ -22,7 +22,7 @@ export function getMyUserIdSafe() {
 export function getMyFullnameSafe() {
   const name = getMyFullname();
   if (!name) {
-    console.warn(`${GL_TAG} No fullname available`);
+    console.warn(`${GL_TAG} getMyFullname(): no fullname available`);
   } else {
     console.debug(`${GL_TAG} getMyFullname():`, name);
   }
@@ -30,12 +30,12 @@ export function getMyFullnameSafe() {
 }
 
 // -----------------------------------------------------
-// Receiver helper (CallUI + messaging.js set this)
+// Receiver helper (messaging.js sets window.currentReceiverId)
 // -----------------------------------------------------
 export function getReceiver() {
   const receiver = window.currentReceiverId ?? null;
   if (!receiver) {
-    console.warn(`${GL_TAG} No currentReceiverId on window`);
+    console.warn(`${GL_TAG} getReceiver(): no currentReceiverId`);
   } else {
     console.debug(`${GL_TAG} getReceiver():`, receiver);
   }
@@ -43,7 +43,7 @@ export function getReceiver() {
 }
 
 // -----------------------------------------------------
-// ICE / TURN configuration (delegates to ice.js)
+// ICE / TURN configuration (WebRTCController calls this)
 // -----------------------------------------------------
 export async function getIceServers() {
   try {
@@ -57,17 +57,19 @@ export async function getIceServers() {
 }
 
 // -----------------------------------------------------
-// UI state machine hook (CallUI handles real DOM updates)
+// UI state machine hook (WebRTCController triggers this)
+// CallUI.js handles the actual DOM updates
 // -----------------------------------------------------
 export const UI = {
   apply(state, data) {
     console.log("[UI.apply]", state, data);
-    // CallUI.js handles actual UI transitions
+    // CallUI.js handles real UI transitions
   }
 };
 
 // -----------------------------------------------------
-// Media + avatar helpers (CallUI handles DOM)
+// Media + avatar helpers (WebRTCController calls these)
+// CallUI.js handles actual DOM work
 // -----------------------------------------------------
 export function showLocalVideo() {
   console.log(`${GL_TAG} showLocalVideo()`);
@@ -94,25 +96,19 @@ export function setRemoteAvatar(avatar) {
 }
 
 // -----------------------------------------------------
-// Audio helpers
+// Audio helpers (WebRTCController uses these)
 // -----------------------------------------------------
 export function getRingtone() {
-  console.log(`${GL_TAG} getRingtone()`);
   return window.ringtone || null;
 }
 
 export function getRingback() {
-  console.log(`${GL_TAG} getRingback()`);
   return window.ringback || null;
 }
 
 export function stopAudio(audio) {
-  if (!audio) {
-    console.warn(`${GL_TAG} stopAudio(): no audio instance`);
-    return;
-  }
+  if (!audio) return;
   try {
-    console.debug(`${GL_TAG} stopAudio(): stopping`, audio);
     audio.pause();
     audio.currentTime = 0;
   } catch (err) {
@@ -121,7 +117,7 @@ export function stopAudio(audio) {
 }
 
 // -----------------------------------------------------
-// Timer helpers
+// Timer helpers (WebRTCController calls these)
 // -----------------------------------------------------
 export function startTimer() {
   console.log(`${GL_TAG} startTimer()`);
@@ -130,5 +126,3 @@ export function startTimer() {
 export function stopTimer() {
   console.log(`${GL_TAG} stopTimer()`);
 }
-
-
