@@ -51,10 +51,17 @@ async function loadUserUnified() {
     const user = data.user;
 
     // Global identity for session.js + sockets
-    window.user = user;
-    window.user_id = user.user_id;
-    window.fullname = user.fullname;
-    window.avatar = user.avatar;
+window.user = user;
+window.user_id = user.user_id;
+window.fullname = user.fullname;
+window.avatar = user.avatar;
+
+// REQUIRED for WebRTC + messaging + globals.js
+window.currentUserId = user.user_id;
+window.currentUserFullname = user.fullname;
+window.currentUserAvatar = user.avatar;
+
+
 
     // Header
     const welcomeName = document.querySelector("#welcomeName");
@@ -1508,6 +1515,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
