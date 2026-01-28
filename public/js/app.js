@@ -1,51 +1,155 @@
-// app.js — Core dashboard wiring: session + socket + messaging + contacts + call logs + UI
+// public/js/app.js
+// -------------------------------------------------------
+// Unified dashboard wiring: session + socket + messaging
+// + contacts + call logs + voicemail + UI
+// -------------------------------------------------------
 
-// -------------------------------------------------------
-// Core session + socket
-// -------------------------------------------------------
-import {
-  messageWin,
-  getMyUserId,
-  getJson,
-  postJson,
-} from "./session.js";
+import { getMyUserId, getJson } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
-// Messaging
+// Messaging engine + UI
 import { MessagingEngine } from "./messaging/MessagingEngine.js";
-import {
-  renderMessages,
-  renderIncomingMessage,
-} from "./messaging/MessageUI.js";
- 
+import { renderMessages, renderIncomingMessage } from "./messaging/MessageUI.js";
+import { updateReactions } from "./messaging/ReactionUI.js";
 import "./messaging/TypingUI.js";
 
-// Contacts + Call logs
+// Contacts (new unified system)
 import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
+
+// Call logs
 import { initCallLogs } from "./call-log.js";
 
 // WebRTC
-import { WebRTCController } from "./webrtc/WebRTCController.js";
+import WebRTCController from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
-
-
+import "../components/ContactsMenu.js";
 
 // Backend base
 const API_BASE = "https://letsee-backend.onrender.com/api";
 
-// Simple form helper (JSON)
-window.postForm = async function (path, payload) {
+/* -------------------------------------------------------
+   Identity Waiter
+------------------------------------------------------- */
+async function waitForIdentity() {
+  while (!getMyUserId()) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+// -------------------------------------------------------
+// CONTENT MENU INITIALIZATION
+// -------------------------------------------------------
+function initContentMenu() {
+  const menu = document.querySelector("contacts-menu");
+  if (!menu) {
+    console.error("[content-menu] <contacts-menu> element not found");
+    return;
+  }
+
+  console.log("[content-menu] Initialized");
+
+  // Track toggle state for the Contacts/Call Log button
+  let showingContacts = false;
+
+  // Helper: force all children to display block if hidden
+  function forceChildrenDisplay(container) {
+    const elements = container.querySelectorAll("*");
+    elements.forEach(el => {
+      const current = window.getComputedStyle(el).display;
+      if (current === "none") {
+        el.style.display = "block";
+      }
+    });
+  }
+
+  // Helper: hide all your real containers
+  function hideAll() {
+    document.querySelector("#sav_con").style.display = "none";
+    document.querySelector("#bl_con").style.display = "none";
+    document.querySelector("#voicemail_list").style.display = "none";
+    document.querySelector("#messaging_box_container").style.display = "none";
+  }
+
+  // Helper: update the Contacts button label + icon
+  function updateContactsButton() {
+    const btn = menu.querySelector("#toggle_Btn");
+    if (!btn) return;
+
+    if (showingContacts) {
+      btn.innerHTML = `<img src="calllog.png" alt="call-log"> Call Log`;
+    } else {
+      btn.innerHTML = `<img src="Contacts.png" alt="contacts"> Contacts`;
+    }
+  }
+
+  // Default state: Call Log is active (but window may be hidden)
+  hideAll();
+  document.querySelector("#sav_con").style.display = "block";
+  forceChildrenDisplay(document.querySelector("#sav_con"));
+  updateContactsButton();
+
+  // Main menu handler
+  menu.addEventListener("menu-select", (e) => {
+    const action = e.detail.action;
+    console.log("[content-menu] Selected:", action);
+
+    hideAll();
+
+    switch (action) {
+      case "contacts":
+        // Toggle between Call Log ↔ Contacts
+        showingContacts = !showingContacts;
+        updateContactsButton();
+
+        if (showingContacts) {
+          // Show Contacts
+          const c = document.querySelector("#bl_con");
+          c.style.display = "block";
+          forceChildrenDisplay(c);
+        } else {
+          // Show Call Log
+          const c = document.querySelector("#sav_con");
+          c.style.display = "block";
+          forceChildrenDisplay(c);
+        }
+        break;
+
+      case "messages":
+        const msg = document.querySelector("#messaging_box_container");
+        msg.style.display = "block";
+        forceChildrenDisplay(msg);
+        break;
+
+      case "voicemail":
+        const vm = document.querySelector("#voicemail_list");
+        vm.style.display = "block";
+        forceChildrenDisplay(vm);
+        break;
+
+      // You did NOT show containers for these, so we skip them
+      case "block":
+      case "hidden":
+      case "dnd":
+        break;
+
+      default:
+        console.warn("[content-menu] Unknown action:", action);
+    }
+  });
+}
+
+/* -------------------------------------------------------
+   Global GET helper (session-based)
+------------------------------------------------------- */
+window.apiGet = async function (path) {
   const cleanPath = path.replace(".php", "");
   const url = cleanPath.startsWith("http")
     ? cleanPath
     : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
 
   const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload),
+    method: "GET",
+    credentials: "include"
   });
 
   const text = await res.text();
@@ -57,15 +161,9 @@ window.postForm = async function (path, payload) {
   }
 };
 
-// Make renderMessage globally available for the GIF sender, etc.
-window.renderMessage = function (msg) {
-  renderIncomingMessage(msg);
-};
-
 /* -------------------------------------------------------
-   Speaking Detection (Local User)
+   Speaking Detection
 ------------------------------------------------------- */
-
 let speakingDetector = null;
 
 function startSpeakingDetection(stream, wrapperEl) {
@@ -111,13 +209,7 @@ function startSpeakingDetection(stream, wrapperEl) {
 
   loop();
 
-  speakingDetector = {
-    audioCtx,
-    source,
-    analyser,
-    avatarEl,
-    rafId,
-  };
+  speakingDetector = { audioCtx, source, analyser, avatarEl, rafId };
 }
 
 function stopSpeakingDetection() {
@@ -133,450 +225,18 @@ function stopSpeakingDetection() {
   speakingDetector = null;
 }
 
-// Expose speaking detection helpers
 window.startSpeakingDetection = startSpeakingDetection;
 window.stopSpeakingDetection = stopSpeakingDetection;
 
 /* -------------------------------------------------------
-   Core async bootstrap
+   Message List Loader
 ------------------------------------------------------- */
+async function loadMessageList() {
+  await waitForIdentity();
 
-(async () => {
-  // Load contacts first
-  await loadContacts();
+  const userId = getMyUserId();
+  if (!userId) return;
 
-  // Messaging engine (Node backend; base path /api)
-  const messaging = new MessagingEngine(
-    socket,
-    renderMessages,
-    renderIncomingMessage,
-    updateReactionUI,
-    "/api"
-  );
-
-  // WebRTC
-  const rtc = new WebRTCController(socket);
-  initCallUI(rtc);
-
-  // Call logs
-  initCallLogs({ socket });
-
-  // Expose openChat globally
-  window.openChat = async function (contactId) {
-    window.currentChatUserId = contactId;
-    await messaging.loadMessages(contactId);
-  };
-})();
-
-/* -------------------------------------------------------
-   Contact window toggle
-------------------------------------------------------- */
-
-document.addEventListener("DOMContentLoaded", () => {
-  const contactWindow = document.getElementById("contact_window");
-  const contactWidget = document.getElementById("contact_widget");
-
-  if (contactWindow && contactWidget) {
-    contactWidget.addEventListener("click", (e) => {
-      e.stopPropagation();
-      contactWindow.classList.toggle("active");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (
-        !contactWindow.contains(e.target) &&
-        !contactWidget.contains(e.target)
-      ) {
-        contactWindow.classList.remove("active");
-      }
-    });
-  }
-});
-
-/* -------------------------------------------------------
-   Intro Tour
-------------------------------------------------------- */
-
-function startIntroTour() {
-  const steps = [
-    {
-      element: "#btn_search",
-      text: "Use Search to find local help, resources, and contacts instantly.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_chat_main",
-      text: "Start a chat with anyone in your contacts.",
-      arrow: "right",
-    },
-    {
-      element: "#contacts_btn",
-      text: "View and manage your contacts here.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_notifications",
-      text: "Check your notifications — messages, calls, alerts.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_settings",
-      text: "Customize your settings and preferences.",
-      arrow: "right",
-    },
-    {
-      element: "#toggleBtn",
-      text: "Switch between light and dark themes.",
-      arrow: "right",
-    },
-    {
-      element: "#btn_help",
-      text: "Need help? Open the help center anytime.",
-      arrow: "right",
-    },
-  ];
-
-  const introBox = document.getElementById("introduction");
-  const arrow = document.getElementById("intro_arrow");
-
-  if (!introBox || !arrow) return;
-
-  let index = 0;
-
-  function showStep(i) {
-    const step = steps[i];
-    const target = document.querySelector(step.element);
-    if (!target) return;
-
-    const rect = target.getBoundingClientRect();
-
-    const nav = document.getElementById("side_nav_buttons");
-    if (nav) nav.classList.add("open");
-
-    introBox.style.display = "block";
-    introBox.innerHTML = step.text;
-
-    introBox.style.top = rect.top + "px";
-    introBox.style.left = rect.right + 20 + "px";
-
-    arrow.style.display = "block";
-    arrow.className = "intro-arrow " + step.arrow;
-    arrow.style.top = rect.top + rect.height / 2 - 10 + "px";
-    arrow.style.left = rect.right + "px";
-  }
-
-  function nextStep() {
-    if (index < steps.length) {
-      showStep(index);
-      index++;
-    } else {
-      introBox.style.display = "none";
-      arrow.style.display = "none";
-
-      const nav = document.getElementById("side_nav_buttons");
-      if (nav) nav.classList.remove("open");
-      localStorage.setItem("tourCompleted", "true");
-    }
-  }
-
-  introBox.addEventListener("click", nextStep);
-  nextStep();
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  if (!localStorage.getItem("tourCompleted")) {
-    setTimeout(startIntroTour, 300);
-  }
-});
-
-/* -------------------------------------------------------
-   Notification helper
-------------------------------------------------------- */
-
-window.showNotification = function (title, message) {
-  const container = document.getElementById("notification_container");
-  if (!container) return;
-
-  const note = document.createElement("div");
-  note.className = "notification";
-
-  note.innerHTML = `
-    <div class="title">${title}</div>
-    <div class="body">${message}</div>
-  `;
-
-  container.appendChild(note);
-
-  setTimeout(() => note.classList.add("show"), 10);
-
-  setTimeout(() => {
-    note.classList.remove("show");
-    setTimeout(() => note.remove(), 400);
-  }, 5000);
-
-  note.addEventListener("click", () => {
-    note.classList.remove("show");
-    setTimeout(() => note.remove(), 400);
-  });
-};
-
-/* -------------------------------------------------------
-   Contact panel + menu
-------------------------------------------------------- */
-
-const contactBox = document.getElementById("contact_box");
-const contactWidget = document.getElementById("contact_widget");
-const contactClose = document.getElementById("contact_close");
-
-if (contactWidget && contactBox) {
-  contactWidget.addEventListener("click", () => {
-    contactBox.classList.add("open");
-  });
-}
-
-if (contactClose && contactBox) {
-  contactClose.addEventListener("click", () => {
-    contactBox.classList.remove("open");
-  });
-}
-
-/* -------------------------------------------------------
-   CONTACT MENU TOGGLE
-------------------------------------------------------- */
-
-const contactMenu = document.getElementById("contact_menu_box");
-const menuWidget = document.getElementById("menu_Btn_contact");
-
-if (contactMenu && menuWidget) {
-  menuWidget.addEventListener("click", (e) => {
-    e.stopPropagation();
-    contactMenu.classList.toggle("open");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!contactMenu.contains(e.target) && !menuWidget.contains(e.target)) {
-      contactMenu.classList.remove("open");
-    }
-  });
-}
-
-/* -------------------------------------------------------
-   PANEL REGISTRY
-------------------------------------------------------- */
-
-const Panels = {
-  contacts: document.getElementById("contacts"),
-  blocked: document.getElementById("bloc_box"),
-  settings: document.getElementById("settings_container"),
-  addContact: document.querySelector(".sidebar"),
-  profile: document.querySelector(".profile_card"),
-};
-
-/* -------------------------------------------------------
-   MENU BUTTONS
-------------------------------------------------------- */
-
-const Buttons = {
-  block: document.getElementById("block_contact"),
-  addContact: document.getElementById("add_contact"),
-  settings: document.getElementById("settings"),
-  closeSettings: document.getElementById("close_contact_settings"),
-  openProfile: document.getElementById("view_profile"),
-};
-
-/* -------------------------------------------------------
-   PANEL CONTROLLER
-------------------------------------------------------- */
-
-function hideAllPanels() {
-  if (Panels.contacts) Panels.contacts.style.display = "none";
-  if (Panels.blocked) Panels.blocked.style.display = "none";
-  if (Panels.settings) Panels.settings.classList.remove("active");
-  if (Panels.profile) Panels.profile.classList.remove("active");
-}
-
-function showContacts() {
-  hideAllPanels();
-  if (Panels.contacts) Panels.contacts.style.display = "block";
-}
-
-function togglePanel(panelName) {
-  const panel = Panels[panelName];
-  if (!panel) return;
-
-  const isOpen =
-    panel.classList.contains("active") || panel.style.display === "block";
-
-  if (isOpen) {
-    showContacts();
-    return;
-  }
-
-  hideAllPanels();
-
-  if (panelName === "settings" || panelName === "profile") {
-    panel.classList.add("active");
-  } else {
-    panel.style.display = "block";
-  }
-}
-
-/* -------------------------------------------------------
-   DEFAULT STATE
-------------------------------------------------------- */
-
-showContacts();
-
-/* -------------------------------------------------------
-   MENU ACTIONS
-------------------------------------------------------- */
-
-if (Buttons.block) {
-  Buttons.block.addEventListener("click", () => {
-    togglePanel("blocked");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.settings) {
-  Buttons.settings.addEventListener("click", () => {
-    togglePanel("settings");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.closeSettings) {
-  Buttons.closeSettings.addEventListener("click", () => {
-    if (Panels.settings && Panels.settings.classList)
-      Panels.settings.classList.remove("open");
-    showContacts();
-  });
-}
-
-if (Buttons.openProfile) {
-  Buttons.openProfile.addEventListener("click", () => {
-    togglePanel("profile");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-/* -------------------------------------------------------
-   BLOCKED CONTACTS LOADER (placeholder)
-------------------------------------------------------- */
-
-function loadBlockedContacts(list) {
-  const ul = document.getElementById("blocked-contacts");
-  if (!ul) return;
-  ul.innerHTML = "";
-
-  list.forEach((name) => {
-    const li = document.createElement("li");
-    li.textContent = name;
-    ul.appendChild(li);
-  });
-}
-
-loadBlockedContacts(["John Doe", "Spam Caller", "Unknown Number"]);
-
-/* -------------------------------------------------------
-   Voicemail + DND + Wavesurfer UI logic
-------------------------------------------------------- */
-
-window.addEventListener("load", function () {
-  customElements.whenDefined("contacts-menu").then(() => {
-    const toggleBtn = document.getElementById("toggle_Btn");
-    const messagingBtn = document.getElementById("messaging_Btn");
-    const blockBtn = document.getElementById("block_Btn");
-    const voicemailBtn = document.getElementById("voicemail_Btn");
-    const donotBtn = document.getElementById("donot_Btn");
-
-    const panelTitle = document.getElementById("panelTitle");
-    const messagingBox2 = document.getElementById("messaging_box_container");
-    const vmListPanel = document.getElementById("voicemail_list");
-    const savedCon = document.getElementById("sav_con");
-    const blockedCon = document.getElementById("bl_con");
-    const blockListBox = document.getElementById("bloc_box");
-
-    function showSection(section) {
-      [savedCon, blockedCon, vmListPanel, blockListBox, messagingBox2].forEach(
-        (sec) => {
-          if (!sec) return;
-          sec.style.display = "none";
-        }
-      );
-      if (section) section.style.display = "block";
-    }
-
-    toggleBtn?.addEventListener("click", function () {
-      if (savedCon && savedCon.style.display !== "none") {
-        showSection(blockedCon);
-        panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
-      } else {
-        showSection(savedCon);
-        panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
-      }
-    });
-
-    messagingBtn?.addEventListener("click", () => {
-      showSection(messagingBox2);
-      panelTitle.textContent = "Messaging";
-      loadMessageList(window.user_id);
-    });
-
-    blockBtn?.addEventListener("click", () => {
-      showSection(blockListBox);
-      panelTitle.textContent = "Blocked Contacts";
-    });
-
-    voicemailBtn?.addEventListener("click", () => {
-      showSection(vmListPanel);
-      panelTitle.textContent = "Voicemail";
-      loadVoicemails();
-    });
-
-    const icon = donotBtn?.querySelector("img");
-    let dndActive = false;
-
-    donotBtn?.addEventListener("click", () => {
-      dndActive = !dndActive;
-      icon?.classList.toggle("active", dndActive);
-
-      socket.emit("dnd:update", {
-        userId: getMyUserId(),
-        active: dndActive,
-      });
-    });
-
-    showSection(savedCon);
-    panelTitle.textContent = "Call History";
-    loadVoicemails();
-  });
-});
-
-window.openMessagingPanel = function () {
-  const messagingBox2 = document.getElementById("messaging_box_container");
-  const panelTitle = document.getElementById("panelTitle");
-
-  if (!messagingBox2 || !panelTitle) return;
-
-  const showSection = (section) => {
-    document
-      .querySelectorAll(".panel")
-      .forEach((p) => p.classList.remove("active"));
-    section.classList.add("active");
-  };
-
-  showSection(messagingBox2);
-  panelTitle.textContent = "Messaging";
-  loadMessageList(window.user_id);
-};
-
-/* ---------------------------------------------------------
-   Load Message List (Node backend)
---------------------------------------------------------- */
-async function loadMessageList(userId) {
   const list = document.getElementById("messaging_list");
   const header = document.getElementById("unread_header");
 
@@ -586,13 +246,8 @@ async function loadMessageList(userId) {
   header.textContent = "Messages";
 
   try {
-    const res = await fetch(`${API_BASE}/messages/list?user_id=${userId}`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-
-    const conversations = data.conversations || [];
-    window.lastMessageList = conversations;
+    const res = await getJson(`${API_BASE}/messages/list`);
+    const conversations = res.threads || [];
 
     conversations.forEach((conv) => {
       list.appendChild(buildMessageCard(conv));
@@ -603,17 +258,13 @@ async function loadMessageList(userId) {
   }
 }
 
-/* ---------------------------------------------------------
-   Build Conversation Card (no unread badges)
---------------------------------------------------------- */
 function buildMessageCard(conv) {
   const li = document.createElement("li");
   li.className = "message-card";
 
-  const avatar = conv.avatar || "img/defaultUser.png";
-  const last = conv.lastMessage || {};
-  const time = last.timestamp ? formatTime(last.timestamp) : "";
-  const preview = last.text || "";
+  const avatar = conv.contact_avatar
+    ? `https://letsee-backend.onrender.com/uploads/avatars/${conv.contact_avatar}`
+    : "img/defaultUser.png";
 
   li.innerHTML = `
     <div class="msg-avatar">
@@ -622,56 +273,40 @@ function buildMessageCard(conv) {
 
     <div class="msg-info">
       <div class="msg-top">
-        <div class="msg-name">${conv.name || "Unknown"}</div>
-        <div class="msg-time">${time}</div>
+        <div class="msg-name">${conv.contact_name || "Unknown"}</div>
+        <div class="msg-time">${conv.last_message_at || ""}</div>
       </div>
       <div class="msg-bottom">
-        <div class="msg-preview">${sanitizePreview(preview)}</div>
+        <div class="msg-preview">${(conv.last_message || "")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</div>
       </div>
     </div>
   `;
 
   li.addEventListener("click", () => {
-    const userRaw = {
-      contact_id: conv.id,
-      contact_name: conv.name,
-      avatar: conv.avatar,
-    };
-    openMessagesFor(userRaw);
+    openMessagesFor({
+      contact_id: conv.contact_id,
+      contact_name: conv.contact_name,
+      contact_avatar: conv.contact_avatar,
+    });
   });
 
   return li;
 }
 
-/* ---------------------------------------------------------
-   Helpers
---------------------------------------------------------- */
-function formatTime(iso) {
-  if (!iso) return "";
-  const date = new Date(iso);
-  return date.toLocaleString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function sanitizePreview(text) {
-  return (text || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function isDarkMode() {
-  return document.body.classList.contains("dark-mode");
-}
-
 /* -------------------------------------------------------
-   Voicemail loading + rendering
+   Voicemail Loader + UI
 ------------------------------------------------------- */
 async function loadVoicemails() {
+  await waitForIdentity();
+
+  const userId = getMyUserId();
+  if (!userId) return;
+
   try {
-    const res = await fetch(
-      `http://localhost:3001/api/voicemail/list?userId=${window.USER_ID}`
-    );
-    const data = await res.json();
+    const res = await getJson(`${API_BASE}/voicemail/list`);
+    const data = res || {};
 
     const listEl = document.getElementById("voiceMList");
     if (!listEl) return;
@@ -701,7 +336,41 @@ socket.on("voicemail:new", (vm) => {
   incrementVoicemailBadge();
   showVoicemailToast(vm);
 });
+/* -------------------------------------------------------
+   Unified Dashboard Bootstrap (socket-aware)
+------------------------------------------------------- */
+socket.on("connect", async () => {
+  console.log("[bootstrap] Socket connected:", socket.id);
 
+  // Wait for identity to actually load
+  await waitForIdentity();
+
+  // Load contacts AFTER identity
+  await loadContacts();
+
+  // Messaging engine
+  const messaging = new MessagingEngine(
+    socket,
+    renderMessages,
+    renderIncomingMessage,
+    "/api/messages"
+  );
+
+  // NOW SAFE: create WebRTC controller
+  const rtc = new WebRTCController(socket);
+  initCallUI(rtc);
+
+  initCallLogs({ socket });
+  loadMessageList();
+  loadVoicemails();
+
+  window.openChat = async function (contactId) {
+    window.currentChatUserId = contactId;
+    await messaging.loadMessages(contactId);
+  };
+
+  initContentMenu();
+});
 function renderVoicemail(vm) {
   const listEl = document.getElementById("voiceMList");
   if (!listEl) return;
@@ -715,9 +384,7 @@ function renderVoicemail(vm) {
   li.innerHTML = `
     <div class="vm-header">
       <strong>From: ${vm.from_id}</strong>
-      <span>${
-        vm.timestamp ? new Date(vm.timestamp).toLocaleString() : ""
-      }</span>
+      <span>${vm.timestamp ? new Date(vm.timestamp).toLocaleString() : ""}</span>
     </div>
 
     ${
@@ -798,9 +465,10 @@ function renderVoicemail(vm) {
 
   li.querySelector(".mark-listened").onclick = async () => {
     try {
-      await fetch("http://localhost:3001/api/voicemail/listened", {
+      await fetch(`${API_BASE}/voicemail/listened`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id: vm.id }),
       });
 
@@ -817,9 +485,10 @@ function renderVoicemail(vm) {
 
   li.querySelector(".delete-voicemail").onclick = async () => {
     try {
-      await fetch("http://localhost:3001/api/voicemail/delete", {
+      await fetch(`${API_BASE}/voicemail/delete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ id: vm.id }),
       });
 
@@ -884,7 +553,7 @@ function showVoicemailToast(vm) {
 }
 
 /* -------------------------------------------------------
-   Voicemail recorder → backend
+   Voicemail Recorder
 ------------------------------------------------------- */
 let vmRecorder;
 let vmChunks = [];
@@ -910,9 +579,10 @@ async function startVoicemailRecorder() {
 
     const data = await upload.json();
 
-    await fetch("http://localhost:3001/api/voicemail/save", {
+    await fetch(`${API_BASE}/voicemail/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         userId: window.calleeId,
         fromId: window.callerId,
@@ -930,6 +600,166 @@ socket.on("call:voicemail", () => {
   }
   startVoicemailRecorder();
 });
+
+/* -------------------------------------------------------
+   Contact window toggle
+------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const contactWindow = document.getElementById("contact_window");
+  const contactWidget = document.getElementById("contact_widget");
+
+  if (contactWindow && contactWidget) {
+    contactWidget.addEventListener("click", (e) => {
+      e.stopPropagation();
+      contactWindow.classList.toggle("active");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (
+        !contactWindow.contains(e.target) &&
+        !contactWidget.contains(e.target)
+      ) {
+        contactWindow.classList.remove("active");
+      }
+    });
+  }
+});
+
+/* -------------------------------------------------------
+   Intro Tour
+------------------------------------------------------- */
+function startIntroTour() {
+  const steps = [
+    { element: "#btn_search", text: "Use Search to find local help, resources, and contacts instantly.", arrow: "right" },
+    { element: "#btn_chat_main", text: "Start a chat with anyone in your contacts.", arrow: "right" },
+    { element: "#contacts_btn", text: "View and manage your contacts here.", arrow: "right" },
+    { element: "#btn_notifications", text: "Check your notifications — messages, calls, alerts.", arrow: "right" },
+    { element: "#btn_settings", text: "Customize your settings and preferences.", arrow: "right" },
+    { element: "#toggleBtn", text: "Switch between light and dark themes.", arrow: "right" },
+    { element: "#btn_help", text: "Need help? Open the help center anytime.", arrow: "right" },
+  ];
+
+  const introBox = document.getElementById("introduction");
+  const arrow = document.getElementById("intro_arrow");
+
+  if (!introBox || !arrow) return;
+
+  let index = 0;
+
+  function showStep(i) {
+    const step = steps[i];
+    const target = document.querySelector(step.element);
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+
+    const nav = document.getElementById("side_nav_buttons");
+    if (nav) nav.classList.add("open");
+
+    introBox.style.display = "block";
+    introBox.innerHTML = step.text;
+
+       introBox.style.top = rect.top + "px";
+    introBox.style.left = rect.right + 20 + "px";
+
+    arrow.style.display = "block";
+    arrow.className = "intro-arrow " + step.arrow;
+    arrow.style.top = rect.top + rect.height / 2 - 10 + "px";
+    arrow.style.left = rect.right + "px";
+  }
+
+  function nextStep() {
+    if (index < steps.length) {
+      showStep(index);
+      index++;
+    } else {
+      introBox.style.display = "none";
+      arrow.style.display = "none";
+
+      const nav = document.getElementById("side_nav_buttons");
+      if (nav) nav.classList.remove("open");
+
+      localStorage.setItem("tourCompleted", "true");
+    }
+  }
+
+  introBox.addEventListener("click", nextStep);
+  nextStep();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  if (!localStorage.getItem("tourCompleted")) {
+    setTimeout(startIntroTour, 300);
+  }
+});
+
+/* -------------------------------------------------------
+   Notification helper
+------------------------------------------------------- */
+window.showNotification = function (title, message) {
+  const container = document.getElementById("notification_container");
+  if (!container) return;
+
+  const note = document.createElement("div");
+  note.className = "notification";
+
+  note.innerHTML = `
+    <div class="title">${title}</div>
+    <div class="body">${message}</div>
+  `;
+
+  container.appendChild(note);
+
+  setTimeout(() => note.classList.add("show"), 10);
+
+  setTimeout(() => {
+    note.classList.remove("show");
+    setTimeout(() => note.remove(), 400);
+  }, 5000);
+
+  note.addEventListener("click", () => {
+    note.classList.remove("show");
+    setTimeout(() => note.remove(), 400);
+  });
+};
+
+/* -------------------------------------------------------
+   Contact panel + menu
+------------------------------------------------------- */
+const contactBox = document.getElementById("contact_box");
+const contactWidget = document.getElementById("contact_widget");
+const contactClose = document.getElementById("contact_close");
+
+if (contactWidget && contactBox) {
+  contactWidget.addEventListener("click", () => {
+    contactBox.classList.add("open");
+  });
+}
+
+if (contactClose && contactBox) {
+  contactClose.addEventListener("click", () => {
+    contactBox.classList.remove("open");
+  });
+}
+
+/* -------------------------------------------------------
+   CONTACT MENU TOGGLE
+------------------------------------------------------- */
+const contactMenu = document.getElementById("contact_menu_box");
+const menuWidget = document.getElementById("menu_Btn_contact");
+
+if (contactMenu && menuWidget) {
+  menuWidget.addEventListener("click", (e) => {
+    e.stopPropagation();
+    contactMenu.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!contactMenu.contains(e.target) && !menuWidget.contains(e.target)) {
+      contactMenu.classList.remove("open");
+    }
+  });
+}
 
 /* -------------------------------------------------------
    Bottom sheet + emoji + GIF + send
