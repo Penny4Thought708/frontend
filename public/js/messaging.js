@@ -333,33 +333,21 @@ function renderMessage(msg) {
   }
 
   // ===== Reaction bar =====
-  const reactionBar = document.createElement("div");
-  reactionBar.className = "reaction-bar";
-  reactionBar.innerHTML = `
-    <span class="react-emoji">👍</span>
-    <span class="react-emoji">❤️</span>
-    <span class="react-emoji">😂</span>
-    <span class="react-emoji">😮</span>
-    <span class="react-emoji">😢</span>
-  `;
+reactionBar.addEventListener("click", (e) => {
+  const emoji = e.target.closest(".react-emoji")?.textContent;
+  if (!emoji || !msg.id) return;
 
-  reactionBar.addEventListener("click", async (e) => {
-    const emoji = e.target.closest(".react-emoji")?.textContent;
-    if (!emoji || !msg.id) return;
+  console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
 
-    console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
-
-    try {
-      const res = await apiPost("/react", { id: msg.id, emoji });
-      console.log("[messaging] reaction response:", res);
-
-      if (res.removed) removeReactionFromMessage(msg.id, emoji);
-      else addReactionToMessage(msg.id, emoji);
-
-    } catch (err) {
-      console.error("[messaging] reaction failed:", err);
-    }
+  socket.emit("message:reaction", {
+    messageId: msg.id,
+    from: getMyUserId(),
+    emoji
   });
+
+  addReactionToMessage(msg.id, emoji);
+});
+
 
   // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
@@ -1012,6 +1000,7 @@ setInterval(() => {
     );
   }
 }, 8000);
+
 
 
 
