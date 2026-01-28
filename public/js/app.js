@@ -29,8 +29,7 @@ import { initCallLogs } from "./call-log.js";
 import { WebRTCController } from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
 
-// Dashboard UI
-import "./dashboard/DashboardInit.js";
+
 
 // Backend base
 const API_BASE = "https://letsee-backend.onrender.com/api";
@@ -1179,6 +1178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
