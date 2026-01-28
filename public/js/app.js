@@ -21,7 +21,7 @@ import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
 import { initCallLogs } from "./call-log.js";
 
 // WebRTC
-import { WebRTCController } from "./webrtc/WebRTCController.js";
+import WebRTCController from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
 import "../components/ContactsMenu.js";
 
@@ -567,6 +567,8 @@ socket.on("call:voicemail", () => {
   startVoicemailRecorder();
 });
 
+
+
 /* -------------------------------------------------------
    Unified Dashboard Bootstrap
 ------------------------------------------------------- */
@@ -594,9 +596,9 @@ socket.on("call:voicemail", () => {
     await messaging.loadMessages(contactId);
   };
 
-  // ⭐ FIX: restore content menu functionality
   initContentMenu();
 })();
+
 
 
 /* -------------------------------------------------------
@@ -758,6 +760,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
