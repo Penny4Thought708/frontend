@@ -139,19 +139,17 @@ function initContentMenu() {
 }
 
 /* -------------------------------------------------------
-   Global POST helper
+   Global GET helper (session-based)
 ------------------------------------------------------- */
-window.postForm = async function (path, payload) {
+window.apiGet = async function (path) {
   const cleanPath = path.replace(".php", "");
   const url = cleanPath.startsWith("http")
     ? cleanPath
     : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
 
   const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload),
+    method: "GET",
+    credentials: "include"
   });
 
   const text = await res.text();
@@ -161,11 +159,6 @@ window.postForm = async function (path, payload) {
     console.error("Non-JSON response from", url, ":", text);
     throw new Error("Invalid JSON response");
   }
-};
-
-// Expose message renderer for GIF sender
-window.renderMessage = function (msg) {
-  renderIncomingMessage(msg);
 };
 
 /* -------------------------------------------------------
@@ -765,6 +758,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
