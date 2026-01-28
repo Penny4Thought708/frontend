@@ -1,15 +1,15 @@
 // public/js/messaging-core.js
 // -------------------------------------------------------------
-// Messaging Core Module
+// Messaging Core Module (Node backend, Session Auth)
 // -------------------------------------------------------------
 // Handles:
-// - Text messaging (supports rich input / inline GIFs)
+// - Text messaging (rich input + GIFs)
 // - Hybrid file transfer (P2P DataChannel + HTTP fallback)
 // - Slow-network detection (floating banner)
 // - Delivered/read receipts
 // - Typing indicators (emit only)
 // - Incoming message handling
-// - Integration with session.js + webrtc-client.js
+// - Integration with session.js + messaging.js + WebRTC
 // -------------------------------------------------------------
 
 /* -------------------------------------------------------------
@@ -18,7 +18,7 @@
 
 import {
   getMyUserId,
-  msgInput,                // now expected to be a contenteditable element
+  msgInput,                // contenteditable
   messagesContainer,
   scrollMessagesToBottom,
   topBar
@@ -92,7 +92,6 @@ function sendTypingStop() {
   });
 }
 
-// Works for both <input> and contenteditable
 msgInput?.addEventListener("input", () => {
   sendTypingStart();
 
@@ -103,21 +102,15 @@ msgInput?.addEventListener("input", () => {
 });
 
 /* -------------------------------------------------------------
-   Helpers for rich input parsing
+   Rich Input Parsing (text + GIF)
 ------------------------------------------------------------- */
 
-/**
- * Extracts plain text and first GIF URL (if any) from rich HTML input.
- * - rawInput: string (can be plain text or HTML from contenteditable)
- */
 function parseRichInput(rawInput) {
   const html = rawInput || "";
 
-  // Extract first GIF URL from <img> tags (e.g. from Tenor)
   const gifMatch = html.match(/<img[^>]+src="([^"]+\.gif)"[^>]*>/i);
   const gifUrl = gifMatch ? gifMatch[1] : null;
 
-  // Strip all HTML tags to get plain text
   const tempDiv = document.createElement("div");
   tempDiv.innerHTML = html;
   const text = tempDiv.textContent || tempDiv.innerText || "";
@@ -130,86 +123,75 @@ function parseRichInput(rawInput) {
 }
 
 /* -------------------------------------------------------------
-   Text Messaging (supports rich input + GIFs)
+   TEXT MESSAGING (Node backend)
 ------------------------------------------------------------- */
 
-/**
- * Send a message.
- * rawInput can be:
- * - plain text (from <input>.value)
- * - HTML string (from contenteditable.innerHTML)
- */
-export function sendMessage(rawInput) {
+export async function sendMessage(rawInput) {
   const peerId = getPeerIdFn?.();
   if (!peerId) return;
 
-  // If caller passed nothing, fall back to current msgInput content
   const source = rawInput ?? (msgInput?.innerHTML ?? "");
   const { text, gifUrl } = parseRichInput(source);
 
-  // Nothing to send
   if (!text && !gifUrl) return;
 
-  // For backend compatibility, we still send a single "text" field:
-  // - If only GIF: send the GIF URL as text
-  // - If text + GIF: send the full text (GIF is just visual for now)
   const payloadText = text || gifUrl || "";
   const isPureGif = !!gifUrl && !text;
 
-  const messageObj = {
-    from: getMyUserId(),
-    to: peerId,
+  const optimistic = {
+    id: null,
+    sender_id: getMyUserId(),
+    receiver_id: peerId,
+    message: payloadText,
     type: isPureGif ? "gif" : "text",
-    text: payloadText,
     gifUrl: isPureGif ? gifUrl : null,
-    timestamp: Date.now(),
-    status: "sending"
+    created_at: new Date(),
+    is_me: true
   };
 
-  // Render immediately (optimistic UI)
-  renderMessage(messageObj);
+  renderMessage(optimistic);
   scrollMessagesToBottom();
 
-  // Clear input if we own it
-  if (!rawInput && msgInput) {
-    msgInput.innerHTML = "";
-  }
+  if (!rawInput && msgInput) msgInput.innerHTML = "";
 
-  // Send to server
-  fetch("messages.php", {
-    method: "POST",
-    body: new URLSearchParams({
+  try {
+    const res = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/send",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiver_id: peerId,
+          message: payloadText,
+          type: optimistic.type,
+          gif_url: optimistic.gifUrl
+        })
+      }
+    );
+
+    const data = await res.json();
+    if (!data.success) throw new Error("Message save failed");
+
+    optimistic.id = data.id;
+    optimistic.created_at = data.created_at;
+
+    renderMessage(optimistic, true);
+
+    socketRef?.emit("message:delivered", {
+      messageId: data.id,
       from: getMyUserId(),
-      to: peerId,
-      text: payloadText
-      // If you later extend backend, you can also send gifUrl/type here
-      // gif: gifUrl || "",
-      // type: isPureGif ? "gif" : "text"
-    })
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success) throw new Error("Message save failed");
-
-      messageObj.status = "sent";
-      messageObj.messageId = data.messageId;
-      renderMessage(messageObj, true);
-
-      socketRef?.emit("message:delivered", {
-        messageId: data.messageId,
-        from: getMyUserId(),
-        to: peerId
-      });
-    })
-    .catch(() => {
-      messageObj.status = "error";
-      renderMessage(messageObj, true);
-      showError("Failed to send message");
+      to: peerId
     });
+  } catch (err) {
+    optimistic.error = true;
+    renderMessage(optimistic, true);
+    showError("Failed to send message");
+  }
 }
 
 /* -------------------------------------------------------------
-   File Messaging (Hybrid)
+   FILE MESSAGING (Hybrid)
 ------------------------------------------------------------- */
 
 export function sendFile(file) {
@@ -228,9 +210,9 @@ export function sendFile(file) {
 
 function sendFileViaP2P(file) {
   const peerId = getPeerIdFn?.();
-  const dataChannel = getDataChannelFn?.();
+  const dc = getDataChannelFn?.();
 
-  if (!peerId || !dataChannel || dataChannel.readyState !== "open") {
+  if (!peerId || !dc || dc.readyState !== "open") {
     return sendFileViaHTTP(file);
   }
 
@@ -268,7 +250,7 @@ function sendFileViaP2P(file) {
       }
 
       const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
-      dataChannel.send(chunk);
+      dc.send(chunk);
 
       offset += CHUNK_SIZE;
       bytesSent += chunk.byteLength;
@@ -282,87 +264,108 @@ function sendFileViaP2P(file) {
   reader.readAsArrayBuffer(file);
 }
 
-function finalizeP2PFile(file, peerId) {
-  fetch("messages.php", {
-    method: "POST",
-    body: new URLSearchParams({
-      from: getMyUserId(),
-      to: peerId,
-      fileName: file.name,
-      fileSize: file.size,
-      p2p: "1"
-    })
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success) throw new Error("P2P file save failed");
+async function finalizeP2PFile(file, peerId) {
+  try {
+    const res = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/send",
+      {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          receiver_id: peerId,
+          message: `File: ${file.name}`,
+          file: 1,
+          filename: file.name,
+          transport: "webrtc"
+        }),
+        headers: { "Content-Type": "application/json" }
+      }
+    );
 
-      const messageObj = {
-        from: getMyUserId(),
-        to: peerId,
-        type: "file",
-        fileName: file.name,
-        fileSize: file.size,
-        url: data.url,
-        timestamp: Date.now(),
-        status: "sent",
-        messageId: data.messageId
-      };
+    const data = await res.json();
+    if (!data.success) throw new Error("P2P file save failed");
 
-      renderMessage(messageObj);
-      scrollMessagesToBottom();
-    })
-    .catch(() => {
-      showNetworkBanner("⚠️ P2P failed — uploading via server");
-      sendFileViaHTTP(file);
+    renderMessage({
+      id: data.id,
+      is_me: true,
+      type: "file",
+      filename: file.name,
+      url: data.url,
+      created_at: data.created_at,
+      sender_id: getMyUserId()
     });
+
+    scrollMessagesToBottom();
+  } catch (err) {
+    showNetworkBanner("⚠️ P2P failed — uploading via server");
+    sendFileViaHTTP(file);
+  }
 }
 
 /* -------------------------------------------------------------
    HTTP File Upload
 ------------------------------------------------------------- */
 
-function sendFileViaHTTP(file) {
+async function sendFileViaHTTP(file) {
   const peerId = getPeerIdFn?.();
   if (!peerId) return;
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("from", getMyUserId());
-  formData.append("to", peerId);
+  const fd = new FormData();
+  fd.append("file", file);
 
-  fetch("upload.php", {
-    method: "POST",
-    body: formData
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success) throw new Error("Upload failed");
+  try {
+    const uploadRes = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/upload",
+      {
+        method: "POST",
+        credentials: "include",
+        body: fd
+      }
+    );
 
-      const messageObj = {
-        from: getMyUserId(),
-        to: peerId,
-        type: "file",
-        fileName: file.name,
-        fileSize: file.size,
-        url: data.url,
-        timestamp: Date.now(),
-        status: "sent",
-        messageId: data.messageId
-      };
+    const uploadData = await uploadRes.json();
+    if (!uploadData.success) throw new Error("Upload failed");
 
-      renderMessage(messageObj);
-      scrollMessagesToBottom();
+    const msgRes = await fetch(
+      "https://letsee-backend.onrender.com/api/messages/send",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiver_id: peerId,
+          message: `File: ${file.name}`,
+          file: 1,
+          filename: file.name,
+          file_url: uploadData.url,
+          transport: "http"
+        })
+      }
+    );
 
-      socketRef?.emit("message:delivered", {
-        messageId: data.messageId,
-        from: getMyUserId(),
-        to: peerId
-      });
-    })
-    .catch(() => {
-      showError("File upload failed");
+    const data = await msgRes.json();
+    if (!data.success) throw new Error("Send failed");
+
+    renderMessage({
+      id: data.id,
+      is_me: true,
+      type: "file",
+      filename: file.name,
+      url: uploadData.url,
+      created_at: data.created_at,
+      sender_id: getMyUserId()
     });
+
+    scrollMessagesToBottom();
+
+    socketRef?.emit("message:delivered", {
+      messageId: data.id,
+      from: getMyUserId(),
+      to: peerId
+    });
+  } catch (err) {
+    showError("File upload failed");
+  }
 }
 
 /* -------------------------------------------------------------
@@ -401,3 +404,4 @@ export function initMessaging(socket, getPeerId, getDataChannel) {
 
   // Typing UI is rendered in messaging.js; we only emit events here.
 }
+
