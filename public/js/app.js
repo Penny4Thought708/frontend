@@ -761,6 +761,253 @@ if (contactMenu && menuWidget) {
   });
 }
 
+/* -------------------------------------------------------
+   Bottom sheet + emoji + GIF + send
+------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const plusBtn = document.getElementById("plusBtn");
+  const bottomSheet = document.getElementById("bottomSheet");
+
+  const sheetCamera = document.getElementById("sheetCamera");
+  const sheetGallery = document.getElementById("sheetGallery");
+  const sheetFile = document.getElementById("sheetFile");
+  const sheetAudio = document.getElementById("sheetAudio");
+  const sheetEmoji = document.getElementById("sheetEmoji");
+  const sheetGif = document.getElementById("sheetGif");
+
+  const emojiPicker = document.getElementById("emojiPicker");
+  const gifPicker = document.getElementById("gifPicker");
+  const gifSearch = document.getElementById("gifSearch");
+  const gifResults = document.getElementById("gifResults");
+
+  const messageInput = document.getElementById("message_input");
+  const form = document.getElementById("text_box_reply");
+  const attachmentInput = document.getElementById("attachment_input");
+
+  if (!messageInput || !form) return;
+
+  const closeAll = () => {
+    bottomSheet?.classList.remove("visible");
+    emojiPicker?.classList.add("hidden");
+    gifPicker?.classList.add("hidden");
+  };
+
+  const moveCaretToEnd = (el) => {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  };
+
+  plusBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    emojiPicker?.classList.add("hidden");
+    gifPicker?.classList.add("hidden");
+    bottomSheet?.classList.toggle("visible");
+  });
+
+  document.addEventListener("click", (e) => {
+    const target = e.target;
+    const clickedInsideSheet = bottomSheet?.contains(target);
+    const clickedPlus = target === plusBtn;
+    const clickedEmojiShadow =
+      target.closest && target.closest("emoji-picker") !== null;
+    const clickedGifPicker = gifPicker?.contains(target);
+
+    if (
+      !clickedInsideSheet &&
+      !clickedPlus &&
+      !clickedEmojiShadow &&
+      !clickedGifPicker
+    ) {
+      closeAll();
+    }
+  });
+
+  sheetCamera?.addEventListener("click", () => {
+    closeAll();
+  });
+
+  sheetGallery?.addEventListener("click", () => {
+    closeAll();
+    attachmentInput?.click();
+  });
+
+  sheetFile?.addEventListener("click", () => {
+    closeAll();
+    attachmentInput?.click();
+  });
+
+  sheetAudio?.addEventListener("click", () => {
+    closeAll();
+    window.micBtn?.click();
+  });
+
+  sheetEmoji?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    bottomSheet?.classList.remove("visible");
+    gifPicker?.classList.add("hidden");
+    emojiPicker?.classList.toggle("hidden");
+  });
+
+  emojiPicker?.addEventListener("emoji-click", (event) => {
+    const emoji = event.detail.unicode;
+    messageInput.innerHTML += emoji;
+    moveCaretToEnd(messageInput);
+    messageInput.focus();
+  });
+
+  sheetGif?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    bottomSheet?.classList.remove("visible");
+    emojiPicker?.classList.add("hidden");
+    gifPicker?.classList.toggle("hidden");
+    loadTrendingGIFs();
+  });
+
+  const TENOR_KEY = "AIzaSyCdGnnQLWc8TnlSHcVgW2xlFzM1v1KyuPQ";
+  const TENOR_TRENDING = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=30`;
+  const TENOR_SEARCH = (q) =>
+    `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
+      q
+    )}&key=${TENOR_KEY}&limit=30`;
+
+  async function loadTrendingGIFs() {
+    if (!gifResults) return;
+    try {
+      const res = await fetch(TENOR_TRENDING);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderGIFs(data.results || []);
+    } catch (err) {
+      console.error("[GIF] trending error:", err);
+    }
+  }
+
+  async function searchGIFs(query) {
+    if (!gifResults) return;
+    try {
+      const url = TENOR_SEARCH(query);
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      renderGIFs(data.results || []);
+    } catch (err) {
+      console.error("[GIF] search error:", err);
+    }
+  }
+
+  function renderGIFs(gifs) {
+    if (!gifResults) return;
+    gifResults.innerHTML = "";
+
+    gifs.forEach((gif) => {
+      const url =
+        gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
+      if (!url) return;
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = "GIF";
+
+      img.addEventListener("click", () => {
+        messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
+        moveCaretToEnd(messageInput);
+        messageInput.focus();
+        gifPicker?.classList.add("hidden");
+      });
+
+      gifResults.appendChild(img);
+    });
+  }
+
+  gifSearch?.addEventListener("input", (e) => {
+    const q = e.target.value.trim();
+    if (!q) loadTrendingGIFs();
+    else searchGIFs(q);
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const targetId = window.receiver_id;
+    if (!targetId) {
+      window.showError?.("No receiver selected");
+      return;
+    }
+
+    const raw = messageInput.innerHTML.trim();
+    if (!raw) return;
+
+    const temp = document.createElement("div");
+    temp.innerHTML = raw;
+    const text = (temp.textContent || "").trim();
+
+    const gifMatch = raw.match(/<img[^>]+src="([^"]+\.gif)"/i);
+    const gifUrl = gifMatch ? gifMatch[1] : null;
+
+    try {
+      if (gifUrl && !text) {
+        const data = await window.postForm("/messages/send", {
+          receiver_id: targetId,
+          file: 1,
+          file_url: gifUrl,
+          message: "",
+        });
+
+        const success =
+          data && (data.success === true || typeof data.id !== "undefined");
+
+        if (success && typeof window.renderMessage === "function") {
+          window.renderMessage({
+            id: data.id,
+            is_me: true,
+            file: 1,
+            file_url: gifUrl,
+            created_at: data.created_at,
+            sender_id: getMyUserId(),
+            sender_name: "You",
+            type: "gif",
+            message: "",
+          });
+        } else if (!success) {
+          const errMsg = data?.error || "Failed to send GIF";
+          window.showError?.(errMsg);
+        }
+      } else if (text) {
+        const data = await window.postForm("/messages/send", {
+          receiver_id: targetId,
+          message: text,
+        });
+
+        const success =
+          data && (data.success === true || typeof data.id !== "undefined");
+
+        if (success && typeof window.renderMessage === "function") {
+          window.renderMessage({
+            id: data.id,
+            is_me: true,
+            message: data.message,
+            created_at: data.created_at,
+            sender_id: getMyUserId(),
+            sender_name: "You",
+            type: "text",
+          });
+        } else {
+          const msg = data?.error || "Failed to send message";
+          window.showError?.(msg);
+        }
+      }
+    } catch (err) {
+      console.error("[SEND] error:", err);
+      window.showError?.("Failed to send message");
+    }
+
+    messageInput.innerHTML = "";
+  });
+});
 
 
 
