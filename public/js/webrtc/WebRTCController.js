@@ -18,12 +18,13 @@ import {
   showRemoteVideo,
   setRemoteAvatar,
   UI,
-  ringtone,
-  ringback,
+  getRingtone,
+  getRingback,
   startTimer,
   stopTimer,
   stopAudio
 } from "../globals.js";
+
 
 
 export default class WebRTCController {
@@ -40,6 +41,8 @@ export default class WebRTCController {
     this._initDraggableRemote();
     this._bindSwapBehavior();
   }
+const ringtone = getRingtone();
+const ringback = getRingback();
 
   /* ---------------------------------------------------
      Media elements wiring
@@ -691,6 +694,7 @@ export default class WebRTCController {
 ------------------------------------------------------- */
 
 export const rtc = new WebRTCController(window.socket);
+
 
 
 
