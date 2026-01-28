@@ -78,19 +78,21 @@ setCallState(state = {}) {
   /* ---------------------------------------------------
      Media Reset
   --------------------------------------------------- */
-  resetMedia() {
-    try {
-      if (this.localStream) {
-        this.localStream.getTracks().forEach((t) => t.stop());
-      }
-    } catch (err) {
-      console.warn("[rtcState] Error stopping local tracks:", err);
+ resetMedia() {
+  try {
+    if (this.localStream instanceof MediaStream) {
+      this.localStream.getTracks().forEach((t) => {
+        try { t.stop(); } catch {}
+      });
     }
+  } catch (err) {
+    console.warn("[rtcState] Error stopping local tracks:", err);
+  }
 
-    this.localStream = null;
-    this.remoteStream = null;
-    this.log("Media reset");
-  },
+  this.localStream = null;
+  this.remoteStream = null;
+  this.log("Media reset");
+},
 
   /* ---------------------------------------------------
      Timer Reset
@@ -151,6 +153,7 @@ setCallState(state = {}) {
     return snapshot;
   },
 };
+
 
 
 
