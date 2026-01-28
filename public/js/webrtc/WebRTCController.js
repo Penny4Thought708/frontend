@@ -29,7 +29,7 @@ import {
 } from "../session.js";
 
 import { getIceServers } from "../ice.js";
-
+import { getReceiver } from "../messaging.js";
 
 /* -------------------------------------------------------
    Small helpers
@@ -286,8 +286,9 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Entry points: voice / video
   --------------------------------------------------- */
-  startVoiceCall() {
-    const peerId = getReceiver();
+  startVoiceCall(explicitPeerId) {
+    const peerId =
+      explicitPeerId || getReceiver() || window.currentReceiverId;
     if (!peerId) {
       console.warn("[WebRTC] startVoiceCall: no receiver selected");
       return;
@@ -295,8 +296,9 @@ export class WebRTCController {
     this.startCall(peerId, true);
   }
 
-  startVideoCall() {
-    const peerId = getReceiver();
+  startVideoCall(explicitPeerId) {
+    const peerId =
+      explicitPeerId || getReceiver() || window.currentReceiverId;
     if (!peerId) {
       console.warn("[WebRTC] startVideoCall: no receiver selected");
       return;
