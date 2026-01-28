@@ -49,19 +49,26 @@ export const rtcState = {
   /* ---------------------------------------------------
      Call State Mutators
   --------------------------------------------------- */
-  setCallState({ inCall, isCaller, audioOnly, incomingOffer } = {}) {
-    if (inCall !== undefined) this.inCall = inCall;
-    if (isCaller !== undefined) this.isCaller = isCaller;
-    if (audioOnly !== undefined) this.audioOnly = audioOnly;
-    if (incomingOffer !== undefined) this.incomingOffer = incomingOffer;
+setCallState(state = {}) {
+  if (typeof state !== "object" || state === null) {
+    this.log("setCallState ignored invalid input:", state);
+    return;
+  }
 
-    this.log("Call state updated:", {
-      inCall: this.inCall,
-      isCaller: this.isCaller,
-      audioOnly: this.audioOnly,
-      incomingOffer: this.incomingOffer,
-    });
-  },
+  const { inCall, isCaller, audioOnly, incomingOffer } = state;
+
+  if (inCall !== undefined) this.inCall = inCall;
+  if (isCaller !== undefined) this.isCaller = isCaller;
+  if (audioOnly !== undefined) this.audioOnly = audioOnly;
+  if (incomingOffer !== undefined) this.incomingOffer = incomingOffer;
+
+  this.log("Call state updated:", {
+    inCall: this.inCall,
+    isCaller: this.isCaller,
+    audioOnly: this.audioOnly,
+    incomingOffer: this.incomingOffer,
+  });
+},
 
   markCallEstablished() {
     this.callEstablished = true;
@@ -144,6 +151,7 @@ export const rtcState = {
     return snapshot;
   },
 };
+
 
 
 
