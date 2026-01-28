@@ -492,23 +492,34 @@ async handleAnswer(data) {
     return;
   }
 
-  // 🚨 Prevent duplicate answers
-  if (this.pc.signalingState !== "have-local-offer") {
-    console.warn("[WebRTC] Ignoring duplicate answer, state:", this.pc.signalingState);
-    return;
-  }
-
   if (!data || !data.answer) {
     console.warn("[WebRTC] handleAnswer: invalid data", data);
     return;
   }
 
+  // 🚫 Only the original caller should ever process an answer
+  if (!rtcState.isCaller) {
+    console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
+    return;
+  }
+
+  // 🚫 Only accept the first answer, in the correct state
+  if (this.pc.signalingState !== "have-local-offer") {
+    console.warn(
+      "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
+      this.pc.signalingState
+    );
+    return;
+  }
+
+  console.log("[WebRTC] handleAnswer: applying remote answer");
   await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
 
   stopAudio(ringback);
   this.onCallStarted?.();
   startTimer();
 }
+
 
 
   /* ---------------------------------------------------
@@ -895,6 +906,7 @@ async handleAnswer(data) {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
