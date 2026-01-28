@@ -689,11 +689,8 @@ const ringtone = getRingtone();
   }
 }
 
-/* -------------------------------------------------------
-   Default instance (optional convenience)
-------------------------------------------------------- */
 
-export const rtc = new WebRTCController(window.socket);
+
 
 
 
