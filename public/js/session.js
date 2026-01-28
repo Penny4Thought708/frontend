@@ -84,7 +84,7 @@ export const previewDiv = el("attachmentPreview");         // preview container
 // You can choose which button opens the file picker:
 // Option A: bottom sheet "File" button
 export const attachmentBtn = el("sheetFile");
-
+export const notificationSound = el("notification");
 // Option B: the + button (uncomment if you prefer)
 // export const attachmentBtn = el("plusBtn");
 
@@ -330,6 +330,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
