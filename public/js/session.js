@@ -1,24 +1,31 @@
 // public/js/session.js
 // -------------------------------------------------------
 // Session + DOM + Helpers (Node backend compatible)
+// -------------------------------------------------------
 
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
 const w = typeof window !== "undefined" ? window : {};
 console.log("[session] LOADED");
-window._session_debug = (window._session_debug || 0) + 1;
-console.log("session.js load count:", window._session_debug);
+w._session_debug = (w._session_debug || 0) + 1;
+console.log("session.js load count:", w._session_debug);
+
+// -------------------------------------------------------
+// API base
+// -------------------------------------------------------
+export const API_BASE = "https://letsee-backend.onrender.com";
+
 // -------------------------------------------------------
 // ⭐ Load identity from backend (Node version)
 // -------------------------------------------------------
 async function loadIdentity() {
   try {
-    const res = await fetch("https://letsee-backend.onrender.com/api/auth/me", {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
       credentials: "include",
     });
 
-    if (!res.ok) throw new Error("Identity request failed");
+    if (!res.ok) throw new Error(`Identity request failed: ${res.status}`);
 
     const data = await res.json();
     const u = data.user;
@@ -56,7 +63,7 @@ export function getMyAvatar() {
 // -------------------------------------------------------
 export function avatarUrl(filename) {
   if (!filename) return "/img/defaultUser.png";
-  return `https://letsee-backend.onrender.com/uploads/avatars/${filename}`;
+  return `${API_BASE}/uploads/avatars/${filename}`;
 }
 
 // -------------------------------------------------------
@@ -70,7 +77,7 @@ const qs = (sel) => document.querySelector(sel);
 // -------------------------------------------------------
 export const messageBox = el("messaging_box");
 export const msgOpenBtn = el("msg_open_btn");
-export const msgInput = el("message_input");
+export const msgInput = el("message_input"); // contenteditable in layout
 export const closeMsgBtn = el("close_msg_box");
 export const msgForm = el("text_box_reply");
 export const messageWin = qs(".message_win1");
@@ -89,7 +96,7 @@ export const lookupInput = el("lookup-input");
 export const lookupResults = el("contacts-lookup");
 
 // -------------------------------------------------------
-// Call UI Elements (lazy‑bound so DOM is ready)
+// Call UI Elements
 // -------------------------------------------------------
 export const videoContainer = el("video-container");
 export const remoteWrapper = el("remoteWrapper");
@@ -105,7 +112,7 @@ export function getVideoBtn() {
 export const localNameDiv = el("localName");
 export const remoteNameDiv = el("remoteName");
 
-// 🔥 Key change: declare first, assign after DOMContentLoaded
+// Lazy-bound media elements
 export let localVideo;
 export let remoteVideo;
 export let remoteAudioEl;
@@ -185,6 +192,29 @@ export async function postJson(url, body = {}) {
   return res.json();
 }
 
+// Generic POST helper that respects API_BASE and strips .php
+export async function postForm(path, payload) {
+  const cleanPath = path.replace(".php", "");
+  const url = cleanPath.startsWith("http")
+    ? cleanPath
+    : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response from", url, ":", text);
+    throw new Error("Invalid JSON response");
+  }
+}
+
 // -------------------------------------------------------
 // Scroll helper
 // -------------------------------------------------------
@@ -251,14 +281,12 @@ socket.on("connect", () => {
       return;
     }
 
-    socket.emit("register", uid); // ← send primitive, not object
-
+    socket.emit("register", uid);
     console.log("[socket] Registered:", uid);
   };
 
   tryRegister();
 });
-
 
 socket.on("reconnect_attempt", (n) => {
   if (DEBUG.socket && (n === 1 || n % 5 === 0)) {
@@ -277,31 +305,10 @@ socket.on("error", (err) => {
     console.warn("[socket] Error:", err?.message || err);
   }
 });
-export async function postForm(path, payload) {
-  const cleanPath = path.replace(".php", "");
-  const url = cleanPath.startsWith("http")
-    ? cleanPath
-    : `${API_BASE}${cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`}`;
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
-
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error("Non-JSON response from", url, ":", text);
-    throw new Error("Invalid JSON response");
-  }
-}
-
-// ------------------------------
+// -------------------------------------------------------
 // AUTO LOGOUT AFTER INACTIVITY
-// ------------------------------
+// -------------------------------------------------------
 let inactivityTimer;
 const AUTO_LOGOUT_MINUTES = 30;
 
@@ -311,7 +318,7 @@ function resetInactivityTimer() {
   inactivityTimer = setTimeout(async () => {
     console.log("[session] Auto-logout due to inactivity");
 
-    await fetch("https://letsee-backend.onrender.com/api/auth/logout", {
+    await fetch(`${API_BASE}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });
@@ -325,6 +332,7 @@ function resetInactivityTimer() {
 });
 
 resetInactivityTimer();
+
 
 
 
