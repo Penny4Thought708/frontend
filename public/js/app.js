@@ -336,7 +336,41 @@ socket.on("voicemail:new", (vm) => {
   incrementVoicemailBadge();
   showVoicemailToast(vm);
 });
+/* -------------------------------------------------------
+   Unified Dashboard Bootstrap (socket-aware)
+------------------------------------------------------- */
+socket.on("connect", async () => {
+  console.log("[bootstrap] Socket connected:", socket.id);
 
+  // Wait for identity to actually load
+  await waitForIdentity();
+
+  // Load contacts AFTER identity
+  await loadContacts();
+
+  // Messaging engine
+  const messaging = new MessagingEngine(
+    socket,
+    renderMessages,
+    renderIncomingMessage,
+    "/api/messages"
+  );
+
+  // NOW SAFE: create WebRTC controller
+  const rtc = new WebRTCController(socket);
+  initCallUI(rtc);
+
+  initCallLogs({ socket });
+  loadMessageList();
+  loadVoicemails();
+
+  window.openChat = async function (contactId) {
+    window.currentChatUserId = contactId;
+    await messaging.loadMessages(contactId);
+  };
+
+  initContentMenu();
+});
 function renderVoicemail(vm) {
   const listEl = document.getElementById("voiceMList");
   if (!listEl) return;
@@ -567,40 +601,6 @@ socket.on("call:voicemail", () => {
   startVoicemailRecorder();
 });
 
-
-
-/* -------------------------------------------------------
-   Unified Dashboard Bootstrap
-------------------------------------------------------- */
-(async () => {
-  await waitForIdentity();
-  await loadContacts();
-
-  const messaging = new MessagingEngine(
-    socket,
-    renderMessages,
-    renderIncomingMessage,
-    "/api/messages"
-  );
-
-  const rtc = new WebRTCController(socket);
-  initCallUI(rtc);
-
-  initCallLogs({ socket });
-
-  loadMessageList();
-  loadVoicemails();
-
-  window.openChat = async function (contactId) {
-    window.currentChatUserId = contactId;
-    await messaging.loadMessages(contactId);
-  };
-
-  initContentMenu();
-})();
-
-
-
 /* -------------------------------------------------------
    Contact window toggle
 ------------------------------------------------------- */
@@ -760,6 +760,7 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
 
 
 
