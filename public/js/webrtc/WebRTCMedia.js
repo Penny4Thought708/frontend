@@ -164,7 +164,18 @@ console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.ready
     remoteVideo.style.display = show ? "none" : "block";
   };
 
+evt.track.onmute = () => {
   showAvatar(true);
+};
+
+evt.track.onunmute = () => {
+  showAvatar(false);
+};
+
+evt.track.onended = () => {
+  showAvatar(true);
+};
+
 
   if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
@@ -199,6 +210,7 @@ console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
