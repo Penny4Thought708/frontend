@@ -1,12 +1,13 @@
-// frontend/sockets/reactions.js
+// node-backend/sockets/reactions.js
 
 export default function registerReactionHandlers(io, socket) {
-  // Frontend emits this
   socket.on("message:reaction", (payload) => {
-    // Broadcast to all clients
+    // Broadcast to all connected clients
     io.emit("message:reaction", payload);
   });
 }
+
+
 
 
 
