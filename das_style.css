@@ -390,7 +390,7 @@ input[type="range"] {
   position: absolute;
   width: 320px;
   padding: 20px;
-  left: 5%;
+  left: 45%;
   background: #020129;
   border: 2px solid #017575;
   border-radius: 10px;
@@ -5309,6 +5309,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
