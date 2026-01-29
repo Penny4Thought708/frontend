@@ -851,34 +851,32 @@ window.currentUserAvatar = user.avatar;
   <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
 <!-- Core systems -->
-  <script type="module" src="public/js/globals.js"></script>
-<script type="module" src="public/js/session.js"></script>
-<script type="module" src="public/js/socket.js"></script>
-<script type="module" src="public/js/messaging.js"></script>
-<script type="module" src="public/js/call-log.js"></script>
+<script type="module" src="public/js/globals.js?v=3"></script>
+<script type="module" src="public/js/session.js?v=3"></script>
+<script type="module" src="public/js/socket.js?v=3"></script>
+<script type="module" src="public/js/messaging.js?v=3"></script>
+<script type="module" src="public/js/call-log.js?v=3"></script>
 
 <!-- WebRTC -->
-<script type="module" src="public/js/webrtc/WebRTCMedia.js"></script>
-<script type="module" src="public/js/webrtc/WebRTCController.js"></script>
-<script type="module" src="public/js/webrtc/CallUI.js"></script>
+<script type="module" src="public/js/webrtc/WebRTCMedia.js?v=3"></script>
+<script type="module" src="public/js/webrtc/WebRTCController.js?v=3"></script>
+<script type="module" src="public/js/webrtc/CallUI.js?v=3"></script>
 
-<!-- Contacts (must load AFTER session, socket, messaging, call-log) -->
-
-
-<!-- Dashboard -->
-<script type="module" src="public/js/dashboard/contacts.js"></script>
-
+<!-- Contacts -->
+<script type="module" src="public/js/dashboard/contacts.js?v=3"></script>
 
 <!-- App extras -->
-<script type="module" src="public/js/app.js"></script>
-<script type="module" src="public/js/ice.js"></script>
-<script type="module" src="public/js/debug.js"></script>
+<script type="module" src="public/js/app.js?v=3"></script>
+<script type="module" src="public/js/ice.js?v=3"></script>
+<script type="module" src="public/js/debug.js?v=3"></script>
+
 <!-- Legacy scripts -->
-<script src="buttons-functions.js"></script>
-<script src="SettingsStore.js"></script>
-<script src="DeviceManager.js"></script>
-<script src="SettingsController.js"></script>
-<script src="MediaPreview.js"></script>
+<script src="buttons-functions.js?v=3"></script>
+<script src="SettingsStore.js?v=3"></script>
+<script src="DeviceManager.js?v=3"></script>
+<script src="SettingsController.js?v=3"></script>
+<script src="MediaPreview.js?v=3"></script>
+
 
 
 
@@ -1515,6 +1513,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
