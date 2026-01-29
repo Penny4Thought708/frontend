@@ -53,6 +53,7 @@ export const rtcState = {
      Internal Guards
   --------------------------------------------------- */
   resetInProgress: false,
+  answering: false,   // 🔥 NEW — blocks fallback during answer window
 
   /* ---------------------------------------------------
      Logging Helper
@@ -173,6 +174,7 @@ export const rtcState = {
     this.pendingIceRestart = false;
 
     this.callId = null;
+    this.answering = false;   // 🔥 NEW — ensure clean state after teardown
 
     this.log("Call state reset");
   },
@@ -212,6 +214,7 @@ export const rtcState = {
       incomingOffer: this.incomingOffer,
       usedRelayFallback: this.usedRelayFallback,
       pendingIceRestart: this.pendingIceRestart,
+      answering: this.answering,   // 🔥 NEW — visible in debug
       hasLocalStream: !!this.localStream,
       hasRemoteStream: !!this.remoteStream,
       remoteTrackCount: this.remoteTracks.size,
@@ -222,6 +225,8 @@ export const rtcState = {
     return snapshot;
   }
 };
+
+
 
 
 
