@@ -260,7 +260,45 @@ export function attachRemoteTrack(evt) {
 ------------------------------------------------------- */
 export function cleanupMedia() {
   stopSpeakingDetection();
-  rtcState.remoteStream = null;
+
+  // Stop remote tracks
+  if (rtcState.remoteStream) {
+    rtcState.remoteStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {}
+    });
+    rtcState.remoteStream = null;
+  }
+
+  // Stop local tracks
+  if (rtcState.localStream) {
+    rtcState.localStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {}
+    });
+    rtcState.localStream = null;
+  }
+
+  // Clear media elements
+  const localVideo = document.getElementById("localVideo");
+  const remoteVideo = document.getElementById("remoteVideo");
+  const remoteAudioEl = document.getElementById("remoteAudio");
+
+  if (localVideo) {
+    localVideo.srcObject = null;
+    localVideo.style.display = "none";
+    localVideo.style.opacity = "0";
+  }
+  if (remoteVideo) {
+    remoteVideo.srcObject = null;
+    remoteVideo.style.display = "none";
+    remoteVideo.style.opacity = "0";
+  }
+  if (remoteAudioEl) {
+    remoteAudioEl.srcObject = null;
+  }
 }
 
 /* -------------------------------------------------------
@@ -269,6 +307,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
