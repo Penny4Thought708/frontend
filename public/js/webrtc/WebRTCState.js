@@ -1,25 +1,34 @@
 // public/js/webrtc/WebRTCState.js
-// Premium, centralized WebRTC state container with robust teardown,
-// defensive guards, and expressive state transitions.
+// Premium, expressive WebRTC state machine with explicit phases,
+// robust teardown, and traceable transitions.
 
 export const rtcState = {
   /* ---------------------------------------------------
-     Peer / Identity
+     Identity
   --------------------------------------------------- */
   peerId: null,
   peerName: null,
 
   /* ---------------------------------------------------
-     Call State
+     Call Phases
+     idle → ringing → connecting → active → ending
   --------------------------------------------------- */
-  inCall: false,
-  isCaller: false,
-  audioOnly: false,
-  incomingOffer: null,
-  callEstablished: false, // true once both sides exchange SDP
+  phase: "idle", // idle | ringing | connecting | active | ending
 
   /* ---------------------------------------------------
-     Media Streams
+     Flags
+  --------------------------------------------------- */
+  isCaller: false,
+  audioOnly: false,
+  callEstablished: false,
+
+  /* ---------------------------------------------------
+     Signaling
+  --------------------------------------------------- */
+  incomingOffer: null,
+
+  /* ---------------------------------------------------
+     Media
   --------------------------------------------------- */
   localStream: null,
   remoteStream: null,
@@ -38,6 +47,15 @@ export const rtcState = {
   },
 
   /* ---------------------------------------------------
+     Phase Management
+  --------------------------------------------------- */
+  setPhase(newPhase) {
+    if (!newPhase) return;
+    this.phase = newPhase;
+    this.log("Phase →", newPhase);
+  },
+
+  /* ---------------------------------------------------
      Peer Assignment
   --------------------------------------------------- */
   setPeer(id, name = null) {
@@ -49,50 +67,50 @@ export const rtcState = {
   /* ---------------------------------------------------
      Call State Mutators
   --------------------------------------------------- */
-setCallState(state = {}) {
-  if (typeof state !== "object" || state === null) {
-    this.log("setCallState ignored invalid input:", state);
-    return;
-  }
+  setCallState(state = {}) {
+    if (typeof state !== "object" || state === null) {
+      this.log("setCallState ignored invalid input:", state);
+      return;
+    }
 
-  const { inCall, isCaller, audioOnly, incomingOffer } = state;
+    const { isCaller, audioOnly, incomingOffer } = state;
 
-  if (inCall !== undefined) this.inCall = inCall;
-  if (isCaller !== undefined) this.isCaller = isCaller;
-  if (audioOnly !== undefined) this.audioOnly = audioOnly;
-  if (incomingOffer !== undefined) this.incomingOffer = incomingOffer;
+    if (isCaller !== undefined) this.isCaller = isCaller;
+    if (audioOnly !== undefined) this.audioOnly = audioOnly;
+    if (incomingOffer !== undefined) this.incomingOffer = incomingOffer;
 
-  this.log("Call state updated:", {
-    inCall: this.inCall,
-    isCaller: this.isCaller,
-    audioOnly: this.audioOnly,
-    incomingOffer: this.incomingOffer,
-  });
-},
+    this.log("Call state updated:", {
+      phase: this.phase,
+      isCaller: this.isCaller,
+      audioOnly: this.audioOnly,
+      incomingOffer: this.incomingOffer,
+    });
+  },
 
   markCallEstablished() {
     this.callEstablished = true;
+    this.setPhase("active");
     this.log("Call established");
   },
 
   /* ---------------------------------------------------
      Media Reset
   --------------------------------------------------- */
- resetMedia() {
-  try {
-    if (this.localStream instanceof MediaStream) {
-      this.localStream.getTracks().forEach((t) => {
-        try { t.stop(); } catch {}
-      });
+  resetMedia() {
+    try {
+      if (this.localStream instanceof MediaStream) {
+        this.localStream.getTracks().forEach((t) => {
+          try { t.stop(); } catch {}
+        });
+      }
+    } catch (err) {
+      console.warn("[rtcState] Error stopping local tracks:", err);
     }
-  } catch (err) {
-    console.warn("[rtcState] Error stopping local tracks:", err);
-  }
 
-  this.localStream = null;
-  this.remoteStream = null;
-  this.log("Media reset");
-},
+    this.localStream = null;
+    this.remoteStream = null;
+    this.log("Media reset");
+  },
 
   /* ---------------------------------------------------
      Timer Reset
@@ -107,14 +125,14 @@ setCallState(state = {}) {
   },
 
   /* ---------------------------------------------------
-     Call State Reset
+     Full Call Reset
   --------------------------------------------------- */
   resetCallState() {
-    this.inCall = false;
+    this.phase = "idle";
     this.isCaller = false;
     this.audioOnly = false;
-    this.incomingOffer = null;
     this.callEstablished = false;
+    this.incomingOffer = null;
 
     this.peerId = null;
     this.peerName = null;
@@ -137,13 +155,13 @@ setCallState(state = {}) {
   --------------------------------------------------- */
   debug() {
     const snapshot = {
+      phase: this.phase,
       peerId: this.peerId,
       peerName: this.peerName,
-      inCall: this.inCall,
       isCaller: this.isCaller,
       audioOnly: this.audioOnly,
-      incomingOffer: this.incomingOffer,
       callEstablished: this.callEstablished,
+      incomingOffer: this.incomingOffer,
       hasLocalStream: !!this.localStream,
       hasRemoteStream: !!this.remoteStream,
       callTimerSeconds: this.callTimerSeconds,
@@ -153,6 +171,8 @@ setCallState(state = {}) {
     return snapshot;
   },
 };
+
+
 
 
 
