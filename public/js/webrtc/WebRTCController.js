@@ -82,6 +82,7 @@ const UI = {
     const camBtn = document.getElementById("camera-toggle");
     const callStatusEl = document.getElementById("call-status");
 
+    // Status text
     if (callStatusEl) {
       switch (state) {
         case "incoming":
@@ -108,6 +109,7 @@ const UI = {
       return;
     }
 
+    // Reset core visual state
     callControls.classList.remove("active");
     videoContainer.classList.remove("active", "voice-mode", "video-mode");
     hide(answerBtn);
@@ -116,16 +118,19 @@ const UI = {
     hide(camBtn);
     hide(callerOverlay);
 
+    // IDLE → messaging visible, call UI reset
     if (state === "idle") {
       messagingBox.style.opacity = "1";
       messagingBox.style.pointerEvents = "auto";
 
+      // Messaging avatars (local + remote) via wrapper system
       applyAvatar(localWrapper, getMyAvatar(), getMyFullname());
       showAvatar(localWrapper);
 
       applyAvatar(remoteWrapper, null, "");
       showAvatar(remoteWrapper);
 
+      // Call UI: ensure local avatar visible, videos hidden
       const localAvatar = document.getElementById("localAvatar");
       const remoteAvatar = document.getElementById("remoteAvatar");
       const localVideo = document.getElementById("localVideo");
@@ -145,9 +150,11 @@ const UI = {
       return;
     }
 
+    // NON-IDLE → hide messaging panel instantly
     messagingBox.style.opacity = "0";
     messagingBox.style.pointerEvents = "none";
 
+    // Show video container in voice/video mode
     videoContainer.classList.add("active");
     videoContainer.classList.add(audioOnly ? "voice-mode" : "video-mode");
 
@@ -246,10 +253,11 @@ export class WebRTCController {
     UI.apply("idle");
     this._bindSocketEvents();
 
+    // Initialize local avatar in call UI
     setLocalAvatar(getMyAvatar());
     showLocalAvatar();
-    this._initDraggableRemote();
-    this._bindSwapBehavior();
+    this._initDraggableRemote?.();
+    this._bindSwapBehavior?.();
   }
 
   /* ---------------------------------------------------
@@ -317,7 +325,9 @@ export class WebRTCController {
         showLocalAvatar();
       }
     } else {
-      console.warn("[WebRTC] No local media stream; proceeding with no mic/camera");
+      console.warn(
+        "[WebRTC] No local media stream; proceeding with no mic/camera"
+      );
       showLocalAvatar();
     }
 
@@ -356,7 +366,8 @@ export class WebRTCController {
       return;
     }
 
-    const displayName = fromUser?.fullname || fromName || `User ${from}`;
+    const displayName =
+      fromUser?.fullname || fromName || `User ${from}`;
 
     rtcState.peerId = from;
     rtcState.peerName = displayName;
@@ -401,6 +412,9 @@ export class WebRTCController {
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
+    // Now that remoteDescription is set, flush any queued ICE
+    await this._flushPendingRemoteCandidates();
+
     const stream = await getLocalMedia(true, !rtcState.audioOnly);
     this.localStream = stream;
     rtcState.localStream = stream;
@@ -416,7 +430,7 @@ export class WebRTCController {
         showLocalAvatar();
       }
     } else {
-      console.warn("[WebRTC] No local media stream on answer; proceeding with no mic/camera");
+      console.warn("[WebRTC] No local media stream on answer");
       showLocalAvatar();
     }
 
@@ -490,11 +504,13 @@ export class WebRTCController {
       return;
     }
 
+    // Only the original caller should ever process an answer
     if (!rtcState.isCaller) {
       console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
       return;
     }
 
+    // Only accept the first answer, in the correct state
     if (this.pc.signalingState !== "have-local-offer") {
       console.warn(
         "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
@@ -505,6 +521,9 @@ export class WebRTCController {
 
     console.log("[WebRTC] handleAnswer: applying remote answer");
     await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+    // Now that remoteDescription is set, flush any queued ICE
+    await this._flushPendingRemoteCandidates();
 
     stopAudio(ringback);
     this.onCallStarted?.();
@@ -517,8 +536,9 @@ export class WebRTCController {
   async handleRemoteIceCandidate(data) {
     if (!data || !data.candidate) return;
 
-    if (!this.pc) {
-      console.log("[ICE] Queuing remote candidate (no PC yet):", data.candidate);
+    // If PC not ready yet, or remoteDescription not set, queue the candidate
+    if (!this.pc || !this.pc.remoteDescription) {
+      console.log("[ICE] Queuing remote candidate (no PC/remoteDescription yet):", data.candidate);
       this.pendingRemoteCandidates.push(data.candidate);
       return;
     }
@@ -630,7 +650,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Mute toggle
+     Mute toggle (for CallUI mute button)
   --------------------------------------------------- */
   toggleMute() {
     const stream = this.localStream || rtcState.localStream;
@@ -650,7 +670,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Camera toggle
+     Camera toggle / switch (for CallUI camera button)
   --------------------------------------------------- */
   switchCamera() {
     const stream = this.localStream || rtcState.localStream;
@@ -682,9 +702,10 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     PeerConnection Factory (TURN‑enabled + ICE Queue)
+     PeerConnection Factory (TURN‑enabled)
   --------------------------------------------------- */
   async _createPC() {
+    // Close old PC if it exists
     if (this.pc) {
       try {
         this.pc.close();
@@ -695,6 +716,9 @@ export class WebRTCController {
     const iceServers = await getIceServers();
     const pc = new RTCPeerConnection({ iceServers });
 
+    /* ---------------------------------------------------
+       OUTGOING ICE CANDIDATES
+    --------------------------------------------------- */
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
 
@@ -718,11 +742,15 @@ export class WebRTCController {
       }
     };
 
+    /* ---------------------------------------------------
+       REMOTE TRACKS
+    --------------------------------------------------- */
     pc.ontrack = (event) => {
       attachRemoteTrack(event);
 
       if (event.track.kind === "video") {
         showRemoteVideo();
+        fadeInVideo(this.remoteVideo);
       }
 
       event.track.onmute = () => {
@@ -736,6 +764,9 @@ export class WebRTCController {
       };
     };
 
+    /* ---------------------------------------------------
+       ICE STATE → QUALITY
+    --------------------------------------------------- */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.log("[WebRTC] iceConnectionState:", state);
@@ -758,6 +789,9 @@ export class WebRTCController {
       }
     };
 
+    /* ---------------------------------------------------
+       CONNECTION STATE
+    --------------------------------------------------- */
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       console.log("[WebRTC] connectionState:", state);
@@ -768,25 +802,33 @@ export class WebRTCController {
     };
 
     this.pc = pc;
+    return pc;
+  }
 
-    if (this.pendingRemoteCandidates?.length) {
-      console.log(
-        "[ICE] Flushing queued remote candidates:",
-        this.pendingRemoteCandidates.length
-      );
-
-      for (const c of this.pendingRemoteCandidates) {
-        try {
-          await this.pc.addIceCandidate(new RTCIceCandidate(c));
-        } catch (err) {
-          console.warn("[ICE] Error adding queued candidate:", err);
-        }
-      }
-
-      this.pendingRemoteCandidates = [];
+  /* ---------------------------------------------------
+     Flush queued remote ICE (after remoteDescription set)
+  --------------------------------------------------- */
+  async _flushPendingRemoteCandidates() {
+    if (!this.pc || !this.pc.remoteDescription) {
+      return;
     }
 
-    return pc;
+    if (!this.pendingRemoteCandidates?.length) return;
+
+    console.log(
+      "[ICE] Flushing queued remote candidates:",
+      this.pendingRemoteCandidates.length
+    );
+
+    for (const c of this.pendingRemoteCandidates) {
+      try {
+        await this.pc.addIceCandidate(new RTCIceCandidate(c));
+      } catch (err) {
+        console.warn("[ICE] Error adding queued candidate:", err);
+      }
+    }
+
+    this.pendingRemoteCandidates = [];
   }
 
   /* ---------------------------------------------------
@@ -959,6 +1001,8 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
+
 
 
 
