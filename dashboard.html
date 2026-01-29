@@ -852,8 +852,13 @@ window.currentUserAvatar = user.avatar;
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
 <!-- Core systems -->
 <script type="module" src="public/js/globals.js?v=3"></script>
-<script type="module" src="public/js/session.js?v=3"></script>
+
+<!-- SOCKET FIRST -->
 <script type="module" src="public/js/socket.js?v=3"></script>
+
+<!-- SESSION AFTER SOCKET -->
+<script type="module" src="public/js/session.js?v=3"></script>
+
 <script type="module" src="public/js/messaging.js?v=3"></script>
 <script type="module" src="public/js/call-log.js?v=3"></script>
 
@@ -869,6 +874,7 @@ window.currentUserAvatar = user.avatar;
 <script type="module" src="public/js/app.js?v=3"></script>
 <script type="module" src="public/js/ice.js?v=3"></script>
 <script type="module" src="public/js/debug.js?v=3"></script>
+
 
 <!-- Legacy scripts -->
 <script src="buttons-functions.js?v=3"></script>
@@ -1514,6 +1520,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 </html>
+
 
 
 
