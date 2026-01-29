@@ -1,35 +1,32 @@
 // public/js/ice.js  
 
-const SIGNALING_BASE = "https://letsee-backend.onrender.com";
+let cachedServers = null;
 
-export async function getIceServers() {
+export async function getIceServers({ relayOnly = false } = {}) {
   try {
-    const res = await fetch(`${SIGNALING_BASE}/api/webrtc/get-ice`, {
-      method: "GET",
-      credentials: "include",
-    });
+    if (!cachedServers) {
+      const res = await fetch(`${SIGNALING_BASE}/api/webrtc/get-ice`, {
+        method: "GET",
+        credentials: "include",
+      });
 
-    const data = await res.json();
-
-    // Backend returns: { iceServers: [...] }
-    let servers = data?.iceServers;
-
-    if (!servers || (Array.isArray(servers) && servers.length === 0)) {
-      throw new Error("Invalid ICE servers");
+      const data = await res.json();
+      cachedServers = data?.iceServers || [];
     }
 
-    if (!Array.isArray(servers)) {
-      servers = [servers];
-    }
+    if (!relayOnly) return cachedServers;
 
-    return servers;
+    // Relay-only view
+    return cachedServers.filter((s) =>
+      (s.urls || "").includes("turn:")
+    );
   } catch (err) {
     console.warn("[ICE] Fetch failed, using fallback STUN:", err);
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 }
 
-window.getIceServers = getIceServers;
+
 
 
 
