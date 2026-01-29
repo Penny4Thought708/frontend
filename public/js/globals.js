@@ -1,6 +1,6 @@
 // public/js/globals.js
 // EXACT exports required by WebRTCController.js
-<!--
+/*
 import { getIceServers as loadIce } from "./ice.js";
 import { getMyUserId as sessionUserId, getMyFullname as sessionFullname } from "./session.js";
 
