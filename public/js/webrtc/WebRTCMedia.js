@@ -1,8 +1,21 @@
 // public/js/webrtc/WebRTCMedia.js
-// Premium media engine: local/remote media,
-// audio visualization, and speaking detection.
+// Production‑grade media engine: local/remote media,
+// audio visualization, speaking detection, and Safari‑safe playback.
 
-import { rtcState } from "./WebRTCState.js";
+import { rtcState } from "./WebRTCMState.js";
+
+/* -------------------------------------------------------
+   Shared AudioContext (Safari‑safe, mobile‑safe)
+------------------------------------------------------- */
+let sharedAudioCtx = null;
+function getAudioCtx() {
+  if (!sharedAudioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    sharedAudioCtx = new Ctx();
+  }
+  return sharedAudioCtx;
+}
 
 /* -------------------------------------------------------
    Logging Helper
@@ -32,11 +45,10 @@ function updateLocalAvatarVisibility() {
 function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
   if (!stream || !target) return;
 
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return log("AudioContext not supported");
+  const ctx = getAudioCtx();
+  if (!ctx) return log("AudioContext not supported");
 
-    const ctx = new AudioCtx();
+  try {
     const src = ctx.createMediaStreamSource(stream);
     const analyser = ctx.createAnalyser();
 
@@ -67,16 +79,17 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection
+   Remote Speaking Detection (with cleanup)
 ------------------------------------------------------- */
+let speakingLoopId = null;
+
 function startRemoteSpeakingDetection(stream, wrapper) {
   const ring = wrapper?.querySelector(".avatar-ring");
   if (!ring) return;
 
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return log("AudioContext not supported");
+  const ctx = getAudioCtx();
+  if (!ctx) return log("AudioContext not supported");
 
-  const ctx = new AudioCtx();
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
 
@@ -93,10 +106,17 @@ function startRemoteSpeakingDetection(stream, wrapper) {
     smoothed = smoothed * 0.8 + avg * 0.2;
     ring.classList.toggle("speaking", smoothed > 0.06);
 
-    requestAnimationFrame(loop);
+    speakingLoopId = requestAnimationFrame(loop);
   };
 
   loop();
+}
+
+export function stopSpeakingDetection() {
+  if (speakingLoopId) {
+    cancelAnimationFrame(speakingLoopId);
+    speakingLoopId = null;
+  }
 }
 
 /* -------------------------------------------------------
@@ -119,6 +139,7 @@ export async function getLocalMedia(audio = true, video = true) {
     if (video && localVideo) {
       localVideo.srcObject = stream;
       localVideo.muted = true;
+      localVideo.playsInline = true;
       await localVideo.play().catch(() => {});
     }
 
@@ -133,7 +154,7 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // If video is the problem, retry audio-only so at least voice works
+    // Retry audio-only if video fails
     if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
       log("Retrying getUserMedia with audio-only…");
       try {
@@ -159,17 +180,19 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling
+   Remote Track Handling (Safari‑safe, mobile‑safe)
 ------------------------------------------------------- */
 export function attachRemoteTrack(evt) {
-  const remoteStream = rtcState.remoteStream || new MediaStream();
-  rtcState.remoteStream = remoteStream;
+  let remoteStream = rtcState.remoteStream;
+  if (!remoteStream) {
+    remoteStream = new MediaStream();
+    rtcState.remoteStream = remoteStream;
+  }
 
   remoteStream.addTrack(evt.track);
 
   const remoteVideo = document.getElementById("remoteVideo");
   const remoteAudioEl = document.getElementById("remoteAudio");
-  console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.readyState);
 
   const wrapper =
     remoteVideo?.closest(".remote-media-wrapper") ||
@@ -179,48 +202,59 @@ export function attachRemoteTrack(evt) {
   const remoteAvatar = document.getElementById("remoteAvatar");
 
   const showAvatar = (show) => {
-    if (!remoteAvatar || !remoteVideo) return;
-    remoteAvatar.style.display = show ? "flex" : "none";
-    remoteVideo.style.display = show ? "none" : "block";
+    if (remoteAvatar) remoteAvatar.style.display = show ? "flex" : "none";
+    if (remoteVideo) remoteVideo.style.display = show ? "none" : "block";
   };
 
-  evt.track.onmute = () => {
-    showAvatar(true);
-  };
+  // Track events
+  evt.track.onmute = () => showAvatar(true);
+  evt.track.onunmute = () => showAvatar(false);
+  evt.track.onended = () => showAvatar(true);
 
-  evt.track.onunmute = () => {
-    showAvatar(false);
-  };
-
-  evt.track.onended = () => {
-    showAvatar(true);
-  };
-
+  /* -----------------------------
+     Remote Video
+  ----------------------------- */
   if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
+    remoteVideo.playsInline = true;
     remoteVideo.style.display = "block";
     remoteVideo.style.opacity = "1";
-    remoteVideo.style.width = "100%";
-    remoteVideo.style.height = "100%";
-    remoteVideo.style.background = "transparent";
-    console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 
     remoteVideo.onloadedmetadata = () => {
       remoteVideo.play().catch(() => {});
       showAvatar(false);
     };
-
-    evt.track.onended = () => showAvatar(true);
   }
 
+  /* -----------------------------
+     Remote Audio
+  ----------------------------- */
   if (evt.track.kind === "audio" && remoteAudioEl) {
     remoteAudioEl.srcObject = remoteStream;
-    remoteAudioEl.play().catch(() => {});
+    remoteAudioEl.playsInline = true;
+    remoteAudioEl.muted = false;
+
+    remoteAudioEl.play().catch(() => {
+      log("Remote audio autoplay blocked");
+    });
 
     if (wrapper) startRemoteSpeakingDetection(remoteStream, wrapper);
   }
 
-  if (wrapper) attachAudioVisualizer(remoteStream, wrapper);
+  /* -----------------------------
+     Visualizer (only once)
+  ----------------------------- */
+  if (wrapper && evt.track.kind === "audio") {
+    attachAudioVisualizer(remoteStream, wrapper);
+  }
+}
+
+/* -------------------------------------------------------
+   Cleanup on call end
+------------------------------------------------------- */
+export function cleanupMedia() {
+  stopSpeakingDetection();
+  rtcState.remoteStream = null;
 }
 
 /* -------------------------------------------------------
@@ -229,6 +263,8 @@ export function attachRemoteTrack(evt) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
+
 
 
 
