@@ -2,7 +2,7 @@
 // Production‑grade media engine: local/remote media,
 // audio visualization, speaking detection, and Safari‑safe playback.
 
-import { rtcState } from "./WebRTCMState.js";
+import { rtcState } from "./WebRTCState.js";
 
 /* -------------------------------------------------------
    Shared AudioContext (Safari‑safe, mobile‑safe)
@@ -263,6 +263,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
