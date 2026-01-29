@@ -1,6 +1,6 @@
 // public/js/debug.js
 
-/*
+
 export const DEBUG = {
   ui: false,
   socket: true,
@@ -39,5 +39,4 @@ async function testTurnReachability() {
 }
 
 window.testTurnReachability = testTurnReachability;
-*/
 
