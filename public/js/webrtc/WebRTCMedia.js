@@ -180,7 +180,7 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (Safari‑safe, mobile‑safe)
+   Remote Track Handling (UPDATED — FIXED VIDEO)
 ------------------------------------------------------- */
 export function attachRemoteTrack(evt) {
   let remoteStream = rtcState.remoteStream;
@@ -212,7 +212,7 @@ export function attachRemoteTrack(evt) {
   evt.track.onended = () => showAvatar(true);
 
   /* -----------------------------
-     Remote Video
+     Remote Video (FIXED)
   ----------------------------- */
   if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
@@ -220,10 +220,16 @@ export function attachRemoteTrack(evt) {
     remoteVideo.style.display = "block";
     remoteVideo.style.opacity = "1";
 
-    remoteVideo.onloadedmetadata = () => {
-      remoteVideo.play().catch(() => {});
-      showAvatar(false);
-    };
+    // FIX: Play immediately — do NOT rely on onloadedmetadata
+    remoteVideo
+      .play()
+      .then(() => {
+        showAvatar(false);
+        log("Remote VIDEO playing");
+      })
+      .catch((err) => {
+        log("Remote video play blocked or failed:", err?.name || err);
+      });
   }
 
   /* -----------------------------
@@ -263,6 +269,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
