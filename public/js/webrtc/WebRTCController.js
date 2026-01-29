@@ -789,74 +789,98 @@ export class WebRTCController {
       };
     };
 
-    /* ---------------------------------------------------
-       ICE STATE → QUALITY + RECOVERY
-    --------------------------------------------------- */
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-      console.log("[WebRTC] iceConnectionState:", state);
+   /* ---------------------------------------------------
+   ICE STATE → QUALITY + MOBILE‑SAFE RECOVERY
+--------------------------------------------------- */
+pc.oniceconnectionstatechange = () => {
+  const state = pc.iceConnectionState;
+  console.log("[WebRTC] iceConnectionState:", state);
 
-      const level =
-        state === "connected"
-          ? "excellent"
-          : state === "checking"
-          ? "fair"
-          : state === "disconnected"
-          ? "poor"
-          : state === "failed"
-          ? "bad"
-          : "unknown";
+  const level =
+    state === "connected"
+      ? "excellent"
+      : state === "checking"
+      ? "fair"
+      : state === "disconnected"
+      ? "poor"
+      : state === "failed"
+      ? "bad"
+      : "unknown";
 
-      this.onQualityChange?.(level, `ICE: ${state}`);
+  this.onQualityChange?.(level, `ICE: ${state}`);
 
-      if (state === "disconnected") {
-        // Try ICE restart after a short delay
-        setTimeout(() => {
-          if (pc.iceConnectionState === "disconnected" && pc.restartIce) {
-            console.log("[WebRTC] ICE disconnected — restarting ICE…");
-            pc.restartIce();
-          }
-        }, 2000);
-      }
+  /* ---------------------------------------------------
+     MOBILE NETWORK FIX:
+     Treat long "checking" or "disconnected" as failure
+  --------------------------------------------------- */
+  if (state === "checking") {
+    setTimeout(() => {
+      if (
+        pc.iceConnectionState === "checking" &&
+        !rtcState.usedRelayFallback &&
+        rtcState.peerId
+      ) {
+        console.warn("[WebRTC] Stuck in checking — forcing relay-only fallback");
+        rtcState.usedRelayFallback = true;
 
-      if (state === "failed") {
-        // If we haven't tried relay-only yet, retry call using TURN-only
-        if (!rtcState.usedRelayFallback && rtcState.peerId) {
-          console.warn("[WebRTC] ICE failed — retrying with relay-only…");
-          rtcState.usedRelayFallback = true;
+        const peerId = rtcState.peerId;
+        const audioOnly = rtcState.audioOnly;
+        const isCaller = rtcState.isCaller;
 
-          const peerId = rtcState.peerId;
-          const audioOnly = rtcState.audioOnly;
-          const isCaller = rtcState.isCaller;
+        this.endCall(false);
 
-          this.endCall(false);
-
-          if (isCaller) {
-            this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-          } else {
-            // Callee side: we could signal failure or show UI hint
-            this.onCallFailed?.("ice failed");
-          }
-        } else {
-          this.onCallFailed?.("ice failed");
+        if (isCaller) {
+          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
         }
       }
-    };
-
-    /* ---------------------------------------------------
-       CONNECTION STATE
-    --------------------------------------------------- */
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      console.log("[WebRTC] connectionState:", state);
-
-      if (state === "failed") {
-        this.onCallFailed?.("connection failed");
-      }
-    };
-
-    return pc;
+    }, 2500);
   }
+
+  if (state === "disconnected") {
+    setTimeout(() => {
+      if (
+        pc.iceConnectionState === "disconnected" &&
+        !rtcState.usedRelayFallback &&
+        rtcState.peerId
+      ) {
+        console.warn("[WebRTC] Mobile network disconnected — forcing relay-only fallback");
+        rtcState.usedRelayFallback = true;
+
+        const peerId = rtcState.peerId;
+        const audioOnly = rtcState.audioOnly;
+        const isCaller = rtcState.isCaller;
+
+        this.endCall(false);
+
+        if (isCaller) {
+          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+        }
+      }
+    }, 1500);
+  }
+
+  /* ---------------------------------------------------
+     TRUE FAILURE → fallback or fail
+  --------------------------------------------------- */
+  if (state === "failed") {
+    if (!rtcState.usedRelayFallback && rtcState.peerId) {
+      console.warn("[WebRTC] ICE failed — retrying with relay-only…");
+      rtcState.usedRelayFallback = true;
+
+      const peerId = rtcState.peerId;
+      const audioOnly = rtcState.audioOnly;
+      const isCaller = rtcState.isCaller;
+
+      this.endCall(false);
+
+      if (isCaller) {
+        this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+      }
+    } else {
+      this.onCallFailed?.("ice failed");
+    }
+  }
+};
 
   /* ---------------------------------------------------
      Flush queued remote ICE (after remoteDescription set)
@@ -1054,6 +1078,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
