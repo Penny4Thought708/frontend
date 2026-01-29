@@ -82,7 +82,6 @@ const UI = {
     const camBtn = document.getElementById("camera-toggle");
     const callStatusEl = document.getElementById("call-status");
 
-    // Status text
     if (callStatusEl) {
       switch (state) {
         case "incoming":
@@ -109,7 +108,6 @@ const UI = {
       return;
     }
 
-    // Reset core visual state
     callControls.classList.remove("active");
     videoContainer.classList.remove("active", "voice-mode", "video-mode");
     hide(answerBtn);
@@ -118,19 +116,16 @@ const UI = {
     hide(camBtn);
     hide(callerOverlay);
 
-    // IDLE → messaging visible, call UI reset
     if (state === "idle") {
       messagingBox.style.opacity = "1";
       messagingBox.style.pointerEvents = "auto";
 
-      // Messaging avatars (local + remote) via wrapper system
       applyAvatar(localWrapper, getMyAvatar(), getMyFullname());
       showAvatar(localWrapper);
 
       applyAvatar(remoteWrapper, null, "");
       showAvatar(remoteWrapper);
 
-      // Call UI: ensure local avatar visible, videos hidden
       const localAvatar = document.getElementById("localAvatar");
       const remoteAvatar = document.getElementById("remoteAvatar");
       const localVideo = document.getElementById("localVideo");
@@ -150,11 +145,9 @@ const UI = {
       return;
     }
 
-    // NON-IDLE → hide messaging panel instantly
     messagingBox.style.opacity = "0";
     messagingBox.style.pointerEvents = "none";
 
-    // Show video container in voice/video mode
     videoContainer.classList.add("active");
     videoContainer.classList.add(audioOnly ? "voice-mode" : "video-mode");
 
@@ -237,9 +230,9 @@ export class WebRTCController {
     this.socket = socket;
     this.pc = null;
     this.localStream = null;
-    
+
     this.pendingRemoteCandidates = [];
-    
+
     this.localVideo = null;
     this.remoteVideo = null;
     this.remoteAudio = null;
@@ -253,11 +246,10 @@ export class WebRTCController {
     UI.apply("idle");
     this._bindSocketEvents();
 
-    // Initialize local avatar in call UI
     setLocalAvatar(getMyAvatar());
     showLocalAvatar();
-    this._initDraggableRemote?.();
-    this._bindSwapBehavior?.();
+    this._initDraggableRemote();
+    this._bindSwapBehavior();
   }
 
   /* ---------------------------------------------------
@@ -325,9 +317,7 @@ export class WebRTCController {
         showLocalAvatar();
       }
     } else {
-      console.warn(
-        "[WebRTC] No local media stream; proceeding with no mic/camera"
-      );
+      console.warn("[WebRTC] No local media stream; proceeding with no mic/camera");
       showLocalAvatar();
     }
 
@@ -366,8 +356,7 @@ export class WebRTCController {
       return;
     }
 
-    const displayName =
-      fromUser?.fullname || fromName || `User ${from}`;
+    const displayName = fromUser?.fullname || fromName || `User ${from}`;
 
     rtcState.peerId = from;
     rtcState.peerName = displayName;
@@ -427,7 +416,7 @@ export class WebRTCController {
         showLocalAvatar();
       }
     } else {
-      console.warn("[WebRTC] No local media stream on answer");
+      console.warn("[WebRTC] No local media stream on answer; proceeding with no mic/camera");
       showLocalAvatar();
     }
 
@@ -440,6 +429,8 @@ export class WebRTCController {
       from: getMyUserId(),
       answer,
     });
+
+    rtcState.incomingOffer = null;
 
     UI.apply("active", { audioOnly: rtcState.audioOnly });
     this.onCallStarted?.();
@@ -499,13 +490,11 @@ export class WebRTCController {
       return;
     }
 
-    // Only the original caller should ever process an answer
     if (!rtcState.isCaller) {
       console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
       return;
     }
 
-    // Only accept the first answer, in the correct state
     if (this.pc.signalingState !== "have-local-offer") {
       console.warn(
         "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
@@ -525,24 +514,23 @@ export class WebRTCController {
   /* ---------------------------------------------------
      ICE Candidate
   --------------------------------------------------- */
-async handleRemoteIceCandidate(data) {
-  if (!data || !data.candidate) return;
+  async handleRemoteIceCandidate(data) {
+    if (!data || !data.candidate) return;
 
-  // If PC not ready yet, queue the candidate
-  if (!this.pc) {
-    console.log("[ICE] Queuing remote candidate (no PC yet):", data.candidate);
-    this.pendingRemoteCandidates.push(data.candidate);
-    return;
+    if (!this.pc) {
+      console.log("[ICE] Queuing remote candidate (no PC yet):", data.candidate);
+      this.pendingRemoteCandidates.push(data.candidate);
+      return;
+    }
+
+    console.log("[ICE] Adding remote candidate:", data.candidate);
+
+    try {
+      await this.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+    } catch (err) {
+      console.warn("[WebRTC] Error adding ICE candidate:", err);
+    }
   }
-
-  console.log("[ICE] Adding remote candidate:", data.candidate);
-
-  try {
-    await this.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-  } catch (err) {
-    console.warn("[WebRTC] Error adding ICE candidate:", err);
-  }
-}
 
   /* ---------------------------------------------------
      Remote End
@@ -642,7 +630,7 @@ async handleRemoteIceCandidate(data) {
   }
 
   /* ---------------------------------------------------
-     Mute toggle (for CallUI mute button)
+     Mute toggle
   --------------------------------------------------- */
   toggleMute() {
     const stream = this.localStream || rtcState.localStream;
@@ -662,7 +650,7 @@ async handleRemoteIceCandidate(data) {
   }
 
   /* ---------------------------------------------------
-     Camera toggle / switch (for CallUI camera button)
+     Camera toggle
   --------------------------------------------------- */
   switchCamera() {
     const stream = this.localStream || rtcState.localStream;
@@ -693,129 +681,113 @@ async handleRemoteIceCandidate(data) {
     }
   }
 
-/* ---------------------------------------------------
-   PeerConnection Factory (TURN‑enabled + ICE Queue)
---------------------------------------------------- */
-async _createPC() {
-  // Close old PC if it exists
-  if (this.pc) {
-    try { this.pc.close(); } catch {}
-    this.pc = null;
-  }
-
-  // Create new PeerConnection
-  const iceServers = await getIceServers();
-  const pc = new RTCPeerConnection({ iceServers });
-
   /* ---------------------------------------------------
-     OUTGOING ICE CANDIDATES
+     PeerConnection Factory (TURN‑enabled + ICE Queue)
   --------------------------------------------------- */
-  pc.onicecandidate = (event) => {
-    if (!event.candidate) return;
-
-    console.log("[ICE] Local candidate:", event.candidate);
-
-    // Classify candidate type
-    const c = event.candidate.candidate || "";
-    let type = "unknown";
-    if (c.includes("relay")) type = "TURN relay";
-    else if (c.includes("srflx")) type = "STUN srflx";
-    else if (c.includes("host")) type = "Host";
-
-    this.onQualityChange?.("good", `Candidate: ${type}`);
-
-    // Send to peer
-    if (rtcState.peerId && this.socket) {
-      this.socket.emit("webrtc:signal", {
-        type: "ice",
-        to: rtcState.peerId,
-        from: getMyUserId(),
-        candidate: event.candidate,
-      });
-    }
-  };
-
-  /* ---------------------------------------------------
-     REMOTE TRACKS
-  --------------------------------------------------- */
-  pc.ontrack = (event) => {
-    attachRemoteTrack(event);
-
-    if (event.track.kind === "video") {
-      showRemoteVideo();
-      fadeInVideo(this.remoteVideo);
-    }
-
-    // Track state hooks
-    event.track.onmute = () => {
-      this.onQualityChange?.("fair", "Remote track muted");
-    };
-    event.track.onunmute = () => {
-      this.onQualityChange?.("good", "Remote track active");
-    };
-    event.track.onended = () => {
-      this.onQualityChange?.("poor", "Remote track ended");
-    };
-  };
-
-  /* ---------------------------------------------------
-     ICE STATE → QUALITY
-  --------------------------------------------------- */
-  pc.oniceconnectionstatechange = () => {
-    const state = pc.iceConnectionState;
-    console.log("[WebRTC] iceConnectionState:", state);
-
-    const level =
-      state === "connected" ? "excellent" :
-      state === "checking"  ? "fair" :
-      state === "disconnected" ? "poor" :
-      state === "failed" ? "bad" :
-      "unknown";
-
-    this.onQualityChange?.(level, `ICE: ${state}`);
-
-    if (state === "failed" || state === "disconnected") {
-      this.onCallFailed?.(state);
-    }
-  };
-
-  /* ---------------------------------------------------
-     CONNECTION STATE
-  --------------------------------------------------- */
-  pc.onconnectionstatechange = () => {
-    const state = pc.connectionState;
-    console.log("[WebRTC] connectionState:", state);
-
-    if (state === "failed") {
-      this.onCallFailed?.("connection failed");
-    }
-  };
-
-  /* ---------------------------------------------------
-     APPLY QUEUED REMOTE ICE CANDIDATES
-  --------------------------------------------------- */
-  this.pc = pc;
-
-  if (this.pendingRemoteCandidates?.length) {
-    console.log(
-      "[ICE] Flushing queued remote candidates:",
-      this.pendingRemoteCandidates.length
-    );
-
-    for (const c of this.pendingRemoteCandidates) {
+  async _createPC() {
+    if (this.pc) {
       try {
-        await this.pc.addIceCandidate(new RTCIceCandidate(c));
-      } catch (err) {
-        console.warn("[ICE] Error adding queued candidate:", err);
-      }
+        this.pc.close();
+      } catch {}
+      this.pc = null;
     }
 
-    this.pendingRemoteCandidates = [];
+    const iceServers = await getIceServers();
+    const pc = new RTCPeerConnection({ iceServers });
+
+    pc.onicecandidate = (event) => {
+      if (!event.candidate) return;
+
+      console.log("[ICE] Local candidate:", event.candidate);
+
+      const c = event.candidate.candidate || "";
+      let type = "unknown";
+      if (c.includes("relay")) type = "TURN relay";
+      else if (c.includes("srflx")) type = "STUN srflx";
+      else if (c.includes("host")) type = "Host";
+
+      this.onQualityChange?.("good", `Candidate: ${type}`);
+
+      if (rtcState.peerId && this.socket) {
+        this.socket.emit("webrtc:signal", {
+          type: "ice",
+          to: rtcState.peerId,
+          from: getMyUserId(),
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      attachRemoteTrack(event);
+
+      if (event.track.kind === "video") {
+        showRemoteVideo();
+      }
+
+      event.track.onmute = () => {
+        this.onQualityChange?.("fair", "Remote track muted");
+      };
+      event.track.onunmute = () => {
+        this.onQualityChange?.("good", "Remote track active");
+      };
+      event.track.onended = () => {
+        this.onQualityChange?.("poor", "Remote track ended");
+      };
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      console.log("[WebRTC] iceConnectionState:", state);
+
+      const level =
+        state === "connected"
+          ? "excellent"
+          : state === "checking"
+          ? "fair"
+          : state === "disconnected"
+          ? "poor"
+          : state === "failed"
+          ? "bad"
+          : "unknown";
+
+      this.onQualityChange?.(level, `ICE: ${state}`);
+
+      if (state === "failed" || state === "disconnected") {
+        this.onCallFailed?.(state);
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      console.log("[WebRTC] connectionState:", state);
+
+      if (state === "failed") {
+        this.onCallFailed?.("connection failed");
+      }
+    };
+
+    this.pc = pc;
+
+    if (this.pendingRemoteCandidates?.length) {
+      console.log(
+        "[ICE] Flushing queued remote candidates:",
+        this.pendingRemoteCandidates.length
+      );
+
+      for (const c of this.pendingRemoteCandidates) {
+        try {
+          await this.pc.addIceCandidate(new RTCIceCandidate(c));
+        } catch (err) {
+          console.warn("[ICE] Error adding queued candidate:", err);
+        }
+      }
+
+      this.pendingRemoteCandidates = [];
+    }
+
+    return pc;
   }
-
-  return pc;
-}
-
 
   /* ---------------------------------------------------
      Socket bindings
@@ -853,7 +825,13 @@ async _createPC() {
           await this.handleAnswer(data);
           break;
         case "ice":
-          console.log("[SIGNAL] Incoming ICE from", data.from, "→", data.to, data.candidate);
+          console.log(
+            "[SIGNAL] Incoming ICE from",
+            data.from,
+            "→",
+            data.to,
+            data.candidate
+          );
           await this.handleRemoteIceCandidate(data);
           break;
         case "end":
@@ -901,6 +879,7 @@ async _createPC() {
       }
     });
   }
+
   _initDraggableRemote() {
     const wrapper = document.getElementById("remoteWrapper");
     const container = document.getElementById("video-container");
@@ -913,7 +892,6 @@ async _createPC() {
     let startTop = 0;
 
     const onMouseDown = (e) => {
-      // ❗ Only draggable in VIDEO MODE
       if (!container.classList.contains("video-mode")) return;
 
       isDragging = true;
@@ -940,11 +918,9 @@ async _createPC() {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
 
-      // Proposed new position
       let newLeft = startLeft + dx;
       let newTop = startTop + dy;
 
-      // ❗ Clamp inside container
       const maxLeft = containerRect.width - wrapperRect.width;
       const maxTop = containerRect.height - wrapperRect.height;
 
@@ -979,11 +955,11 @@ async _createPC() {
       container.classList.toggle("swap-layout");
     };
 
-    // Double-click remote or local to swap
     remoteWrapper.addEventListener("dblclick", toggleSwap);
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
