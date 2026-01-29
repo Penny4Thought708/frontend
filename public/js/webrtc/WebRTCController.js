@@ -1,6 +1,6 @@
 // public/js/webrtc/WebRTCController.js
 
-import { rtcState } from "./WebRTCState.js";
+import { rtcState } from "./WebRTcState.js";
 import {
   applyAvatar,
   showAvatar,
@@ -330,12 +330,12 @@ export class WebRTCController {
     }
 
     if (audioOnly) {
-      const remoteWrapper = document.getElementById("remoteWrapper");
-      if (remoteWrapper) {
-        remoteWrapper.style.left = "";
-        remoteWrapper.style.top = "";
-        remoteWrapper.style.right = "";
-        remoteWrapper.style.bottom = "";
+      const remoteWrapperEl = document.getElementById("remoteWrapper");
+      if (remoteWrapperEl) {
+        remoteWrapperEl.style.left = "";
+        remoteWrapperEl.style.top = "";
+        remoteWrapperEl.style.right = "";
+        remoteWrapperEl.style.bottom = "";
       }
     }
 
@@ -486,47 +486,47 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Remote Answer
   --------------------------------------------------- */
-async handleAnswer(data) {
-  if (!this.pc) {
-    console.warn("[WebRTC] handleAnswer: no peer connection");
-    return;
+  async handleAnswer(data) {
+    if (!this.pc) {
+      console.warn("[WebRTC] handleAnswer: no peer connection");
+      return;
+    }
+
+    if (!data || !data.answer) {
+      console.warn("[WebRTC] handleAnswer: invalid data", data);
+      return;
+    }
+
+    // Only the original caller should ever process an answer
+    if (!rtcState.isCaller) {
+      console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
+      return;
+    }
+
+    // Only accept the first answer, in the correct state
+    if (this.pc.signalingState !== "have-local-offer") {
+      console.warn(
+        "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
+        this.pc.signalingState
+      );
+      return;
+    }
+
+    console.log("[WebRTC] handleAnswer: applying remote answer");
+    await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+    stopAudio(ringback);
+    this.onCallStarted?.();
+    startTimer();
   }
-
-  if (!data || !data.answer) {
-    console.warn("[WebRTC] handleAnswer: invalid data", data);
-    return;
-  }
-
-  // 🚫 Only the original caller should ever process an answer
-  if (!rtcState.isCaller) {
-    console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
-    return;
-  }
-
-  // 🚫 Only accept the first answer, in the correct state
-  if (this.pc.signalingState !== "have-local-offer") {
-    console.warn(
-      "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
-      this.pc.signalingState
-    );
-    return;
-  }
-
-  console.log("[WebRTC] handleAnswer: applying remote answer");
-  await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-  stopAudio(ringback);
-  this.onCallStarted?.();
-  startTimer();
-}
-
-
 
   /* ---------------------------------------------------
      ICE Candidate
   --------------------------------------------------- */
   async handleRemoteIceCandidate(data) {
     if (!this.pc || !data || !data.candidate) return;
+
+    console.log("[ICE] Adding remote candidate:", data.candidate);
 
     try {
       await this.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
@@ -570,12 +570,12 @@ async handleAnswer(data) {
       this.localStream = null;
     }
 
-    const remoteWrapper = document.getElementById("remoteWrapper");
-    if (remoteWrapper) {
-      remoteWrapper.style.left = "";
-      remoteWrapper.style.top = "";
-      remoteWrapper.style.right = "";
-      remoteWrapper.style.bottom = "";
+    const remoteWrapperEl = document.getElementById("remoteWrapper");
+    if (remoteWrapperEl) {
+      remoteWrapperEl.style.left = "";
+      remoteWrapperEl.style.top = "";
+      remoteWrapperEl.style.right = "";
+      remoteWrapperEl.style.bottom = "";
     }
 
     const direction = rtcState.isCaller ? "outgoing" : "incoming";
@@ -698,8 +698,21 @@ async handleAnswer(data) {
     const iceServers = await getIceServers();
     const pc = new RTCPeerConnection({ iceServers });
 
+    /* ICE Candidate: send + debug */
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
+
+      console.log("[ICE] Local candidate:", event.candidate);
+
+      // Candidate type classification
+      const c = event.candidate.candidate || "";
+      let type = "unknown";
+      if (c.includes("relay")) type = "TURN relay";
+      else if (c.includes("srflx")) type = "STUN srflx";
+      else if (c.includes("host")) type = "Host";
+
+      this.onQualityChange?.("good", `Candidate: ${type}`);
+
       if (rtcState.peerId && this.socket) {
         this.socket.emit("webrtc:signal", {
           type: "ice",
@@ -710,25 +723,49 @@ async handleAnswer(data) {
       }
     };
 
+    /* Remote Track */
     pc.ontrack = (event) => {
       attachRemoteTrack(event);
       if (event.track.kind === "video") {
         showRemoteVideo();
         fadeInVideo(this.remoteVideo);
       }
+
+      event.track.onmute = () => {
+        this.onQualityChange?.("fair", "Remote track muted");
+      };
+      event.track.onunmute = () => {
+        this.onQualityChange?.("good", "Remote track active");
+      };
+      event.track.onended = () => {
+        this.onQualityChange?.("poor", "Remote track ended");
+      };
     };
 
+    /* ICE Debug + Quality */
     pc.oniceconnectionstatechange = () => {
-      const s = pc.iceConnectionState;
-      console.log("[WebRTC] iceConnectionState:", s);
-      if (s === "failed" || s === "disconnected") {
-        this.onCallFailed?.(s);
+      const state = pc.iceConnectionState;
+      console.log("[WebRTC] iceConnectionState:", state);
+
+      const level =
+        state === "connected" ? "excellent" :
+        state === "checking"  ? "fair" :
+        state === "disconnected" ? "poor" :
+        state === "failed" ? "bad" :
+        "unknown";
+
+      this.onQualityChange?.(level, `ICE: ${state}`);
+
+      if (state === "failed" || state === "disconnected") {
+        this.onCallFailed?.(state);
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("[WebRTC] connectionState:", pc.connectionState);
-      if (pc.connectionState === "failed") {
+      const state = pc.connectionState;
+      console.log("[WebRTC] connectionState:", state);
+
+      if (state === "failed") {
         this.onCallFailed?.("connection failed");
       }
     };
@@ -773,6 +810,7 @@ async handleAnswer(data) {
           await this.handleAnswer(data);
           break;
         case "ice":
+          console.log("[SIGNAL] Incoming ICE from", data.from, "→", data.to, data.candidate);
           await this.handleRemoteIceCandidate(data);
           break;
         case "end":
@@ -820,6 +858,8 @@ async handleAnswer(data) {
       }
     });
   }
+}
+
 
 
 
@@ -906,6 +946,7 @@ async handleAnswer(data) {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
