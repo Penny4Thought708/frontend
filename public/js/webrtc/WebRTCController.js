@@ -258,6 +258,16 @@ export class WebRTCController {
     showLocalAvatar();
     this._initDraggableRemote?.();
     this._bindSwapBehavior?.();
+
+    // Network change → ICE restart on current PC
+    window.addEventListener("online", () => {
+      if (this.pc) {
+        console.warn("[WebRTC] Network changed — restarting ICE");
+        try {
+          this.pc.restartIce();
+        } catch {}
+      }
+    });
   }
 
   /* ---------------------------------------------------
@@ -278,7 +288,7 @@ export class WebRTCController {
       console.warn("[WebRTC] startVoiceCall: no receiver selected");
       return;
     }
-    this.startCall(peerId, true);
+    this._startCallInternal(peerId, true, { relayOnly: false });
   }
 
   startVideoCall() {
@@ -287,13 +297,18 @@ export class WebRTCController {
       console.warn("[WebRTC] startVideoCall: no receiver selected");
       return;
     }
-    this.startCall(peerId, false);
+    this._startCallInternal(peerId, false, { relayOnly: false });
+  }
+
+  // Keep old API if something calls startCall directly
+  async startCall(peerId, audioOnly) {
+    return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
 
   /* ---------------------------------------------------
-     Outgoing Call
+     Outgoing Call (with optional relay-only)
   --------------------------------------------------- */
-  async startCall(peerId, audioOnly) {
+  async _startCallInternal(peerId, audioOnly, { relayOnly }) {
     const myId = getMyUserId();
     if (!myId) {
       console.warn("[WebRTC] Cannot start call: missing getMyUserId()");
@@ -305,10 +320,11 @@ export class WebRTCController {
     rtcState.isCaller = true;
     rtcState.inCall = true;
     rtcState.incomingOffer = null;
+    rtcState.usedRelayFallback = !!relayOnly;
 
     UI.apply("outgoing", { audioOnly });
 
-    const pc = await this._createPC();
+    const pc = await this._createPC({ relayOnly });
 
     const stream = await getLocalMedia(true, !audioOnly);
     this.localStream = stream;
@@ -375,6 +391,7 @@ export class WebRTCController {
     rtcState.isCaller = false;
     rtcState.inCall = false;
     rtcState.incomingOffer = data;
+    rtcState.usedRelayFallback = false;
 
     if (fromUser?.avatar) {
       setRemoteAvatar(fromUser.avatar);
@@ -408,7 +425,7 @@ export class WebRTCController {
     startTimer();
     stopAudio(ringtone);
 
-    const pc = await this._createPC();
+    const pc = await this._createPC({ relayOnly: false });
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
@@ -702,9 +719,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     PeerConnection Factory (TURN‑enabled)
+     PeerConnection Factory (TURN‑enabled, relay fallback)
   --------------------------------------------------- */
-  async _createPC() {
+  async _createPC({ relayOnly = false } = {}) {
     // Close old PC if it exists
     if (this.pc) {
       try {
@@ -713,8 +730,56 @@ export class WebRTCController {
       this.pc = null;
     }
 
-    const iceServers = await getIceServers();
-    const pc = new RTCPeerConnection({ iceServers });
+    const iceServers = await getIceServers({ relayOnly });
+
+    const config = {
+      iceServers,
+      iceTransportPolicy: relayOnly ? "relay" : "all",
+    };
+
+    console.log("[WebRTC] Creating RTCPeerConnection with config:", config);
+
+    const pc = new RTCPeerConnection(config);
+    this.pc = pc;
+
+    /* ---------------------------------------------------
+       TURN keep‑alive (prevents mobile TCP timeout)
+    --------------------------------------------------- */
+    const startTurnKeepAlive = (pcInstance) => {
+      let keepAliveTimer = setInterval(() => {
+        try {
+          pcInstance.getStats(null);
+        } catch {}
+      }, 3000);
+
+      pcInstance.addEventListener("connectionstatechange", () => {
+        if (
+          pcInstance.connectionState === "closed" ||
+          pcInstance.connectionState === "failed"
+        ) {
+          clearInterval(keepAliveTimer);
+        }
+      });
+    };
+
+    startTurnKeepAlive(pc);
+
+    /* ---------------------------------------------------
+       DataChannel keep‑alive (extra protection)
+    --------------------------------------------------- */
+    try {
+      const keepAliveChannel = pc.createDataChannel("keepalive");
+
+      keepAliveChannel.onopen = () => {
+        setInterval(() => {
+          if (keepAliveChannel.readyState === "open") {
+            keepAliveChannel.send("ping");
+          }
+        }, 5000);
+      };
+    } catch (err) {
+      console.warn("[WebRTC] keepalive datachannel failed:", err);
+    }
 
     /* ---------------------------------------------------
        OUTGOING ICE CANDIDATES
@@ -753,6 +818,17 @@ export class WebRTCController {
         fadeInVideo(this.remoteVideo);
       }
 
+      if (event.track.kind === "audio" && this.remoteAudio) {
+        try {
+          this.remoteAudio.srcObject = event.streams[0];
+          this.remoteAudio
+            .play()
+            .catch(() => console.warn("[WebRTC] Autoplay blocked for remote audio"));
+        } catch (err) {
+          console.warn("[WebRTC] Error attaching remote audio:", err);
+        }
+      }
+
       event.track.onmute = () => {
         this.onQualityChange?.("fair", "Remote track muted");
       };
@@ -765,7 +841,7 @@ export class WebRTCController {
     };
 
     /* ---------------------------------------------------
-       ICE STATE → QUALITY
+       ICE STATE → QUALITY + MOBILE‑SAFE RECOVERY
     --------------------------------------------------- */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -784,8 +860,84 @@ export class WebRTCController {
 
       this.onQualityChange?.(level, `ICE: ${state}`);
 
-      if (state === "failed" || state === "disconnected") {
-        this.onCallFailed?.(state);
+      /* ---------------------------------------------------
+         Mobile drop recovery: ICE restart
+      --------------------------------------------------- */
+      if (state === "disconnected") {
+        console.warn("[WebRTC] Disconnected — attempting ICE restart");
+        try {
+          pc.restartIce();
+        } catch (err) {
+          console.warn("[WebRTC] ICE restart failed:", err);
+        }
+      }
+
+      /* ---------------------------------------------------
+         MOBILE NETWORK FIX: relay-only fallback
+      --------------------------------------------------- */
+      if (state === "checking") {
+        setTimeout(() => {
+          if (
+            pc.iceConnectionState === "checking" &&
+            !rtcState.usedRelayFallback &&
+            rtcState.peerId
+          ) {
+            console.warn("[WebRTC] Stuck in checking — forcing relay-only fallback");
+            rtcState.usedRelayFallback = true;
+
+            const peerId = rtcState.peerId;
+            const audioOnly = rtcState.audioOnly;
+            const isCaller = rtcState.isCaller;
+
+            this.endCall(false);
+
+            if (isCaller) {
+              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            }
+          }
+        }, 2500);
+      }
+
+      if (state === "disconnected") {
+        setTimeout(() => {
+          if (
+            pc.iceConnectionState === "disconnected" &&
+            !rtcState.usedRelayFallback &&
+            rtcState.peerId
+          ) {
+            console.warn("[WebRTC] Mobile network disconnected — forcing relay-only fallback");
+            rtcState.usedRelayFallback = true;
+
+            const peerId = rtcState.peerId;
+            const audioOnly = rtcState.audioOnly;
+            const isCaller = rtcState.isCaller;
+
+            this.endCall(false);
+
+            if (isCaller) {
+              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            }
+          }
+        }, 1500);
+      }
+
+      if (state === "failed") {
+        if (!rtcState.usedRelayFallback && rtcState.peerId) {
+          console.warn("[WebRTC] ICE failed — retrying with relay-only…");
+          rtcState.usedRelayFallback = true;
+
+          const peerId = rtcState.peerId;
+          const audioOnly = rtcState.audioOnly;
+          const isCaller = rtcState.isCaller;
+
+          this.endCall(false);
+
+          if (isCaller) {
+            this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+          }
+        } else {
+          this.onCallFailed?.("ice failed");
+        }
       }
     };
 
@@ -801,7 +953,6 @@ export class WebRTCController {
       }
     };
 
-    this.pc = pc;
     return pc;
   }
 
