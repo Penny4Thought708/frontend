@@ -858,7 +858,6 @@ export class WebRTCController {
       }
     });
   }
-}
   _initDraggableRemote() {
     const wrapper = document.getElementById("remoteWrapper");
     const container = document.getElementById("video-container");
@@ -942,6 +941,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
