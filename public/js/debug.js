@@ -39,4 +39,5 @@ async function testTurnReachability() {
 }
 
 window.testTurnReachability = testTurnReachability;
+*/
 
