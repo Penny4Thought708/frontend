@@ -1,6 +1,6 @@
 // public/js/webrtc/WebRTCState.js
-// Premium, expressive WebRTC state machine with explicit phases,
-// robust teardown, and traceable transitions.
+// Production‑grade WebRTC state machine with explicit phases,
+// relay fallback tracking, ICE restart guards, and full teardown safety.
 
 export const rtcState = {
   /* ---------------------------------------------------
@@ -13,7 +13,8 @@ export const rtcState = {
      Call Phases
      idle → ringing → connecting → active → ending
   --------------------------------------------------- */
-  phase: "idle", // idle | ringing | connecting | active | ending
+  phase: "idle",
+  lastPhase: null,
 
   /* ---------------------------------------------------
      Flags
@@ -21,23 +22,37 @@ export const rtcState = {
   isCaller: false,
   audioOnly: false,
   callEstablished: false,
+  mediaReady: false,
+
+  /* ---------------------------------------------------
+     Fallback + Recovery
+  --------------------------------------------------- */
+  usedRelayFallback: false,
+  pendingIceRestart: false,
 
   /* ---------------------------------------------------
      Signaling
   --------------------------------------------------- */
   incomingOffer: null,
+  callId: null,
 
   /* ---------------------------------------------------
      Media
   --------------------------------------------------- */
   localStream: null,
   remoteStream: null,
+  remoteTracks: new Map(),
 
   /* ---------------------------------------------------
      Timer
   --------------------------------------------------- */
   callTimerSeconds: 0,
   callTimerInterval: null,
+
+  /* ---------------------------------------------------
+     Internal Guards
+  --------------------------------------------------- */
+  resetInProgress: false,
 
   /* ---------------------------------------------------
      Logging Helper
@@ -50,9 +65,12 @@ export const rtcState = {
      Phase Management
   --------------------------------------------------- */
   setPhase(newPhase) {
-    if (!newPhase) return;
+    if (!newPhase || newPhase === this.phase) return;
+
+    this.lastPhase = this.phase;
     this.phase = newPhase;
-    this.log("Phase →", newPhase);
+
+    this.log(`Phase: ${this.lastPhase} → ${newPhase}`);
   },
 
   /* ---------------------------------------------------
@@ -61,7 +79,15 @@ export const rtcState = {
   setPeer(id, name = null) {
     this.peerId = id ?? null;
     this.peerName = name ?? null;
-    this.log("Peer set:", { id: this.peerId, name: this.peerName });
+
+    // Assign a unique call ID for debugging multi-device issues
+    this.callId = crypto.randomUUID?.() || Date.now().toString();
+
+    this.log("Peer set:", {
+      id: this.peerId,
+      name: this.peerName,
+      callId: this.callId
+    });
   },
 
   /* ---------------------------------------------------
@@ -83,7 +109,7 @@ export const rtcState = {
       phase: this.phase,
       isCaller: this.isCaller,
       audioOnly: this.audioOnly,
-      incomingOffer: this.incomingOffer,
+      incomingOffer: this.incomingOffer
     });
   },
 
@@ -109,6 +135,9 @@ export const rtcState = {
 
     this.localStream = null;
     this.remoteStream = null;
+    this.remoteTracks.clear();
+    this.mediaReady = false;
+
     this.log("Media reset");
   },
 
@@ -121,6 +150,7 @@ export const rtcState = {
     }
     this.callTimerInterval = null;
     this.callTimerSeconds = 0;
+
     this.log("Timer reset");
   },
 
@@ -129,25 +159,41 @@ export const rtcState = {
   --------------------------------------------------- */
   resetCallState() {
     this.phase = "idle";
+    this.lastPhase = null;
+
     this.isCaller = false;
     this.audioOnly = false;
     this.callEstablished = false;
-    this.incomingOffer = null;
 
+    this.incomingOffer = null;
     this.peerId = null;
     this.peerName = null;
+
+    this.usedRelayFallback = false;
+    this.pendingIceRestart = false;
+
+    this.callId = null;
 
     this.log("Call state reset");
   },
 
   /* ---------------------------------------------------
-     Full Teardown
+     Full Teardown (race‑condition safe)
   --------------------------------------------------- */
   fullReset() {
+    if (this.resetInProgress) {
+      this.log("Teardown skipped — already in progress");
+      return;
+    }
+
+    this.resetInProgress = true;
     this.log("Performing full WebRTC teardown…");
+
     this.resetMedia();
     this.resetTimer();
     this.resetCallState();
+
+    this.resetInProgress = false;
   },
 
   /* ---------------------------------------------------
@@ -156,21 +202,27 @@ export const rtcState = {
   debug() {
     const snapshot = {
       phase: this.phase,
+      lastPhase: this.lastPhase,
       peerId: this.peerId,
       peerName: this.peerName,
+      callId: this.callId,
       isCaller: this.isCaller,
       audioOnly: this.audioOnly,
       callEstablished: this.callEstablished,
       incomingOffer: this.incomingOffer,
+      usedRelayFallback: this.usedRelayFallback,
+      pendingIceRestart: this.pendingIceRestart,
       hasLocalStream: !!this.localStream,
       hasRemoteStream: !!this.remoteStream,
-      callTimerSeconds: this.callTimerSeconds,
+      remoteTrackCount: this.remoteTracks.size,
+      callTimerSeconds: this.callTimerSeconds
     };
 
     this.log("State snapshot:", snapshot);
     return snapshot;
-  },
+  }
 };
+
 
 
 
