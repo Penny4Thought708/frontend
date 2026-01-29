@@ -72,21 +72,16 @@ const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 
 // -------------------------------------------------------
-// ⭐ Messaging UI Elements (UPDATED TO MATCH YOUR HTML)
+// ⭐ Messaging UI Elements
 // -------------------------------------------------------
-export const msgForm = el("text_box_reply");               // <form>
-export const msgInput = el("message_input");               // contenteditable div
-export const messageWin = qs(".message_win1");             // message window
+export const msgForm = el("text_box_reply");
+export const msgInput = el("message_input");
+export const messageWin = qs(".message_win1");
 
-export const attachmentInput = el("attachment_input");     // <input type="file">
-export const previewDiv = el("attachmentPreview");         // preview container
-
-// You can choose which button opens the file picker:
-// Option A: bottom sheet "File" button
+export const attachmentInput = el("attachment_input");
+export const previewDiv = el("attachmentPreview");
 export const attachmentBtn = el("sheetFile");
 export const notificationSound = el("notification");
-// Option B: the + button (uncomment if you prefer)
-// export const attachmentBtn = el("plusBtn");
 
 export const badge = qs(".notification-badge .badge");
 export const messageBox = el("messaging_box");
@@ -223,55 +218,10 @@ export function scrollMessagesToBottom() {
 }
 
 // -------------------------------------------------------
-// Call View Helpers
-// -------------------------------------------------------
-export function showCallView() {
-  videoContainer?.classList.add("active");
-  messageBox?.classList.remove("active");
-}
-
-export function endCall({
-  pc,
-  dataChannel,
-  localStream,
-  stopAudio,
-  showEndButton,
-  showControls,
-  setIncomingUI,
-}) {
-  try {
-    pc?.getSenders()?.forEach((s) => s.track?.stop?.());
-  } catch {}
-  try {
-    pc?.close();
-  } catch {}
-
-  try {
-    dataChannel?.close();
-  } catch {}
-  try {
-    localStream?.getTracks()?.forEach((t) => t.stop());
-  } catch {}
-
-  ["localVideo", "remoteVideo", "localAudio", "remoteAudio"].forEach((id) => {
-    const x = el(id);
-    if (x) x.srcObject = null;
-  });
-
-  showEndButton?.(false);
-  showControls?.(false);
-  setIncomingUI?.(false, "");
-
-  stopAudio?.(ringtone);
-  stopAudio?.(ringback);
-
-  videoContainer?.classList.remove("active");
-  messageBox?.classList.add("active");
-}
-
-// -------------------------------------------------------
 // ⭐ Correct Node-compatible socket registration
 // -------------------------------------------------------
+w.socketRegistered = false;
+
 socket.on("connect", () => {
   const tryRegister = () => {
     const uid = getMyUserId();
@@ -285,6 +235,12 @@ socket.on("connect", () => {
   };
 
   tryRegister();
+});
+
+// ACK from backend
+socket.on("registered", () => {
+  w.socketRegistered = true;
+  console.log("[socket] Registration ACK received");
 });
 
 socket.on("reconnect_attempt", (n) => {
@@ -330,6 +286,8 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
+
 
 
 
