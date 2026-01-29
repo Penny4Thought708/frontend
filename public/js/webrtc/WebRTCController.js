@@ -249,6 +249,16 @@ export class WebRTCController {
     showLocalAvatar();
     this._initDraggableRemote?.();
     this._bindSwapBehavior?.();
+
+    // Network change → ICE restart
+    window.addEventListener("online", () => {
+      if (this.pc) {
+        console.warn("[WebRTC] Network changed — restarting ICE");
+        try {
+          this.pc.restartIce();
+        } catch {}
+      }
+    });
   }
 
   /* ---------------------------------------------------
@@ -285,6 +295,11 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) {
       console.warn("[WebRTC] Cannot start call: missing getMyUserId()");
+      return;
+    }
+
+    if (!window.socketRegistered) {
+      console.warn("[WebRTC] Cannot start call: socket not registered yet");
       return;
     }
 
@@ -715,6 +730,45 @@ export class WebRTCController {
     this.pc = pc;
 
     /* ---------------------------------------------------
+       TURN keep‑alive (prevents mobile TCP timeout)
+    --------------------------------------------------- */
+    const startTurnKeepAlive = (pcInstance) => {
+      let keepAliveTimer = setInterval(() => {
+        try {
+          pcInstance.getStats(null);
+        } catch {}
+      }, 3000);
+
+      pcInstance.addEventListener("connectionstatechange", () => {
+        if (
+          pcInstance.connectionState === "closed" ||
+          pcInstance.connectionState === "failed"
+        ) {
+          clearInterval(keepAliveTimer);
+        }
+      });
+    };
+
+    startTurnKeepAlive(pc);
+
+    /* ---------------------------------------------------
+       DataChannel keep‑alive (extra protection)
+    --------------------------------------------------- */
+    try {
+      const keepAliveChannel = pc.createDataChannel("keepalive");
+
+      keepAliveChannel.onopen = () => {
+        setInterval(() => {
+          if (keepAliveChannel.readyState === "open") {
+            keepAliveChannel.send("ping");
+          }
+        }, 5000);
+      };
+    } catch (err) {
+      console.warn("[WebRTC] keepalive datachannel failed:", err);
+    }
+
+    /* ---------------------------------------------------
        OUTGOING ICE CANDIDATES
     --------------------------------------------------- */
     pc.onicecandidate = (event) => {
@@ -792,6 +846,18 @@ export class WebRTCController {
           : "unknown";
 
       this.onQualityChange?.(level, `ICE: ${state}`);
+
+      /* ---------------------------------------------------
+         Mobile drop recovery: ICE restart
+      --------------------------------------------------- */
+      if (state === "disconnected") {
+        console.warn("[WebRTC] Disconnected — attempting ICE restart");
+        try {
+          pc.restartIce();
+        } catch (err) {
+          console.warn("[WebRTC] ICE restart failed:", err);
+        }
+      }
 
       /* ---------------------------------------------------
          MOBILE NETWORK FIX
@@ -1061,6 +1127,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
