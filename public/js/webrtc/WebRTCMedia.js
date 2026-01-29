@@ -108,8 +108,11 @@ export async function getLocalMedia(audio = true, video = true) {
     return null;
   }
 
+  const constraints = { audio, video };
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    log("Got local media with constraints:", constraints);
     rtcState.localStream = stream;
 
     const localVideo = document.getElementById("localVideo");
@@ -128,7 +131,24 @@ export async function getLocalMedia(audio = true, video = true) {
 
     return stream;
   } catch (err) {
-    log("Local media error:", err);
+    log("Local media error:", err.name, err.message);
+
+    // If video is the problem, retry audio-only so at least voice works
+    if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
+      log("Retrying getUserMedia with audio-only…");
+      try {
+        const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false,
+        });
+        rtcState.localStream = audioOnlyStream;
+        updateLocalAvatarVisibility();
+        return audioOnlyStream;
+      } catch (err2) {
+        log("Audio-only also failed:", err2.name, err2.message);
+      }
+    }
+
     rtcState.localStream = null;
 
     const avatar = document.getElementById("localAvatar");
@@ -149,7 +169,7 @@ export function attachRemoteTrack(evt) {
 
   const remoteVideo = document.getElementById("remoteVideo");
   const remoteAudioEl = document.getElementById("remoteAudio");
-console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.readyState);
+  console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.readyState);
 
   const wrapper =
     remoteVideo?.closest(".remote-media-wrapper") ||
@@ -164,27 +184,26 @@ console.log("[REMOTE TRACK]", evt.track.kind, evt.track.enabled, evt.track.ready
     remoteVideo.style.display = show ? "none" : "block";
   };
 
-evt.track.onmute = () => {
-  showAvatar(true);
-};
+  evt.track.onmute = () => {
+    showAvatar(true);
+  };
 
-evt.track.onunmute = () => {
-  showAvatar(false);
-};
+  evt.track.onunmute = () => {
+    showAvatar(false);
+  };
 
-evt.track.onended = () => {
-  showAvatar(true);
-};
-
+  evt.track.onended = () => {
+    showAvatar(true);
+  };
 
   if (evt.track.kind === "video" && remoteVideo) {
     remoteVideo.srcObject = remoteStream;
-remoteVideo.style.display = "block";
-remoteVideo.style.opacity = "1";
-remoteVideo.style.width = "100%";
-remoteVideo.style.height = "100%";
-remoteVideo.style.background = "transparent";
-console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
+    remoteVideo.style.display = "block";
+    remoteVideo.style.opacity = "1";
+    remoteVideo.style.width = "100%";
+    remoteVideo.style.height = "100%";
+    remoteVideo.style.background = "transparent";
+    console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 
     remoteVideo.onloadedmetadata = () => {
       remoteVideo.play().catch(() => {});
@@ -210,6 +229,7 @@ console.log("[WebRTCMedia] Forcing remoteVideo visible", remoteVideo);
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
