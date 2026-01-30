@@ -3,6 +3,11 @@
 // Unified dashboard wiring: session + socket + messaging
 // + contacts + call logs + voicemail + UI
 // -------------------------------------------------------
+if (window.__APP_ALREADY_LOADED__) {
+  console.warn("[app] Duplicate app.js ignored");
+  return;
+}
+window.__APP_ALREADY_LOADED__ = true;
 
 import { getMyUserId, getJson } from "./session.js";
 import { socket } from "./socket.js";
@@ -1008,6 +1013,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
