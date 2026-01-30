@@ -2,16 +2,17 @@
 import io from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
 
 // -------------------------------------------------------
-// Prevent duplicate socket creation (ES‑module safe)
+// ES‑module‑safe singleton guard
 // -------------------------------------------------------
+let socket;
+
 if (window.__SOCKET_INSTANCE__) {
   console.warn("[socket] Reusing existing socket instance");
-  // Export the existing instance
-  export const socket = window.__SOCKET_INSTANCE__;
+  socket = window.__SOCKET_INSTANCE__;
 } else {
   const SIGNALING_URL = "https://letsee-backend.onrender.com";
 
-  const createdSocket = io(SIGNALING_URL, {
+  socket = io(SIGNALING_URL, {
     transports: ["websocket"],
     withCredentials: true,
     reconnection: true,
@@ -21,10 +22,10 @@ if (window.__SOCKET_INSTANCE__) {
     timeout: 20000,
   });
 
-  window.__SOCKET_INSTANCE__ = createdSocket;
-
-  export const socket = createdSocket;
+  window.__SOCKET_INSTANCE__ = socket;
 }
+
+export { socket };
 
 
 
