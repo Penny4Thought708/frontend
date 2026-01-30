@@ -373,6 +373,19 @@ export class WebRTCController {
     ringback?.play().catch(() => {});
   }
 
+  /**
+   * Resume an existing call after socket/network reconnect.
+   * Backend kept the call alive; we just need to re-offer.
+   */
+  async _resumeAsCallerAfterRestore(peerId) {
+    console.log("[WebRTC] Resuming call as caller after restore to peer:", peerId);
+
+    const relayOnly = !!rtcState.usedRelayFallback;
+    const audioOnly = !!rtcState.audioOnly;
+
+    await this._startCallInternal(peerId, audioOnly, { relayOnly });
+  }
+
   /* ---------------------------------------------------
      Incoming Offer
   --------------------------------------------------- */
@@ -508,53 +521,52 @@ export class WebRTCController {
     this.onCallEnded?.();
   }
 
- /* ---------------------------------------------------
-   Remote Answer
---------------------------------------------------- */
-async handleAnswer(data) {
-  if (!this.pc) {
-    console.warn("[WebRTC] handleAnswer: no peer connection");
-    return;
+  /* ---------------------------------------------------
+     Remote Answer
+  --------------------------------------------------- */
+  async handleAnswer(data) {
+    if (!this.pc) {
+      console.warn("[WebRTC] handleAnswer: no peer connection");
+      return;
+    }
+
+    if (!data || !data.answer) {
+      console.warn("[WebRTC] handleAnswer: invalid data", data);
+      return;
+    }
+
+    // Only the original caller should ever process an answer
+    if (!rtcState.isCaller) {
+      console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
+      return;
+    }
+
+    // Only accept the first answer, in the correct state
+    if (this.pc.signalingState !== "have-local-offer") {
+      console.warn(
+        "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
+        this.pc.signalingState
+      );
+      return;
+    }
+
+    console.log("[WebRTC] handleAnswer: applying remote answer");
+
+    // 🔥 We are in the critical answer window – block teardown/fallback
+    rtcState.answering = true;
+    setTimeout(() => {
+      rtcState.answering = false;
+    }, 800);
+
+    await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+
+    // Now that remoteDescription is set, flush any queued ICE
+    await this._flushPendingRemoteCandidates();
+
+    stopAudio(ringback);
+    this.onCallStarted?.();
+    startTimer();
   }
-
-  if (!data || !data.answer) {
-    console.warn("[WebRTC] handleAnswer: invalid data", data);
-    return;
-  }
-
-  // Only the original caller should ever process an answer
-  if (!rtcState.isCaller) {
-    console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
-    return;
-  }
-
-  // Only accept the first answer, in the correct state
-  if (this.pc.signalingState !== "have-local-offer") {
-    console.warn(
-      "[WebRTC] handleAnswer: ignoring duplicate/late answer, state =",
-      this.pc.signalingState
-    );
-    return;
-  }
-
-  console.log("[WebRTC] handleAnswer: applying remote answer");
-
-  // 🔥 We are in the critical answer window – block teardown/fallback
-  rtcState.answering = true;
-  setTimeout(() => {
-    rtcState.answering = false;
-  }, 800);
-
-  await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-
-  // Now that remoteDescription is set, flush any queued ICE
-  await this._flushPendingRemoteCandidates();
-
-  stopAudio(ringback);
-  this.onCallStarted?.();
-  startTimer();
-}
-
 
   /* ---------------------------------------------------
      ICE Candidate
@@ -581,136 +593,133 @@ async handleAnswer(data) {
   /* ---------------------------------------------------
      Remote End
   --------------------------------------------------- */
-/* ---------------------------------------------------
-   Remote End
---------------------------------------------------- */
-handleRemoteEnd() {
-  if (rtcState.answering) {
-    console.warn("[WebRTC] handleRemoteEnd: ignoring remote end during answer window");
-    return;
-  }
-  this.endCall(false);
-}
-
- /* End Call */
-endCall(local = true) {
-  stopAudio(ringback);
-  stopAudio(ringtone);
-  stopTimer();
-
-  const peerId = rtcState.peerId;
-
-  if (this.pc) {
-    try {
-      this.pc.onicecandidate = null;
-      this.pc.ontrack = null;
-      this.pc.oniceconnectionstatechange = null;
-      this.pc.onconnectionstatechange = null;
-      this.pc.close();
-    } catch {}
-    this.pc = null;
+  handleRemoteEnd() {
+    if (rtcState.answering) {
+      console.warn("[WebRTC] handleRemoteEnd: ignoring remote end during answer window");
+      return;
+    }
+    this.endCall(false);
   }
 
-  // 🔥 Stop controller-owned local stream
-  if (this.localStream) {
-    this.localStream.getTracks().forEach((t) => {
+  /* End Call */
+  endCall(local = true) {
+    stopAudio(ringback);
+    stopAudio(ringtone);
+    stopTimer();
+
+    const peerId = rtcState.peerId;
+
+    if (this.pc) {
       try {
-        t.stop();
+        this.pc.onicecandidate = null;
+        this.pc.ontrack = null;
+        this.pc.oniceconnectionstatechange = null;
+        this.pc.onconnectionstatechange = null;
+        this.pc.close();
       } catch {}
-    });
-    this.localStream = null;
+      this.pc = null;
+    }
+
+    // 🔥 Stop controller-owned local stream
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
+      this.localStream = null;
+    }
+
+    // 🔥 Stop rtcState.localStream if it exists (what getLocalMedia sets)
+    if (rtcState.localStream) {
+      rtcState.localStream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
+      rtcState.localStream = null;
+    }
+
+    // 🔥 Stop rtcState.remoteStream if it exists
+    if (rtcState.remoteStream) {
+      rtcState.remoteStream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
+      rtcState.remoteStream = null;
+    }
+
+    // Clear media elements
+    const localVideo = document.getElementById("localVideo");
+    const remoteVideo = document.getElementById("remoteVideo");
+    const remoteAudioEl = document.getElementById("remoteAudio");
+
+    if (localVideo) {
+      localVideo.srcObject = null;
+      localVideo.style.display = "none";
+      localVideo.style.opacity = "0";
+    }
+    if (remoteVideo) {
+      remoteVideo.srcObject = null;
+      remoteVideo.style.display = "none";
+      remoteVideo.style.opacity = "0";
+    }
+    if (remoteAudioEl) {
+      remoteAudioEl.srcObject = null;
+    }
+
+    const remoteWrapperEl = document.getElementById("remoteWrapper");
+    if (remoteWrapperEl) {
+      remoteWrapperEl.style.left = "";
+      remoteWrapperEl.style.top = "";
+      remoteWrapperEl.style.right = "";
+      remoteWrapperEl.style.bottom = "";
+    }
+
+    const direction = rtcState.isCaller ? "outgoing" : "incoming";
+
+    let status = "ended";
+    if (!rtcState.inCall && !local) status = "missed";
+    if (!rtcState.inCall && local && !rtcState.isCaller) status = "rejected";
+
+    const logEntry = {
+      logId: Date.now(),
+      caller_id: rtcState.isCaller ? getMyUserId() : peerId,
+      receiver_id: rtcState.isCaller ? peerId : getMyUserId(),
+      caller_name: rtcState.isCaller ? getMyFullname() : rtcState.peerName,
+      receiver_name: rtcState.isCaller ? rtcState.peerName : getMyFullname(),
+      call_type: rtcState.audioOnly ? "voice" : "video",
+      direction,
+      status,
+      duration: rtcState.callTimerSeconds || 0,
+      timestamp: new Date().toISOString(),
+    };
+
+    addCallLogEntry(logEntry);
+
+    rtcState.inCall = false;
+    rtcState.peerId = null;
+    rtcState.incomingOffer = null;
+    rtcState.answering = false;
+
+    showLocalAvatar();
+    showRemoteAvatar();
+
+    UI.apply("ending");
+    setTimeout(() => UI.apply("idle"), 200);
+
+    if (local && peerId && this.socket) {
+      this.socket.emit("webrtc:signal", {
+        type: "end",
+        to: peerId,
+        from: getMyUserId(),
+        reason: "hangup",
+      });
+    }
+
+    this.onCallEnded?.();
   }
-
-  // 🔥 Stop rtcState.localStream if it exists (what getLocalMedia sets)
-  if (rtcState.localStream) {
-    rtcState.localStream.getTracks().forEach((t) => {
-      try {
-        t.stop();
-      } catch {}
-    });
-    rtcState.localStream = null;
-  }
-
-  // 🔥 Stop rtcState.remoteStream if it exists
-  if (rtcState.remoteStream) {
-    rtcState.remoteStream.getTracks().forEach((t) => {
-      try {
-        t.stop();
-      } catch {}
-    });
-    rtcState.remoteStream = null;
-  }
-
-  // Clear media elements
-  const localVideo = document.getElementById("localVideo");
-  const remoteVideo = document.getElementById("remoteVideo");
-  const remoteAudioEl = document.getElementById("remoteAudio");
-
-  if (localVideo) {
-    localVideo.srcObject = null;
-    localVideo.style.display = "none";
-    localVideo.style.opacity = "0";
-  }
-  if (remoteVideo) {
-    remoteVideo.srcObject = null;
-    remoteVideo.style.display = "none";
-    remoteVideo.style.opacity = "0";
-  }
-  if (remoteAudioEl) {
-    remoteAudioEl.srcObject = null;
-  }
-
-  const remoteWrapperEl = document.getElementById("remoteWrapper");
-  if (remoteWrapperEl) {
-    remoteWrapperEl.style.left = "";
-    remoteWrapperEl.style.top = "";
-    remoteWrapperEl.style.right = "";
-    remoteWrapperEl.style.bottom = "";
-  }
-
-  const direction = rtcState.isCaller ? "outgoing" : "incoming";
-
-  let status = "ended";
-  if (!rtcState.inCall && !local) status = "missed";
-  if (!rtcState.inCall && local && !rtcState.isCaller) status = "rejected";
-
-  const logEntry = {
-    logId: Date.now(),
-    caller_id: rtcState.isCaller ? getMyUserId() : peerId,
-    receiver_id: rtcState.isCaller ? peerId : getMyUserId(),
-    caller_name: rtcState.isCaller ? getMyFullname() : rtcState.peerName,
-    receiver_name: rtcState.isCaller ? rtcState.peerName : getMyFullname(),
-    call_type: rtcState.audioOnly ? "voice" : "video",
-    direction,
-    status,
-    duration: rtcState.callTimerSeconds || 0,
-    timestamp: new Date().toISOString(),
-  };
-
-  addCallLogEntry(logEntry);
-
-  rtcState.inCall = false;
-  rtcState.peerId = null;
-  rtcState.incomingOffer = null;
-  rtcState.answering = false;
-
-  showLocalAvatar();
-  showRemoteAvatar();
-
-  UI.apply("ending");
-  setTimeout(() => UI.apply("idle"), 200);
-
-  if (local && peerId && this.socket) {
-    this.socket.emit("webrtc:signal", {
-      type: "end",
-      to: peerId,
-      from: getMyUserId(),
-      reason: "hangup",
-    });
-  }
-
-  this.onCallEnded?.();
-}
 
   /* ---------------------------------------------------
      Mute toggle (for CallUI mute button)
@@ -886,115 +895,114 @@ endCall(local = true) {
       };
     };
 
-/* ---------------------------------------------------
-   ICE STATE → QUALITY + MOBILE‑SAFE RECOVERY
---------------------------------------------------- */
-pc.oniceconnectionstatechange = () => {
-  const state = pc.iceConnectionState;
-  console.log("[WebRTC] iceConnectionState:", state);
+    /* ---------------------------------------------------
+       ICE STATE → QUALITY + MOBILE‑SAFE RECOVERY
+    --------------------------------------------------- */
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      console.log("[WebRTC] iceConnectionState:", state);
 
-  const level =
-    state === "connected"
-      ? "excellent"
-      : state === "checking"
-      ? "fair"
-      : state === "disconnected"
-      ? "poor"
-      : state === "failed"
-      ? "bad"
-      : "unknown";
+      const level =
+        state === "connected"
+          ? "excellent"
+          : state === "checking"
+          ? "fair"
+          : state === "disconnected"
+          ? "poor"
+          : state === "failed"
+          ? "bad"
+          : "unknown";
 
-  this.onQualityChange?.(level, `ICE: ${state}`);
+      this.onQualityChange?.(level, `ICE: ${state}`);
 
-  // 🔥 During the answer window, ignore ALL fallback logic
-  if (rtcState.answering) {
-    console.log("[WebRTC] ICE state change ignored during answer window:", state);
-    return;
-  }
+      // 🔥 During the answer window, ignore ALL fallback logic
+      if (rtcState.answering) {
+        console.log("[WebRTC] ICE state change ignored during answer window:", state);
+        return;
+      }
 
-  /* ---------------------------------------------------
-     Mobile drop recovery: ICE restart
-  --------------------------------------------------- */
-  if (state === "disconnected") {
-    console.warn("[WebRTC] Disconnected — attempting ICE restart");
-    try {
-      pc.restartIce();
-    } catch (err) {
-      console.warn("[WebRTC] ICE restart failed:", err);
-    }
-  }
-
-  /* ---------------------------------------------------
-     MOBILE NETWORK FIX: relay-only fallback
-  --------------------------------------------------- */
-  if (state === "checking") {
-    setTimeout(() => {
-      if (
-        pc.iceConnectionState === "checking" &&
-        !rtcState.usedRelayFallback &&
-        rtcState.peerId &&
-        !rtcState.answering
-      ) {
-        console.warn("[WebRTC] Stuck in checking — forcing relay-only fallback");
-        rtcState.usedRelayFallback = true;
-
-        const peerId = rtcState.peerId;
-        const audioOnly = rtcState.audioOnly;
-        const isCaller = rtcState.isCaller;
-
-        this.endCall(false);
-
-        if (isCaller) {
-          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+      /* ---------------------------------------------------
+         Mobile drop recovery: ICE restart
+      --------------------------------------------------- */
+      if (state === "disconnected") {
+        console.warn("[WebRTC] Disconnected — attempting ICE restart");
+        try {
+          pc.restartIce();
+        } catch (err) {
+          console.warn("[WebRTC] ICE restart failed:", err);
         }
       }
-    }, 2500);
-  }
 
-  if (state === "disconnected") {
-    setTimeout(() => {
-      if (
-        pc.iceConnectionState === "disconnected" &&
-        !rtcState.usedRelayFallback &&
-        rtcState.peerId &&
-        !rtcState.answering
-      ) {
-        console.warn("[WebRTC] Mobile network disconnected — forcing relay-only fallback");
-        rtcState.usedRelayFallback = true;
+      /* ---------------------------------------------------
+         MOBILE NETWORK FIX: relay-only fallback
+      --------------------------------------------------- */
+      if (state === "checking") {
+        setTimeout(() => {
+          if (
+            pc.iceConnectionState === "checking" &&
+            !rtcState.usedRelayFallback &&
+            rtcState.peerId &&
+            !rtcState.answering
+          ) {
+            console.warn("[WebRTC] Stuck in checking — forcing relay-only fallback");
+            rtcState.usedRelayFallback = true;
 
-        const peerId = rtcState.peerId;
-        const audioOnly = rtcState.audioOnly;
-        const isCaller = rtcState.isCaller;
+            const peerId = rtcState.peerId;
+            const audioOnly = rtcState.audioOnly;
+            const isCaller = rtcState.isCaller;
 
-        this.endCall(false);
+            this.endCall(false);
 
-        if (isCaller) {
-          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            if (isCaller) {
+              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            }
+          }
+        }, 2500);
+      }
+
+      if (state === "disconnected") {
+        setTimeout(() => {
+          if (
+            pc.iceConnectionState === "disconnected" &&
+            !rtcState.usedRelayFallback &&
+            rtcState.peerId &&
+            !rtcState.answering
+          ) {
+            console.warn("[WebRTC] Mobile network disconnected — forcing relay-only fallback");
+            rtcState.usedRelayFallback = true;
+
+            const peerId = rtcState.peerId;
+            const audioOnly = rtcState.audioOnly;
+            const isCaller = rtcState.isCaller;
+
+            this.endCall(false);
+
+            if (isCaller) {
+              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            }
+          }
+        }, 1500);
+      }
+
+      if (state === "failed") {
+        if (!rtcState.usedRelayFallback && rtcState.peerId && !rtcState.answering) {
+          console.warn("[WebRTC] ICE failed — retrying with relay-only…");
+          rtcState.usedRelayFallback = true;
+
+          const peerId = rtcState.peerId;
+          const audioOnly = rtcState.audioOnly;
+          const isCaller = rtcState.isCaller;
+
+          this.endCall(false);
+
+          if (isCaller) {
+            this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+          }
+        } else if (!rtcState.answering) {
+          this.onCallFailed?.("ice failed");
         }
       }
-    }, 1500);
-  }
-
-  if (state === "failed") {
-    if (!rtcState.usedRelayFallback && rtcState.peerId && !rtcState.answering) {
-      console.warn("[WebRTC] ICE failed — retrying with relay-only…");
-      rtcState.usedRelayFallback = true;
-
-      const peerId = rtcState.peerId;
-      const audioOnly = rtcState.audioOnly;
-      const isCaller = rtcState.isCaller;
-
-      this.endCall(false);
-
-      if (isCaller) {
-        this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-      }
-    } else if (!rtcState.answering) {
-      this.onCallFailed?.("ice failed");
-    }
-  }
-};
-
+    };
 
     /* ---------------------------------------------------
        CONNECTION STATE
@@ -1048,6 +1056,7 @@ pc.oniceconnectionstatechange = () => {
 
     this.socket.off("webrtc:signal");
     this.socket.off("call:voicemail");
+    this.socket.off("call:restore");
 
     this.socket.on("webrtc:signal", async (data) => {
       if (!data || !data.type) return;
@@ -1097,6 +1106,43 @@ pc.oniceconnectionstatechange = () => {
           break;
         default:
           break;
+      }
+    });
+
+    this.socket.on("call:restore", ({ callerId, receiverId, status }) => {
+      const me = String(getMyUserId());
+      const callerStr = String(callerId);
+      const receiverStr = String(receiverId);
+
+      const isCaller = me === callerStr;
+      const peerId = isCaller ? receiverStr : callerStr;
+
+      console.log("[WebRTC] call:restore received:", {
+        me,
+        callerId,
+        receiverId,
+        status,
+        isCaller,
+        peerId,
+      });
+
+      rtcState.peerId = peerId;
+      rtcState.isCaller = isCaller;
+      rtcState.inCall = status === "active";
+
+      if (status === "active") {
+        UI.apply("active", { audioOnly: rtcState.audioOnly });
+      } else if (isCaller) {
+        UI.apply("outgoing", { audioOnly: rtcState.audioOnly });
+      } else {
+        UI.apply("incoming", {
+          audioOnly: rtcState.audioOnly,
+          callerName: rtcState.peerName || "",
+        });
+      }
+
+      if (isCaller) {
+        this._resumeAsCallerAfterRestore(peerId);
       }
     });
 
@@ -1207,6 +1253,7 @@ pc.oniceconnectionstatechange = () => {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
