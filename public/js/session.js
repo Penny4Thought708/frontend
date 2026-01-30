@@ -4,14 +4,14 @@
 // -------------------------------------------------------
 
 // -------------------------------------------------------
-// Prevent duplicate session.js execution
+// Prevent duplicate session.js execution (ES‑module safe)
 // -------------------------------------------------------
 if (window.__SESSION_ALREADY_LOADED__) {
   console.warn("[session] Duplicate session.js ignored");
-  // Do NOT run anything else in this file
-  return;
+} else {
+  window.__SESSION_ALREADY_LOADED__ = true;
 }
-window.__SESSION_ALREADY_LOADED__ = true;
+
 
 console.log("[session] LOADED");
 
@@ -300,6 +300,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
