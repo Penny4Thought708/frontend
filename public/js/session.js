@@ -10,6 +10,12 @@ const w = typeof window !== "undefined" ? window : {};
 console.log("[session] LOADED");
 w._session_debug = (w._session_debug || 0) + 1;
 console.log("session.js load count:", w._session_debug);
+// Prevent duplicate session.js execution
+if (window.__SESSION_ALREADY_LOADED__) {
+  console.warn("[session] Duplicate session.js ignored");
+  return;
+}
+window.__SESSION_ALREADY_LOADED__ = true;
 
 // -------------------------------------------------------
 // API base
@@ -286,6 +292,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
