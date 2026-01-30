@@ -3,19 +3,27 @@
 // Session + DOM + Helpers (Node backend compatible)
 // -------------------------------------------------------
 
-import { DEBUG } from "./debug.js";
-import { socket } from "./socket.js";
-
-const w = typeof window !== "undefined" ? window : {};
-console.log("[session] LOADED");
-w._session_debug = (w._session_debug || 0) + 1;
-console.log("session.js load count:", w._session_debug);
+// -------------------------------------------------------
 // Prevent duplicate session.js execution
+// -------------------------------------------------------
 if (window.__SESSION_ALREADY_LOADED__) {
   console.warn("[session] Duplicate session.js ignored");
+  // Do NOT run anything else in this file
   return;
 }
 window.__SESSION_ALREADY_LOADED__ = true;
+
+console.log("[session] LOADED");
+
+// Debug counter (optional)
+window._session_debug = (window._session_debug || 0) + 1;
+console.log("session.js load count:", window._session_debug);
+
+// -------------------------------------------------------
+// Imports
+// -------------------------------------------------------
+import { DEBUG } from "./debug.js";
+import { socket } from "./socket.js";
 
 // -------------------------------------------------------
 // API base
@@ -36,9 +44,9 @@ async function loadIdentity() {
     const data = await res.json();
     const u = data.user;
 
-    w.user_id = u.user_id;
-    w.fullname = u.fullname;
-    w.avatar = u.avatar;
+    window.user_id = u.user_id;
+    window.fullname = u.fullname;
+    window.avatar = u.avatar;
 
     console.log("[session] Identity loaded:", u);
   } catch (err) {
@@ -52,15 +60,15 @@ loadIdentity();
 // Identity getters
 // -------------------------------------------------------
 export function getMyUserId() {
-  return w.user_id ? Number(w.user_id) : null;
+  return window.user_id ? Number(window.user_id) : null;
 }
 
 export function getMyFullname() {
-  return w.fullname || "";
+  return window.fullname || "";
 }
 
 export function getMyAvatar() {
-  return w.avatar || null;
+  return window.avatar || null;
 }
 
 // -------------------------------------------------------
@@ -78,7 +86,7 @@ const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 
 // -------------------------------------------------------
-// ⭐ Messaging UI Elements
+// Messaging UI Elements
 // -------------------------------------------------------
 export const msgForm = el("text_box_reply");
 export const msgInput = el("message_input");
@@ -226,7 +234,7 @@ export function scrollMessagesToBottom() {
 // -------------------------------------------------------
 // ⭐ Correct Node-compatible socket registration
 // -------------------------------------------------------
-w.socketRegistered = false;
+window.socketRegistered = false;
 
 socket.on("connect", () => {
   const tryRegister = () => {
@@ -245,7 +253,7 @@ socket.on("connect", () => {
 
 // ACK from backend
 socket.on("registered", () => {
-  w.socketRegistered = true;
+  window.socketRegistered = true;
   console.log("[socket] Registration ACK received");
 });
 
@@ -292,6 +300,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
