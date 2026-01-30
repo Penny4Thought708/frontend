@@ -789,7 +789,7 @@ export class WebRTCController {
 
     const config = {
       iceServers,
-      iceTransportPolicy: relayOnly ? "relay" : "all",
+      iceTransportPolicy: relayOnly ? "relay",
     };
 
     console.log("[WebRTC] Creating RTCPeerConnection with config:", config);
@@ -1253,6 +1253,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
