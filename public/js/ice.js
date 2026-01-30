@@ -5,7 +5,7 @@ const SIGNALING_BASE = "https://letsee-backend.onrender.com";
 
 let cachedServers = null;
 
-export async function getIceServers({ relayOnly = false } = {}) {
+export async function getIceServers() {
   try {
     if (!cachedServers) {
       const res = await fetch(`${SIGNALING_BASE}/api/webrtc/get-ice`, {
@@ -18,25 +18,24 @@ export async function getIceServers({ relayOnly = false } = {}) {
       }
 
       const data = await res.json();
-      cachedServers = data?.iceServers || [];
 
-      console.log("[ICE] Loaded from backend:", cachedServers);
+      // 🔥 FORCE TURN‑ONLY: remove all STUN entries
+      cachedServers = (data?.iceServers || []).filter((s) =>
+        (s.urls || "").toString().includes("turn")
+      );
+
+      console.log("[ICE] TURN‑only servers loaded:", cachedServers);
     }
 
-    if (!relayOnly) return cachedServers;
-
-    // TURN-only mode
-    const relay = cachedServers.filter((s) =>
-      (s.urls || "").toString().includes("turn:")
-    );
-
-    console.log("[ICE] Relay-only servers:", relay);
-    return relay;
+    return cachedServers;
   } catch (err) {
-    console.warn("[ICE] Fetch failed, using fallback STUN:", err);
-    return [{ urls: "stun:stun.l.google.com:19302" }];
+    console.warn("[ICE] Fetch failed — NO STUN FALLBACK (TURN‑only mode):", err);
+
+    // 🔥 DO NOT FALL BACK TO STUN — mobile networks will drop the call
+    return [];
   }
 }
+
 
 
 
