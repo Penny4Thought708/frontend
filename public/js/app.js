@@ -1009,7 +1009,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadTrendingGIFs();
   });
 
-  const TENOR_KEY = "AIzaSyCdGnnQLWc8TnlSHcVgW2xlFzM1v1KyuPQ";
+  const TENOR_KEY = "AIzaSyDbjrFx19WFXQCu-IoFxjbju8WaG5E8phA";
   const TENOR_TRENDING = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=30`;
   const TENOR_SEARCH = (q) =>
     `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
@@ -1150,6 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
