@@ -929,7 +929,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* -------------------------------------------------------
-   PROFILE PANEL — FIXED, FULLY SYNCHRONIZED VERSION
+   PROFILE PANEL — CLEAN VERSION (NO BANNER)
 ------------------------------------------------------- */
 
 let profileLoaded = false;
@@ -957,9 +957,6 @@ function initProfilePanel() {
   const profileInput       = document.getElementById("profileImage");
   const profilePreview     = document.getElementById("profilePreview");
 
-  const bannerInput        = document.getElementById("bannerInput");
-  const bannerPreview      = document.getElementById("bannerPreview");
-
   const fullnameInput      = document.getElementById("fullnameInput");
   const emailInput         = document.getElementById("emailInput");
   const bioInput           = document.getElementById("bioInput");
@@ -984,7 +981,6 @@ function initProfilePanel() {
   }
 
   let currentAvatarPath = window.currentAvatarPath || null;
-  let currentBannerPath = window.currentBannerPath || null;
 
   /* -------------------------------------------------------
      HELPERS
@@ -1014,7 +1010,6 @@ function initProfilePanel() {
   function computeCompletion() {
     const fields = [
       !!currentAvatarPath,
-      !!currentBannerPath,
       !!bioInput.value.trim(),
       !!websiteInput.value.trim(),
       !!twitterInput.value.trim() || !!instagramInput.value.trim(),
@@ -1032,7 +1027,7 @@ function initProfilePanel() {
   }
 
   async function autoSave() {
-    if (!profileLoaded) return; // prevents wiping data on load
+    if (!profileLoaded) return;
 
     const payload = {
       fullname: fullnameInput.value,
@@ -1044,7 +1039,6 @@ function initProfilePanel() {
       show_online: showOnlineInput.checked,
       allow_messages: allowMessagesInput.checked,
       avatar: currentAvatarPath,
-      banner: currentBannerPath,
       theme: themeSelect?.value || "system"
     };
 
@@ -1087,38 +1081,16 @@ function initProfilePanel() {
   });
 
   /* -------------------------------------------------------
-     BANNER UPLOAD
-  ------------------------------------------------------- */
-  bannerInput?.addEventListener("change", async () => {
-    const file = bannerInput.files[0];
-    if (!file) return;
-
-    const fd = new FormData();
-    fd.append("banner", file);
-
-    const res = await fetch(`${API_BASE}/api/profile/banner`, {
-      method: "POST",
-      credentials: "include",
-      body: fd
-    }).then(r => r.json());
-
-    if (res.success) {
-      currentBannerPath = res.banner;
-      bannerPreview.src = buildUrl(currentBannerPath);
-      autoSaveDebounced();
-    }
-  });
-
-  /* -------------------------------------------------------
      LIVE EMAIL VALIDATION
   ------------------------------------------------------- */
   emailInput?.addEventListener("input", debounce(async () => {
     const email = emailInput.value.trim();
     if (!email) return;
 
-    const res = await fetch(`${API_BASE}/api/profile/check-email?email=${encodeURIComponent(email)}`, {
-      credentials: "include"
-    }).then(r => r.json());
+    const res = await fetch(
+      `${API_BASE}/api/profile/check-email?email=${encodeURIComponent(email)}`,
+      { credentials: "include" }
+    ).then(r => r.json());
 
     emailInput.classList.toggle("valid", res.available);
     emailInput.classList.toggle("invalid", !res.available);
@@ -1175,11 +1147,6 @@ function initProfilePanel() {
       profilePreview.src = buildUrl(currentAvatarPath);
     }
 
-    if (data.banner) {
-      currentBannerPath = data.banner;
-      bannerPreview.src = buildUrl(currentBannerPath);
-    }
-
     updateLocalContact(getMyUserId(), data);
     computeCompletion();
   });
@@ -1188,7 +1155,7 @@ function initProfilePanel() {
 }
 
 /* -------------------------------------------------------
-   INIT PROFILE PANEL WHEN OPENED — FIXED VERSION
+   INIT PROFILE PANEL WHEN OPENED
 ------------------------------------------------------- */
 document.getElementById("view_profile")?.addEventListener("click", async () => {
   const me = await loadMyProfile();
@@ -1202,19 +1169,17 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
   document.getElementById("instagramInput").value = me.instagram || "";
   document.getElementById("showOnlineInput").checked = me.show_online;
   document.getElementById("allowMessagesInput").checked = me.allow_messages;
-  document.getElementById("themeSelect").value = me.theme || "system";
 
-  // Set avatar + banner BEFORE init
+  const themeEl = document.getElementById("themeSelect");
+  if (themeEl) themeEl.value = me.theme || "system";
+
+  // Avatar
   window.currentAvatarPath = me.avatar;
-  window.currentBannerPath = me.banner;
-
   document.getElementById("profilePreview").src = buildUrl(me.avatar);
-  document.getElementById("bannerPreview").src = buildUrl(me.banner);
 
   profileLoaded = true;
   initProfilePanel();
 });
-
 
   /* -------------------------------------------------------
      CONTRACTOR SEARCH PANEL
@@ -1509,6 +1474,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
