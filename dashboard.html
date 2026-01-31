@@ -1180,8 +1180,12 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
   window.currentAvatarPath = me.avatar;
   document.getElementById("profilePreview").src = buildUrl(me.avatar);
 
-  profileLoaded = true;
+profileLoaded = true;
+
+setTimeout(() => {
   initProfilePanel();
+}, 50);
+
 });
 
   /* -------------------------------------------------------
@@ -1477,6 +1481,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
