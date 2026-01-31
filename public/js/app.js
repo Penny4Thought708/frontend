@@ -853,8 +853,6 @@ function togglePanel(panelName) {
 }
 
 
-showContacts();
-
 /* -------------------------------------------------------
    MENU ACTIONS
 ------------------------------------------------------- */
@@ -1147,6 +1145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
