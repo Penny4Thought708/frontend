@@ -730,27 +730,9 @@ window.showNotification = function (title, message) {
 };
 
 /* -------------------------------------------------------
-   Contact panel + menu
-------------------------------------------------------- */
-const contactBox = document.getElementById("contact_box");
-const contactWidget = document.getElementById("contact_widget");
-const contactClose = document.getElementById("contact_close");
-
-if (contactWidget && contactBox) {
-  contactWidget.addEventListener("click", () => {
-    contactBox.classList.add("open");
-  });
-}
-
-if (contactClose && contactBox) {
-  contactClose.addEventListener("click", () => {
-    contactBox.classList.remove("open");
-  });
-}
-
-/* -------------------------------------------------------
    CONTACT MENU TOGGLE
 ------------------------------------------------------- */
+
 const contactMenu = document.getElementById("contact_menu_box");
 const menuWidget = document.getElementById("menu_Btn_contact");
 
@@ -766,6 +748,201 @@ if (contactMenu && menuWidget) {
     }
   });
 }
+
+/* -------------------------------------------------------
+   PANEL REGISTRY
+------------------------------------------------------- */
+
+const Panels = {
+  contacts: document.getElementById("contacts"),
+  blocked: document.getElementById("bloc_box"),
+  settings: document.getElementById("settings_container"),
+  addContact: document.querySelector(".sidebar"),
+  profile: document.querySelector(".profile_card"),
+};
+
+/* -------------------------------------------------------
+   MENU BUTTONS
+------------------------------------------------------- */
+
+const Buttons = {
+  block: document.getElementById("block_contact"),
+  addContact: document.getElementById("add_contact"),
+  settings: document.getElementById("settings"),
+  closeSettings: document.getElementById("close_contact_settings"),
+  openProfile: document.getElementById("view_profile"),
+};
+
+/* -------------------------------------------------------
+   PANEL CONTROLLER
+------------------------------------------------------- */
+
+function hideAllPanels() {
+  if (Panels.contacts) Panels.contacts.style.display = "none";
+  if (Panels.blocked) Panels.blocked.style.display = "none";
+  if (Panels.settings) Panels.settings.classList.remove("active");
+  if (Panels.profile) Panels.profile.classList.remove("active");
+}
+
+function showContacts() {
+  hideAllPanels();
+  if (Panels.contacts) Panels.contacts.style.display = "block";
+}
+
+function togglePanel(panelName) {
+  const panel = Panels[panelName];
+  if (!panel) return;
+
+  const isOpen =
+    panel.classList.contains("active") || panel.style.display === "block";
+
+  if (isOpen) {
+    showContacts();
+    return;
+  }
+
+  hideAllPanels();
+
+  if (panelName === "settings" || panelName === "profile") {
+    panel.classList.add("active");
+  } else {
+    panel.style.display = "block";
+  }
+}
+
+/* -------------------------------------------------------
+   DEFAULT STATE
+------------------------------------------------------- */
+
+showContacts();
+
+/* -------------------------------------------------------
+   MENU ACTIONS
+------------------------------------------------------- */
+
+if (Buttons.block) {
+  Buttons.block.addEventListener("click", () => {
+    togglePanel("blocked");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.settings) {
+  Buttons.settings.addEventListener("click", () => {
+    togglePanel("settings");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.closeSettings) {
+  Buttons.closeSettings.addEventListener("click", () => {
+    if (Panels.settings && Panels.settings.classList)
+      Panels.settings.classList.remove("open");
+    showContacts();
+  });
+}
+
+if (Buttons.openProfile) {
+  Buttons.openProfile.addEventListener("click", () => {
+    togglePanel("profile");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+/* -------------------------------------------------------
+   BLOCKED CONTACTS LOADER (placeholder)
+------------------------------------------------------- */
+
+function loadBlockedContacts(list) {
+  const ul = document.getElementById("blocked-contacts");
+  if (!ul) return;
+  ul.innerHTML = "";
+
+  list.forEach((name) => {
+    const li = document.createElement("li");
+    li.textContent = name;
+    ul.appendChild(li);
+  });
+}
+
+loadBlockedContacts(["John Doe", "Spam Caller", "Unknown Number"]);
+
+/* -------------------------------------------------------
+   Voicemail + DND + Wavesurfer UI logic
+------------------------------------------------------- */
+
+window.addEventListener("load", function () {
+  customElements.whenDefined("contacts-menu").then(() => {
+    const toggleBtn = document.getElementById("toggle_Btn");
+    const messagingBtn = document.getElementById("messaging_Btn");
+    const blockBtn = document.getElementById("block_Btn");
+    const voicemailBtn = document.getElementById("voicemail_Btn");
+    const donotBtn = document.getElementById("donot_Btn");
+
+    const panelTitle = document.getElementById("panelTitle");
+    const messagingBox2 = document.getElementById("messaging_box_container");
+    const vmListPanel = document.getElementById("voicemail_list");
+    const savedCon = document.getElementById("sav_con");
+    const blockedCon = document.getElementById("bl_con");
+    const blockListBox = document.getElementById("bloc_box");
+
+    function showSection(section) {
+      [savedCon, blockedCon, vmListPanel, blockListBox, messagingBox2].forEach(
+        (sec) => {
+          if (!sec) return;
+          sec.style.display = "none";
+        }
+      );
+      if (section) section.style.display = "block";
+    }
+
+    toggleBtn?.addEventListener("click", function () {
+      if (savedCon && savedCon.style.display !== "none") {
+        showSection(blockedCon);
+        panelTitle.textContent = "Contacts";
+        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
+      } else {
+        showSection(savedCon);
+        panelTitle.textContent = "Call History";
+        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
+      }
+    });
+
+    messagingBtn?.addEventListener("click", () => {
+      showSection(messagingBox2);
+      panelTitle.textContent = "Messaging";
+      loadMessageList(window.user_id);
+    });
+
+    blockBtn?.addEventListener("click", () => {
+      showSection(blockListBox);
+      panelTitle.textContent = "Blocked Contacts";
+    });
+
+    voicemailBtn?.addEventListener("click", () => {
+      showSection(vmListPanel);
+      panelTitle.textContent = "Voicemail";
+      loadVoicemails();
+    });
+
+    const icon = donotBtn?.querySelector("img");
+    let dndActive = false;
+
+    donotBtn?.addEventListener("click", () => {
+      dndActive = !dndActive;
+      icon?.classList.toggle("active", dndActive);
+
+      socket.emit("dnd:update", {
+        userId: getMyUserId(),
+        active: dndActive,
+      });
+    });
+
+    showSection(savedCon);
+    panelTitle.textContent = "Call History";
+    loadVoicemails();
+  });
+});
 
 /* -------------------------------------------------------
    Bottom sheet + emoji + GIF + send
@@ -1014,6 +1191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
