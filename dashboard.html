@@ -935,6 +935,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 let profileLoaded = false;
 
 /* -------------------------------------------------------
+   GLOBAL buildUrl() — required by both click handler + init
+------------------------------------------------------- */
+function buildUrl(path) {
+  if (!path) return "";
+
+  if (path.startsWith("/uploads")) {
+    return `${API_BASE}${path}?t=${Date.now()}`;
+  }
+
+  if (!path.startsWith("http")) {
+    return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
+  }
+
+  return `${path}?t=${Date.now()}`;
+}
+
+/* -------------------------------------------------------
    LOAD MY PROFILE BEFORE INITIALIZING PANEL
 ------------------------------------------------------- */
 async function loadMyProfile() {
@@ -955,11 +972,7 @@ function initProfilePanel() {
      ELEMENTS
   ------------------------------------------------------- */
   const profileInput       = document.getElementById("profileImage");
-document.getElementById("profilePreview").src =
-  me.avatar.startsWith("/uploads")
-    ? `${API_BASE}${me.avatar}?t=${Date.now()}`
-    : me.avatar;
-
+  const profilePreview     = document.getElementById("profilePreview");
 
   const fullnameInput      = document.getElementById("fullnameInput");
   const emailInput         = document.getElementById("emailInput");
@@ -996,20 +1009,6 @@ document.getElementById("profilePreview").src =
       t = setTimeout(() => fn(...args), delay);
     };
   };
-
-  function buildUrl(path) {
-    if (!path) return "";
-
-    if (path.startsWith("/uploads")) {
-      return `${API_BASE}${path}?t=${Date.now()}`;
-    }
-
-    if (!path.startsWith("http")) {
-      return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
-    }
-
-    return `${path}?t=${Date.now()}`;
-  }
 
   function computeCompletion() {
     const fields = [
@@ -1184,6 +1183,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
   profileLoaded = true;
   initProfilePanel();
 });
+
 
   /* -------------------------------------------------------
      CONTRACTOR SEARCH PANEL
@@ -1478,6 +1478,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
