@@ -794,7 +794,7 @@ const Buttons = {
    PANEL CONTROLLER
 ------------------------------------------------------- */
 function hideAllPanels() {
-  if (Panels.contacts) Panels.contacts.style.display = "none";
+ 
   if (Panels.blocked) Panels.blocked.style.display = "none";
   if (Panels.settings) Panels.settings.classList.remove("active");
   if (Panels.profile) Panels.profile.classList.remove("active");
@@ -1107,6 +1107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
