@@ -9,7 +9,6 @@ if (window.__APP_ALREADY_LOADED__) {
   window.__APP_ALREADY_LOADED__ = true;
 }
 
-
 import { getMyUserId, getJson } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
@@ -17,10 +16,9 @@ import { DEBUG } from "./debug.js";
 // Messaging engine + UI
 import { MessagingEngine } from "./messaging/MessagingEngine.js";
 import { renderMessages, renderIncomingMessage } from "./messaging/MessageUI.js";
-import { updateReactions } from "./messaging/ReactionUI.js";
 import "./messaging/TypingUI.js";
 
-// Contacts (new unified system)
+// Contacts
 import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
 
 // Call logs
@@ -29,6 +27,8 @@ import { initCallLogs } from "./call-log.js";
 // WebRTC
 import { WebRTCController } from "./webrtc/WebRTCController.js";
 import { initCallUI } from "./webrtc/CallUI.js";
+
+// Components
 import "../components/ContactsMenu.js";
 
 // Backend base
@@ -42,33 +42,25 @@ async function waitForIdentity() {
     await new Promise((r) => setTimeout(r, 100));
   }
 }
-// -------------------------------------------------------
-// CONTENT MENU INITIALIZATION
-// -------------------------------------------------------
+
+/* -------------------------------------------------------
+   CONTENT MENU INITIALIZATION
+------------------------------------------------------- */
 function initContentMenu() {
   const menu = document.querySelector("contacts-menu");
-  if (!menu) {
-    console.error("[content-menu] <contacts-menu> element not found");
-    return;
-  }
+  if (!menu) return;
 
-  console.log("[content-menu] Initialized");
-
-  // Track toggle state for the Contacts/Call Log button
   let showingContacts = false;
 
-  // Helper: force all children to display block if hidden
   function forceChildrenDisplay(container) {
     const elements = container.querySelectorAll("*");
-    elements.forEach(el => {
-      const current = window.getComputedStyle(el).display;
-      if (current === "none") {
+    elements.forEach((el) => {
+      if (window.getComputedStyle(el).display === "none") {
         el.style.display = "block";
       }
     });
   }
 
-  // Helper: hide all your real containers
   function hideAll() {
     document.querySelector("#sav_con").style.display = "none";
     document.querySelector("#bl_con").style.display = "none";
@@ -76,7 +68,6 @@ function initContentMenu() {
     document.querySelector("#messaging_box_container").style.display = "none";
   }
 
-  // Helper: update the Contacts button label + icon
   function updateContactsButton() {
     const btn = menu.querySelector("#toggle_Btn");
     if (!btn) return;
@@ -88,32 +79,24 @@ function initContentMenu() {
     }
   }
 
-  // Default state: Call Log is active (but window may be hidden)
   hideAll();
   document.querySelector("#sav_con").style.display = "block";
   forceChildrenDisplay(document.querySelector("#sav_con"));
   updateContactsButton();
 
-  // Main menu handler
   menu.addEventListener("menu-select", (e) => {
     const action = e.detail.action;
-    console.log("[content-menu] Selected:", action);
-
     hideAll();
 
     switch (action) {
       case "contacts":
-        // Toggle between Call Log ↔ Contacts
         showingContacts = !showingContacts;
         updateContactsButton();
-
         if (showingContacts) {
-          // Show Contacts
           const c = document.querySelector("#bl_con");
           c.style.display = "block";
           forceChildrenDisplay(c);
         } else {
-          // Show Call Log
           const c = document.querySelector("#sav_con");
           c.style.display = "block";
           forceChildrenDisplay(c);
@@ -132,20 +115,14 @@ function initContentMenu() {
         forceChildrenDisplay(vm);
         break;
 
-      // You did NOT show containers for these, so we skip them
-      case "block":
-      case "hidden":
-      case "dnd":
-        break;
-
       default:
-        console.warn("[content-menu] Unknown action:", action);
+        break;
     }
   });
 }
 
 /* -------------------------------------------------------
-   Global GET helper (session-based)
+   Global GET helper
 ------------------------------------------------------- */
 window.apiGet = async function (path) {
   const cleanPath = path.replace(".php", "");
@@ -155,7 +132,7 @@ window.apiGet = async function (path) {
 
   const res = await fetch(url, {
     method: "GET",
-    credentials: "include"
+    credentials: "include",
   });
 
   const text = await res.text();
@@ -342,19 +319,16 @@ socket.on("voicemail:new", (vm) => {
   incrementVoicemailBadge();
   showVoicemailToast(vm);
 });
+
 /* -------------------------------------------------------
-   Unified Dashboard Bootstrap (socket-aware)
+   Bootstrap
 ------------------------------------------------------- */
 socket.on("connect", async () => {
   console.log("[bootstrap] Socket connected:", socket.id);
 
-  // Wait for identity to actually load
   await waitForIdentity();
-
-  // Load contacts AFTER identity
   await loadContacts();
 
-  // Messaging engine
   const messaging = new MessagingEngine(
     socket,
     renderMessages,
@@ -362,7 +336,6 @@ socket.on("connect", async () => {
     "/api/messages"
   );
 
-  // NOW SAFE: create WebRTC controller
   const rtc = new WebRTCController(socket);
   initCallUI(rtc);
 
@@ -377,6 +350,10 @@ socket.on("connect", async () => {
 
   initContentMenu();
 });
+
+/* -------------------------------------------------------
+   Voicemail UI
+------------------------------------------------------- */
 function renderVoicemail(vm) {
   const listEl = document.getElementById("voiceMList");
   if (!listEl) return;
@@ -635,15 +612,16 @@ document.addEventListener("DOMContentLoaded", () => {
    Intro Tour
 ------------------------------------------------------- */
 function startIntroTour() {
-  const steps = [
-    { element: "#btn_search", text: "Use Search to find local help, resources, and contacts instantly.", arrow: "right" },
-    { element: "#btn_chat_main", text: "Start a chat with anyone in your contacts.", arrow: "right" },
-    { element: "#contacts_btn", text: "View and manage your contacts here.", arrow: "right" },
-    { element: "#btn_notifications", text: "Check your notifications — messages, calls, alerts.", arrow: "right" },
-    { element: "#btn_settings", text: "Customize your settings and preferences.", arrow: "right" },
-    { element: "#toggleBtn", text: "Switch between light and dark themes.", arrow: "right" },
-    { element: "#btn_help", text: "Need help? Open the help center anytime.", arrow: "right" },
-  ];
+const steps = [
+  { element: "#btn_search", text: "Use Search to find local help, resources, and contacts instantly.", arrow: "right" },
+  { element: "#btn_chat_main", text: "Start a chat with anyone in your contacts.", arrow: "right" },
+  { element: "#contacts_btn", text: "View and manage your contacts here.", arrow: "right" },
+  { element: "#btn_notifications", text: "Check your notifications — messages, calls, alerts.", arrow: "right" },
+  { element: "#btn_settings", text: "Customize your settings and preferences.", arrow: "right" },
+  { element: "#toggleBtn", text: "Switch between light and dark themes.", arrow: "right" },
+  { element: "#btn_help", text: "Need help? Open the help center anytime.", arrow: "right" }
+];
+
 
   const introBox = document.getElementById("introduction");
   const arrow = document.getElementById("intro_arrow");
@@ -665,7 +643,7 @@ function startIntroTour() {
     introBox.style.display = "block";
     introBox.innerHTML = step.text;
 
-       introBox.style.top = rect.top + "px";
+    introBox.style.top = rect.top + "px";
     introBox.style.left = rect.right + 20 + "px";
 
     arrow.style.display = "block";
@@ -732,7 +710,6 @@ window.showNotification = function (title, message) {
 /* -------------------------------------------------------
    CONTACT MENU TOGGLE
 ------------------------------------------------------- */
-
 const contactMenu = document.getElementById("contact_menu_box");
 const menuWidget = document.getElementById("menu_Btn_contact");
 
@@ -752,7 +729,6 @@ if (contactMenu && menuWidget) {
 /* -------------------------------------------------------
    PANEL REGISTRY
 ------------------------------------------------------- */
-
 const Panels = {
   contacts: document.getElementById("contacts"),
   blocked: document.getElementById("bloc_box"),
@@ -764,7 +740,6 @@ const Panels = {
 /* -------------------------------------------------------
    MENU BUTTONS
 ------------------------------------------------------- */
-
 const Buttons = {
   block: document.getElementById("block_contact"),
   addContact: document.getElementById("add_contact"),
@@ -776,7 +751,6 @@ const Buttons = {
 /* -------------------------------------------------------
    PANEL CONTROLLER
 ------------------------------------------------------- */
-
 function hideAllPanels() {
   if (Panels.contacts) Panels.contacts.style.display = "none";
   if (Panels.blocked) Panels.blocked.style.display = "none";
@@ -810,16 +784,11 @@ function togglePanel(panelName) {
   }
 }
 
-/* -------------------------------------------------------
-   DEFAULT STATE
-------------------------------------------------------- */
-
 showContacts();
 
 /* -------------------------------------------------------
    MENU ACTIONS
 ------------------------------------------------------- */
-
 if (Buttons.block) {
   Buttons.block.addEventListener("click", () => {
     togglePanel("blocked");
@@ -848,101 +817,6 @@ if (Buttons.openProfile) {
     contactMenu?.classList.remove("open");
   });
 }
-
-/* -------------------------------------------------------
-   BLOCKED CONTACTS LOADER (placeholder)
-------------------------------------------------------- */
-
-function loadBlockedContacts(list) {
-  const ul = document.getElementById("blocked-contacts");
-  if (!ul) return;
-  ul.innerHTML = "";
-
-  list.forEach((name) => {
-    const li = document.createElement("li");
-    li.textContent = name;
-    ul.appendChild(li);
-  });
-}
-
-loadBlockedContacts(["John Doe", "Spam Caller", "Unknown Number"]);
-
-/* -------------------------------------------------------
-   Voicemail + DND + Wavesurfer UI logic
-------------------------------------------------------- */
-
-window.addEventListener("load", function () {
-  customElements.whenDefined("contacts-menu").then(() => {
-    const toggleBtn = document.getElementById("toggle_Btn");
-    const messagingBtn = document.getElementById("messaging_Btn");
-    const blockBtn = document.getElementById("block_Btn");
-    const voicemailBtn = document.getElementById("voicemail_Btn");
-    const donotBtn = document.getElementById("donot_Btn");
-
-    const panelTitle = document.getElementById("panelTitle");
-    const messagingBox2 = document.getElementById("messaging_box_container");
-    const vmListPanel = document.getElementById("voicemail_list");
-    const savedCon = document.getElementById("sav_con");
-    const blockedCon = document.getElementById("bl_con");
-    const blockListBox = document.getElementById("bloc_box");
-
-    function showSection(section) {
-      [savedCon, blockedCon, vmListPanel, blockListBox, messagingBox2].forEach(
-        (sec) => {
-          if (!sec) return;
-          sec.style.display = "none";
-        }
-      );
-      if (section) section.style.display = "block";
-    }
-
-    toggleBtn?.addEventListener("click", function () {
-      if (savedCon && savedCon.style.display !== "none") {
-        showSection(blockedCon);
-        panelTitle.textContent = "Contacts";
-        this.innerHTML = '<img src="img/Contacts.png" alt="contacts"> Contacts';
-      } else {
-        showSection(savedCon);
-        panelTitle.textContent = "Call History";
-        this.innerHTML = '<img src="img/calllog.png" alt="call-log"> Call Log';
-      }
-    });
-
-    messagingBtn?.addEventListener("click", () => {
-      showSection(messagingBox2);
-      panelTitle.textContent = "Messaging";
-      loadMessageList(window.user_id);
-    });
-
-    blockBtn?.addEventListener("click", () => {
-      showSection(blockListBox);
-      panelTitle.textContent = "Blocked Contacts";
-    });
-
-    voicemailBtn?.addEventListener("click", () => {
-      showSection(vmListPanel);
-      panelTitle.textContent = "Voicemail";
-      loadVoicemails();
-    });
-
-    const icon = donotBtn?.querySelector("img");
-    let dndActive = false;
-
-    donotBtn?.addEventListener("click", () => {
-      dndActive = !dndActive;
-      icon?.classList.toggle("active", dndActive);
-
-      socket.emit("dnd:update", {
-        userId: getMyUserId(),
-        active: dndActive,
-      });
-    });
-
-    showSection(savedCon);
-    panelTitle.textContent = "Call History";
-    loadVoicemails();
-  });
-});
 
 /* -------------------------------------------------------
    Bottom sheet + emoji + GIF + send
@@ -1191,6 +1065,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
