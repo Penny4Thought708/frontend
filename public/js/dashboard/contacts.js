@@ -671,6 +671,46 @@ window.openMessagesFor = openMessagesFor;
 window.loadContacts = loadContacts;
 window.updateContactStatus = updateContactStatus;
 
+/* -------------------------------------------------------
+   UPDATE LOCAL CONTACT (Required by profile panel)
+------------------------------------------------------- */
+window.updateLocalContact = function (contactId, updates) {
+  const id = String(contactId);
+
+  // Ensure UserCache exists
+  if (!window.UserCache) {
+    console.warn("[updateLocalContact] No UserCache found");
+    return;
+  }
+
+  const contact = window.UserCache[id];
+  if (!contact) {
+    console.warn("[updateLocalContact] Contact not found:", id);
+    return;
+  }
+
+  // Merge updates into cached contact
+  Object.assign(contact, updates);
+
+  console.log("[updateLocalContact] Updated:", id, updates);
+
+  // Update UI if the contact is visible in the list
+  const card = document.querySelector(`.contact-card[data-contact-id="${id}"]`);
+  if (card) {
+    if (updates.contact_name) {
+      const nameEl = card.querySelector(".contact-name");
+      if (nameEl) nameEl.textContent = updates.contact_name;
+    }
+
+    if (updates.avatar || updates.contact_avatar) {
+      const avatarEl = card.querySelector(".contact-avatar");
+      if (avatarEl) {
+        avatarEl.src = updates.avatar || updates.contact_avatar;
+      }
+    }
+  }
+};
+
 
 
 
