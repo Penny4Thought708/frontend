@@ -780,6 +780,36 @@ socket.on("connect", async () => {
 });
 
 /* -------------------------------------------------------
+   PANEL REGISTRY (REQUIRED FOR CONTACT BOX)
+------------------------------------------------------- */
+const Panels = {
+  contacts: document.getElementById("contacts"),
+  blocked: document.getElementById("bloc_box"),
+  settings: document.getElementById("settings_container"),
+  addContact: document.querySelector(".sidebar"),
+  profile: document.querySelector(".profile_card"),
+};
+
+/* -------------------------------------------------------
+   CONTACT MENU TOGGLE (OLD CONTACT BOX)
+------------------------------------------------------- */
+const contactMenu = document.getElementById("contact_menu_box");
+const menuBtnContact = document.getElementById("menu_Btn_contact");
+
+if (menuBtnContact && contactMenu) {
+  menuBtnContact.addEventListener("click", (e) => {
+    e.stopPropagation();
+    contactMenu.classList.toggle("open");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!contactMenu.contains(e.target) && !menuBtnContact.contains(e.target)) {
+      contactMenu.classList.remove("open");
+    }
+  });
+}
+
+/* -------------------------------------------------------
    MENU BUTTONS
 ------------------------------------------------------- */
 const Buttons = {
@@ -794,7 +824,7 @@ const Buttons = {
    PANEL CONTROLLER
 ------------------------------------------------------- */
 function hideAllPanels() {
- 
+  if (Panels.contacts) Panels.contacts.style.display = "none";
   if (Panels.blocked) Panels.blocked.style.display = "none";
   if (Panels.settings) Panels.settings.classList.remove("active");
   if (Panels.profile) Panels.profile.classList.remove("active");
@@ -847,8 +877,7 @@ if (Buttons.settings) {
 
 if (Buttons.closeSettings) {
   Buttons.closeSettings.addEventListener("click", () => {
-    if (Panels.settings && Panels.settings.classList)
-      Panels.settings.classList.remove("open");
+    Panels.settings?.classList.remove("active");
     showContacts();
   });
 }
@@ -856,6 +885,20 @@ if (Buttons.closeSettings) {
 if (Buttons.openProfile) {
   Buttons.openProfile.addEventListener("click", () => {
     togglePanel("profile");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.addContact) {
+  Buttons.addContact.addEventListener("click", () => {
+    togglePanel("addContact");
+    contactMenu?.classList.remove("open");
+  });
+}
+
+if (Buttons.select) {
+  Buttons.select.addEventListener("click", () => {
+    window.showNotification("Select Mode", "Tap a contact to select.");
     contactMenu?.classList.remove("open");
   });
 }
@@ -1107,6 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
