@@ -938,7 +938,7 @@ let profileLoaded = false;
    LOAD MY PROFILE BEFORE INITIALIZING PANEL
 ------------------------------------------------------- */
 async function loadMyProfile() {
-  const res = await fetch(`${API_BASE}/api/me`, {
+  const res = await fetch(`${API_BASE}/api/auth/me`, {
     credentials: "include"
   }).then(r => r.json());
 
@@ -1509,6 +1509,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
