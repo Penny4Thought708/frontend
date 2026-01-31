@@ -677,6 +677,12 @@ window.updateContactStatus = updateContactStatus;
 window.updateLocalContact = function (contactId, updates) {
   const id = String(contactId);
 
+  // Skip self-updates (your own user is NOT in UserCache)
+  if (id === String(getMyUserId())) {
+    console.log("[updateLocalContact] Skipping self update");
+    return;
+  }
+
   // Ensure UserCache exists
   if (!window.UserCache) {
     console.warn("[updateLocalContact] No UserCache found");
@@ -710,6 +716,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
