@@ -828,12 +828,7 @@ function hideAllPanels() {
   if (Panels.contacts) Panels.contacts.style.display = "none";
   if (Panels.blocked) Panels.blocked.style.display = "none";
   if (Panels.settings) Panels.settings.classList.remove("active");
-  if (Panels.profile) Panels.profile.classList.remove("active");
-}
-
-function showContacts() {
-  hideAllPanels();
-  if (Panels.contacts) Panels.contacts.style.display = "block";
+  if (Panels.profile) Panels.profile.style.display = "none";   // FIXED
 }
 
 function togglePanel(panelName) {
@@ -850,12 +845,13 @@ function togglePanel(panelName) {
 
   hideAllPanels();
 
-  if (panelName === "settings" || panelName === "profile") {
+  if (panelName === "settings") {
     panel.classList.add("active");
   } else {
-    panel.style.display = "block";
+    panel.style.display = "block";   // PROFILE FIX
   }
 }
+
 
 showContacts();
 
@@ -1151,6 +1147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
