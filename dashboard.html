@@ -929,6 +929,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* -------------------------------------------------------
+   PROFILE PANEL — FIXED, FULLY SYNCHRONIZED VERSION
+------------------------------------------------------- */
+
+let profileLoaded = false;
+
+/* -------------------------------------------------------
+   LOAD MY PROFILE BEFORE INITIALIZING PANEL
+------------------------------------------------------- */
+async function loadMyProfile() {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    credentials: "include"
+  }).then(r => r.json());
+
+  return res.user;
+}
+
+/* -------------------------------------------------------
    PROFILE PANEL INITIALIZER
 ------------------------------------------------------- */
 function initProfilePanel() {
@@ -966,8 +983,8 @@ function initProfilePanel() {
     return;
   }
 
-  let currentAvatarPath = null;
-  let currentBannerPath = null;
+  let currentAvatarPath = window.currentAvatarPath || null;
+  let currentBannerPath = window.currentBannerPath || null;
 
   /* -------------------------------------------------------
      HELPERS
@@ -981,22 +998,18 @@ function initProfilePanel() {
   };
 
   function buildUrl(path) {
-  if (!path) return "";
+    if (!path) return "";
 
-  // If backend returned a relative path
-  if (path.startsWith("/uploads")) {
-    return `${API_BASE}${path}?t=${Date.now()}`;
+    if (path.startsWith("/uploads")) {
+      return `${API_BASE}${path}?t=${Date.now()}`;
+    }
+
+    if (!path.startsWith("http")) {
+      return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
+    }
+
+    return `${path}?t=${Date.now()}`;
   }
-
-  // If backend returned just a filename
-  if (!path.startsWith("http")) {
-    return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
-  }
-
-  // Already a full URL
-  return `${path}?t=${Date.now()}`;
-}
-
 
   function computeCompletion() {
     const fields = [
@@ -1019,6 +1032,8 @@ function initProfilePanel() {
   }
 
   async function autoSave() {
+    if (!profileLoaded) return; // prevents wiping data on load
+
     const payload = {
       fullname: fullnameInput.value,
       email: emailInput.value,
@@ -1173,10 +1188,31 @@ function initProfilePanel() {
 }
 
 /* -------------------------------------------------------
-   INIT PROFILE PANEL WHEN OPENED
+   INIT PROFILE PANEL WHEN OPENED — FIXED VERSION
 ------------------------------------------------------- */
-document.getElementById("view_profile")?.addEventListener("click", () => {
-  setTimeout(initProfilePanel, 50);
+document.getElementById("view_profile")?.addEventListener("click", async () => {
+  const me = await loadMyProfile();
+
+  // Pre-fill fields BEFORE init
+  document.getElementById("fullnameInput").value = me.fullname || "";
+  document.getElementById("emailInput").value = me.email || "";
+  document.getElementById("bioInput").value = me.bio || "";
+  document.getElementById("websiteInput").value = me.website || "";
+  document.getElementById("twitterInput").value = me.twitter || "";
+  document.getElementById("instagramInput").value = me.instagram || "";
+  document.getElementById("showOnlineInput").checked = me.show_online;
+  document.getElementById("allowMessagesInput").checked = me.allow_messages;
+  document.getElementById("themeSelect").value = me.theme || "system";
+
+  // Set avatar + banner BEFORE init
+  window.currentAvatarPath = me.avatar;
+  window.currentBannerPath = me.banner;
+
+  document.getElementById("profilePreview").src = buildUrl(me.avatar);
+  document.getElementById("bannerPreview").src = buildUrl(me.banner);
+
+  profileLoaded = true;
+  initProfilePanel();
 });
 
 
@@ -1473,6 +1509,7 @@ document.getElementById("view_profile")?.addEventListener("click", () => {
 
 </script>
 </html>
+
 
 
 
