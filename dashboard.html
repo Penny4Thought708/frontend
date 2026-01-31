@@ -935,7 +935,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* -------------------------------------------------------
-   PROFILE PANEL INITIALIZER (CALLED WHEN PANEL OPENS)
+   PROFILE PANEL INITIALIZER
 ------------------------------------------------------- */
 function initProfilePanel() {
   console.log("[Profile] Initializing profile panel…");
@@ -992,7 +992,7 @@ function initProfilePanel() {
     formData.append("avatar", file);
 
     try {
-      const res = await fetch(`${API_BASE}/profile/avatar`, {
+      const res = await fetch(`${API_BASE}/api/profile/avatar`, {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -1058,7 +1058,7 @@ function initProfilePanel() {
   ------------------------------------------------------- */
   enhanceBtn.addEventListener("click", async () => {
     try {
-      const data = await fetch(`${API_BASE}/profile/avatar/enhance`, {
+      const data = await fetch(`${API_BASE}/api/profile/avatar/enhance`, {
         method: "POST",
         credentials: "include"
       }).then((r) => r.json());
@@ -1085,7 +1085,7 @@ function initProfilePanel() {
     if (!confirm("Remove your avatar?")) return;
 
     try {
-      const res = await fetch(`${API_BASE}/profile/avatar`, {
+      const res = await fetch(`${API_BASE}/api/profile/avatar`, {
         method: "DELETE",
         credentials: "include"
       }).then((r) => r.json());
@@ -1121,7 +1121,7 @@ function initProfilePanel() {
     };
 
     try {
-      const res = await fetch(`${API_BASE}/profile/update`, {
+      const res = await fetch(`${API_BASE}/api/profile/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -1147,7 +1147,7 @@ function initProfilePanel() {
     if (!confirm("Are you sure you want to delete your account?")) return;
 
     try {
-      const res = await fetch(`${API_BASE}/account`, {
+      const res = await fetch(`${API_BASE}/api/profile/delete`, {
         method: "DELETE",
         credentials: "include"
       }).then((r) => r.json());
@@ -1178,10 +1178,11 @@ function initProfilePanel() {
 }
 
 /* -------------------------------------------------------
-   CALL PROFILE INIT WHEN PANEL OPENS
+   INIT PROFILE PANEL WHEN OPENED
 ------------------------------------------------------- */
 document.getElementById("view_profile")?.addEventListener("click", () => {
   setTimeout(initProfilePanel, 50);
+});
 
   /* -------------------------------------------------------
      CONTRACTOR SEARCH PANEL
@@ -1473,9 +1474,10 @@ document.getElementById("view_profile")?.addEventListener("click", () => {
       }
     });
   }
-});
+
 </script>
 </html>
+
 
 
 
