@@ -2602,6 +2602,9 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   opacity: 1;
   visibility: visible;
 }
+/* ================================
+   CONTACT BOX — INTERACTIVE
+================================ */
 #contact_box {
   position: relative;
   width: 100%;
@@ -2610,14 +2613,18 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
 
   background-color: rgba(255, 255, 255, 0);
   color: #ffffff;
- 
-  opacity:1;
 
-  pointer-events: none;
+  opacity: 1;
+
+  /* FIX: allow interaction */
+  pointer-events: auto;
+
   z-index: 877777222222222222222;
 
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.65s ease;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.65s ease;
 }
+
  
 
 /* ================================
@@ -5310,6 +5317,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
