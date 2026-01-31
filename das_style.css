@@ -2636,15 +2636,18 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
 
   background: rgba(255, 255, 255, 0.12);
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  \nbackdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
 
   border: 1px solid rgba(255, 255, 255, 0.25);
 
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25),
+  box-shadow: 
+    0 4px 14px rgba(0, 0, 0, 0.25),
     0 1px 3px rgba(255, 255, 255, 0.15) inset;
 
-  transition: transform 0.25s cubic-bezier(0.25, 1, 0.3, 1),
-    box-shadow 0.25s ease, background 0.25s ease;
+  transition: 
+    transform 0.25s cubic-bezier(0.25, 1, 0.3, 1),
+    box-shadow 0.25s ease,
+    background 0.25s ease;
 }
 
 /* Hover: soft glow + lift */
@@ -2652,7 +2655,8 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   transform: translateY(-2px) scale(1.05);
   background: rgba(255, 255, 255, 0.18);
 
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35),
+  box-shadow: 
+    0 6px 18px rgba(0, 0, 0, 0.35),
     0 2px 6px rgba(255, 255, 255, 0.25) inset;
 }
 
@@ -2674,14 +2678,19 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   opacity: 1;
 }
 
+/* ================================
+   CONTACT MENU DROPDOWN
+================================ */
 #contact_menu_box {
   position: absolute;
-  top: 50px; /* adjust where it appears */
+  top: 50px;
   left: 45px;
   width: 220px;
+
   background: #ffffff5b;
   border: 2px solid #000;
   border-radius: 20px;
+
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   padding: 5px;
   z-index: 222222222222222222000;
@@ -2719,16 +2728,13 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   transition: background 0.2s ease;
 }
 
-/* Last item shouldn't have a border */
 #contact_menu_list li:last-child {
   border-bottom: none;
 }
 
-/* Hover effect */
 #contact_menu_list li:hover {
   background: #e6e6e6;
 }
-
 
 /* Default visible panel */
 #contacts {
@@ -5304,6 +5310,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
