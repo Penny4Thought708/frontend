@@ -780,15 +780,16 @@ socket.on("connect", async () => {
 });
 
 /* -------------------------------------------------------
-   PANEL REGISTRY (REQUIRED FOR CONTACT BOX)
+   PANEL REGISTRY (REQUIRED)
 ------------------------------------------------------- */
 const Panels = {
   contacts: document.getElementById("contacts"),
   blocked: document.getElementById("bloc_box"),
   settings: document.getElementById("settings_container"),
   addContact: document.querySelector(".sidebar"),
-  profile: document.querySelector(".profile_card"),
+  profile: document.querySelector(".profile_card"),   // IMPORTANT
 };
+
 
 /* -------------------------------------------------------
    CONTACT MENU TOGGLE (OLD CONTACT BOX)
@@ -1150,6 +1151,7 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.innerHTML = "";
   });
 });
+
 
 
 
