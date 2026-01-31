@@ -2610,24 +2610,15 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
 
   background-color: rgba(255, 255, 255, 0);
   color: #ffffff;
-  /* Start off-screen */
-  transform: translateX(-110%);
-  opacity: 0;
+ 
+  opacity:1;
 
   pointer-events: none;
   z-index: 877777222222222222222;
 
   transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.65s ease;
 }
-
-/* When open */
-#contact_box.open {
-  transform: translateX(0);
-  opacity: 1;
-
-  pointer-events: auto;
-  z-index: 2000000000;
-}
+ 
 
 /* ================================
    CONTACT MENU BUTTON (Glass)
@@ -5308,6 +5299,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
