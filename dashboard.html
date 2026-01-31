@@ -955,7 +955,11 @@ function initProfilePanel() {
      ELEMENTS
   ------------------------------------------------------- */
   const profileInput       = document.getElementById("profileImage");
-  const profilePreview     = document.getElementById("profilePreview");
+document.getElementById("profilePreview").src =
+  me.avatar.startsWith("/uploads")
+    ? `${API_BASE}${me.avatar}?t=${Date.now()}`
+    : me.avatar;
+
 
   const fullnameInput      = document.getElementById("fullnameInput");
   const emailInput         = document.getElementById("emailInput");
@@ -1474,6 +1478,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
