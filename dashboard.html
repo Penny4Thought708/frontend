@@ -917,6 +917,9 @@ import { socket } from "./public/js/socket.js";
 import { getMyUserId } from "./public/js/session.js";
 import "./public/js/messaging.js";
 
+/* -------------------------------------------------------
+   DEVICE + SETTINGS INIT
+------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   await DeviceManager.init();
   await SettingsController.init();
@@ -932,14 +935,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* -------------------------------------------------------
-   PROFILE + SEARCH MODULE
+   PROFILE PANEL INITIALIZER (CALLED WHEN PANEL OPENS)
 ------------------------------------------------------- */
-document.addEventListener("DOMContentLoaded", () => {
+function initProfilePanel() {
+  console.log("[Profile] Initializing profile panel…");
 
-
-  /* -------------------------------------------------------
-     ELEMENTS
-  ------------------------------------------------------- */
   const profileInput       = document.getElementById("profileImage");
   const profilePreview     = document.getElementById("profilePreview");
   const avatarContainer    = document.querySelector(".profile-avatar");
@@ -949,8 +949,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteBtn          = document.getElementById("deleteAccountBtn");
   const showOnlineInput    = document.getElementById("showOnlineInput");
   const allowMessagesInput = document.getElementById("allowMessagesInput");
-
-  let currentAvatarPath = null;
 
   if (
     !profileInput ||
@@ -963,238 +961,228 @@ document.addEventListener("DOMContentLoaded", () => {
     !showOnlineInput ||
     !allowMessagesInput
   ) {
-    console.warn("[Profile] Profile UI elements not found; skipping profile initialization.");
-  } else {
-    /* -------------------------------------------------------
-       HELPERS
-    ------------------------------------------------------- */
+    console.warn("[Profile] Missing elements — panel not ready yet.");
+    return;
+  }
 
-    function buildDisplayUrlFromDbPath(dbPath) {
-      if (!dbPath) return "img/defaultUser.png";
+  let currentAvatarPath = null;
 
-      let url = dbPath;
-      if (!url.startsWith("http")) {
-        if (!url.startsWith("/")) url = "/" + url;
+  /* -------------------------------------------------------
+     HELPERS
+  ------------------------------------------------------- */
+  function buildDisplayUrlFromDbPath(dbPath) {
+    if (!dbPath) return "img/defaultUser.png";
+    let url = dbPath;
+    if (!url.startsWith("http")) {
+      if (!url.startsWith("/")) url = "/" + url;
+    }
+    return `${url}?t=${Date.now()}`;
+  }
+
+  function previewFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      profilePreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/profile/avatar`, {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      }).then((r) => r.json());
+
+      if (res.success && res.avatar) {
+        currentAvatarPath = res.avatar;
+        profilePreview.src = buildDisplayUrlFromDbPath(currentAvatarPath);
+
+        socket.emit("profile:update", { avatar: currentAvatarPath });
+        updateLocalContact(getMyUserId(), { contact_avatar: currentAvatarPath });
+      } else {
+        console.error("[Profile] Avatar upload failed:", res.error);
       }
-      return `${url}?t=${Date.now()}`;
+    } catch (err) {
+      console.error("[Profile] Avatar upload error:", err);
+    }
+  }
+
+  function handleAvatarFile(file) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Only JPG, PNG, or WEBP allowed.");
+      return;
     }
 
-    function previewFile(file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        profilePreview.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+    previewFile(file);
+    uploadAvatar(file);
+  }
 
-    async function uploadAvatar(file) {
-      const formData = new FormData();
-      formData.append("avatar", file); // backend should expect "avatar"
+  /* -------------------------------------------------------
+     AVATAR UPLOAD
+  ------------------------------------------------------- */
+  profileInput.addEventListener("change", () => {
+    const file = profileInput.files[0];
+    if (file) handleAvatarFile(file);
+  });
 
-      try {
-        const res = await fetch(`${API_BASE}/profile/avatar`, {
-          method: "POST",
-          body: formData,
-          credentials: "include"
-        }).then((r) => r.json());
+  /* -------------------------------------------------------
+     DRAG & DROP
+  ------------------------------------------------------- */
+  ["dragenter", "dragover"].forEach((evt) =>
+    avatarContainer.addEventListener(evt, (e) => {
+      e.preventDefault();
+      avatarContainer.classList.add("drag-over");
+    })
+  );
 
-        if (res.success && res.avatar) {
-          currentAvatarPath = res.avatar;
+  ["dragleave", "drop"].forEach((evt) =>
+    avatarContainer.addEventListener(evt, (e) => {
+      e.preventDefault();
+      avatarContainer.classList.remove("drag-over");
+    })
+  );
 
-          const displayUrl = buildDisplayUrlFromDbPath(currentAvatarPath);
-          profilePreview.src = displayUrl;
+  avatarContainer.addEventListener("drop", (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) handleAvatarFile(file);
+  });
 
-          socket.emit("profile:update", { avatar: currentAvatarPath });
+  /* -------------------------------------------------------
+     ENHANCE AVATAR
+  ------------------------------------------------------- */
+  enhanceBtn.addEventListener("click", async () => {
+    try {
+      const data = await fetch(`${API_BASE}/profile/avatar/enhance`, {
+        method: "POST",
+        credentials: "include"
+      }).then((r) => r.json());
 
-          updateLocalContact(getMyUserId(), {
-            contact_avatar: currentAvatarPath
-          });
-        } else {
-          console.error("[Profile] Avatar upload failed:", res.error);
-        }
-      } catch (err) {
-        console.error("[Profile] Avatar upload error:", err);
-      }
-    }
-
-    function handleAvatarFile(file) {
-      const allowed = ["image/jpeg", "image/png", "image/webp"];
-      if (!allowed.includes(file.type)) {
-        alert("Only JPG, PNG, or WEBP allowed.");
-        return;
-      }
-
-      previewFile(file);
-      uploadAvatar(file);
-    }
-
-    /* -------------------------------------------------------
-       AVATAR UPLOAD (CLICK)
-    ------------------------------------------------------- */
-    profileInput.addEventListener("change", () => {
-      const file = profileInput.files[0];
-      if (file) handleAvatarFile(file);
-    });
-
-    /* -------------------------------------------------------
-       DRAG & DROP
-    ------------------------------------------------------- */
-    ["dragenter", "dragover"].forEach((evt) =>
-      avatarContainer.addEventListener(evt, (e) => {
-        e.preventDefault();
-        avatarContainer.classList.add("drag-over");
-      })
-    );
-
-    ["dragleave", "drop"].forEach((evt) =>
-      avatarContainer.addEventListener(evt, (e) => {
-        e.preventDefault();
-        avatarContainer.classList.remove("drag-over");
-      })
-    );
-
-    avatarContainer.addEventListener("drop", (e) => {
-      const file = e.dataTransfer.files[0];
-      if (file) handleAvatarFile(file);
-    });
-
-    /* -------------------------------------------------------
-       ENHANCE AVATAR
-    ------------------------------------------------------- */
-    enhanceBtn.addEventListener("click", async () => {
-      try {
-        const data = await fetch(`${API_BASE}/profile/avatar/enhance`, {
-          method: "POST",
-          credentials: "include"
-        }).then((r) => r.json());
-
-        if (data.success && data.avatar) {
-          currentAvatarPath = data.avatar;
-
-          const displayUrl = buildDisplayUrlFromDbPath(currentAvatarPath);
-          profilePreview.src = displayUrl;
-
-          socket.emit("profile:update", { avatar: currentAvatarPath });
-          updateLocalContact(getMyUserId(), {
-            contact_avatar: currentAvatarPath
-          });
-        } else {
-          alert(data.error || "Could not enhance avatar.");
-        }
-      } catch (err) {
-        console.error("[Profile] Enhance avatar error:", err);
-        alert("Error enhancing avatar.");
-      }
-    });
-
-    /* -------------------------------------------------------
-       REMOVE AVATAR
-    ------------------------------------------------------- */
-    removeBtn.addEventListener("click", async () => {
-      if (!confirm("Remove your avatar?")) return;
-
-      try {
-        const res = await fetch(`${API_BASE}/profile/avatar`, {
-          method: "DELETE",
-          credentials: "include"
-        }).then((r) => r.json());
-
-        if (res.success) {
-          currentAvatarPath = null;
-          profilePreview.src = "img/defaultUser.png";
-
-          socket.emit("profile:update", { avatar: null });
-          updateLocalContact(getMyUserId(), { contact_avatar: null });
-        } else {
-          console.error("[Profile] Remove avatar failed:", res.error);
-        }
-      } catch (err) {
-        console.error("[Profile] Remove avatar error:", err);
-      }
-    });
-
-    /* -------------------------------------------------------
-       SAVE PROFILE
-    ------------------------------------------------------- */
-    saveBtn.addEventListener("click", async () => {
-      const fullname        = document.getElementById("fullnameInput").value;
-      const email           = document.getElementById("emailInput").value;
-      const bio             = document.getElementById("bioInput").value;
-      const website         = document.getElementById("websiteInput").value;
-      const twitter         = document.getElementById("twitterInput").value;
-      const instagram       = document.getElementById("instagramInput").value;
-      const show_online     = showOnlineInput.checked;
-      const allow_messages  = allowMessagesInput.checked;
-
-      const payload = {
-        fullname,
-        email,
-        bio,
-        website,
-        twitter,
-        instagram,
-        show_online,
-        allow_messages,
-        avatar: currentAvatarPath
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/profile/update`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload)
-        }).then((r) => r.json());
-
-        if (res.success) {
-          alert("Profile updated successfully");
-
-          socket.emit("profile:update", payload);
-          updateLocalContact(getMyUserId(), payload);
-        } else {
-          alert(res.error || "Error updating profile");
-        }
-      } catch (err) {
-        console.error("[Profile] Save error:", err);
-      }
-    });
-
-    /* -------------------------------------------------------
-       DELETE ACCOUNT
-    ------------------------------------------------------- */
-    deleteBtn.addEventListener("click", async () => {
-      if (!confirm("Are you sure you want to delete your account?")) return;
-
-      try {
-        const res = await fetch(`${API_BASE}/account`, {
-          method: "DELETE",
-          credentials: "include"
-        }).then((r) => r.json());
-
-        if (res.success) {
-          window.location.href = "/"; // or your landing page
-        } else {
-          console.error("[Profile] Delete account failed:", res.error);
-        }
-      } catch (err) {
-        console.error("[Profile] Delete account error:", err);
-      }
-    });
-
-    /* -------------------------------------------------------
-       REAL-TIME PROFILE UPDATES (SELF)
-    ------------------------------------------------------- */
-    socket.on("profile:updated", (data) => {
-      if (data.user_id !== getMyUserId()) return;
-
-      if (data.avatar !== undefined) {
+      if (data.success && data.avatar) {
         currentAvatarPath = data.avatar;
         profilePreview.src = buildDisplayUrlFromDbPath(currentAvatarPath);
-      }
 
-      updateLocalContact(getMyUserId(), data);
-    });
-  }
+        socket.emit("profile:update", { avatar: currentAvatarPath });
+        updateLocalContact(getMyUserId(), { contact_avatar: currentAvatarPath });
+      } else {
+        alert(data.error || "Could not enhance avatar.");
+      }
+    } catch (err) {
+      console.error("[Profile] Enhance avatar error:", err);
+      alert("Error enhancing avatar.");
+    }
+  });
+
+  /* -------------------------------------------------------
+     REMOVE AVATAR
+  ------------------------------------------------------- */
+  removeBtn.addEventListener("click", async () => {
+    if (!confirm("Remove your avatar?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/profile/avatar`, {
+        method: "DELETE",
+        credentials: "include"
+      }).then((r) => r.json());
+
+      if (res.success) {
+        currentAvatarPath = null;
+        profilePreview.src = "img/defaultUser.png";
+
+        socket.emit("profile:update", { avatar: null });
+        updateLocalContact(getMyUserId(), { contact_avatar: null });
+      } else {
+        console.error("[Profile] Remove avatar failed:", res.error);
+      }
+    } catch (err) {
+      console.error("[Profile] Remove avatar error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     SAVE PROFILE
+  ------------------------------------------------------- */
+  saveBtn.addEventListener("click", async () => {
+    const payload = {
+      fullname: document.getElementById("fullnameInput").value,
+      email: document.getElementById("emailInput").value,
+      bio: document.getElementById("bioInput").value,
+      website: document.getElementById("websiteInput").value,
+      twitter: document.getElementById("twitterInput").value,
+      instagram: document.getElementById("instagramInput").value,
+      show_online: showOnlineInput.checked,
+      allow_messages: allowMessagesInput.checked,
+      avatar: currentAvatarPath
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/profile/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      }).then((r) => r.json());
+
+      if (res.success) {
+        alert("Profile updated successfully");
+        socket.emit("profile:update", payload);
+        updateLocalContact(getMyUserId(), payload);
+      } else {
+        alert(res.error || "Error updating profile");
+      }
+    } catch (err) {
+      console.error("[Profile] Save error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     DELETE ACCOUNT
+  ------------------------------------------------------- */
+  deleteBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to delete your account?")) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/account`, {
+        method: "DELETE",
+        credentials: "include"
+      }).then((r) => r.json());
+
+      if (res.success) {
+        window.location.href = "/";
+      } else {
+        console.error("[Profile] Delete account failed:", res.error);
+      }
+    } catch (err) {
+      console.error("[Profile] Delete account error:", err);
+    }
+  });
+
+  /* -------------------------------------------------------
+     REAL-TIME PROFILE UPDATES
+  ------------------------------------------------------- */
+  socket.on("profile:updated", (data) => {
+    if (data.user_id !== getMyUserId()) return;
+
+    if (data.avatar !== undefined) {
+      currentAvatarPath = data.avatar;
+      profilePreview.src = buildDisplayUrlFromDbPath(currentAvatarPath);
+    }
+
+    updateLocalContact(getMyUserId(), data);
+  });
+}
+
+/* -------------------------------------------------------
+   CALL PROFILE INIT WHEN PANEL OPENS
+------------------------------------------------------- */
+document.getElementById("view_profile")?.addEventListener("click", () => {
+  setTimeout(initProfilePanel, 50);
+});
 
   /* -------------------------------------------------------
      CONTRACTOR SEARCH PANEL
@@ -1489,6 +1477,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 </html>
+
 
 
 
