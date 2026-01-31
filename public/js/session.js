@@ -4,7 +4,13 @@
 // -------------------------------------------------------
 
 // -------------------------------------------------------
-// Prevent duplicate session.js execution (ES‑module safe)
+// Imports MUST be first in ES modules
+// -------------------------------------------------------
+import { DEBUG } from "./debug.js";
+import { socket } from "./socket.js";
+
+// -------------------------------------------------------
+// Prevent duplicate session.js execution
 // -------------------------------------------------------
 if (window.__SESSION_ALREADY_LOADED__) {
   console.warn("[session] Duplicate session.js ignored");
@@ -12,18 +18,11 @@ if (window.__SESSION_ALREADY_LOADED__) {
   window.__SESSION_ALREADY_LOADED__ = true;
 }
 
-
 console.log("[session] LOADED");
 
-// Debug counter (optional)
+// Debug counter
 window._session_debug = (window._session_debug || 0) + 1;
 console.log("session.js load count:", window._session_debug);
-
-// -------------------------------------------------------
-// Imports
-// -------------------------------------------------------
-import { DEBUG } from "./debug.js";
-import { socket } from "./socket.js";
 
 // -------------------------------------------------------
 // API base
@@ -31,7 +30,7 @@ import { socket } from "./socket.js";
 export const API_BASE = "https://letsee-backend.onrender.com";
 
 // -------------------------------------------------------
-// ⭐ Load identity from backend (Node version)
+// Load identity from backend
 // -------------------------------------------------------
 async function loadIdentity() {
   try {
@@ -232,7 +231,7 @@ export function scrollMessagesToBottom() {
 }
 
 // -------------------------------------------------------
-// ⭐ Correct Node-compatible socket registration
+// Socket registration
 // -------------------------------------------------------
 window.socketRegistered = false;
 
@@ -251,7 +250,6 @@ socket.on("connect", () => {
   tryRegister();
 });
 
-// ACK from backend
 socket.on("registered", () => {
   window.socketRegistered = true;
   console.log("[socket] Registration ACK received");
@@ -276,7 +274,7 @@ socket.on("error", (err) => {
 });
 
 // -------------------------------------------------------
-// AUTO LOGOUT AFTER INACTIVITY
+// Auto logout after inactivity
 // -------------------------------------------------------
 let inactivityTimer;
 const AUTO_LOGOUT_MINUTES = 30;
@@ -300,7 +298,6 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
-
 
 
 
