@@ -935,7 +935,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 let profileLoaded = false;
 
 /* -------------------------------------------------------
-   GLOBAL buildUrl() — required by both click handler + init
+   GLOBAL buildUrl()
 ------------------------------------------------------- */
 function buildUrl(path) {
   if (!path) return "";
@@ -1183,7 +1183,6 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
   profileLoaded = true;
   initProfilePanel();
 });
-
 
   /* -------------------------------------------------------
      CONTRACTOR SEARCH PANEL
@@ -1478,6 +1477,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
