@@ -2908,8 +2908,9 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
    PROFILE CARD — HIDDEN BY DEFAULT
 ================================ */
 .profile_card {
- 
-  pointer-events: none;
+  display: none;                /* Hidden until togglePanel("profile") */
+  opacity: 0;                   /* Fade in */
+  pointer-events: none;         /* Prevent interaction while hidden */
   transform: translateY(10px) scale(0.98);
 
   position: relative;
@@ -2919,7 +2920,10 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   padding: 0 0 30px 0;
   overflow-x: hidden;
   overflow-y: scroll;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.3, 1);
+
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.25, 1, 0.3, 1);
 }
 
 /* When togglePanel("profile") sets display:block */
@@ -2928,6 +2932,7 @@ box-shadow: inset 0 0 2px 1px rgba(0, 0, 0, 0.541), 0 0 3px 2px rgba(0, 0, 0, 0.
   pointer-events: auto;
   transform: translateY(0) scale(1);
 }
+
 /* ================================
    PROFILE CARD SCROLLBAR (MODERN)
 ================================ */
@@ -5299,6 +5304,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
