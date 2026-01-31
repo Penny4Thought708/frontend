@@ -981,12 +981,22 @@ function initProfilePanel() {
   };
 
   function buildUrl(path) {
-    if (!path) return "";
-    if (!path.startsWith("http")) {
-      if (!path.startsWith("/")) path = "/" + path;
-    }
-    return `${path}?t=${Date.now()}`;
+  if (!path) return "";
+
+  // If backend returned a relative path
+  if (path.startsWith("/uploads")) {
+    return `${API_BASE}${path}?t=${Date.now()}`;
   }
+
+  // If backend returned just a filename
+  if (!path.startsWith("http")) {
+    return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
+  }
+
+  // Already a full URL
+  return `${path}?t=${Date.now()}`;
+}
+
 
   function computeCompletion() {
     const fields = [
@@ -1463,6 +1473,7 @@ document.getElementById("view_profile")?.addEventListener("click", () => {
 
 </script>
 </html>
+
 
 
 
