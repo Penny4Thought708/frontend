@@ -494,85 +494,137 @@ function selectCard(li) {
 }
 
 /* -------------------------------------------------------
-   FULL PROFILE MODAL
+   FULL PROFILE MODAL (ALL FIELDS, REAL-TIME READY)
 ------------------------------------------------------- */
-export function openFullProfile(user) {
-  console.log("%c[contacts] openFullProfile()", "color: #f39c12", user);
 
+function openFullProfile(userRaw) {
+  const user = normalizeContact(userRaw);
   activeContact = user;
   openProfileUserId = user.contact_id;
 
   const modal = $id("fullProfileModal");
-  if (!modal) {
-    console.error("[contacts] ERROR: #fullProfileModal not found");
-    return;
-  }
-
   modal.classList.add("open");
   isProfileOpen = true;
 
-  const avatarEl = $id("fullProfileAvatar");
-  const bannerEl = $id("fullProfileBanner");
-  const nameEl = $id("fullProfileName");
-  const emailEl = $id("fullProfileEmail");
-  const phoneEl = $id("fullProfilePhone");
-  const bioEl = $id("fullProfileBio");
-  const webEl = $id("fullProfileWebsite");
-  const twEl = $id("fullProfileTwitter");
-  const igEl = $id("fullProfileInstagram");
+  // Avatar + Banner
+  $id("fullProfileAvatar").src = user.contact_avatar;
+  $id("fullProfileBanner").src = user.contact_banner;
 
-  if (avatarEl) avatarEl.src = user.contact_avatar;
-  if (bannerEl) bannerEl.src = user.contact_banner;
+  // Basic Info
+  $id("fullProfileName").textContent = user.contact_name;
+  $id("fullProfileEmail").textContent = user.contact_email;
+  $id("fullProfilePhone").textContent = user.contact_phone || "No phone";
 
-  if (nameEl) nameEl.textContent = user.contact_name;
-  if (emailEl) emailEl.textContent = user.contact_email;
-  if (phoneEl) phoneEl.textContent = user.contact_phone || "No phone";
-  if (bioEl) bioEl.textContent = user.contact_bio || "No bio";
+  // Bio
+  $id("fullProfileBio").textContent = user.contact_bio || "No bio";
 
-  if (webEl) {
-    if (user.contact_website) {
-      webEl.textContent = user.contact_website;
-      webEl.href = user.contact_website;
-    } else {
-      webEl.textContent = "None";
-      webEl.removeAttribute("href");
-    }
+  // Website
+  if (user.contact_website) {
+    const w = $id("fullProfileWebsite");
+    w.textContent = user.contact_website;
+    w.href = user.contact_website.startsWith("http")
+      ? user.contact_website
+      : "https://" + user.contact_website;
+  } else {
+    $id("fullProfileWebsite").textContent = "None";
+    $id("fullProfileWebsite").removeAttribute("href");
   }
 
-  if (twEl) {
-    if (user.contact_twitter) {
-      twEl.textContent = user.contact_twitter;
-      twEl.href =
-        "https://twitter.com/" + user.contact_twitter.replace("@", "");
-    } else {
-      twEl.textContent = "None";
-      twEl.removeAttribute("href");
-    }
+  // Twitter
+  if (user.contact_twitter) {
+    const t = $id("fullProfileTwitter");
+    t.textContent = user.contact_twitter;
+    t.href = "https://twitter.com/" + user.contact_twitter.replace("@", "");
+  } else {
+    $id("fullProfileTwitter").textContent = "None";
+    $id("fullProfileTwitter").removeAttribute("href");
   }
 
-  if (igEl) {
-    if (user.contact_instagram) {
-      igEl.textContent = user.contact_instagram;
-      igEl.href =
-        "https://instagram.com/" + user.contact_instagram.replace("@", "");
+  // Instagram
+  if (user.contact_instagram) {
+    const i = $id("fullProfileInstagram");
+    i.textContent = user.contact_instagram;
+    i.href = "https://instagram.com/" + user.contact_instagram.replace("@", "");
+  } else {
+    $id("fullProfileInstagram").textContent = "None";
+    $id("fullProfileInstagram").removeAttribute("href");
+  }
+
+  // Permissions
+  const showOnlineEl = $id("fullProfileShowOnline");
+  showOnlineEl.textContent = user.contact_show_online ? "Online" : "Offline";
+  showOnlineEl.classList.toggle("status-online", user.contact_show_online);
+  showOnlineEl.classList.toggle("status-offline", !user.contact_show_online);
+
+  const allowMsgEl = $id("fullProfileAllowMessages");
+  allowMsgEl.textContent = user.contact_allow_messages
+    ? "Messages Allowed"
+    : "Messages Blocked";
+  allowMsgEl.classList.toggle("status-online", user.contact_allow_messages);
+  allowMsgEl.classList.toggle("status-offline", !user.contact_allow_messages);
+
+  // Copy buttons
+  $id("copyEmailBtn").onclick = () =>
+    navigator.clipboard.writeText(user.contact_email);
+
+  $id("copyPhoneBtn").onclick = () =>
+    navigator.clipboard.writeText(user.contact_phone || "");
+
+  // Buttons
+  const callBtn = $id("profileCallBtn");
+  const videoBtn = $id("profileVideoBtn");
+  const blockBtn = $id("profileBlockBtn");
+  const saveBtn = $id("saveLookupContact");
+
+  // Use safe checks in case elements are not present
+  callBtn?.addEventListener("click", () => {
+    if (typeof window.startCall === "function")
+      window.startCall(user.contact_id, false);
+    else console.warn("startCall is not available");
+  });
+  videoBtn?.addEventListener("click", () => {
+    if (typeof window.startCall === "function")
+      window.startCall(user.contact_id, true);
+    else console.warn("startCall is not available");
+  });
+
+  blockBtn?.addEventListener("click", async () => {
+    if (!confirm(`Block ${user.contact_name}?`)) return;
+    const data = await postForm("block_contact.php", {
+      contact_id: user.contact_id,
+    });
+    if (data.success) {
+      alert("User blocked");
+      loadContacts();
+      if (modal) modal.classList.remove("open");
+      isProfileOpen = false;
+      openProfileUserId = null;
+    }
+  });
+
+  // Only touch saveBtn if it exists and ensure the handler is safe
+  if (saveBtn) {
+    if (user.fromLookup) {
+      saveBtn.style.display = "block";
+      saveBtn.onclick = () => {
+        if (typeof window.saveLookupContact === "function") {
+          window.saveLookupContact(user.contact_id);
+        } else {
+          console.error("saveLookupContact is not defined");
+        }
+      };
     } else {
-      igEl.textContent = "None";
-      igEl.removeAttribute("href");
+      saveBtn.style.display = "none";
+      saveBtn.onclick = null;
     }
   }
 }
-
 /* -------------------------------------------------------
-   LOOKUP SEARCH
+   Lookup Search
 ------------------------------------------------------- */
+
 function runLookup(query) {
-  console.log("%c[contacts] runLookup()", "color: #16a085", query);
-
-  if (!lookupResults) {
-    console.error("[contacts] ERROR: lookupResults element missing");
-    return;
-  }
-
+  if (!lookupResults) return;
   if (!query) {
     lookupResults.innerHTML = "";
     return;
@@ -580,12 +632,8 @@ function runLookup(query) {
 
   lookupResults.innerHTML = `<li class="empty">Searching...</li>`;
 
-  getJson(
-    `${BACKEND_BASE}/api/users/search?query=${encodeURIComponent(query)}`
-  )
+  fetchJSON(`lookup_contacts.php?query=${encodeURIComponent(query)}`)
     .then((data) => {
-      console.log("%c[contacts] Lookup response:", "color: #16a085", data);
-
       lookupResults.innerHTML = "";
 
       if (Array.isArray(data) && data.length) {
@@ -598,31 +646,27 @@ function runLookup(query) {
         lookupResults.innerHTML = `<li class="empty">No contacts found</li>`;
       }
     })
-    .catch((err) => {
-      console.error("[contacts] Lookup error:", err);
+    .catch(() => {
       lookupResults.innerHTML = `<li class="empty">Lookup error</li>`;
     });
 }
 
 lookupBtn?.addEventListener("click", () => {
-  console.log("[contacts] lookupBtn clicked");
   runLookup(lookupInput?.value?.trim() ?? "");
 });
 
 lookupInput?.addEventListener("input", () => {
   clearTimeout(window.lookupTimer);
   window.lookupTimer = setTimeout(() => {
-    console.log("[contacts] lookupInput changed:", lookupInput.value.trim());
     runLookup(lookupInput.value.trim());
   }, 300);
 });
 
 /* -------------------------------------------------------
-   RENDER LOOKUP CARD
+   Render Lookup Card
 ------------------------------------------------------- */
-export function renderLookupCard(user) {
-  console.log("%c[contacts] renderLookupCard()", "color: #2980b9", user);
 
+export function renderLookupCard(user) {
   const li = document.createElement("li");
   li.className = "lookup-card";
   li.dataset.id = user.contact_id;
@@ -643,22 +687,17 @@ export function renderLookupCard(user) {
     </div>
   `;
 
-  li.querySelector(".lookup-info-btn")?.addEventListener("click", (e) => {
+  li.querySelector(".lookup-info-btn").onclick = (e) => {
     e.stopPropagation();
-    console.log("[contacts] lookup info clicked for", user.contact_id);
     openFullProfile(user);
-  });
+  };
 
-  li.querySelector(".lookup-open-chat")?.addEventListener("click", (e) => {
+  li.querySelector(".lookup-open-chat").onclick = (e) => {
     e.stopPropagation();
-    console.log("[contacts] lookup chat clicked for", user.contact_id);
     openMessagesFor(user);
-  });
+  };
 
-  li.addEventListener("click", () => {
-    console.log("[contacts] lookup card clicked for", user.contact_id);
-    openFullProfile(user);
-  });
+  li.onclick = () => openFullProfile(user);
 
   return li;
 }
@@ -716,6 +755,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
