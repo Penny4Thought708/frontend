@@ -21,7 +21,6 @@ let activeContact = null;
 let isProfileOpen = false;
 let openProfileUserId = null;
 
-
 /* -------------------------------------------------------
    GLOBAL STATE
 ------------------------------------------------------- */
@@ -478,8 +477,6 @@ export function openMessagesFor(user) {
   loadMessages();
 }
 
-
-
 /* -------------------------------------------------------
    SELECT CARD
 ------------------------------------------------------- */
@@ -590,15 +587,20 @@ function openFullProfile(userRaw) {
 
   blockBtn?.addEventListener("click", async () => {
     if (!confirm(`Block ${user.contact_name}?`)) return;
-    const data = await postForm("block_contact.php", {
-      contact_id: user.contact_id,
-    });
-    if (data.success) {
+
+    const data = await postJson(
+      `${BACKEND_BASE}/api/contacts/block`,
+      { contact_id: user.contact_id }
+    );
+
+    if (data?.success) {
       alert("User blocked");
       loadContacts();
       if (modal) modal.classList.remove("open");
       isProfileOpen = false;
       openProfileUserId = null;
+    } else {
+      console.error("[contacts] Failed to block from profile:", data?.error);
     }
   });
 
@@ -619,6 +621,7 @@ function openFullProfile(userRaw) {
     }
   }
 }
+
 /* -------------------------------------------------------
    Lookup Search
 ------------------------------------------------------- */
@@ -632,12 +635,14 @@ function runLookup(query) {
 
   lookupResults.innerHTML = `<li class="empty">Searching...</li>`;
 
-  fetchJSON(`lookup_contacts.php?query=${encodeURIComponent(query)}`)
+  getJson(
+    `${BACKEND_BASE}/api/users/search?query=${encodeURIComponent(query)}`
+  )
     .then((data) => {
       lookupResults.innerHTML = "";
 
-      if (Array.isArray(data) && data.length) {
-        data.forEach((u) => {
+      if (data?.success && Array.isArray(data.users) && data.users.length) {
+        data.users.forEach((u) => {
           const normalized = normalizeContact(u);
           normalized.fromLookup = true;
           lookupResults.appendChild(renderLookupCard(normalized));
@@ -703,6 +708,32 @@ export function renderLookupCard(user) {
 }
 
 /* -------------------------------------------------------
+   SAVE LOOKUP CONTACT (Node backend)
+------------------------------------------------------- */
+window.saveLookupContact = async function (contactId) {
+  console.log("[contacts] saveLookupContact()", contactId);
+
+  const data = await postJson(
+    `${BACKEND_BASE}/api/contacts/add`,
+    { contact_id: contactId }
+  );
+
+  if (!data?.success) {
+    console.error("[contacts] Failed to add contact from lookup:", data?.error);
+    return;
+  }
+
+  console.log("[contacts] Contact added from lookup:", data);
+
+  if (typeof loadContacts === "function") {
+    loadContacts();
+  }
+
+  const modal = document.getElementById("fullProfileModal");
+  if (modal) modal.classList.remove("open");
+};
+
+/* -------------------------------------------------------
    EXPOSE GLOBALS
 ------------------------------------------------------- */
 window.openFullProfile = openFullProfile;
@@ -755,6 +786,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
