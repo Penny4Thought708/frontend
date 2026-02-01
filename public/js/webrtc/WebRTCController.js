@@ -487,7 +487,41 @@ export class WebRTCController {
   declineIncomingCall() {
     const offerData = rtcState.incomingOffer;
     if (!offerData || !offerData.from) {
-      console.warn("[WebRTC] declineIncomingCall: no stored offer");
+      console.warn("[WebRTC] /* ---------------------------------------------------
+   Decline incoming call (fixed)
+--------------------------------------------------- */
+declineIncomingCall() {
+  const offerData = rtcState.incomingOffer;
+  const callerId = offerData?.from || rtcState.currentCallerId;
+
+  // Always notify backend, even if no stored offer
+  if (callerId) {
+    this.socket.emit("call:decline", { to: callerId });
+  } else {
+    console.warn("[WebRTC] declineIncomingCall: no callerId available");
+  }
+
+  addCallLogEntry({
+    logId: Date.now(),
+    caller_id: callerId,
+    receiver_id: getMyUserId(),
+    caller_name: rtcState.peerName || `User ${callerId}`,
+    receiver_name: getMyFullname(),
+    call_type: rtcState.audioOnly ? "voice" : "video",
+    direction: "incoming",
+    status: "rejected",
+    duration: 0,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Local cleanup
+  rtcState.incomingOffer = null;
+  rtcState.inCall = false;
+
+  UI.apply("idle");
+  this.onCallEnded?.();
+}
+: no stored offer");
       UI.apply("idle");
       return;
     }
@@ -1357,6 +1391,7 @@ const config = {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
