@@ -71,6 +71,57 @@ function createMessageBubble(msg) {
     audio.className = "msg-audio";
     bubble.appendChild(audio);
   }
+/* -------------------------------
+   VOICEMAIL MESSAGE
+--------------------------------*/
+if (msg.type === "voicemail" && msg.voicemail_url) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "voicemail-wrapper";
+
+  const playBtn = document.createElement("button");
+  playBtn.className = "vm-play-btn";
+  playBtn.textContent = "▶";
+
+  const durationEl = document.createElement("span");
+  durationEl.className = "vm-duration";
+  durationEl.textContent = "0:00";
+
+  const audio = new Audio(msg.voicemail_url);
+  let isPlaying = false;
+
+  audio.onloadedmetadata = () => {
+    const secs = Math.floor(audio.duration);
+    durationEl.textContent = formatDuration(secs);
+  };
+
+  playBtn.onclick = () => {
+    if (!isPlaying) {
+      audio.play();
+      playBtn.textContent = "⏸";
+      isPlaying = true;
+
+      // Mark voicemail as listened
+      fetch("/api/voicemail/listened", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voicemailId: msg.id })
+      }).catch(() => {});
+    } else {
+      audio.pause();
+      playBtn.textContent = "▶";
+      isPlaying = false;
+    }
+  };
+
+  audio.onended = () => {
+    playBtn.textContent = "▶";
+    isPlaying = false;
+  };
+
+  wrapper.appendChild(playBtn);
+  wrapper.appendChild(durationEl);
+  bubble.appendChild(wrapper);
+}
 
   /* -------------------------------
      COMMENT UNDER ATTACHMENT
@@ -146,5 +197,11 @@ function scrollToBottom() {
   if (!messageWin) return;
   messageWin.scrollTop = messageWin.scrollHeight;
 }
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 
 
