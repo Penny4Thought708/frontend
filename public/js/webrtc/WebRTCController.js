@@ -1170,7 +1170,7 @@ const config = {
 
 const playUnreachableTone = () => {
   try {
-    const tone = new Audio("/audio/user_unreachable.mp3");
+    const tone = new Audio("uploads/audio/user_unreachable.mp3");
     tone.play().catch(() => {});
   } catch (err) {
     console.warn("[WebRTC] Unreachable tone failed:", err);
@@ -1369,6 +1369,7 @@ this.socket.on("call:voicemail", ({ from, reason }) => {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
