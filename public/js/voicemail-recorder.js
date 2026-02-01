@@ -1,20 +1,32 @@
 // -------------------------------------------------------
-// Voicemail Recorder UI + Upload
+// Voicemail Recorder UI + Upload (Upgraded for new call flow)
 // -------------------------------------------------------
 
 window.openVoicemailRecorder = function (toUserId) {
   const modal = document.getElementById("voicemailModal");
   const recordBtn = document.getElementById("vmRecordBtn");
   const stopBtn = document.getElementById("vmStopBtn");
-  const sendBtn = document.getElementById("vmSendBtn");
   const status = document.getElementById("vmStatus");
 
   let mediaRecorder = null;
   let chunks = [];
 
+  // Play voicemail prompt
+  try {
+    const prompt = new Audio("/audio/voicemail_prompt.mp3");
+    prompt.play().catch(() => {});
+  } catch (err) {
+    console.warn("Voicemail prompt failed:", err);
+  }
+
   modal.style.display = "flex";
   status.textContent = "Ready to record";
 
+  // Reset UI
+  recordBtn.style.display = "inline-flex";
+  stopBtn.style.display = "none";
+
+  // Start recording
   recordBtn.onclick = async () => {
     chunks = [];
 
@@ -27,7 +39,6 @@ window.openVoicemailRecorder = function (toUserId) {
       const blob = new Blob(chunks, { type: "audio/webm" });
       const fileName = `voicemail_${Date.now()}.webm`;
 
-      // Upload to server
       const formData = new FormData();
       formData.append("file", blob, fileName);
       formData.append("toUserId", toUserId);
@@ -55,12 +66,13 @@ window.openVoicemailRecorder = function (toUserId) {
     stopBtn.style.display = "inline-flex";
   };
 
+  // Stop recording
   stopBtn.onclick = () => {
     if (mediaRecorder) {
       mediaRecorder.stop();
       status.textContent = "Processing…";
     }
     stopBtn.style.display = "none";
-    sendBtn.style.display = "none";
   };
 };
+
