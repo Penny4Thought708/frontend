@@ -72,15 +72,22 @@ function createMessageBubble(msg) {
     bubble.appendChild(audio);
   }
 /* -------------------------------
-   VOICEMAIL MESSAGE
+   VOICEMAIL MESSAGE (Premium UI)
 --------------------------------*/
 if (msg.type === "voicemail" && msg.voicemail_url) {
   const wrapper = document.createElement("div");
-  wrapper.className = "voicemail-wrapper";
+  wrapper.className = "vm-bubble";
 
   const playBtn = document.createElement("button");
-  playBtn.className = "vm-play-btn";
-  playBtn.textContent = "▶";
+  playBtn.className = "vm-play";
+  playBtn.innerHTML = "▶";
+
+  const progress = document.createElement("div");
+  progress.className = "vm-progress";
+
+  const progressFill = document.createElement("div");
+  progressFill.className = "vm-progress-fill";
+  progress.appendChild(progressFill);
 
   const durationEl = document.createElement("span");
   durationEl.className = "vm-duration";
@@ -94,13 +101,17 @@ if (msg.type === "voicemail" && msg.voicemail_url) {
     durationEl.textContent = formatDuration(secs);
   };
 
+  audio.ontimeupdate = () => {
+    const pct = (audio.currentTime / audio.duration) * 100;
+    progressFill.style.width = pct + "%";
+  };
+
   playBtn.onclick = () => {
     if (!isPlaying) {
       audio.play();
-      playBtn.textContent = "⏸";
+      playBtn.innerHTML = "⏸";
       isPlaying = true;
 
-      // Mark voicemail as listened
       fetch("/api/voicemail/listened", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,17 +119,19 @@ if (msg.type === "voicemail" && msg.voicemail_url) {
       }).catch(() => {});
     } else {
       audio.pause();
-      playBtn.textContent = "▶";
+      playBtn.innerHTML = "▶";
       isPlaying = false;
     }
   };
 
   audio.onended = () => {
-    playBtn.textContent = "▶";
+    playBtn.innerHTML = "▶";
     isPlaying = false;
+    progressFill.style.width = "0%";
   };
 
   wrapper.appendChild(playBtn);
+  wrapper.appendChild(progress);
   wrapper.appendChild(durationEl);
   bubble.appendChild(wrapper);
 }
@@ -202,6 +215,7 @@ function formatDuration(seconds) {
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
 
 
 
