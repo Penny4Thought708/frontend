@@ -181,7 +181,7 @@ emoji-picker::part(search) {
     inset 0 0 0 rgba(255, 255, 255, 0.15);
 }
 /* -------------------------------------------------------
-   Voicemail Recorder Modal (Slide In / Slide Out)
+   Modal Container (Slide In / Slide Out)
 ------------------------------------------------------- */
 #voicemailModal {
   position: fixed;
@@ -190,7 +190,7 @@ emoji-picker::part(search) {
   width: 100vw;
   height: 100vh;
 
-  display: none; /* JS toggles this */
+  display: none;
   justify-content: center;
   align-items: center;
 
@@ -199,7 +199,6 @@ emoji-picker::part(search) {
 
   z-index: 10000;
 
-  /* Start off-screen to the left */
   transform: translateX(-100%);
   opacity: 0;
 
@@ -208,29 +207,86 @@ emoji-picker::part(search) {
     opacity 0.45s ease;
 }
 
-/* Slide IN */
 #voicemailModal.open {
   transform: translateX(0);
   opacity: 1;
 }
 
-/* Slide OUT */
 #voicemailModal.closing {
   transform: translateX(100%);
   opacity: 0;
 }
 
-/* Inner content styling */
+/* -------------------------------------------------------
+   Glass Card
+------------------------------------------------------- */
+.vm-card {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 30px 40px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  animation: vmCardFade 0.4s ease;
+}
+
+@keyframes vmCardFade {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* -------------------------------------------------------
+   Status + Timer
+------------------------------------------------------- */
 #vmStatus {
   color: #fff;
   font-size: 1.3rem;
-  margin-bottom: 20px;
-  text-align: center;
+  margin-bottom: 10px;
 }
 
-/* Buttons */
-#vmRecordBtn,
-#vmStopBtn {
+#vmTimer {
+  color: #fff;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+/* -------------------------------------------------------
+   Waveform Animation
+------------------------------------------------------- */
+.vm-wave {
+  width: 120px;
+  height: 40px;
+  margin: 20px auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.vm-wave div {
+  width: 6px;
+  height: 10px;
+  background: #fff;
+  border-radius: 3px;
+  animation: wave 1s infinite ease-in-out;
+}
+
+.vm-wave div:nth-child(1) { animation-delay: 0s; }
+.vm-wave div:nth-child(2) { animation-delay: 0.1s; }
+.vm-wave div:nth-child(3) { animation-delay: 0.2s; }
+.vm-wave div:nth-child(4) { animation-delay: 0.3s; }
+.vm-wave div:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes wave {
+  0%, 100% { height: 10px; }
+  50%      { height: 30px; }
+}
+
+/* -------------------------------------------------------
+   Buttons
+------------------------------------------------------- */
+#vmControls button {
   padding: 12px 20px;
   margin: 8px;
   border: none;
@@ -240,6 +296,7 @@ emoji-picker::part(search) {
   min-width: 120px;
 }
 
+/* Pulsing Record Button */
 #vmRecordBtn {
   background: #ff3b3b;
   color: #fff;
@@ -266,56 +323,24 @@ emoji-picker::part(search) {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-
-/* Stop button */
 #vmStopBtn {
   background: #ffaa00;
   color: #000;
 }
-/* Glass card inside modal */
-.vm-card {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
-  padding: 30px 40px;
-  text-align: center;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  animation: vmCardFade 0.4s ease;
+
+#vmPlayBtn {
+  background: #4da6ff;
+  color: #fff;
 }
 
-@keyframes vmCardFade {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-.vm-wave {
-  width: 120px;
-  height: 40px;
-  margin: 20px auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
+#vmSendBtn {
+  background: #4dff88;
+  color: #000;
 }
 
-.vm-wave::before,
-.vm-wave::after,
-.vm-wave div {
-  content: "";
-  width: 6px;
-  height: 10px;
-  background: #fff;
-  border-radius: 3px;
-  animation: wave 1s infinite ease-in-out;
-}
-
-.vm-wave div:nth-child(1) { animation-delay: 0s; }
-.vm-wave div:nth-child(2) { animation-delay: 0.1s; }
-.vm-wave div:nth-child(3) { animation-delay: 0.2s; }
-.vm-wave div:nth-child(4) { animation-delay: 0.3s; }
-.vm-wave div:nth-child(5) { animation-delay: 0.4s; }
-
-@keyframes wave {
-  0%, 100% { height: 10px; }
-  50%      { height: 30px; }
+#vmDeleteBtn {
+  background: #555;
+  color: #fff;
 }
 
 /* -------------------------------------------------------
@@ -5519,6 +5544,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
