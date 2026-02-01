@@ -856,16 +856,28 @@ window.currentUserAvatar = user.avatar;
 
 
 
-     <div id="voicemailModal" class="voicemail-modal">
+<div id="voicemailModal" class="voicemail-modal">
   <div class="vm-card">
+
     <div id="vmStatus">Ready</div>
-  <div class="vm-wave">
-  <div></div><div></div><div></div><div></div><div></div>
-</div>
-    <button id="vmRecordBtn">Record</button>
-    <button id="vmStopBtn" style="display:none;">Stop</button>
+
+    <div id="vmTimer">00:00</div>
+
+    <div class="vm-wave">
+      <div></div><div></div><div></div><div></div><div></div>
+    </div>
+
+    <div id="vmControls">
+      <button id="vmRecordBtn">Record</button>
+      <button id="vmStopBtn" style="display:none;">Stop</button>
+      <button id="vmPlayBtn" style="display:none;">Play</button>
+      <button id="vmSendBtn" style="display:none;">Send</button>
+      <button id="vmDeleteBtn" style="display:none;">Delete</button>
+    </div>
+
   </div>
 </div>
+
 
 
   <div id="image-viewer-overlay" aria-hidden="true">
@@ -1427,6 +1439,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
