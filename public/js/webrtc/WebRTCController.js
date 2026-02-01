@@ -2,6 +2,7 @@
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
+
 import {
   applyAvatar,
   showAvatar,
@@ -12,6 +13,7 @@ import {
   showRemoteVideo,
   showLocalVideo,
 } from "./AvatarFallback.js";
+
 import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
 import { addCallLogEntry } from "../call-log.js";
 
@@ -24,6 +26,7 @@ import {
   localWrapper,
   remoteWrapper,
 } from "../session.js";
+
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
 
@@ -66,7 +69,7 @@ function fadeInVideo(el) {
 }
 
 /* -------------------------------------------------------
-   UI Engine — matches neon / voice+video modes
+   UI Engine — adapted to floating video panel
 ------------------------------------------------------- */
 
 const UI = {
@@ -74,7 +77,6 @@ const UI = {
     const { audioOnly = false, callerName = "" } = opts;
 
     const videoContainer = document.getElementById("video-container");
-    const messagingBox = document.getElementById("messaging_box");
     const callControls = document.getElementById("call-controls");
     const callerOverlay = document.getElementById("callerOverlay");
     const answerBtn = document.getElementById("answer-call");
@@ -105,24 +107,23 @@ const UI = {
       }
     }
 
-    if (!videoContainer || !messagingBox || !callControls) {
+    if (!videoContainer || !callControls) {
       console.warn("[WebRTC UI] Missing core elements");
       return;
     }
 
     // Reset core visual state
     callControls.classList.remove("active");
-    videoContainer.classList.remove("active", "voice-mode", "video-mode");
+    videoContainer.classList.remove("voice-mode", "video-mode");
     hide(answerBtn);
     hide(declineBtn);
     hide(endBtn);
     hide(camBtn);
     hide(callerOverlay);
 
-    // IDLE → messaging visible, call UI reset
+    // IDLE → hide floating video panel, reset avatars/videos
     if (state === "idle") {
-      messagingBox.style.opacity = "1";
-      messagingBox.style.pointerEvents = "auto";
+      videoContainer.classList.add("hidden");
 
       // Messaging avatars (local + remote) via wrapper system
       applyAvatar(localWrapper, getMyAvatar(), getMyFullname());
@@ -131,7 +132,6 @@ const UI = {
       applyAvatar(remoteWrapper, null, "");
       showAvatar(remoteWrapper);
 
-      // Call UI: ensure local avatar visible, videos hidden
       const localAvatar = document.getElementById("localAvatar");
       const remoteAvatar = document.getElementById("remoteAvatar");
       const localVideo = document.getElementById("localVideo");
@@ -151,12 +151,8 @@ const UI = {
       return;
     }
 
-    // NON-IDLE → hide messaging panel instantly
-    messagingBox.style.opacity = "0";
-    messagingBox.style.pointerEvents = "none";
-
-    // Show video container in voice/video mode
-    videoContainer.classList.add("active");
+    // NON-IDLE → show floating video panel
+    videoContainer.classList.remove("hidden");
     videoContainer.classList.add(audioOnly ? "voice-mode" : "video-mode");
 
     switch (state) {
@@ -189,7 +185,7 @@ const UI = {
         break;
 
       case "ending":
-        videoContainer.classList.remove("active");
+        // brief ending state, then idle will hide panel
         break;
     }
   },
@@ -481,48 +477,48 @@ export class WebRTCController {
     this.onCallStarted?.();
   }
 
- /* ---------------------------------------------------
-   Decline incoming call (final clean version)
---------------------------------------------------- */
-declineIncomingCall() {
-  const offerData = rtcState.incomingOffer;
+  /* ---------------------------------------------------
+     Decline incoming call (final clean version)
+  --------------------------------------------------- */
+  declineIncomingCall() {
+    const offerData = rtcState.incomingOffer;
 
-  // Determine caller ID safely
-  let callerId = null;
-  if (offerData && offerData.from) {
-    callerId = offerData.from;
-  } else if (rtcState.currentCallerId) {
-    callerId = rtcState.currentCallerId;
+    // Determine caller ID safely
+    let callerId = null;
+    if (offerData && offerData.from) {
+      callerId = offerData.from;
+    } else if (rtcState.currentCallerId) {
+      callerId = rtcState.currentCallerId;
+    }
+
+    // Always notify backend
+    if (callerId) {
+      this.socket.emit("call:decline", { to: callerId });
+    } else {
+      console.warn("[WebRTC] declineIncomingCall: no callerId available");
+    }
+
+    // Log the rejected call
+    addCallLogEntry({
+      logId: Date.now(),
+      caller_id: callerId,
+      receiver_id: getMyUserId(),
+      caller_name: rtcState.peerName || `User ${callerId}`,
+      receiver_name: getMyFullname(),
+      call_type: rtcState.audioOnly ? "voice" : "video",
+      direction: "incoming",
+      status: "rejected",
+      duration: 0,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Cleanup
+    rtcState.incomingOffer = null;
+    rtcState.inCall = false;
+
+    UI.apply("idle");
+    if (this.onCallEnded) this.onCallEnded();
   }
-
-  // Always notify backend
-  if (callerId) {
-    this.socket.emit("call:decline", { to: callerId });
-  } else {
-    console.warn("[WebRTC] declineIncomingCall: no callerId available");
-  }
-
-  // Log the rejected call
-  addCallLogEntry({
-    logId: Date.now(),
-    caller_id: callerId,
-    receiver_id: getMyUserId(),
-    caller_name: rtcState.peerName || `User ${callerId}`,
-    receiver_name: getMyFullname(),
-    call_type: rtcState.audioOnly ? "voice" : "video",
-    direction: "incoming",
-    status: "rejected",
-    duration: 0,
-    timestamp: new Date().toISOString(),
-  });
-
-  // Cleanup
-  rtcState.incomingOffer = null;
-  rtcState.inCall = false;
-
-  UI.apply("idle");
-  if (this.onCallEnded) this.onCallEnded();
-}
 
   /* ---------------------------------------------------
      Remote Answer
@@ -790,10 +786,10 @@ declineIncomingCall() {
 
     const iceServers = await getIceServers({ relayOnly });
 
-const config = {
-  iceServers,
-  iceTransportPolicy: "relay"   // 🔥 FORCE TURN‑ONLY
-};
+    const config = {
+      iceServers,
+      iceTransportPolicy: "relay",   // 🔥 FORCE TURN‑ONLY
+    };
 
     console.log("[WebRTC] Creating RTCPeerConnection with config:", config);
 
@@ -1051,209 +1047,208 @@ const config = {
   /* ---------------------------------------------------
      Socket bindings
   --------------------------------------------------- */
- _bindSocketEvents() {
-  if (!this.socket) {
-    console.warn("[WebRTC] No socket provided");
-    return;
-  }
-
-  this.socket.off("webrtc:signal");
-  this.socket.off("call:voicemail");
-  this.socket.off("call:restore");
-  this.socket.off("call:timeout");
-  this.socket.off("call:declined");
-  this.socket.off("call:missed");
-  this.socket.off("call:dnd");
-
-  /* -------------------------------------------------------
-     CORE SIGNALING
-  ------------------------------------------------------- */
-  this.socket.on("webrtc:signal", async (data) => {
-    if (!data || !data.type) return;
-
-    if (data.fromUser) {
-      const { avatar, fullname } = data.fromUser;
-
-      if (avatar) {
-        setRemoteAvatar(avatar);
-        showRemoteAvatar();
-      }
-
-      if (!rtcState.peerName && fullname) {
-        rtcState.peerName = fullname;
-      }
+  _bindSocketEvents() {
+    if (!this.socket) {
+      console.warn("[WebRTC] No socket provided");
+      return;
     }
 
-    switch (data.type) {
-      case "offer":
-        await this.handleOffer(data);
-        break;
+    this.socket.off("webrtc:signal");
+    this.socket.off("call:voicemail");
+    this.socket.off("call:restore");
+    this.socket.off("call:timeout");
+    this.socket.off("call:declined");
+    this.socket.off("call:missed");
+    this.socket.off("call:dnd");
 
-      case "answer":
-        await this.handleAnswer(data);
-        break;
+    /* -------------------------------------------------------
+       CORE SIGNALING
+    ------------------------------------------------------- */
+    this.socket.on("webrtc:signal", async (data) => {
+      if (!data || !data.type) return;
 
-      case "ice":
-        console.log(
-          "[SIGNAL] Incoming ICE from",
-          data.from,
-          "→",
-          data.to,
-          data.candidate
-        );
-        await this.handleRemoteIceCandidate(data);
-        break;
+      if (data.fromUser) {
+        const { avatar, fullname } = data.fromUser;
 
-      case "end":
-        this.handleRemoteEnd();
-        break;
+        if (avatar) {
+          setRemoteAvatar(avatar);
+          showRemoteAvatar();
+        }
 
-      case "busy":
-        stopAudio(ringback);
-        UI.apply("ending");
-        try {
-          const busyTone = new Audio("/NewApp/busy.mp3");
-          busyTone.play().catch(() => {});
-        } catch {}
-        setTimeout(() => UI.apply("idle"), 800);
-        this.onCallFailed?.("busy");
-        break;
+        if (!rtcState.peerName && fullname) {
+          rtcState.peerName = fullname;
+        }
+      }
 
-      default:
-        break;
-    }
-  });
+      switch (data.type) {
+        case "offer":
+          await this.handleOffer(data);
+          break;
 
-  /* -------------------------------------------------------
-     CALL RESTORE
-  ------------------------------------------------------- */
-  this.socket.on("call:restore", ({ callerId, receiverId, status }) => {
-    const me = String(getMyUserId());
-    const callerStr = String(callerId);
-    const receiverStr = String(receiverId);
+        case "answer":
+          await this.handleAnswer(data);
+          break;
 
-    const isCaller = me === callerStr;
-    const peerId = isCaller ? receiverStr : callerStr;
+        case "ice":
+          console.log(
+            "[SIGNAL] Incoming ICE from",
+            data.from,
+            "→",
+            data.to,
+            data.candidate
+          );
+          await this.handleRemoteIceCandidate(data);
+          break;
 
-    console.log("[WebRTC] call:restore received:", {
-      me,
-      callerId,
-      receiverId,
-      status,
-      isCaller,
-      peerId,
+        case "end":
+          this.handleRemoteEnd();
+          break;
+
+        case "busy":
+          stopAudio(ringback);
+          UI.apply("ending");
+          try {
+            const busyTone = new Audio("/NewApp/busy.mp3");
+            busyTone.play().catch(() => {});
+          } catch {}
+          setTimeout(() => UI.apply("idle"), 800);
+          this.onCallFailed?.("busy");
+          break;
+
+        default:
+          break;
+      }
     });
 
-    rtcState.peerId = peerId;
-    rtcState.isCaller = isCaller;
-    rtcState.inCall = status === "active";
+    /* -------------------------------------------------------
+       CALL RESTORE
+    ------------------------------------------------------- */
+    this.socket.on("call:restore", ({ callerId, receiverId, status }) => {
+      const me = String(getMyUserId());
+      const callerStr = String(callerId);
+      const receiverStr = String(receiverId);
 
-    if (status === "active") {
-      UI.apply("active", { audioOnly: rtcState.audioOnly });
-    } else if (isCaller) {
-      UI.apply("outgoing", { audioOnly: rtcState.audioOnly });
-    } else {
-      UI.apply("incoming", {
-        audioOnly: rtcState.audioOnly,
-        callerName: rtcState.peerName || "",
+      const isCaller = me === callerStr;
+      const peerId = isCaller ? receiverStr : callerStr;
+
+      console.log("[WebRTC] call:restore received:", {
+        me,
+        callerId,
+        receiverId,
+        status,
+        isCaller,
+        peerId,
       });
-    }
 
-    if (isCaller) {
-      this._resumeAsCallerAfterRestore(peerId);
-    }
-  });
+      rtcState.peerId = peerId;
+      rtcState.isCaller = isCaller;
+      rtcState.inCall = status === "active";
 
-/* -------------------------------------------------------
-   VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
-------------------------------------------------------- */
+      if (status === "active") {
+        UI.apply("active", { audioOnly: rtcState.audioOnly });
+      } else if (isCaller) {
+        UI.apply("outgoing", { audioOnly: rtcState.audioOnly });
+      } else {
+        UI.apply("incoming", {
+          audioOnly: rtcState.audioOnly,
+          callerName: rtcState.peerName || "",
+        });
+      }
 
-const playUnreachableTone = () => {
-  try {
-    const tone = new Audio("uploads/audio/user_unreachable.mp3");
-    tone.play().catch(() => {});
-  } catch (err) {
-    console.warn("[WebRTC] Unreachable tone failed:", err);
+      if (isCaller) {
+        this._resumeAsCallerAfterRestore(peerId);
+      }
+    });
+
+    /* -------------------------------------------------------
+       VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+    ------------------------------------------------------- */
+
+    const playUnreachableTone = () => {
+      try {
+        const tone = new Audio("uploads/audio/user_unreachable.mp3");
+        tone.play().catch(() => {});
+      } catch (err) {
+        console.warn("[WebRTC] Unreachable tone failed:", err);
+      }
+    };
+
+    const playBeepTone = () => {
+      try {
+        const beep = new Audio("/audio/beep.mp3");
+        beep.play().catch(() => {});
+      } catch (err) {
+        console.warn("[WebRTC] Beep tone failed:", err);
+      }
+    };
+
+    const triggerVoicemailFlow = (from, message) => {
+      stopAudio(ringback);
+      UI.apply("ending");
+
+      const overlay = document.getElementById("callerOverlay");
+      if (overlay) {
+        overlay.style.display = "flex";
+        overlay.textContent = message;
+      }
+
+      // Play unreachable tone first
+      playUnreachableTone();
+
+      // Then play the voicemail beep after a short delay
+      setTimeout(() => playBeepTone(), 1200);
+
+      // Open voicemail recorder
+      if (window.openVoicemailRecorder) {
+        window.openVoicemailRecorder(from);
+      }
+    };
+
+    // 🔥 Auto-timeout → voicemail
+    this.socket.on("call:timeout", ({ from }) => {
+      console.log("[WebRTC] call:timeout from", from);
+      triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
+    });
+
+    // ❌ Declined → voicemail
+    this.socket.on("call:declined", ({ from }) => {
+      console.log("[WebRTC] call:declined from", from);
+      triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
+    });
+
+    // 📵 Missed → voicemail
+    this.socket.on("call:missed", ({ from }) => {
+      console.log("[WebRTC] call:missed from", from);
+      triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
+    });
+
+    // 🔕 DND → voicemail
+    this.socket.on("call:dnd", ({ from }) => {
+      console.log("[WebRTC] call:dnd from", from);
+      triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
+    });
+
+    // 📬 Direct voicemail trigger
+    this.socket.on("call:voicemail", ({ from, reason }) => {
+      console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
+
+      const msg =
+        reason === "callee-dnd"
+          ? "User is in Do Not Disturb. Leave a voicemail…"
+          : "Leave a voicemail…";
+
+      triggerVoicemailFlow(from, msg);
+    });
+
+    /* -------------------------------------------------------
+       DISCONNECT CLEANUP
+    ------------------------------------------------------- */
+    this.socket.on("disconnect", () => {
+      if (rtcState.inCall) {
+        this.endCall(false);
+      }
+    });
   }
-};
-
-const playBeepTone = () => {
-  try {
-    const beep = new Audio("/audio/beep.mp3");
-    beep.play().catch(() => {});
-  } catch (err) {
-    console.warn("[WebRTC] Beep tone failed:", err);
-  }
-};
-
-const triggerVoicemailFlow = (from, message) => {
-  stopAudio(ringback);
-  UI.apply("ending");
-
-  const overlay = document.getElementById("callerOverlay");
-  if (overlay) {
-    overlay.style.display = "flex";
-    overlay.textContent = message;
-  }
-
-  // Play unreachable tone first
-  playUnreachableTone();
-
-  // Then play the voicemail beep after a short delay
-  setTimeout(() => playBeepTone(), 1200);
-
-  // Open voicemail recorder
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
-};
-
-// 🔥 Auto-timeout → voicemail
-this.socket.on("call:timeout", ({ from }) => {
-  console.log("[WebRTC] call:timeout from", from);
-  triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
-});
-
-// ❌ Declined → voicemail
-this.socket.on("call:declined", ({ from }) => {
-  console.log("[WebRTC] call:declined from", from);
-  triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
-});
-
-// 📵 Missed → voicemail
-this.socket.on("call:missed", ({ from }) => {
-  console.log("[WebRTC] call:missed from", from);
-  triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
-});
-
-// 🔕 DND → voicemail
-this.socket.on("call:dnd", ({ from }) => {
-  console.log("[WebRTC] call:dnd from", from);
-  triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
-});
-
-// 📬 Direct voicemail trigger
-this.socket.on("call:voicemail", ({ from, reason }) => {
-  console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
-
-  const msg =
-    reason === "callee-dnd"
-      ? "User is in Do Not Disturb. Leave a voicemail…"
-      : "Leave a voicemail…";
-
-  triggerVoicemailFlow(from, msg);
-});
-
-
-  /* -------------------------------------------------------
-     DISCONNECT CLEANUP
-  ------------------------------------------------------- */
-  this.socket.on("disconnect", () => {
-    if (rtcState.inCall) {
-      this.endCall(false);
-    }
-  });
-}
 
   _initDraggableRemote() {
     const wrapper = document.getElementById("remoteWrapper");
@@ -1334,6 +1329,7 @@ this.socket.on("call:voicemail", ({ from, reason }) => {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
