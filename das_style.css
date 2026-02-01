@@ -180,6 +180,57 @@ emoji-picker::part(search) {
     0 3px 10px rgba(0, 0, 0, 0.2),
     inset 0 0 0 rgba(255, 255, 255, 0.15);
 }
+/* -------------------------------------------------------
+   Voicemail Recorder Modal
+------------------------------------------------------- */
+#voicemailModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  display: none;               /* JS switches this to flex */
+  justify-content: center;
+  align-items: center;
+
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+
+  z-index: 10000;              /* ABOVE all call overlays */
+}
+
+/* Modal inner content */
+#voicemailModal #vmStatus {
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Buttons */
+#vmRecordBtn,
+#vmStopBtn {
+  padding: 12px 20px;
+  margin: 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+/* Record button */
+#vmRecordBtn {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+/* Stop button */
+#vmStopBtn {
+  background: #ffaa00;
+  color: #000;
+}
 
 /* -------------------------------------------------------
    SEARCH BAR (modern rounded pill)
@@ -5382,6 +5433,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
