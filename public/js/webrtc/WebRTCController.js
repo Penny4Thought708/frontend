@@ -1177,108 +1177,73 @@ const playUnreachableTone = () => {
   }
 };
 
-// 🔥 Auto-timeout → voicemail
-this.socket.on("call:timeout", ({ from }) => {
-  console.log("[WebRTC] call:timeout from", from);
+const playBeepTone = () => {
+  try {
+    const beep = new Audio("/audio/beep.mp3");
+    beep.play().catch(() => {});
+  } catch (err) {
+    console.warn("[WebRTC] Beep tone failed:", err);
+  }
+};
 
+const triggerVoicemailFlow = (from, message) => {
   stopAudio(ringback);
   UI.apply("ending");
 
   const overlay = document.getElementById("callerOverlay");
   if (overlay) {
     overlay.style.display = "flex";
-    overlay.textContent = "No answer. Leave a voicemail…";
+    overlay.textContent = message;
   }
 
+  // Play unreachable tone first
   playUnreachableTone();
 
+  // Then play the voicemail beep after a short delay
+  setTimeout(() => playBeepTone(), 1200);
+
+  // Open voicemail recorder
   if (window.openVoicemailRecorder) {
     window.openVoicemailRecorder(from);
   }
+};
+
+// 🔥 Auto-timeout → voicemail
+this.socket.on("call:timeout", ({ from }) => {
+  console.log("[WebRTC] call:timeout from", from);
+  triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
 });
 
 // ❌ Declined → voicemail
 this.socket.on("call:declined", ({ from }) => {
   console.log("[WebRTC] call:declined from", from);
-
-  stopAudio(ringback);
-  UI.apply("ending");
-
-  const overlay = document.getElementById("callerOverlay");
-  if (overlay) {
-    overlay.style.display = "flex";
-    overlay.textContent = "Call declined. Leave a voicemail…";
-  }
-
-  playUnreachableTone();
-
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+  triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
 });
 
 // 📵 Missed → voicemail
 this.socket.on("call:missed", ({ from }) => {
   console.log("[WebRTC] call:missed from", from);
-
-  stopAudio(ringback);
-  UI.apply("ending");
-
-  const overlay = document.getElementById("callerOverlay");
-  if (overlay) {
-    overlay.style.display = "flex";
-    overlay.textContent = "Missed call. Leave a voicemail…";
-  }
-
-  playUnreachableTone();
-
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+  triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
 });
 
 // 🔕 DND → voicemail
 this.socket.on("call:dnd", ({ from }) => {
   console.log("[WebRTC] call:dnd from", from);
-
-  stopAudio(ringback);
-  UI.apply("ending");
-
-  const overlay = document.getElementById("callerOverlay");
-  if (overlay) {
-    overlay.style.display = "flex";
-    overlay.textContent = "User is in Do Not Disturb. Leave a voicemail…";
-  }
-
-  playUnreachableTone();
-
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+  triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
 });
 
 // 📬 Direct voicemail trigger
 this.socket.on("call:voicemail", ({ from, reason }) => {
   console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
 
-  stopAudio(ringback);
-  UI.apply("ending");
+  const msg =
+    reason === "callee-dnd"
+      ? "User is in Do Not Disturb. Leave a voicemail…"
+      : "Leave a voicemail…";
 
-  const overlay = document.getElementById("callerOverlay");
-  if (overlay) {
-    overlay.style.display = "flex";
-    overlay.textContent =
-      reason === "callee-dnd"
-        ? "User is in Do Not Disturb. Leave a voicemail…"
-        : "Leave a voicemail…";
-  }
-
-  playUnreachableTone();
-
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+  triggerVoicemailFlow(from, msg);
 });
+
 
   /* -------------------------------------------------------
      DISCONNECT CLEANUP
@@ -1369,6 +1334,7 @@ this.socket.on("call:voicemail", ({ from, reason }) => {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
