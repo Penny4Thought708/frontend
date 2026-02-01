@@ -248,6 +248,24 @@ body.dark-mode {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
   z-index: 40;
 }
+#notificationCount {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff3b3b;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(255,0,0,0.6);
+  animation: pulseBadge 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
 
 /* Basic responsive tweak */
 
