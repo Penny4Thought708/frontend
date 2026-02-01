@@ -1164,112 +1164,121 @@ const config = {
     }
   });
 
-  /* -------------------------------------------------------
-     VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
-  ------------------------------------------------------- */
+/* -------------------------------------------------------
+   VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+------------------------------------------------------- */
 
-  // 🔥 Auto-timeout → voicemail
-  this.socket.on("call:timeout", ({ from }) => {
-    console.log("[WebRTC] call:timeout from", from);
+const playUnreachableTone = () => {
+  try {
+    const tone = new Audio("/audio/user_unreachable.mp3");
+    tone.play().catch(() => {});
+  } catch (err) {
+    console.warn("[WebRTC] Unreachable tone failed:", err);
+  }
+};
 
-    stopAudio(ringback);
-    UI.apply("ending");
+// 🔥 Auto-timeout → voicemail
+this.socket.on("call:timeout", ({ from }) => {
+  console.log("[WebRTC] call:timeout from", from);
 
-    const overlay = document.getElementById("callerOverlay");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.textContent = "No answer. Leave a voicemail…";
-    }
+  stopAudio(ringback);
+  UI.apply("ending");
 
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+  const overlay = document.getElementById("callerOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent = "No answer. Leave a voicemail…";
+  }
 
-    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
-  });
+  playUnreachableTone();
 
-  // ❌ Declined → voicemail
-  this.socket.on("call:declined", ({ from }) => {
-    console.log("[WebRTC] call:declined from", from);
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+});
 
-    stopAudio(ringback);
-    UI.apply("ending");
+// ❌ Declined → voicemail
+this.socket.on("call:declined", ({ from }) => {
+  console.log("[WebRTC] call:declined from", from);
 
-    const overlay = document.getElementById("callerOverlay");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.textContent = "Call declined. Leave a voicemail…";
-    }
+  stopAudio(ringback);
+  UI.apply("ending");
 
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+  const overlay = document.getElementById("callerOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent = "Call declined. Leave a voicemail…";
+  }
 
-    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
-  });
+  playUnreachableTone();
 
-  // 📵 Missed → voicemail
-  this.socket.on("call:missed", ({ from }) => {
-    console.log("[WebRTC] call:missed from", from);
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+});
 
-    stopAudio(ringback);
-    UI.apply("ending");
+// 📵 Missed → voicemail
+this.socket.on("call:missed", ({ from }) => {
+  console.log("[WebRTC] call:missed from", from);
 
-    const overlay = document.getElementById("callerOverlay");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.textContent = "Missed call. Leave a voicemail…";
-    }
+  stopAudio(ringback);
+  UI.apply("ending");
 
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+  const overlay = document.getElementById("callerOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent = "Missed call. Leave a voicemail…";
+  }
 
-    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
-  });
+  playUnreachableTone();
 
-  // 🔕 DND → voicemail
-  this.socket.on("call:dnd", ({ from }) => {
-    console.log("[WebRTC] call:dnd from", from);
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+});
 
-    stopAudio(ringback);
-    UI.apply("ending");
+// 🔕 DND → voicemail
+this.socket.on("call:dnd", ({ from }) => {
+  console.log("[WebRTC] call:dnd from", from);
 
-    const overlay = document.getElementById("callerOverlay");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.textContent = "User is in Do Not Disturb. Leave a voicemail…";
-    }
+  stopAudio(ringback);
+  UI.apply("ending");
 
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+  const overlay = document.getElementById("callerOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent = "User is in Do Not Disturb. Leave a voicemail…";
+  }
 
-    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
-  });
+  playUnreachableTone();
 
-  // 📬 Direct voicemail trigger
-  this.socket.on("call:voicemail", ({ from, reason }) => {
-    console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+});
 
-    stopAudio(ringback);
-    UI.apply("ending");
+// 📬 Direct voicemail trigger
+this.socket.on("call:voicemail", ({ from, reason }) => {
+  console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
 
-    const overlay = document.getElementById("callerOverlay");
-    if (overlay) {
-      overlay.style.display = "flex";
-      overlay.textContent =
-        reason === "callee-dnd"
-          ? "User is in Do Not Disturb. Leave a voicemail…"
-          : "Leave a voicemail…";
-    }
+  stopAudio(ringback);
+  UI.apply("ending");
 
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+  const overlay = document.getElementById("callerOverlay");
+  if (overlay) {
+    overlay.style.display = "flex";
+    overlay.textContent =
+      reason === "callee-dnd"
+        ? "User is in Do Not Disturb. Leave a voicemail…"
+        : "Leave a voicemail…";
+  }
 
-    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
-  });
+  playUnreachableTone();
+
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+});
 
   /* -------------------------------------------------------
      DISCONNECT CLEANUP
@@ -1360,6 +1369,7 @@ const config = {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
