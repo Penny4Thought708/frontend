@@ -1032,18 +1032,20 @@ function initProfilePanel() {
   async function autoSave() {
     if (!profileLoaded) return;
 
-    const payload = {
-      fullname: fullnameInput.value,
-      email: emailInput.value,
-      bio: bioInput.value,
-      website: websiteInput.value,
-      twitter: twitterInput.value,
-      instagram: instagramInput.value,
-      show_online: showOnlineInput.checked,
-      allow_messages: allowMessagesInput.checked,
-      avatar: currentAvatarPath,
-      theme: themeSelect?.value || "system"
-    };
+const payload = {
+  fullname: fullnameInput.value,
+  email: emailInput.value,
+  bio: bioInput.value,
+  website: websiteInput.value,
+  twitter: twitterInput.value,
+  instagram: instagramInput.value,
+  show_online: showOnlineInput.checked,
+  allow_messages: allowMessagesInput.checked,
+  avatar: currentAvatarPath,
+  banner: null, // ⭐ REQUIRED
+  theme: themeSelect?.value || "system"
+};
+
 
     computeCompletion();
 
@@ -1481,6 +1483,7 @@ setTimeout(() => {
 
 </script>
 </html>
+
 
 
 
