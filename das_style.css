@@ -130,6 +130,7 @@ emoji-picker::part(search) {
     justify-content: center;
     border: solid 2px white;
     border-radius: 20px;
+  z-index:99999999999999999999999999;
 }
 
 .modal-1.hidden {
@@ -5544,6 +5545,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
