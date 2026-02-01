@@ -873,7 +873,8 @@ window.currentUserAvatar = user.avatar;
     <button onclick="closeHiddenPanel()">Close</button>
   </div>
 <!-- all your HTML here -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" style="display:none;"></div>
+
 
 <script>
 function showLogoutModal() { const modal = document.getElementById("logoutModal"); if (modal) modal.classList.remove("hidden"); }
@@ -931,12 +932,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 function showToast(message) {
   const toast = document.getElementById("toast");
   toast.textContent = message;
-  toast.classList.add("show");
+  toast.style.display = "block";
 
+  // Fade in
+  toast.style.opacity = "0.9";
+
+  // Hide after 2.5 seconds
   setTimeout(() => {
-    toast.classList.remove("show");
+    toast.style.opacity = "0";
+    setTimeout(() => {
+      toast.style.display = "none";
+    }, 300);
   }, 2500);
 }
+
 
 /* -------------------------------------------------------
    PROFILE PANEL — CLEAN VERSION (NO AUTO‑SAVE, NO BANNER)
@@ -1411,6 +1420,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
