@@ -73,9 +73,19 @@ export function getMyAvatar() {
 // -------------------------------------------------------
 // Avatar URL helper
 // -------------------------------------------------------
-export function avatarUrl(filename) {
-  if (!filename) return "/img/defaultUser.png";
-  return `${API_BASE}/uploads/avatars/${filename}`;
+export function avatarUrl(path) {
+  if (!path) return "/img/defaultUser.png";
+
+  // Already a full URL
+  if (path.startsWith("http")) return path;
+
+  // Already normalized by backend
+  if (path.startsWith("/uploads/")) {
+    return `${API_BASE}${path}`;
+  }
+
+  // Raw filename from DB
+  return `${API_BASE}/uploads/avatars/${path}`;
 }
 
 // -------------------------------------------------------
@@ -298,6 +308,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
