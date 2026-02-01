@@ -23,7 +23,7 @@
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
   <!-- Styles -->
-  <link rel="stylesheet" href="das_style.css" />
+ 
   <link rel="stylesheet" href="calling_style.css" />
   <link rel="stylesheet" href="offscreenPanels_style.css" />
 
@@ -902,6 +902,135 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </body>
+<script>
+/* -------------------------------------------------------
+   HYBRID FLOATING-SPACE UI CONTROLLER
+   (No conflicts with your existing app.js, WebRTC, etc.)
+------------------------------------------------------- */
+
+const UIX = {
+  messaging: document.getElementById("messaging_box"),
+  miniChat: document.getElementById("miniChatBubble"),
+  video: document.getElementById("video-container"),
+  contacts: document.getElementById("conwrap"),
+  profile: document.getElementById("contact_window"),
+  search: document.getElementById("search_panel"),
+  settings: document.getElementById("settings_container"),
+  voicemail: document.getElementById("voicemailModal"),
+  fullProfile: document.getElementById("fullProfileModal"),
+
+  hideAllFloating() {
+    this.video.classList.add("hidden");
+    this.contacts.classList.add("hidden");
+    this.profile.classList.add("hidden");
+    this.search.classList.add("hidden");
+    this.settings.classList.add("hidden");
+    this.voicemail.classList.add("hidden");
+    this.fullProfile.classList.add("hidden");
+  },
+
+  showMessaging() {
+    this.messaging.style.display = "flex";
+    this.miniChat.style.display = "none";
+  },
+
+  collapseMessaging() {
+    this.messaging.style.display = "none";
+    this.miniChat.style.display = "flex";
+  }
+};
+
+/* -------------------------------------------------------
+   CONTACTS PANEL
+------------------------------------------------------- */
+document.getElementById("contact_widget").onclick = () => {
+  UIX.hideAllFloating();
+  UIX.contacts.classList.remove("hidden");
+  UIX.collapseMessaging();
+};
+
+/* -------------------------------------------------------
+   SEARCH PANEL
+------------------------------------------------------- */
+document.getElementById("btn_search").onclick = () => {
+  UIX.hideAllFloating();
+  UIX.search.classList.remove("hidden");
+  UIX.collapseMessaging();
+};
+
+document.getElementById("close_search").onclick = () => {
+  UIX.search.classList.add("hidden");
+  UIX.showMessaging();
+};
+
+/* -------------------------------------------------------
+   SETTINGS PANEL
+------------------------------------------------------- */
+document.getElementById("btn_settings").onclick = () => {
+  UIX.hideAllFloating();
+  UIX.settings.classList.remove("hidden");
+  UIX.collapseMessaging();
+};
+
+/* -------------------------------------------------------
+   PROFILE PANEL
+------------------------------------------------------- */
+document.getElementById("view_profile")?.addEventListener("click", () => {
+  UIX.hideAllFloating();
+  UIX.profile.classList.remove("hidden");
+  UIX.collapseMessaging();
+});
+
+/* -------------------------------------------------------
+   VOICEMAIL PANEL
+------------------------------------------------------- */
+document.getElementById("voicemail_Btn").onclick = () => {
+  UIX.hideAllFloating();
+  UIX.voicemail.classList.remove("hidden");
+  UIX.collapseMessaging();
+};
+
+/* -------------------------------------------------------
+   VIDEO CALL OVERRIDE
+------------------------------------------------------- */
+document.getElementById("videoBtn").onclick = () => {
+  UIX.hideAllFloating();
+  UIX.video.classList.remove("hidden");
+  UIX.collapseMessaging();
+};
+
+/* When call ends, restore messaging */
+document.getElementById("end-call").onclick = () => {
+  UIX.video.classList.add("hidden");
+  UIX.showMessaging();
+};
+
+/* -------------------------------------------------------
+   MINI CHAT BUBBLE
+------------------------------------------------------- */
+UIX.miniChat.onclick = () => {
+  UIX.hideAllFloating();
+  UIX.showMessaging();
+};
+
+/* -------------------------------------------------------
+   FULL PROFILE MODAL
+------------------------------------------------------- */
+document.getElementById("closeFullProfile").onclick = () => {
+  UIX.fullProfile.classList.add("hidden");
+  UIX.showMessaging();
+};
+
+/* -------------------------------------------------------
+   ESC KEY CLOSES FLOATING PANELS
+------------------------------------------------------- */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    UIX.hideAllFloating();
+    UIX.showMessaging();
+  }
+});
+</script>
 
 <script type="module">
 const API_BASE = "https://letsee-backend.onrender.com";
@@ -1417,6 +1546,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
