@@ -135,7 +135,10 @@ window.currentUserAvatar = user.avatar;
       </div>
 
       <button id="btn_search" class="rail-btn" data-tip="Search">🔍</button>
-      <button id="btn_chat_main" class="rail-btn" title="Start Chat">💬</button>
+      <button id="btn_chat_main" class="rail-btn">
+  💬 <span class="label">Chat</span>
+</button>
+
       <button id="contact_widget" class="rail-btn" title="Contacts">
         <img src="Contacts.png" alt="contact_widget" class="contact_icon">
       </button>
@@ -1542,38 +1545,24 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
         }
       }
     });
+document.addEventListener("keydown", (e) => {
+  if (!e.ctrlKey) return;
+
+  switch (e.key) {
+    case "1": document.getElementById("btn_search").click(); break;
+    case "2": document.getElementById("btn_chat_main").click(); break;
+    case "3": document.getElementById("contact_widget").click(); break;
+    case "4": document.getElementById("voicemail_Btn").click(); break;
+    case "5": document.getElementById("btn_notifications").click(); break;
+    case "6": document.getElementById("btn_settings").click(); break;
+  }
+});
+
+    
   }
 
 </script>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
