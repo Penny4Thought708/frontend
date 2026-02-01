@@ -1185,7 +1185,7 @@ const config = {
       window.openVoicemailRecorder(from);
     }
 
-    setTimeout(() => UI.apply("idle"), 1500);
+    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
   });
 
   // ❌ Declined → voicemail
@@ -1205,7 +1205,7 @@ const config = {
       window.openVoicemailRecorder(from);
     }
 
-    setTimeout(() => UI.apply("idle"), 1500);
+    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
   });
 
   // 📵 Missed → voicemail
@@ -1225,7 +1225,7 @@ const config = {
       window.openVoicemailRecorder(from);
     }
 
-    setTimeout(() => UI.apply("idle"), 1500);
+    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
   });
 
   // 🔕 DND → voicemail
@@ -1245,7 +1245,7 @@ const config = {
       window.openVoicemailRecorder(from);
     }
 
-    setTimeout(() => UI.apply("idle"), 1500);
+    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
   });
 
   // 📬 Direct voicemail trigger
@@ -1268,7 +1268,7 @@ const config = {
       window.openVoicemailRecorder(from);
     }
 
-    setTimeout(() => UI.apply("idle"), 1500);
+    // Do NOT auto-reset UI here. // The voicemail recorder handles its own lifecycle.
   });
 
   /* -------------------------------------------------------
@@ -1360,6 +1360,7 @@ const config = {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
