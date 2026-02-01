@@ -405,11 +405,13 @@ window.currentUserAvatar = user.avatar;
 </div>
 
 
-            <div id="voicemailRecordingUI" style="display:none">
-              <p>Leave a voicemail…</p>
-              <div id="vmTimer"></div>
-              <button id="vmStopBtn">Finish</button>
-            </div>
+         <div id="voicemailModal" class="voicemail-modal">
+  <div id="vmStatus">Ready</div>
+
+  <button id="vmRecordBtn">Record</button>
+  <button id="vmStopBtn" style="display:none;">Stop</button>
+</div>
+
           </div>
 
           <!-- Message Window -->
@@ -1420,6 +1422,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
