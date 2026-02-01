@@ -129,36 +129,39 @@ window.currentUserAvatar = user.avatar;
   <main class="app-shell">
 
     <!-- LEFT RAIL -->
-    <aside class="app-rail">
-      <div id="notification_container" class="rail-notifications">
-        <span id="notificationCount"></span>
-      </div>
+   <aside class="app-rail">
+  <div id="notification_container" class="rail-notifications">
+    <span id="notificationCount"></span>
+  </div>
 
-      <button id="btn_search" class="rail-btn" data-tip="Search">🔍</button>
-      <button id="btn_chat_main" class="rail-btn">
-  💬 <span class="label">Chat</span>
-</button>
+  <button id="btn_search" class="rail-btn" data-tip="Search">🔍</button>
+  <button id="btn_chat_main" class="rail-btn" data-tip="Chat">💬</button>
 
-      <button id="contact_widget" class="rail-btn" title="Contacts">
-        <img src="Contacts.png" alt="contact_widget" class="contact_icon">
-      </button>
-      <button id="voicemail_Btn" class="rail-btn" title="Voicemail">
-        <img src="img/voicemail.png" alt="voicemail">
-      </button>
-      <button id="btn_notifications" class="rail-btn" title="Notifications">🔔</button>
-      <button id="btn_settings" class="rail-btn" title="Settings">
-        <span class="material-symbols-outlined">settings</span>
-      </button>
-      <button id="toggleBtn" class="rail-btn" title="Theme">🌙</button>
+  <button id="contact_widget" class="rail-btn" data-tip="Contacts">
+    <img src="Contacts.png" alt="Contacts">
+  </button>
 
-      <div class="rail-spacer"></div>
+  <button id="voicemail_Btn" class="rail-btn" data-tip="Voicemail">
+    <img src="img/voicemail.png" alt="Voicemail">
+  </button>
 
-      <button onclick="showLogoutModal()" class="rail-btn logoutBtn" title="Logout">
-        <img src="logout.png" alt="Logout">
-      </button>
+  <button id="btn_notifications" class="rail-btn" data-tip="Notifications">🔔</button>
 
-      <button id="btn_help" class="rail-btn" title="Help">❓</button>
-    </aside>
+  <button id="btn_settings" class="rail-btn" data-tip="Settings">
+    <span class="material-symbols-outlined">settings</span>
+  </button>
+
+  <button id="toggleBtn" class="rail-btn" data-tip="Theme">🌙</button>
+
+  <div class="rail-spacer"></div>
+
+  <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout">
+    <img src="logout.png" alt="Logout">
+  </button>
+
+  <button id="btn_help" class="rail-btn" data-tip="Help">❓</button>
+</aside>
+
 
     <!-- CENTRAL WORKSPACE -->
     <section class="workspace">
@@ -1563,6 +1566,7 @@ document.addEventListener("keydown", (e) => {
 
 </script>
 </html>
+
 
 
 
