@@ -929,7 +929,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* -------------------------------------------------------
-   PROFILE PANEL — CLEAN VERSION (NO BANNER)
+   PROFILE PANEL — CLEAN VERSION (NO AUTO‑SAVE, NO BANNER)
 ------------------------------------------------------- */
 
 let profileLoaded = false;
@@ -940,19 +940,16 @@ let profileLoaded = false;
 function buildUrl(path) {
   if (!path) return "";
 
-  if (path.startsWith("/uploads")) {
-    return `${API_BASE}${path}?t=${Date.now()}`;
+  // Normalize DB filenames → full path
+  if (!path.startsWith("/uploads")) {
+    path = "/uploads/avatars/" + path;
   }
 
-  if (!path.startsWith("http")) {
-    return `${API_BASE}/uploads/avatars/${path}?t=${Date.now()}`;
-  }
-
-  return `${path}?t=${Date.now()}`;
+  return `${API_BASE}${path}?t=${Date.now()}`;
 }
 
 /* -------------------------------------------------------
-   LOAD MY PROFILE BEFORE INITIALIZING PANEL
+   LOAD MY PROFILE
 ------------------------------------------------------- */
 async function loadMyProfile() {
   const res = await fetch(`${API_BASE}/api/auth/me`, {
@@ -963,14 +960,11 @@ async function loadMyProfile() {
 }
 
 /* -------------------------------------------------------
-   PROFILE PANEL INITIALIZER
+   INITIALIZE PROFILE PANEL
 ------------------------------------------------------- */
 function initProfilePanel() {
   console.log("[Profile] Initializing profile panel…");
 
-  /* -------------------------------------------------------
-     ELEMENTS
-  ------------------------------------------------------- */
   const profileInput       = document.getElementById("profileImage");
   const profilePreview     = document.getElementById("profilePreview");
 
@@ -989,78 +983,12 @@ function initProfilePanel() {
   const saveBtn            = document.getElementById("saveProfileBtn");
   const deleteBtn          = document.getElementById("deleteAccountBtn");
 
-  const completionBar      = document.getElementById("profileCompletionBar");
-  const completionLabel    = document.getElementById("profileCompletionLabel");
-
   if (!profileInput || !profilePreview) {
     console.warn("[Profile] Missing UI elements — skipping init.");
     return;
   }
 
   let currentAvatarPath = window.currentAvatarPath || null;
-
-  /* -------------------------------------------------------
-     HELPERS
-  ------------------------------------------------------- */
-  const debounce = (fn, delay = 400) => {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn(...args), delay);
-    };
-  };
-
-  function computeCompletion() {
-    const fields = [
-      !!currentAvatarPath,
-      !!bioInput.value.trim(),
-      !!websiteInput.value.trim(),
-      !!twitterInput.value.trim() || !!instagramInput.value.trim(),
-      showOnlineInput.checked,
-      allowMessagesInput.checked
-    ];
-
-    const filled = fields.filter(Boolean).length;
-    const pct = Math.round((filled / fields.length) * 100);
-
-    if (completionBar) completionBar.style.width = pct + "%";
-    if (completionLabel) completionLabel.textContent = pct + "%";
-
-    return pct;
-  }
-
-  async function autoSave() {
-    if (!profileLoaded) return;
-
-const payload = {
-  fullname: fullnameInput.value,
-  email: emailInput.value,
-  bio: bioInput.value,
-  website: websiteInput.value,
-  twitter: twitterInput.value,
-  instagram: instagramInput.value,
-  show_online: showOnlineInput.checked,
-  allow_messages: allowMessagesInput.checked,
-  avatar: currentAvatarPath,
-  banner: null, // ⭐ REQUIRED
-  theme: themeSelect?.value || "system"
-};
-
-
-    computeCompletion();
-
-    await fetch(`${API_BASE}/api/profile/update`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload)
-    });
-
-    socket.emit("profile:update", payload);
-    updateLocalContact(getMyUserId(), payload);
-  }
-
-  const autoSaveDebounced = debounce(autoSave, 400);
 
   /* -------------------------------------------------------
      AVATAR UPLOAD
@@ -1081,49 +1009,50 @@ const payload = {
     if (res.success) {
       currentAvatarPath = res.avatar;
       profilePreview.src = buildUrl(currentAvatarPath);
-      autoSaveDebounced();
+      alert("Profile picture updated!");
+    } else {
+      alert("Failed to upload avatar.");
     }
   });
 
   /* -------------------------------------------------------
-     LIVE EMAIL VALIDATION
-  ------------------------------------------------------- */
-  emailInput?.addEventListener("input", debounce(async () => {
-    const email = emailInput.value.trim();
-    if (!email) return;
-
-    const res = await fetch(
-      `${API_BASE}/api/profile/check-email?email=${encodeURIComponent(email)}`,
-      { credentials: "include" }
-    ).then(r => r.json());
-
-    emailInput.classList.toggle("valid", res.available);
-    emailInput.classList.toggle("invalid", !res.available);
-
-    autoSaveDebounced();
-  }, 300));
-
-  /* -------------------------------------------------------
-     AUTO-SAVE FIELDS
-  ------------------------------------------------------- */
-  [
-    fullnameInput,
-    bioInput,
-    websiteInput,
-    twitterInput,
-    instagramInput
-  ].forEach(el => el?.addEventListener("input", autoSaveDebounced));
-
-  [showOnlineInput, allowMessagesInput].forEach(el =>
-    el?.addEventListener("change", autoSaveDebounced)
-  );
-
-  themeSelect?.addEventListener("change", autoSaveDebounced);
-
-  /* -------------------------------------------------------
      MANUAL SAVE BUTTON
   ------------------------------------------------------- */
-  saveBtn?.addEventListener("click", autoSave);
+  async function saveProfile() {
+    if (!profileLoaded) {
+      alert("Profile not loaded yet.");
+      return;
+    }
+
+    const payload = {
+      fullname: fullnameInput.value,
+      email: emailInput.value,
+      bio: bioInput.value,
+      website: websiteInput.value,
+      twitter: twitterInput.value,
+      instagram: instagramInput.value,
+      show_online: showOnlineInput.checked,
+      allow_messages: allowMessagesInput.checked,
+      avatar: currentAvatarPath,
+      banner: null,
+      theme: themeSelect?.value || "system"
+    };
+
+    const res = await fetch(`${API_BASE}/api/profile/update`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+
+    if (res.success) {
+      alert("Profile saved successfully!");
+    } else {
+      alert("Failed to save profile.");
+    }
+  }
+
+  saveBtn?.addEventListener("click", saveProfile);
 
   /* -------------------------------------------------------
      DELETE ACCOUNT
@@ -1138,34 +1067,19 @@ const payload = {
 
     if (res.success) {
       window.location.href = "/";
+    } else {
+      alert("Failed to delete account.");
     }
   });
-
-  /* -------------------------------------------------------
-     REAL-TIME PROFILE SYNC
-  ------------------------------------------------------- */
-  socket.on("profile:updated", (data) => {
-    if (data.user_id !== getMyUserId()) return;
-
-    if (data.avatar) {
-      currentAvatarPath = data.avatar;
-      profilePreview.src = buildUrl(currentAvatarPath);
-    }
-
-    updateLocalContact(getMyUserId(), data);
-    computeCompletion();
-  });
-
-  computeCompletion();
 }
 
 /* -------------------------------------------------------
-   INIT PROFILE PANEL WHEN OPENED
+   OPEN PROFILE PANEL
 ------------------------------------------------------- */
 document.getElementById("view_profile")?.addEventListener("click", async () => {
   const me = await loadMyProfile();
 
-  // Pre-fill fields BEFORE init
+  // Pre-fill fields
   document.getElementById("fullnameInput").value = me.fullname || "";
   document.getElementById("emailInput").value = me.email || "";
   document.getElementById("bioInput").value = me.bio || "";
@@ -1178,16 +1092,20 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
   const themeEl = document.getElementById("themeSelect");
   if (themeEl) themeEl.value = me.theme || "system";
 
-  // Avatar
-  window.currentAvatarPath = me.avatar;
-  document.getElementById("profilePreview").src = buildUrl(me.avatar);
+  // Normalize avatar path
+  let avatarPath = me.avatar;
+  if (avatarPath && !avatarPath.startsWith("/uploads")) {
+    avatarPath = "/uploads/avatars/" + avatarPath;
+  }
 
-profileLoaded = true;
+  window.currentAvatarPath = avatarPath;
+  document.getElementById("profilePreview").src = buildUrl(avatarPath);
 
-setTimeout(() => {
-  initProfilePanel();
-}, 50);
+  profileLoaded = true;
 
+  setTimeout(() => {
+    initProfilePanel();
+  }, 50);
 });
 
   /* -------------------------------------------------------
@@ -1483,6 +1401,7 @@ setTimeout(() => {
 
 </script>
 </html>
+
 
 
 
