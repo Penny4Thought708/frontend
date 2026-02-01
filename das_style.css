@@ -5054,6 +5054,29 @@ footer a:active {
   opacity: 0;
   transition: 0.25s ease;
 }
+.voicemail-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e1e1e;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.vm-play-btn {
+  background: #4caf50;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.vm-duration {
+  color: #ccc;
+  font-size: 13px;
+}
 
 /* Toast */
 .voicemail-toast {
@@ -5317,6 +5340,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
