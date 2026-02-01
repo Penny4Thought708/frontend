@@ -5073,9 +5073,51 @@ footer a:active {
   font-size: 14px;
 }
 
+.vm-bubble {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bubble-bg, #1e1e1e);
+  border-radius: 14px;
+  min-width: 180px;
+}
+
+.vm-play {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #4caf50;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.vm-progress {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vm-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #4caf50;
+  transition: width 0.1s linear;
+}
+
 .vm-duration {
-  color: #ccc;
   font-size: 13px;
+  opacity: 0.8;
+  min-width: 40px;
+  text-align: right;
 }
 
 /* Toast */
@@ -5340,6 +5382,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
