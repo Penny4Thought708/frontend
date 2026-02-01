@@ -201,32 +201,67 @@ ul {
 }
 
 .rail-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: #111827;
-  color: #e5e7eb;
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-fast);
-  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  color: #e5e7eb;
+  transition: 0.25s ease;
 }
+
+.rail-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 12px rgba(123,92,255,0.35);
+}
+
+.rail-btn.active {
+  background: rgba(123,92,255,0.25);
+  border-color: rgba(123,92,255,0.6);
+  box-shadow: 0 0 18px rgba(123,92,255,0.55);
+  transform: translateY(-2px) scale(1.05);
+}
+
 
 .rail-btn img {
   max-width: 24px;
   max-height: 24px;
 }
 
-.rail-btn:hover {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 14px rgba(123, 92, 255, 0.45);
-  transform: translateY(-1px);
-}
 
 .rail-spacer {
   flex: 1;
+}
+.rail-btn[data-tip] {
+  position: relative;
+}
+
+.rail-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-10px);
+  background: rgba(15,23,42,0.9);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(123,92,255,0.4);
+  color: #e5e7eb;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.25s ease;
+  white-space: nowrap;
+}
+
+.rail-btn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
 }
 
 /* ============================================================
@@ -1130,6 +1165,7 @@ emoji-picker {
     flex-direction: column;
   }
 }
+
 
 
 
