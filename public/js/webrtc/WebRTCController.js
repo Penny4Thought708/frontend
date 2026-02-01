@@ -482,13 +482,6 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Decline incoming call
-  --------------------------------------------------- */
-  declineIncomingCall() {
-    const offerData = rtcState.incomingOffer;
-    if (!offerData || !offerData.from) {
-      console.warn("[WebRTC] 
-  /* ---------------------------------------------------
    Decline incoming call (fixed)
 --------------------------------------------------- */
 declineIncomingCall() {
@@ -1392,6 +1385,7 @@ const config = {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
