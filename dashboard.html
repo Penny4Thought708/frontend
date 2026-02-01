@@ -873,6 +873,7 @@ window.currentUserAvatar = user.avatar;
     <button onclick="closeHiddenPanel()">Close</button>
   </div>
 <!-- all your HTML here -->
+<div id="toast" class="toast"></div>
 
 <script>
 function showLogoutModal() { const modal = document.getElementById("logoutModal"); if (modal) modal.classList.remove("hidden"); }
@@ -927,6 +928,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+}
 
 /* -------------------------------------------------------
    PROFILE PANEL — CLEAN VERSION (NO AUTO‑SAVE, NO BANNER)
@@ -1009,7 +1019,7 @@ function initProfilePanel() {
     if (res.success) {
       currentAvatarPath = res.avatar;
       profilePreview.src = buildUrl(currentAvatarPath);
-      alert("Profile picture updated!");
+      showToast("Profile picture updated!");
     } else {
       alert("Failed to upload avatar.");
     }
@@ -1018,39 +1028,39 @@ function initProfilePanel() {
   /* -------------------------------------------------------
      MANUAL SAVE BUTTON
   ------------------------------------------------------- */
-  async function saveProfile() {
-    if (!profileLoaded) {
-      alert("Profile not loaded yet.");
-      return;
-    }
-
-    const payload = {
-      fullname: fullnameInput.value,
-      email: emailInput.value,
-      bio: bioInput.value,
-      website: websiteInput.value,
-      twitter: twitterInput.value,
-      instagram: instagramInput.value,
-      show_online: showOnlineInput.checked,
-      allow_messages: allowMessagesInput.checked,
-      avatar: currentAvatarPath,
-      banner: null,
-      theme: themeSelect?.value || "system"
-    };
-
-    const res = await fetch(`${API_BASE}/api/profile/update`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload)
-    }).then(r => r.json());
-
-    if (res.success) {
-      alert("Profile saved successfully!");
-    } else {
-      alert("Failed to save profile.");
-    }
+async function saveProfile() {
+  if (!profileLoaded) {
+    showToast("Profile not loaded yet.");
+    return;
   }
+
+  const payload = {
+    fullname: fullnameInput.value,
+    email: emailInput.value,
+    bio: bioInput.value,
+    website: websiteInput.value,
+    twitter: twitterInput.value,
+    instagram: instagramInput.value,
+    show_online: showOnlineInput.checked,
+    allow_messages: allowMessagesInput.checked,
+    avatar: currentAvatarPath,
+    banner: null,
+    theme: themeSelect?.value || "system"
+  };
+
+  const res = await fetch(`${API_BASE}/api/profile/update`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload)
+  }).then(r => r.json());
+
+  if (res.success) {
+    showToast("Profile saved successfully!");
+  } else {
+    showToast("Failed to save profile.");
+  }
+}
 
   saveBtn?.addEventListener("click", saveProfile);
 
@@ -1401,6 +1411,7 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
 
 </script>
 </html>
+
 
 
 
