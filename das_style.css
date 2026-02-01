@@ -1,115 +1,76 @@
+/* ============================================================
+   GLOBAL RESET + TYPOGRAPHY (Futuristic UI)
+============================================================ */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
   margin: 0;
-  font-weight: 600;
   padding: 0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-weight: 500;
 }
+
+/* Emoji Picker — stays above all floating panels */
 #emojiPicker,
-.emoji-picker,
-#emojiPicker span,
-.emoji-picker span {
-  z-index: 20000000;
-  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji",
-    sans-serif !important;
+.emoji-picker {
+  z-index: 9999999;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", sans-serif !important;
 }
-/* Modern floating emoji picker */
+
+/* ============================================================
+   FLOATING EMOJI PICKER (Glass Panel)
+============================================================ */
 #emojiPicker {
   position: absolute;
-  bottom: 70px;
-  left: 10px;
-
+  bottom: 80px;
+  left: 20px;
   width: 330px;
   height: 380px;
 
-  background: rgba(255, 255, 255, 0.75);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px) saturate(180%);
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 6px rgba(0, 0, 0, 0.12);
-
-  overflow: hidden;
-  z-index: 9999999;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 
   opacity: 0;
   transform: translateY(12px) scale(0.96);
-  transition: opacity 0.25s ease,
-    transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: opacity .25s ease, transform .25s ease;
 }
 
-/* When visible */
 #emojiPicker:not(.hidden) {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
 
-/* Hide state */
 #emojiPicker.hidden {
   pointer-events: none;
 }
 
-/* Improve internal emoji grid spacing */
-emoji-picker::part(grid) {
-  padding: 6px !important;
-}
-
-/* Improve category bar */
-emoji-picker::part(category-buttons) {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* Category icons */
-emoji-picker::part(category-button) {
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-emoji-picker::part(category-button):hover {
-  opacity: 1;
-}
-
-/* Search bar styling */
-emoji-picker::part(search) {
-  border-radius: 10px !important;
-  background: rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  margin: 8px !important;
-}
-/* Floating GIF Picker */
-/* -------------------------------------------------------
-   MODERN GLASSY GIF PICKER
-------------------------------------------------------- */
+/* ============================================================
+   GIF PICKER (Floating Glass Panel)
+============================================================ */
 #gifPicker {
   position: absolute;
-  bottom: 80px;
-  left: 12px;
+  bottom: 90px;
+  left: 20px;
   width: 340px;
   height: 400px;
 
-  background: rgba(155, 154, 154, 0.55);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
 
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 9999999;
 
   opacity: 0;
   transform: translateY(20px) scale(0.94);
-  transition: opacity 0.28s cubic-bezier(0.25, 0.8, 0.25, 1),
-    transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: opacity .28s ease, transform .28s ease;
 }
 
 #gifPicker:not(.hidden) {
@@ -120,263 +81,38 @@ emoji-picker::part(search) {
 #gifPicker.hidden {
   pointer-events: none;
 }
-.modal-1 {
-    position: relative;
-    inset: 0;
-    background: #fffefe42;
-    display: flex;
-    height: 240px;
-    align-items: center;
-    justify-content: center;
-    border: solid 2px white;
-    border-radius: 20px;
-  z-index:99999999999999999999999999;
-}
 
-.modal-1.hidden {
-  display: none;
-}
-
-.modal-content-1 {
-  corlor:black;
-  padding: 20px 30px;
-  border-radius: 10px;
-  text-align: center;
-}
-
-.modal-content-1 button {
-  padding: 12px 22px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  color: #fff;
-  margin: 10px 5px 5px 5px;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.25),
-    inset 0 0 0 rgba(255, 255, 255, 0.2);
-}
-
-.modal-content-1 button:hover {
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.35),
-    inset 0 0 0 rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
-}
-
-.modal-content-1 button:active {
-  transform: translateY(0);
-  background: rgba(255, 255, 255, 0.10);
-  box-shadow:
-    0 3px 10px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 rgba(255, 255, 255, 0.15);
-}
-/* -------------------------------------------------------
-   Modal Container (Slide In / Slide Out)
-------------------------------------------------------- */
-#voicemailModal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-
-  display: none;
-  justify-content: center;
-  align-items: center;
-
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-
-  z-index: 10000;
-
-  transform: translateX(-100%);
-  opacity: 0;
-
-  transition:
-    transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1),
-    opacity 0.45s ease;
-}
-
-#voicemailModal.open {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-#voicemailModal.closing {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-/* -------------------------------------------------------
-   Glass Card
-------------------------------------------------------- */
-.vm-card {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
-  padding: 30px 40px;
-  text-align: center;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  animation: vmCardFade 0.4s ease;
-}
-
-@keyframes vmCardFade {
-  from { opacity: 0; transform: scale(0.9); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* -------------------------------------------------------
-   Status + Timer
-------------------------------------------------------- */
-#vmStatus {
-  color: #fff;
-  font-size: 1.3rem;
-  margin-bottom: 10px;
-}
-
-#vmTimer {
-  color: #fff;
-  font-size: 1.1rem;
-  margin-bottom: 20px;
-}
-
-/* -------------------------------------------------------
-   Waveform Animation
-------------------------------------------------------- */
-.vm-wave {
-  width: 120px;
-  height: 40px;
-  margin: 20px auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  opacity: 0.3;
-  transition: opacity 0.3s ease;
-}
-
-.vm-wave div {
-  width: 6px;
-  height: 10px;
-  background: #fff;
-  border-radius: 3px;
-  animation: wave 1s infinite ease-in-out;
-}
-
-.vm-wave div:nth-child(1) { animation-delay: 0s; }
-.vm-wave div:nth-child(2) { animation-delay: 0.1s; }
-.vm-wave div:nth-child(3) { animation-delay: 0.2s; }
-.vm-wave div:nth-child(4) { animation-delay: 0.3s; }
-.vm-wave div:nth-child(5) { animation-delay: 0.4s; }
-
-@keyframes wave {
-  0%, 100% { height: 10px; }
-  50%      { height: 30px; }
-}
-
-/* -------------------------------------------------------
-   Buttons
-------------------------------------------------------- */
-#vmControls button {
-  padding: 12px 20px;
-  margin: 8px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  min-width: 120px;
-}
-
-/* Pulsing Record Button */
-#vmRecordBtn {
-  background: #ff3b3b;
-  color: #fff;
-  border-radius: 50px;
-  padding: 14px 28px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  position: relative;
-  overflow: hidden;
-}
-
-#vmRecordBtn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50px;
-  background: rgba(255, 0, 0, 0.4);
-  animation: pulse 1.4s infinite ease-out;
-  z-index: -1;
-}
-
-@keyframes pulse {
-  0%   { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
-}
-
-#vmStopBtn {
-  background: #ffaa00;
-  color: #000;
-}
-
-#vmPlayBtn {
-  background: #4da6ff;
-  color: #fff;
-}
-
-#vmSendBtn {
-  background: #4dff88;
-  color: #000;
-}
-
-#vmDeleteBtn {
-  background: #555;
-  color: #fff;
-}
-
-/* -------------------------------------------------------
-   SEARCH BAR (modern rounded pill)
-------------------------------------------------------- */
+/* ============================================================
+   GIF SEARCH BAR (Neon Input)
+============================================================ */
 #gifSearch {
   width: calc(100% - 24px);
-  margin: 12px auto 8px auto;
+  margin: 12px auto 8px;
   padding: 10px 14px 10px 40px;
-
-  border: none;
-  outline: none;
 
   background: rgba(255, 255, 255, 0.12);
   border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 
   color: #fff;
   font-size: 15px;
+  outline: none;
 
   background-image: url('data:image/svg+xml;utf8,<svg fill="white" width="18" height="18" xmlns="http://www.w3.org/2000/svg"><path d="M12.9 14.32a7.5 7.5 0 111.41-1.41l4.39 4.38-1.41 1.42-4.39-4.39zM7.5 13A5.5 5.5 0 107.5 2a5.5 5.5 0 000 11z"/></svg>');
   background-repeat: no-repeat;
   background-position: 12px center;
-  background-size: 18px;
 }
 
-/* -------------------------------------------------------
-   GIF GRID (cleaner, tighter, more premium)
-------------------------------------------------------- */
+/* ============================================================
+   GIF GRID (Dark Neon Grid)
+============================================================ */
 .gif-results {
   overflow-y: auto;
-
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding: 10px;
+
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
@@ -386,40 +122,39 @@ emoji-picker::part(search) {
 }
 
 .gif-results::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 10px;
 }
 
-/* -------------------------------------------------------
+/* ============================================================
    GIF ITEM
-------------------------------------------------------- */
+============================================================ */
 .gif-results img {
   width: 100%;
   border-radius: 10px;
   cursor: pointer;
-
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform .18s ease, box-shadow .18s ease;
 }
 
 .gif-results img:hover {
   transform: scale(1.07);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
-.gif-preview {
-  width: 120px;
-  border-radius: 10px;
-  margin-bottom: 6px;
-}
+
+/* ============================================================
+   RICH INPUT (Messaging Input)
+============================================================ */
 .rich-input {
   min-height: 45px;
   max-height: 50px;
-  overflow: auto;
+  overflow-y: auto;
   width: 80%;
   padding: 10px 12px;
+
   border-radius: 14px;
-  border: solid 2px blue;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgb(65, 64, 64);
+  border: 1px solid rgba(123, 92, 255, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
   font-size: 15px;
 }
 
@@ -427,428 +162,106 @@ emoji-picker::part(search) {
   max-width: 120px;
   border-radius: 10px;
   margin-right: 6px;
-  vertical-align: middle;
 }
 
+/* ============================================================
+   THEME TOKENS (Updated for Floating-Space UI)
+============================================================ */
 :root {
-  --radius: 20px;
-  --gap: 1rem;
-  --accent: #4da3ff;
-  --accent-strong: #0077cc;
-  --success: #4caf50;
-  --danger: #f44336;
-  --muted: #aaa;
-  --glass: rgba(190, 190, 190, 0.6);
-  --shadow-light: 0 4px 12px rgba(0, 0, 8, 0.432);
-  --shadow-dark: 0 4px 9px rgba(255, 255, 255, 0.14);
-  --border-style: 2px solid var(--accent);
-  --transition-fast: 0.2s ease;
+  --accent: #7b5cff;
+  --accent-strong: #5a3aff;
+  --success: #4dff88;
+  --danger: #ff4d4d;
+  --muted: #9ca3af;
+
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-strong: rgba(255, 255, 255, 0.12);
+
+  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-hard: 0 18px 48px rgba(0, 0, 0, 0.65);
+
+  --radius: 18px;
+  --radius-sm: 12px;
+
+  --transition-fast: .22s ease-out;
 }
 
-/* Theme tokens (switch with <html data-theme="dark"> or "light") */
+/* Light/Dark theme compatibility */
 :root[data-theme="light"] {
-  --bg: #d6d6d6;
-  --panel: #f3f3f3;
+  --bg: #f3f3f3;
+  --panel: #ffffff;
   --text: #222;
-  --overlay: rgba(190, 190, 190, 0.6);
-  --shadow: var(--shadow-light);
-  --bck: #01235e;
 }
 
 :root[data-theme="dark"] {
-  --bg: #252525;
-  --panel: #2a2a2a;
+  --bg: #0d0f12;
+  --panel: #13161a;
   --text: #fff;
-  --overlay: #2a2a2a;
-  --shadow: var(--shadow-dark);
-  --bck: #005eff;
 }
 
-/* Base */
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.4s ease, color 0.4s ease;
-  background-color: var(--bg);
-  color: var(--text);
-}
-
-body {
-  width: 100%;
-  line-height: 1.4;
-  transition: background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
-}
-/* ===== Modern Glass Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 10px;
-  background: transparent;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(6px);
-  border-radius: 10px;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.35);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #006ac0;
-  border-left: solid 1px black;
-  border-radius: 10px;
-  box-shadow:
-    0 0 6px rgba(0, 150, 255, 0.7),
-    0 0 12px rgba(0, 150, 255, 0.4);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #00d0ff, #0094ff);
-  box-shadow:
-    0 0 10px rgba(0, 200, 255, 0.9),
-    0 0 18px rgba(0, 200, 255, 0.6);
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Accent color variable */
-:root {
-  --accent-color: #4caf50;
-}
-button,
-select,
-input[type="range"] {
-  border-color: var(--accent-color);
-}
-/* Header */
+/* ============================================================
+   HEADER (Updated for Floating Layout)
+============================================================ */
 .site-header {
   height: 60px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
 
   padding: 0 1.5rem;
-  position: relative;
+  background: rgba(15, 18, 26, 0.75);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 
-  /* Glass background */
-  background: rgba(255, 255, 255, 0.082);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  \nbackdrop-filter: blur(14px) saturate(1.4);
-
-  /* Soft border + glow */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-
-  /* Depth shadow */
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25),
-    0 1px 3px rgba(255, 255, 255, 0.15) inset;
-
-  z-index: 9999;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 50;
 }
 
-/* INTRO BOX */
-#introduction {
-  position: absolute;
-  width: 320px;
-  padding: 20px;
-  left: 45%;
-  background: #020129;
-  border: 2px solid #017575;
-  border-radius: 10px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  display: none;
-  z-index: 999999;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transition: opacity 0.3s ease;
-}
-
-/* ARROW */
-.intro-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border: 12px solid transparent;
-  z-index: 999999;
-  display: none;
-}
-
-.intro-arrow.right {
-  border-left-color: #017575;
-}
-.intro-arrow.left {
-  border-right-color: #017575;
-}
-.intro-arrow.up {
-  border-bottom-color: #017575;
-}
-.intro-arrow.down {
-  border-top-color: #017575;
-}
-
-/* Side nav reveal */
-#side_nav_buttons {
-  transition: transform 0.4s ease;
-}
-
-.brand {
-  font-size: 34px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
-
-  /* Use your theme color */
-  color: var(--bck);
-
-  /* Gradient ink effect */
-  background: linear-gradient(135deg, var(--bck), #7dd3fc, #38bdf8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  /* Soft neon glow */
-  text-shadow: 0 0 8px rgba(56, 189, 248, 0.45),
-    0 0 16px rgba(56, 189, 248, 0.25), 0 0 2px rgba(255, 255, 255, 0.4);
-
-  /* Slight glass reflection */
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-
-  /* Smooth entrance */
-  opacity: 0;
-  transform: translateY(6px);
-  animation: brandPop 0.6s cubic-bezier(0.25, 1, 0.3, 1) forwards;
-}
-
-@keyframes brandPop {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Nav */
-/* Base nav link */
-.nav-links a {
-  margin: 0 0.75rem;
-  padding: 6px 10px;
-
-  font-weight: 600;
-  letter-spacing: 0.4px;
-  /* Use your theme color */
-  color: var(--bck);
-
-  /* Gradient ink effect */
-  background: linear-gradient(135deg, var(--bck), #7dd3fc, #38bdf8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  /* Soft neon glow */
-  text-shadow: 0 0 8px rgba(56, 189, 248, 0.45),
-    0 0 16px rgba(56, 189, 248, 0.25), 0 0 2px rgba(255, 255, 255, 0.4);
-
-  /* Slight glass reflection */
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
-
-  text-decoration: none;
-  position: relative;
-
-  transition: color 0.25s ease, opacity 0.25s ease,
-    transform 0.25s cubic-bezier(0.25, 1, 0.3, 1);
-}
-
-/* Hover: neon accent + slight lift */
-.nav-links a:hover {
-  color: var(--bck);
-  transform: translateY(-2px);
-  opacity: 1;
-}
-
-/* Neon underline effect */
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 0%;
-  height: 2px;
-
-  background: var(--bck);
-  border-radius: 2px;
-
-  transition: width 0.35s cubic-bezier(0.25, 1, 0.3, 1),
-    left 0.35s cubic-bezier(0.25, 1, 0.3, 1);
-}
-
-/* Hover underline animation */
-.nav-links a:hover::after {
-  width: 100%;
-  left: 0;
-}
-
-/* Optional: active page link */
-.nav-links a.active {
-  color: var(--bck);
-}
-
-.nav-links a.active::after {
-  width: 100%;
-  left: 0;
-}
-
-/* Auth */
+/* ============================================================
+   AUTH WELCOME BOX (Glass Card)
+============================================================ */
 .auth-section {
-  width: 100%;
-  max-width: 400px; /* keeps it elegant */
+  max-width: 400px;
+  padding: 18px 24px;
 
-  padding: 20px 28px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: var(--shadow-soft);
   text-align: center;
-  text-transform: capitalize;
-  background: rgba(255, 255, 255, 0.12);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  \nbackdrop-filter: blur(14px) saturate(1.4);
-
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35),
-    0 2px 6px rgba(255, 255, 255, 0.15) inset;
-
-  animation: welcomeFade 0.6s cubic-bezier(0.25, 1, 0.3, 1);
-}
-
-@keyframes welcomeFade {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .auth-section .welcome h3 {
   font-size: 22px;
   font-weight: 700;
-  letter-spacing: 0.4px;
-  margin: 0;
-  color: #f1f5f9;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 .auth-section .welcome p {
-  margin: 6px 0 0;
   font-size: 14px;
   color: #cbd5e1;
   opacity: 0.9;
 }
 
-.auth-section .btn,
-#set_menu {
-  border: none;
-  cursor: pointer;
-  border-radius: 8px;
-  padding: 0.4rem;
-  background: var(--overlay);
-  color: #e0e0e0;
-}
-#set_menu {
-  max-width: 28px;
-}
-
-/* Layout: main grid */
-main {
-  height: calc(100vh - 80px);
-  display: grid;
-
-  grid-template-columns: 90px 1fr 4fr;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: var(--bck);
-  background-image: linear-gradient(
-      0deg,
-      transparent 24%,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.05) 26%,
-      transparent 27%,
-      transparent 74%,
-      rgba(255, 255, 255, 0.05) 75%,
-      rgba(255, 255, 255, 0.05) 76%,
-      transparent 77%,
-      transparent
-    ),
-    linear-gradient(
-      90deg,
-      transparent 24%,
-      rgba(255, 255, 255, 0.05) 25%,
-      rgba(255, 255, 255, 0.05) 26%,
-      transparent 27%,
-      transparent 74%,
-      rgba(255, 255, 255, 0.05) 75%,
-      rgba(255, 255, 255, 0.05) 76%,
-      transparent 77%,
-      transparent
-    );
-  background-size: 50px 50px;
-  background-repeat: repeat; /* ensures grid repeats cleanly */
-  background-attachment: fixed;
-}
-
- 
-
-
-
+/* ============================================================
+   LEFT CONTENT PANEL (Now a Floating Panel)
+============================================================ */
 #leftcontent {
-  flex: .8;
-  width: 30%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--glass);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  backdrop-filter: blur(18px) saturate(1.4);
+  border-radius: var(--radius);
+  backdrop-filter: blur(18px);
   padding-bottom: 20px;
-  animation: popIn 0.35s cubic-bezier(0.25, 1, 0.3, 1);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45),
-    0 4px 12px rgba(255, 255, 255, 0.08) inset;
-  z-index:10;
+
+  box-shadow: var(--shadow-soft);
+  animation: popIn .35s ease-out;
 }
 
-
-
-
-:root {
-  --sidebar-bg: #0f172a; /* slate-900 */
-  --sidebar-surface: #111827; /* gray-900 */
-  --text-primary: #e5e7eb; /* gray-200 */
-  --text-secondary: #94a3b8; /* slate-400 */
-  --border: #1f2937; /* gray-800 */
-  --accent: #4f46e5; /* indigo-600 */
-  --accent-hover: #4338ca; /* indigo-700 */
-  --focus: #22d3ee; /* cyan-400 */
-  --success: #22c55e; /* green-500 */
-  --danger: #ef4444; /* red-500 */
-  --radius: 14px;
-  --radius-sm: 10px;
-  --ring: 2px;
-  --shadow: 0 10px 30px rgba(2, 6, 23, 0.3);
-  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-
-.panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+/* ============================================================
+   MEDIA WRAPPER (Video Call Glow)
+============================================================ */
 .media-wrapper {
   position: relative;
   width: 100%;
@@ -856,14 +269,9 @@ main {
   border-radius: 20px;
   overflow: hidden;
 
-  box-shadow: 0 0 0 rgba(0, 255, 128, 0);
-  transition: box-shadow 0.1s linear;
-}
-
-/* Pulsing border driven by audio level */
-.media-wrapper {
   box-shadow: 0 0 calc(10px + 20px * var(--audio-level))
     rgba(0, 255, 128, calc(0.1 + 0.6 * var(--audio-level)));
+  transition: box-shadow .15s linear;
 }
 
 .media-wrapper video {
@@ -872,311 +280,96 @@ main {
   object-fit: cover;
 }
 
-#toggleBtn:hover {
-  color: #0077cc;
-}
-
-.logoutButton img{
-  width: 25px;
-  height: 25px;
-
- 
-  cursor: pointer;
-}
-
-
-
-
-/* -------------------------------------------------------
-   LOOKUP CARD
-------------------------------------------------------- */
+/* ============================================================
+   LOOKUP CARD (Updated for Dark Neon)
+============================================================ */
 .lookup-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.65);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  margin-bottom: 8px;
+  padding: 12px 16px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform .15s ease, background .15s ease;
 }
 
 .lookup-card:hover {
   transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.14);
 }
 
-/* -------------------------------------------------------
-   AVATAR
-------------------------------------------------------- */
-.lookup-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  border: 2px solid rgba(0, 0, 0, 0.08);
-}
-
-.lookup-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* -------------------------------------------------------
-   INFO
-------------------------------------------------------- */
-.lookup-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.lookup-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #222;
-}
-
-.lookup-email {
-  font-size: 13px;
-  color: #666;
-  margin-top: 2px;
-}
-
-/* -------------------------------------------------------
-   ACTION BUTTONS
-------------------------------------------------------- */
-.lookup-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.lookup-actions button {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: none;
-  background: #f3f3f3;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-/* -------------------------------------------------------
-   SAVE CONTACT BUTTON (Glass + Accent Green)
-------------------------------------------------------- */
+/* ============================================================
+   PROFILE SAVE BUTTON (Neon Green)
+============================================================ */
 .profile-save-btn {
   margin-top: 12px;
   padding: 12px 18px;
   width: 60%;
-  border-radius: 10px;
-  border: none;
   margin-left: 20%;
-  background: rgba(255, 255, 255, 0.15);
 
+  background: rgba(76, 175, 80, 0.15);
+  border-radius: 12px;
+  border: 1px solid rgba(76, 175, 80, 0.35);
+
+  color: #4dff88;
   font-weight: 600;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  color: #00ff0d;
-  font-size: 14px;
-  font-style: oblique;
-
   cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+
+  transition: background .25s ease, transform .2s ease;
 }
 
 .profile-save-btn:hover {
   background: rgba(76, 175, 80, 0.25);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.35);
 }
 
-/* -------------------------------------------------------
-   ACTION BUTTON WRAPPER
-------------------------------------------------------- */
-.profile-actions {
-  width: 60%;
-  position: relative;
-  margin-left: 20%;
-  display: flex;
-  gap: 12px;
-  margin-top: 18px;
-}
+/* ============================================================
+   AVATAR FRAME (Neon Pulse)
+============================================================ */
 .avatar-frame {
   position: relative;
   width: fit-content;
-  height: fit-content;
+  padding: 6px;
+
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 50%;
-  padding: 5px;
-  margin-left: 35%;
-  background: rgba(255, 255, 255, 0.25);
-  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  z-index: 2000000;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
-/* Base pulse (offline or neutral) */
+
 .avatar-pulse::before {
   content: "";
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  border: 3px solid rgba(0, 150, 255, 0.35); /* blue default */
+  border: 3px solid rgba(123, 92, 255, 0.45);
   animation: avatarPulse 2.2s ease-out infinite;
-  pointer-events: none;
 }
 
 @keyframes avatarPulse {
-  0% {
-    transform: scale(0.85);
-    opacity: 0.9;
-  }
-  70% {
-    transform: scale(1.25);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.25);
-    opacity: 0;
-  }
+  0% { transform: scale(0.85); opacity: 0.9; }
+  70% { transform: scale(1.25); opacity: 0; }
+  100% { transform: scale(1.25); opacity: 0; }
 }
 
-/* ONLINE: green pulse */
 .avatar-pulse.online::before {
-  border-color: rgba(76, 175, 80, 0.7);
+  border-color: rgba(76, 255, 120, 0.7);
   animation: avatarPulseGreen 2s ease-out infinite;
 }
 
 @keyframes avatarPulseGreen {
-  0% {
-    transform: scale(0.85);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(1.3);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.3);
-    opacity: 0;
-  }
-}
-#fullProfileBanner.online {
-  filter: hue-rotate(80deg) brightness(1.2);
+  0% { transform: scale(0.85); opacity: 1; }
+  70% { transform: scale(1.3); opacity: 0; }
+  100% { transform: scale(1.3); opacity: 0; }
 }
 
-#fullProfileBanner.offline {
-  filter: grayscale(60%) brightness(0.8);
-}
-
-/* Optional: green glow halo */
-.avatar-frame.online {
-  box-shadow: 0 0 18px rgba(76, 175, 80, 0.55);
-}
-.banner-wrapper {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-/* Shared overlay base */
-.banner-wrapper.online::after,
-.banner-wrapper.offline::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-
-/* ONLINE — green glow */
-.banner-wrapper.online::after {
-  background: rgba(76, 175, 80, 0.25);
-  box-shadow: inset 0 0 40px rgba(76, 175, 80, 0.45);
-}
-
-/* OFFLINE — muted dark overlay */
-.banner-wrapper.offline::after {
-  background: rgba(0, 0, 0, 0.25);
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
-}
-
-/* -------------------------------------------------------
-   ACTION BUTTONS (Call, Video)
-------------------------------------------------------- */
-.profile-action-btn {
-  flex: 1;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: none;
-
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--text);
-  font-weight: 600;
-
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-}
-
-.profile-action-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
-
-/* -------------------------------------------------------
-   BLOCK BUTTON (Danger Variant)
-------------------------------------------------------- */
-.profile-action-btn.danger {
-  background: rgba(255, 0, 0, 0.12);
-  color: #b00020;
-  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.25);
-}
-
-.profile-action-btn.danger:hover {
-  background: rgba(255, 0, 0, 0.18);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 0, 0, 0.35);
-}
-
-/* -------------------------------------------------------
-   LOOKUP ACTION BUTTONS (ℹ️ + 💬)
-------------------------------------------------------- */
-.lookup-actions button {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: none;
-
-  background: rgba(255, 255, 255, 0.15);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
-}
-
-.lookup-actions button:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.08);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.lookup-actions .lookup-info-btn {
-  background: #dfe9ff;
-  color: #2a4dbf;
-}
 
 .lookup-actions .lookup-info-btn:hover {
   background: #c9d8ff;
@@ -5545,6 +4738,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
