@@ -20,6 +20,10 @@ window.openVoicemailRecorder = function (toUserId) {
   }
 
   modal.style.display = "flex";
+
+  // ⭐ THIS triggers the slide‑in animation
+  modal.classList.add("open");
+
   status.textContent = "Ready to record";
 
   // Reset UI
@@ -54,7 +58,7 @@ window.openVoicemailRecorder = function (toUserId) {
 
       if (json.success) {
         status.textContent = "Voicemail sent!";
-        setTimeout(() => (modal.style.display = "none"), 1000);
+        setTimeout(() => closeVoicemailModal(), 1000);
       } else {
         status.textContent = "Upload failed";
       }
@@ -75,4 +79,3 @@ window.openVoicemailRecorder = function (toUserId) {
     stopBtn.style.display = "none";
   };
 };
-
