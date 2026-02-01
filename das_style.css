@@ -181,7 +181,7 @@ emoji-picker::part(search) {
     inset 0 0 0 rgba(255, 255, 255, 0.15);
 }
 /* -------------------------------------------------------
-   Voicemail Recorder Modal (Slide In From Left)
+   Voicemail Recorder Modal (Slide In / Slide Out)
 ------------------------------------------------------- */
 #voicemailModal {
   position: fixed;
@@ -190,7 +190,7 @@ emoji-picker::part(search) {
   width: 100vw;
   height: 100vh;
 
-  display: none; /* JS sets to flex */
+  display: none; /* JS toggles this */
   justify-content: center;
   align-items: center;
 
@@ -199,18 +199,25 @@ emoji-picker::part(search) {
 
   z-index: 10000;
 
-  /* Start fully off-screen to the left */
+  /* Start off-screen to the left */
   transform: translateX(-100%);
   opacity: 0;
 
-  /* Smooth slide animation */
-  transition: transform 0.45s ease, opacity 0.45s ease;
+  transition:
+    transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1),
+    opacity 0.45s ease;
 }
 
-/* When JS sets display:flex, add this class to trigger animation */
+/* Slide IN */
 #voicemailModal.open {
   transform: translateX(0);
   opacity: 1;
+}
+
+/* Slide OUT */
+#voicemailModal.closing {
+  transform: translateX(100%);
+  opacity: 0;
 }
 
 /* Inner content styling */
@@ -5446,6 +5453,7 @@ footer a:active {
     bottom: 80px;
   }
 }
+
 
 
 
