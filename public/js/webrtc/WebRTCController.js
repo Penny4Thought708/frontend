@@ -481,20 +481,28 @@ export class WebRTCController {
     this.onCallStarted?.();
   }
 
-  /* ---------------------------------------------------
-   Decline incoming call (fixed)
+ /* ---------------------------------------------------
+   Decline incoming call (final clean version)
 --------------------------------------------------- */
 declineIncomingCall() {
   const offerData = rtcState.incomingOffer;
-  const callerId = offerData?.from || rtcState.currentCallerId;
 
-  // Always notify backend, even if no stored offer
+  // Determine caller ID safely
+  let callerId = null;
+  if (offerData && offerData.from) {
+    callerId = offerData.from;
+  } else if (rtcState.currentCallerId) {
+    callerId = rtcState.currentCallerId;
+  }
+
+  // Always notify backend
   if (callerId) {
     this.socket.emit("call:decline", { to: callerId });
   } else {
     console.warn("[WebRTC] declineIncomingCall: no callerId available");
   }
 
+  // Log the rejected call
   addCallLogEntry({
     logId: Date.now(),
     caller_id: callerId,
@@ -508,46 +516,13 @@ declineIncomingCall() {
     timestamp: new Date().toISOString(),
   });
 
-  // Local cleanup
+  // Cleanup
   rtcState.incomingOffer = null;
   rtcState.inCall = false;
 
   UI.apply("idle");
-  this.onCallEnded?.();
+  if (this.onCallEnded) this.onCallEnded();
 }
-: no stored offer");
-      UI.apply("idle");
-      return;
-    }
-
-    const { from } = offerData;
-
-    addCallLogEntry({
-      logId: Date.now(),
-      caller_id: from,
-      receiver_id: getMyUserId(),
-      caller_name: rtcState.peerName || `User ${from}`,
-      receiver_name: getMyFullname(),
-      call_type: rtcState.audioOnly ? "voice" : "video",
-      direction: "incoming",
-      status: "rejected",
-      duration: 0,
-      timestamp: new Date().toISOString(),
-    });
-
-    this.socket.emit("webrtc:signal", {
-      type: "end",
-      to: from,
-      from: getMyUserId(),
-      reason: "rejected",
-    });
-
-    rtcState.incomingOffer = null;
-    rtcState.inCall = false;
-
-    UI.apply("idle");
-    this.onCallEnded?.();
-  }
 
   /* ---------------------------------------------------
      Remote Answer
@@ -1385,6 +1360,7 @@ const config = {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
