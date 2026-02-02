@@ -283,4 +283,56 @@
 .gif-picker {
   z-index: 20;
 }
+/* ============================================================
+   BOTTOM SHEET (FIXED)
+============================================================ */
+
+.bottom-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: var(--bg-panel);
+  border-radius: 18px 18px 0 0;
+  padding: 14px 20px;
+
+  transform: translateY(100%);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.bottom-sheet.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet-item {
+  width: 100%;
+  padding: 14px;
+  margin: 6px 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sheet-item:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.sheet-handle {
+  width: 42px;
+  height: 5px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 4px;
+  margin: 0 auto 12px;
+}
 
