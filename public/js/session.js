@@ -5,7 +5,7 @@
 
 // -----------------------------------------------------------
 // Imports MUST be first in ES modules
-// -----------------------------------------------------------
+/* -----------------------------------------------------------*/
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
@@ -298,6 +298,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
