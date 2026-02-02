@@ -1,15 +1,122 @@
+
 /* ============================================================
-   CONTACTS PANEL (CONWRAP) — FLOATING PANEL VERSION
+   CONTACTS PANEL (CONWRAP) — LEFT SLIDE PANEL
 ============================================================ */
 
-/* Base container */
 #conwrap {
-  width: 420px;
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 720px; /* wide enough for sidebar + main panel */
   max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  z-index: 12;
+  background: var(--bg-panel);
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+/* Hidden state */
+#conwrap.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-40px, -50%);
+}
+
+/* ============================================================
+   SIDEBAR
+============================================================ */
+
+.contacts-sidebar {
+  width: 220px;
+  background: rgba(255,255,255,0.04);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* Search bar */
+.contact-lookup {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-lookup input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-primary);
+}
+
+.contact-lookup button {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+}
+
+/* Lookup results */
+#contacts-lookup {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ============================================================
+   MAIN PANEL
+============================================================ */
+
+.contacts-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 10;
+}
+
+.contacts-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Sections */
+.panel-section {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-header h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+/* Lists */
+.panel-section ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* Center inside workspace-center (same as messaging) */
