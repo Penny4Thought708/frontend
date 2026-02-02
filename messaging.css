@@ -1,5 +1,5 @@
 /* ============================================================
-   WORKSPACE + FLOATING PANEL LAYOUT (STRUCTURE ONLY)
+   WORKSPACE + FLOATING PANEL LAYOUT (STRUCTURE)
 ============================================================ */
 
 .workspace {
@@ -97,9 +97,10 @@
 }
 
 /* ============================================================
-   VISUAL SKIN — NO LAYOUT PROPERTIES
+   VISUAL SKIN (NO LAYOUT PROPERTIES)
 ============================================================ */
 
+/* Header */
 .msg-header {
   display: flex;
   align-items: center;
