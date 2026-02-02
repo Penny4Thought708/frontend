@@ -1,11 +1,20 @@
 /* ============================================================
-   HYBRID FLOATING‑SPACE UI CONTROLLER
-   Works with your NEW layout, floating panels, and animations
+   HYBRID FLOATING‑SPACE UI CONTROLLER — UX ENHANCED
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
   Settings.init();
+});
+
+/* -----------------------------------------------------------
+   GLOBAL PARALLAX BACKGROUND
+----------------------------------------------------------- */
+document.addEventListener("mousemove", (e) => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 10;
+  const y = (e.clientY / window.innerHeight - 0.5) * 10;
+  const bg = document.querySelector(".workspace-bg");
+  if (bg) bg.style.transform = `translate(${x}px, ${y}px)`;
 });
 
 function initUI() {
@@ -24,19 +33,31 @@ function initUI() {
   const fullProfile = document.getElementById("fullProfileModal");
 
   const toggleBtn = document.getElementById("toggleBtn");
+  const railButtons = document.querySelectorAll(".app-rail .rail-btn");
 
   /* -----------------------------------------------------------
-     FLOATING PANEL MANAGER
+     PANEL STATE MANAGEMENT
   ----------------------------------------------------------- */
   const UIX = {
     hideAll() {
       [video, contacts, profile, search, settings, voicemail, fullProfile]
         .forEach(p => p?.classList.add("hidden"));
+
+      document.body.classList.remove("panel-open");
+    },
+
+    showPanel(panel) {
+      this.hideAll();
+      panel.classList.remove("hidden");
+      document.body.classList.add("panel-open");
+      this.collapseMessaging();
     },
 
     showMessaging() {
+      this.hideAll();
       messaging.style.display = "flex";
       miniChat.style.display = "none";
+      document.body.classList.remove("panel-open");
     },
 
     collapseMessaging() {
@@ -56,17 +77,12 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     LEFT RAIL BUTTONS
+     LEFT RAIL BUTTONS — UX ENHANCED
   ----------------------------------------------------------- */
-  const railButtons = document.querySelectorAll(".app-rail .rail-btn");
-
   railButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       railButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-
-      UIX.hideAll();
-      UIX.collapseMessaging();
 
       switch (btn.id) {
         case "btn_chat_main":
@@ -74,27 +90,27 @@ function initUI() {
           break;
 
         case "contact_widget":
-          contacts.classList.remove("hidden");
+          UIX.showPanel(contacts);
           break;
 
         case "btn_search":
-          search.classList.remove("hidden");
+          UIX.showPanel(search);
           break;
 
         case "btn_settings":
-          settings.classList.remove("hidden");
+          UIX.showPanel(settings);
           break;
 
         case "voicemail_Btn":
-          voicemail.classList.remove("hidden");
+          UIX.showPanel(voicemail);
           break;
 
         case "btn_notifications":
-          alert("Notifications panel coming soon");
+          showToast("Notifications panel coming soon");
           break;
 
         case "btn_help":
-          alert("Help panel coming soon");
+          showToast("Help panel coming soon");
           break;
       }
     });
@@ -104,9 +120,7 @@ function initUI() {
      VIDEO CALL OVERRIDE
   ----------------------------------------------------------- */
   document.getElementById("videoBtn")?.addEventListener("click", () => {
-    UIX.hideAll();
-    video.classList.remove("hidden");
-    UIX.collapseMessaging();
+    UIX.showPanel(video);
   });
 
   document.getElementById("end-call")?.addEventListener("click", () => {
@@ -118,7 +132,6 @@ function initUI() {
      MINI CHAT BUBBLE
   ----------------------------------------------------------- */
   miniChat?.addEventListener("click", () => {
-    UIX.hideAll();
     UIX.showMessaging();
   });
 
@@ -135,11 +148,28 @@ function initUI() {
   ----------------------------------------------------------- */
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
-      UIX.hideAll();
       UIX.showMessaging();
       railButtons.forEach(b => b.classList.remove("active"));
     }
   });
+}
+
+/* -----------------------------------------------------------
+   TOAST UTILITY (UX UPGRADE)
+----------------------------------------------------------- */
+function showToast(msg) {
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = msg;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+  }, 2000);
+
+  setTimeout(() => toast.remove(), 2600);
 }
 
 /* ============================================================
@@ -335,4 +365,5 @@ const Settings = {
     location.reload();
   }
 };
+
 
