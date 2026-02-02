@@ -51,10 +51,12 @@
 
 /* When visible */
 #messaging_box.floating-panel {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
+
 
 /* ============================================================
    MESSAGE WINDOW FIX
