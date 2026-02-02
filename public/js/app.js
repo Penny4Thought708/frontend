@@ -12,7 +12,7 @@ if (window.__APP_ALREADY_LOADED__) {
 // -------------------------------------------------------
 // Imports
 // -------------------------------------------------------
-import { getMyUserId, getJson } from "./session.js";
+import { getMyUserId, getJson, postForm } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
@@ -137,7 +137,7 @@ window.startSpeakingDetection = startSpeakingDetection;
 window.stopSpeakingDetection = stopSpeakingDetection;
 
 // -------------------------------------------------------
-// Message list loader
+// Message list loader (Contacts panel → Messages section)
 // -------------------------------------------------------
 async function loadMessageList() {
   await waitForIdentity();
@@ -434,30 +434,6 @@ function showVoicemailToast(vm) {
 }
 
 // -------------------------------------------------------
-// Contact window toggle
-// -------------------------------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const contactWindow = document.getElementById("contact_window");
-  const contactWidget = document.getElementById("contact_widget");
-
-  if (contactWindow && contactWidget) {
-    contactWidget.addEventListener("click", (e) => {
-      e.stopPropagation();
-      contactWindow.classList.toggle("active");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (
-        !contactWindow.contains(e.target) &&
-        !contactWidget.contains(e.target)
-      ) {
-        contactWindow.classList.remove("active");
-      }
-    });
-  }
-});
-
-// -------------------------------------------------------
 // Intro tour
 // -------------------------------------------------------
 function startIntroTour() {
@@ -473,8 +449,8 @@ function startIntroTour() {
       arrow: "right",
     },
     {
-      element: "#contacts_btn",
-      text: "View and manage your contacts here.",
+      element: "#contact_widget",
+      text: "View and manage your contacts, call log, and voicemail here.",
       arrow: "right",
     },
     {
@@ -513,9 +489,6 @@ function startIntroTour() {
 
     const rect = target.getBoundingClientRect();
 
-    const nav = document.getElementById("side_nav_buttons");
-    if (nav) nav.classList.add("open");
-
     introBox.style.display = "block";
     introBox.innerHTML = step.text;
 
@@ -535,10 +508,6 @@ function startIntroTour() {
     } else {
       introBox.style.display = "none";
       arrow.style.display = "none";
-
-      const nav = document.getElementById("side_nav_buttons");
-      if (nav) nav.classList.remove("open");
-
       localStorage.setItem("tourCompleted", "true");
     }
   }
@@ -584,7 +553,7 @@ window.showNotification = function (title, message) {
 };
 
 // -------------------------------------------------------
-// Content menu initialization (ContactsMenu → main panels)
+// Content menu initialization (ContactsMenu → main sections)
 // -------------------------------------------------------
 function initContentMenu() {
   const menu = document.querySelector("contacts-menu");
@@ -625,7 +594,7 @@ function initContentMenu() {
     }
   }
 
-  // Initial state
+  // Initial state: show call log
   hideAll();
   const sav = document.querySelector("#sav_con");
   if (sav) {
@@ -678,7 +647,10 @@ function initContentMenu() {
       }
 
       case "hidden":
-        window.showNotification("Hidden Messages", "Hidden messages view not implemented yet.");
+        window.showNotification(
+          "Hidden Messages",
+          "Hidden messages view not implemented yet."
+        );
         break;
 
       case "dnd":
@@ -746,157 +718,6 @@ socket.on("call:incoming", (data) => {
     window.showIncomingCallUI(data);
   }
 });
-
-/* -------------------------------------------------------
-   Bootstrap
-------------------------------------------------------- */
-socket.on("connect", async () => {
-  console.log("[bootstrap] Socket connected:", socket.id);
-
-  await waitForIdentity();
-  await loadContacts();
-
-  const messaging = new MessagingEngine(
-    socket,
-    renderMessages,
-    renderIncomingMessage,
-    "/api/messages"
-  );
-
-  const rtc = new WebRTCController(socket);
-  initCallUI(rtc);
-
-  initCallLogs({ socket });
-  loadMessageList();
-  loadVoicemails();
-
-  window.openChat = async function (contactId) {
-    window.currentChatUserId = contactId;
-    await messaging.loadMessages(contactId);
-  };
-
-  initContentMenu();
-  initDndFromContactsMenu();
-});
-
-/* -------------------------------------------------------
-   PANEL REGISTRY (REQUIRED)
-------------------------------------------------------- */
-const Panels = {
-  contacts: document.getElementById("contacts"),
-  blocked: document.getElementById("bloc_box"),
-  settings: document.getElementById("settings_container"),
-  addContact: document.querySelector(".sidebar"),
-  profile: document.querySelector(".profile_card"),   // IMPORTANT
-};
-
-
-/* -------------------------------------------------------
-   CONTACT MENU TOGGLE (OLD CONTACT BOX)
-------------------------------------------------------- */
-const contactMenu = document.getElementById("contact_menu_box");
-const menuBtnContact = document.getElementById("menu_Btn_contact");
-
-if (menuBtnContact && contactMenu) {
-  menuBtnContact.addEventListener("click", (e) => {
-    e.stopPropagation();
-    contactMenu.classList.toggle("open");
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!contactMenu.contains(e.target) && !menuBtnContact.contains(e.target)) {
-      contactMenu.classList.remove("open");
-    }
-  });
-}
-
-/* -------------------------------------------------------
-   MENU BUTTONS
-------------------------------------------------------- */
-const Buttons = {
-  block: document.getElementById("block_contact"),
-  addContact: document.getElementById("add_contact"),
-  settings: document.getElementById("settings"),
-  closeSettings: document.getElementById("close_contact_settings"),
-  openProfile: document.getElementById("view_profile"),
-};
-
-/* -------------------------------------------------------
-   PANEL CONTROLLER
-------------------------------------------------------- */
-function hideAllPanels() {
-  if (Panels.contacts) Panels.contacts.style.display = "none";
-  if (Panels.blocked) Panels.blocked.style.display = "none";
-  if (Panels.settings) Panels.settings.classList.remove("active");
-  if (Panels.profile) Panels.profile.style.display = "none";   // FIXED
-}
-
-function togglePanel(panelName) {
-  const panel = Panels[panelName];
-  if (!panel) return;
-
-  const isOpen =
-    panel.classList.contains("active") || panel.style.display === "block";
-
-  if (isOpen) {
-    showContacts();
-    return;
-  }
-
-  hideAllPanels();
-
-  if (panelName === "settings") {
-    panel.classList.add("active");
-  } else {
-    panel.style.display = "block";   // PROFILE FIX
-  }
-}
-
-
-/* -------------------------------------------------------
-   MENU ACTIONS
-------------------------------------------------------- */
-if (Buttons.block) {
-  Buttons.block.addEventListener("click", () => {
-    togglePanel("blocked");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.settings) {
-  Buttons.settings.addEventListener("click", () => {
-    togglePanel("settings");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.closeSettings) {
-  Buttons.closeSettings.addEventListener("click", () => {
-    Panels.settings?.classList.remove("active");
-    showContacts();
-  });
-}
-
-if (Buttons.openProfile) {
-  Buttons.openProfile.addEventListener("click", () => {
-    togglePanel("profile");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.addContact) {
-  Buttons.addContact.addEventListener("click", () => {
-    togglePanel("addContact");
-    contactMenu?.classList.remove("open");
-  });
-}
-
-if (Buttons.select) {
-  Buttons.select.addEventListener("click", () => {
-    window.showNotification("Select Mode", "Tap a contact to select.");
-    contactMenu?.classList.remove("open");
-  });
-}
 
 /* -------------------------------------------------------
    Bottom sheet + emoji + GIF + send
@@ -1087,7 +908,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       if (gifUrl && !text) {
-        const data = await window.postForm("/messages/send", {
+        const data = await postForm("/messages/send", {
           receiver_id: targetId,
           file: 1,
           file_url: gifUrl,
@@ -1114,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
           window.showError?.(errMsg);
         }
       } else if (text) {
-        const data = await window.postForm("/messages/send", {
+        const data = await postForm("/messages/send", {
           receiver_id: targetId,
           message: text,
         });
@@ -1146,6 +967,37 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/* -------------------------------------------------------
+   Bootstrap
+------------------------------------------------------- */
+socket.on("connect", async () => {
+  console.log("[bootstrap] Socket connected:", socket.id);
+
+  await waitForIdentity();
+  await loadContacts();
+
+  const messaging = new MessagingEngine(
+    socket,
+    renderMessages,
+    renderIncomingMessage,
+    "/api/messages"
+  );
+
+  const rtc = new WebRTCController(socket);
+  initCallUI(rtc);
+
+  initCallLogs({ socket });
+  loadMessageList();
+  loadVoicemails();
+
+  window.openChat = async function (contactId) {
+    window.currentChatUserId = contactId;
+    await messaging.loadMessages(contactId);
+  };
+
+  initContentMenu();
+  initDndFromContactsMenu();
+});
 
 
 
