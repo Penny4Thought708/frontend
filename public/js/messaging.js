@@ -49,8 +49,10 @@ function isChannelOpen(dc) {
 
 export function setReceiver(id) {
   receiver_id = id;
-  window.receiver_id = id;
-  window.currentReceiverId = id;
+  if (typeof window !== "undefined") {
+    window.receiver_id = id;
+    window.currentReceiverId = id;
+  }
   console.log("[messaging] Receiver set:", receiver_id);
   console.log("[GLOBAL] window.receiver_id =", window.receiver_id);
 }
@@ -244,7 +246,7 @@ function removeReactionFromMessage(id, emoji) {
   }
 }
 
-// ===== RENDER MESSAGE =====
+// ===== RENDER MESSAGE (NEW LAYOUT) =====
 function renderMessage(msg) {
   console.log("[messaging] renderMessage:", msg);
 
@@ -258,28 +260,30 @@ function renderMessage(msg) {
     msg.file ||
     /^File:/i.test(msg.message || "");
 
-  const div = document.createElement("div");
-  div.className = msg.is_me ? "sender_msg" : "receiver_msg";
-
-  if (msg.id != null) div.dataset.msgId = String(msg.id);
-  if (!msg.is_me && msg.sender_id) div.dataset.senderId = String(msg.sender_id);
-
-  // ===== Modern wrapper =====
+  // ===== Outer wrapper =====
   const wrapper = document.createElement("div");
-  wrapper.className = "msg-wrapper";
+  wrapper.className = msg.is_me
+    ? "msg-wrapper sender_msg"
+    : "msg-wrapper receiver_msg";
 
-  // ===== Name (only for received messages) =====
+  if (msg.id != null) wrapper.dataset.msgId = String(msg.id);
+  if (!msg.is_me && msg.sender_id) wrapper.dataset.senderId = String(msg.sender_id);
+
+  // ===== Sender name (only for received messages) =====
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
-    nameEl.textContent = msg.sender_name || "Unknown";
+    nameEl.textContent =
+      msg.sender_name ||
+      userNames[String(msg.sender_id)] ||
+      "Unknown";
     wrapper.appendChild(nameEl);
   }
 
   // ===== Bubble =====
-  const p = document.createElement("p");
-  p.className = "msg-bubble-text";
-  wrapper.appendChild(p);
+  const bubble = document.createElement("p");
+  bubble.className = "msg-bubble-text";
+  wrapper.appendChild(bubble);
 
   // ===== File or Text =====
   if (isFileMessage) {
@@ -290,18 +294,17 @@ function renderMessage(msg) {
 
     const fileUrl = msg.url || msg.file_url || msg.data || null;
 
-    appendFileContentToParagraph(p, {
+    appendFileContentToParagraph(bubble, {
       name,
       url: fileUrl,
       comment: msg.comment,
     });
-
   } else {
-    p.appendChild(document.createTextNode(msg.message ?? ""));
+    bubble.textContent = msg.message ?? "";
 
     // ===== Inline editing for your messages =====
     if (msg.is_me && msg.id) {
-      p.ondblclick = () => {
+      bubble.ondblclick = () => {
         console.log("[messaging] edit dblclick:", msg.id);
 
         const original = msg.message ?? "";
@@ -310,22 +313,22 @@ function renderMessage(msg) {
         input.value = original;
         input.className = "edit-input";
 
-        p.innerHTML = "";
-        p.appendChild(input);
+        bubble.innerHTML = "";
+        bubble.appendChild(input);
         input.focus();
 
         input.onkeydown = async (e) => {
           if (e.key === "Escape") {
-            p.textContent = original;
+            bubble.textContent = original;
           }
           if (e.key === "Enter") {
             const newText = input.value.trim();
             if (!newText || newText === original) {
-              p.textContent = original;
+              bubble.textContent = original;
               return;
             }
 
-            p.textContent = newText;
+            bubble.textContent = newText;
 
             try {
               const res = await apiPost("/edit", {
@@ -341,36 +344,38 @@ function renderMessage(msg) {
       };
     }
   }
-const reactionBar = document.createElement("div");
-reactionBar.className = "reaction-bar";
-reactionBar.innerHTML = `
-  <span class="react-emoji">👍</span>
-  <span class="react-emoji">❤️</span>
-  <span class="react-emoji">😂</span>
-  <span class="react-emoji">😮</span>
-  <span class="react-emoji">😢</span>
-`;
-
-  // ===== Reaction bar =====
-reactionBar.addEventListener("click", (e) => {
-  const emoji = e.target.closest(".react-emoji")?.textContent;
-  if (!emoji || !msg.id) return;
-
-  console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
-
-  socket.emit("message:reaction", {
-    messageId: msg.id,
-    from: getMyUserId(),
-    emoji
-  });
-
-  addReactionToMessage(msg.id, emoji);
-});
-
 
   // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
+  wrapper.appendChild(reactionDisplay);
+
+  // ===== Reaction bar =====
+  const reactionBar = document.createElement("div");
+  reactionBar.className = "reaction-bar";
+  reactionBar.innerHTML = `
+    <span class="react-emoji">👍</span>
+    <span class="react-emoji">❤️</span>
+    <span class="react-emoji">😂</span>
+    <span class="react-emoji">😮</span>
+    <span class="react-emoji">😢</span>
+  `;
+  wrapper.appendChild(reactionBar);
+
+  reactionBar.addEventListener("click", (e) => {
+    const emoji = e.target.closest(".react-emoji")?.textContent;
+    if (!emoji || !msg.id) return;
+
+    console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
+
+    socket.emit("message:reaction", {
+      messageId: msg.id,
+      from: getMyUserId(),
+      emoji,
+    });
+
+    addReactionToMessage(msg.id, emoji);
+  });
 
   // ===== Meta (timestamp + delete) =====
   const ts =
@@ -397,15 +402,10 @@ reactionBar.addEventListener("click", (e) => {
   meta.className = "meta";
   meta.appendChild(small);
   meta.appendChild(statusSpan);
+  wrapper.appendChild(meta);
 
-  // ===== Append everything in correct order =====
-  div.appendChild(wrapper);          // name + bubble
-  div.appendChild(reactionBar);      // emoji bar
-  div.appendChild(reactionDisplay);  // reaction counts
-  div.appendChild(meta);             // timestamp + delete
-
-  messageWin.appendChild(div);
-
+  // ===== Append to DOM =====
+  messageWin.appendChild(wrapper);
   smartScroll();
   observeMessagesForRead();
 }
@@ -851,7 +851,12 @@ export async function loadMessages() {
     }
 
     const last = messages[messages.length - 1];
-    if (last && typeof last.id === "number" && last.id > lastSeenMessageId && !last.is_me) {
+    if (
+      last &&
+      typeof last.id === "number" &&
+      last.id > lastSeenMessageId &&
+      !last.is_me
+    ) {
       playNotification();
       const bell = document.querySelector(".notification-bell");
       if (bell) {
@@ -866,7 +871,6 @@ export async function loadMessages() {
 
     observeMessagesForRead();
     return messages;
-
   } catch (err) {
     console.error("[messaging] loadMessages failed:", err);
     return [];
@@ -988,7 +992,7 @@ function observeMessagesForRead() {
     if (!readObserver) return;
   }
 
-  messageWin.querySelectorAll(".receiver_msg").forEach((el) => {
+  messageWin.querySelectorAll(".msg-wrapper.receiver_msg").forEach((el) => {
     if (!el.dataset.observing) {
       readObserver.observe(el);
       el.dataset.observing = "1";
@@ -1068,7 +1072,9 @@ gifSearch?.addEventListener("input", async () => {
 
   try {
     const res = await fetch(
-      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&limit=20`
+      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
+        q
+      )}&key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&limit=20`
     );
     const data = await res.json();
 
@@ -1105,7 +1111,6 @@ sheetAudio?.addEventListener("click", () => {
 micBtn?.addEventListener("click", () => {
   console.log("[composer] Mic button clicked");
 });
-
 
 
 
