@@ -1640,30 +1640,61 @@ document.getElementById("view_profile")?.addEventListener("click", async () => {
         }
       }
     });
+/* ============================================================
+   KEYBOARD SHORTCUTS (CTRL + 1–6)
+============================================================ */
+
 document.addEventListener("keydown", (e) => {
   if (!e.ctrlKey) return;
 
   switch (e.key) {
-    case "1": document.getElementById("btn_search").click(); break;
-    case "2": document.getElementById("btn_chat_main").click(); break;
-    case "3": document.getElementById("contact_widget").click(); break;
-    case "4": document.getElementById("voicemail_Btn").click(); break;
-    case "5": document.getElementById("btn_notifications").click(); break;
-    case "6": document.getElementById("btn_settings").click(); break;
+    case "1":
+      document.getElementById("btn_search")?.click();
+      break;
+
+    case "2":
+      document.getElementById("btn_chat_main")?.click();
+      break;
+
+    case "3":
+      document.getElementById("contact_widget")?.click();
+      break;
+
+    case "4":
+      document.getElementById("voicemail_Btn")?.click();
+      break;
+
+    case "5":
+      document.getElementById("btn_notifications")?.click();
+      break;
+
+    case "6":
+      document.getElementById("btn_settings")?.click();
+      break;
   }
 });
+
+/* ============================================================
+   PARALLAX BACKGROUND MOTION
+============================================================ */
+
 document.addEventListener("mousemove", (e) => {
-  const x = (e.clientX / window.innerWidth - 0.5) * 10;
-  const y = (e.clientY / window.innerHeight - 0.5) * 10;
   const bg = document.querySelector(".workspace-bg");
-  if (bg) bg.style.transform = `translate(${x}px, ${y}px)`;
+  if (!bg) return;
+
+  const x = (e.clientX / window.innerWidth - 0.5) * 12;
+  const y = (e.clientY / window.innerHeight - 0.5) * 12;
+
+  bg.style.transform = `translate(${x}px, ${y}px)`;
 });
+
 
     
   }
 
 </script>
 </html>
+
 
 
 
