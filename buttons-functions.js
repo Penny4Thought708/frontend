@@ -35,36 +35,40 @@ function initUI() {
   const toggleBtn = document.getElementById("toggleBtn");
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
 
-  /* -----------------------------------------------------------
-     PANEL STATE MANAGEMENT
-  ----------------------------------------------------------- */
-  const UIX = {
-    hideAll() {
-      [video, contacts, profile, search, settings, voicemail, fullProfile]
-        .forEach(p => p?.classList.add("hidden"));
+ /* -----------------------------------------------------------
+   PANEL STATE MANAGEMENT (FIXED FOR FLOATING-PANEL SYSTEM)
+----------------------------------------------------------- */
+const UIX = {
+  hideAll() {
+    [video, contacts, profile, search, settings, voicemail, fullProfile]
+      .forEach(p => p?.classList.add("hidden"));
 
-      document.body.classList.remove("panel-open");
-    },
+    messaging.classList.add("hidden");
+    miniChat.classList.add("hidden");
 
-    showPanel(panel) {
-      this.hideAll();
-      panel.classList.remove("hidden");
-      document.body.classList.add("panel-open");
-      this.collapseMessaging();
-    },
+    document.body.classList.remove("panel-open");
+  },
 
-    showMessaging() {
-      this.hideAll();
-      messaging.style.display = "flex";
-      miniChat.style.display = "none";
-      document.body.classList.remove("panel-open");
-    },
+  showPanel(panel) {
+    this.hideAll();
+    panel.classList.remove("hidden");
+    miniChat.classList.remove("hidden");
+    document.body.classList.add("panel-open");
+  },
 
-    collapseMessaging() {
-      messaging.style.display = "none";
-      miniChat.style.display = "flex";
-    }
-  };
+  showMessaging() {
+    this.hideAll();
+    messaging.classList.remove("hidden");
+    miniChat.classList.add("hidden");
+    document.body.classList.remove("panel-open");
+  },
+
+  collapseMessaging() {
+    messaging.classList.add("hidden");
+    miniChat.classList.remove("hidden");
+  }
+};
+
 
   /* -----------------------------------------------------------
      THEME TOGGLE
@@ -365,5 +369,6 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
