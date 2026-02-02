@@ -101,13 +101,7 @@ body:not(.panel-open)::before {
   transition: var(--motion-medium);
 }
 
-/* No hover lift or glow */
-.panel:hover,
-.floating-panel:hover {
-  transform: none;
-  box-shadow: var(--shadow-hard);
-  backdrop-filter: blur(20px);
-}
+
 
 
 @media (max-width: 900px) {
