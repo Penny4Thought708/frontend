@@ -1,30 +1,110 @@
 /* ============================================================
-   MESSAGING PANEL (CONTAINER)
+   WORKSPACE + FLOATING PANEL LAYOUT (STRUCTURE ONLY)
 ============================================================ */
+
+.workspace {
+  position: relative;
+  display: flex;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.workspace-center {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.workspace-center > .floating-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.workspace-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.15s ease-out;
+  will-change: transform;
+}
+
+/* Floating panel base */
+.floating-panel {
+  background: var(--bg-panel);
+  border-radius: var(--radius-panel);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.floating-panel.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px) scale(0.96);
+}
+
+/* ============================================================
+   MESSAGING PANEL STRUCTURE (NO VISUALS)
+============================================================ */
+
+#messaging_box {
+  width: 420px;
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10;
+}
+
+#messaging_box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -40%) scale(0.96);
+}
+
+.workspace-center #messaging_box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
 .messaging-panel {
   display: flex;
   flex-direction: column;
   height: 100%;
-  max-height: calc(100vh - 64px);
-  padding: 16px;
-  overflow: hidden;
-  background: var(--bg-panel);
-  border-radius: var(--radius-panel);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px);
+  min-height: 300px;
+}
+
+.message-window {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 6px;
 }
 
 /* ============================================================
-   HEADER
+   VISUAL SKIN — NO LAYOUT PROPERTIES
 ============================================================ */
 
 .msg-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -49,36 +129,19 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* ============================================================
-   MESSAGE WINDOW
-============================================================ */
-
-.message-window {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  scroll-behavior: smooth;
-}
-
-/* Drag-over state */
+/* Message window visuals */
 .message-window.drag-over {
   outline: 2px dashed var(--accent-primary);
   outline-offset: -6px;
 }
 
-/* ============================================================
-   TYPING INDICATOR
-============================================================ */
-
+/* Typing indicator */
 .typing-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
   height: 28px;
-  margin: 6px 0;
+  margin: 6px 16px;
   opacity: 0;
   transition: opacity 0.25s ease;
 }
@@ -115,13 +178,10 @@
   50% { opacity: 1; transform: translateY(-3px); }
 }
 
-/* ============================================================
-   RECORDING INDICATOR
-============================================================ */
-
+/* Recording indicator */
 .recording-indicator {
   display: none;
-  margin: 8px 0;
+  margin: 8px 16px;
 }
 
 .recording-indicator.active {
@@ -153,34 +213,11 @@
   100% { transform: scale(1.25); opacity: 0; }
 }
 
-/* ============================================================
-   IMAGE VIEWER
-============================================================ */
-
-.img-viewer {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.img-viewer-img {
-  max-width: 90%;
-  max-height: 90%;
-  border-radius: 12px;
-}
-
-/* ============================================================
-   ATTACHMENT PREVIEW STRIP
-============================================================ */
-
+/* Attachment preview */
 .attachment-preview {
   display: flex;
   gap: 12px;
-  padding: 8px 0;
+  padding: 8px 16px;
   overflow-x: auto;
 }
 
@@ -188,15 +225,12 @@
   display: none;
 }
 
-/* ============================================================
-   COMPOSER
-============================================================ */
-
+/* Composer */
 .composer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: 12px;
+  padding: 10px 16px 14px;
   border-top: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -227,115 +261,10 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* ============================================================
-   BOTTOM SHEET
-============================================================ */
-
-.bottom-sheet {
-  position: absolute;
-  bottom: 70px;
-  left: 0;
-  right: 0;
-  padding: 16px;
-  background: var(--bg-panel-strong);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px);
-  transform: translateY(100%);
-  transition: transform 0.25s ease;
-  border-radius: 18px 18px 0 0;
-}
-
-.bottom-sheet.active {
-  transform: translateY(0);
-}
-
-.sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: rgba(255,255,255,0.25);
-  border-radius: 4px;
-  margin: 0 auto 12px;
-}
-
-.sheet-item {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-}
-
-/* ============================================================
-   EMOJI PICKER
-============================================================ */
-
-emoji-picker {
-  position: absolute;
-  bottom: 70px;
-  right: 16px;
-  width: 320px;
-  height: 380px;
-  display: none;
-}
-
-emoji-picker.active {
-  display: block;
-}
-
-/* ============================================================
-   GIF PICKER
-============================================================ */
-
+/* Bottom sheet, emoji, GIF */
+.bottom-sheet,
+.emoji-picker,
 .gif-picker {
-  position: absolute;
-  bottom: 70px;
-  right: 16px;
-  width: 340px;
-  height: 420px;
-  background: var(--bg-panel-strong);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 14px;
-  backdrop-filter: blur(18px);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.gif-picker.hidden {
-  display: none;
-}
-
-.gif-search {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
-  color: var(--text-primary);
-}
-
-.gif-results {
-  flex: 1;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.gif-thumb {
-  width: 100%;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.gif-thumb:hover {
-  transform: scale(1.05);
+  z-index: 20;
 }
 
