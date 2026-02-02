@@ -9,6 +9,23 @@
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px);
 }
+/* CONTACTS PANEL (CONWRAP) */
+#conwrap {
+  width: 420px;
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10;
+}
+
+/* Center it like messaging */
+.workspace-center #conwrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
 /* Floating panels */
 .floating-panel {
