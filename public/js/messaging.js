@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (NO PHP, Node backend, FULL LOGGING)
+// Messaging System (Node backend, new floating layout, FULL LOGGING)
 
 import {
   getMyUserId,
@@ -23,14 +23,17 @@ import { userNames, userAvatars } from "./shared/user-cache.js";
 
 // ===== CONFIG =====
 const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
-console.log("[messaging] Loaded messaging.js");
+console.log("[messaging] Loaded messaging.js (new layout)");
 
 // ===== STATE =====
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
 let readObserver = null;
-const previewEl = previewDiv;
+
+// New layout: dedicated attachment preview strip
+const previewEl =
+  document.getElementById("attachmentPreview") || previewDiv || null;
 
 // ===== RTC ACCESSORS =====
 function getDataChannel() {
@@ -246,7 +249,7 @@ function removeReactionFromMessage(id, emoji) {
   }
 }
 
-// ===== RENDER MESSAGE (NEW LAYOUT) =====
+// ===== RENDER MESSAGE (NEW FLOATING PANEL LAYOUT) =====
 function renderMessage(msg) {
   console.log("[messaging] renderMessage:", msg);
 
@@ -410,12 +413,19 @@ function renderMessage(msg) {
   observeMessagesForRead();
 }
 
-// ===== FILE PREVIEW =====
+// ===== FILE PREVIEW (NEW STRIP) =====
 function renderPreviews(files) {
   console.log("[messaging] renderPreviews:", files);
 
   if (!previewEl) return;
   previewEl.innerHTML = "";
+
+  if (!files.length) {
+    previewEl.classList.add("hidden");
+    return;
+  }
+
+  previewEl.classList.remove("hidden");
 
   files.forEach((file) => {
     const wrapper = document.createElement("div");
@@ -470,7 +480,7 @@ attachmentInput?.addEventListener("change", () => {
   renderPreviews(files);
 });
 
-// ===== DRAG & DROP =====
+// ===== DRAG & DROP (onto message window) =====
 if (messageWin) {
   messageWin.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -495,13 +505,13 @@ if (messageWin) {
   });
 }
 
-// ===== SEND MESSAGES =====
+// ===== SEND MESSAGES (NEW COMPOSER: contenteditable) =====
 if (msgForm) {
   msgForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     console.log("[messaging] msgForm submit");
 
-    const message = (msgInput?.value ?? "").trim();
+    const rawText = (msgInput?.innerText ?? "").trim();
     const files = Array.from(attachmentInput?.files || []);
 
     const dc = getDataChannel();
@@ -509,7 +519,7 @@ if (msgForm) {
     const targetId = peerId || receiver_id;
     const myUserId = getMyUserId();
 
-    if (!targetId && (!message && !files.length)) {
+    if (!targetId && (!rawText && !files.length)) {
       showError("No receiver selected");
       return;
     }
@@ -611,19 +621,22 @@ if (msgForm) {
       }
 
       attachmentInput.value = "";
-      if (previewEl) previewEl.innerHTML = "";
+      if (previewEl) {
+        previewEl.innerHTML = "";
+        previewEl.classList.add("hidden");
+      }
     }
 
     // TEXT
-    if (message && targetId) {
-      console.log("[messaging] sending text:", message);
+    if (rawText && targetId) {
+      console.log("[messaging] sending text:", rawText);
 
       if (isChannelOpen(dc)) {
-        dc.send(message);
+        dc.send(rawText);
 
         renderMessage({
           is_me: true,
-          message,
+          message: rawText,
           created_at: new Date(),
           sender_id: myUserId,
           sender_name: "You",
@@ -631,7 +644,7 @@ if (msgForm) {
 
         apiPost("/send", {
           receiver_id: targetId,
-          message,
+          message: rawText,
           transport: "webrtc",
         })
           .then((res) => {
@@ -641,12 +654,12 @@ if (msgForm) {
             console.error("[messaging] P2P text persist failed:", err);
           });
       } else {
-        console.log("[messaging] sending text via HTTP:", message);
+        console.log("[messaging] sending text via HTTP:", rawText);
 
         try {
           const data = await apiPost("/send", {
             receiver_id: targetId,
-            message,
+            message: rawText,
           });
           console.log("[messaging] HTTP text send response:", data);
 
@@ -670,7 +683,7 @@ if (msgForm) {
       }
     }
 
-    if (msgInput) msgInput.value = "";
+    if (msgInput) msgInput.innerText = "";
   });
 } else {
   console.warn("[messaging] msgForm not found — submit handler not attached");
@@ -877,7 +890,7 @@ export async function loadMessages() {
   }
 }
 
-// ===== Typing indicators =====
+// ===== Typing indicators (NEW BUBBLE STYLE) =====
 const typingIndicator = $(".typing-indicator");
 let typingStopTimer = null;
 
@@ -901,8 +914,16 @@ socket.on("typing:start", ({ from, fullname }) => {
   if (String(from) === String(currentChatPartner)) {
     const name =
       fullname || userNames[String(from)] || `User ${from}`;
+
     typingIndicator.classList.add("active");
-    typingIndicator.textContent = `${name} is typing...`;
+
+    // Optional: set avatar if we have it
+    const avatarImg = typingIndicator.querySelector(".typing-avatar");
+    if (avatarImg) {
+      avatarImg.src =
+        userAvatars[String(from)] || "img/defaultUser.png";
+      avatarImg.alt = name;
+    }
   }
 });
 
@@ -912,7 +933,6 @@ socket.on("typing:stop", ({ from }) => {
 
   if (String(from) === String(currentChatPartner)) {
     typingIndicator.classList.remove("active");
-    typingIndicator.textContent = "";
   }
 });
 
@@ -1025,7 +1045,7 @@ setInterval(() => {
 }, 8000);
 
 // -------------------------------------------------------
-// ⭐ COMPOSER UI CONTROLS
+// ⭐ COMPOSER UI CONTROLS (NEW LAYOUT)
 // -------------------------------------------------------
 
 const plusBtn = document.getElementById("plusBtn");
@@ -1042,29 +1062,32 @@ const micBtn = document.getElementById("micBtn");
 
 // ===== Toggle bottom sheet =====
 plusBtn?.addEventListener("click", () => {
-  bottomSheet.classList.toggle("active");
+  bottomSheet?.classList.toggle("active");
 });
 
 // ===== Emoji Picker =====
 sheetEmoji?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  emojiPicker.classList.toggle("active");
+  bottomSheet?.classList.remove("active");
+  emojiPicker?.classList.toggle("active");
 });
 
 emojiPicker?.addEventListener("emoji-click", (e) => {
-  msgInput.textContent += e.detail.unicode;
+  if (!msgInput) return;
+  msgInput.innerText += e.detail.unicode;
   emojiPicker.classList.remove("active");
 });
 
 // ===== GIF Picker =====
 sheetGif?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  gifPicker.classList.toggle("hidden");
-  gifSearch.focus();
+  bottomSheet?.classList.remove("active");
+  gifPicker?.classList.toggle("hidden");
+  gifSearch?.focus();
 });
 
 // Simple GIF search using Tenor API
 gifSearch?.addEventListener("input", async () => {
+  if (!gifSearch || !gifResults) return;
+
   const q = gifSearch.value.trim();
   if (!q) return;
 
@@ -1080,30 +1103,36 @@ gifSearch?.addEventListener("input", async () => {
 
     gifResults.innerHTML = "";
 
-    data.results.forEach((gif) => {
+    (data.results || []).forEach((gif) => {
+      const url = gif.media_formats?.tinygif?.url;
+      if (!url) return;
+
       const img = document.createElement("img");
-      img.src = gif.media_formats?.tinygif?.url;
+      img.src = url;
       img.className = "gif-thumb";
       img.onclick = () => {
-        msgInput.textContent += gif.media_formats?.tinygif?.url;
+        if (!msgInput) return;
+        // For now, insert URL; could be upgraded to inline <img> if desired
+        msgInput.innerText += ` ${url} `;
         gifPicker.classList.add("hidden");
       };
       gifResults.appendChild(img);
     });
   } catch (err) {
+    console.error("[GIF] error:", err);
     gifResults.innerHTML = "Error loading GIFs";
   }
 });
 
 // ===== File Picker =====
 sheetFile?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  attachmentInput.click();
+  bottomSheet?.classList.remove("active");
+  attachmentInput?.click();
 });
 
 // ===== Audio Recording (placeholder) =====
 sheetAudio?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
+  bottomSheet?.classList.remove("active");
   console.log("[composer] Voice message coming soon");
 });
 
