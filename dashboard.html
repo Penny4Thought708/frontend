@@ -196,86 +196,120 @@ window.currentUserAvatar = user.avatar;
       <div class="workspace-center">
 
         <!-- MESSAGING PANEL -->
-        <div id="messaging_box" class="panel messaging-panel">
-          <div class="header_msg_box">
-            <div class="msg-header-left">
-              <div class="msg-header-info">
-                <h2 id="msgHeaderName" class="msg-contact-name"></h2>
-              </div>
-            </div>
+<div id="messaging_box" class="floating-panel slide-from-right hidden messaging-panel">
 
-            <div class="msg-header-right">
-              <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
-                <img src="voice.png" alt="Voice Call" height="25" width="25">
-              </button>
+  <!-- ============================================================
+       HEADER
+  ============================================================ -->
+  <div class="panel-header msg-header">
+    <div class="msg-header-left">
+      <h2 id="msgHeaderName" class="msg-contact-name"></h2>
+    </div>
 
-              <button id="videoBtn" class="msg-icon-btn" title="Video Call">
-                <img src="img/app.png" alt="Video Call" height="28" width="28">
-              </button>
+    <div class="msg-header-right">
+      <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
+        <img src="voice.png" alt="Voice Call" height="25" width="25">
+      </button>
 
-              <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">🐞</button>
-            </div>
-          </div>
+      <button id="videoBtn" class="msg-icon-btn" title="Video Call">
+        <img src="img/app.png" alt="Video Call" height="28" width="28">
+      </button>
 
-          <div class="message_win1">
-            <canvas id="waveformCanvas" width="200" height="40" style="display:none;"></canvas>
-            <div id="recordTimer" style="display:none; font-size:14px; color:#ff4d4d; margin-left:10px;">00:00</div>
-            <div id="slideCancel" style="display:none; font-size:14px; color:#999; margin-left:10px;">Slide left to cancel</div>
-          </div>
+      <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">🐞</button>
+    </div>
+  </div>
 
-          <div class="typing-indicator">
-            <img class="typing-avatar" src="" alt="">
-            <div class="typing-bubble"><span></span><span></span><span></span></div>
-          </div>
+  <!-- ============================================================
+       MESSAGE WINDOW
+  ============================================================ -->
+  <div id="messageWin" class="message-window"></div>
 
-          <div class="recording-indicator">
-            <div class="recording-bubble">
-              <span class="mic-icon">🎤</span>
-              <span class="recording-text">Recording audio…</span>
-              <div class="pulse-ring"></div>
-            </div>
-          </div>
+  <!-- ============================================================
+       TYPING INDICATOR (NEW STYLE)
+  ============================================================ -->
+  <div class="typing-indicator">
+    <img class="typing-avatar" src="" alt="">
+    <div class="typing-bubble"><span></span><span></span><span></span></div>
+  </div>
 
-          <div id="img-viewer" class="img-viewer">
-            <img id="img-viewer-img" alt="Viewed image">
-          </div>
+  <!-- ============================================================
+       RECORDING INDICATOR
+  ============================================================ -->
+  <div class="recording-indicator">
+    <div class="recording-bubble">
+      <span class="mic-icon">🎤</span>
+      <span class="recording-text">Recording audio…</span>
+      <div class="pulse-ring"></div>
+    </div>
+  </div>
 
-          <form id="text_box_reply" autocomplete="off" class="msg-input-row">
-            <button type="button" id="plusBtn" class="plus-btn">
-              <span class="material-symbols-outlined">add</span>
-            </button>
+  <!-- ============================================================
+       IMAGE VIEWER
+  ============================================================ -->
+  <div id="img-viewer" class="img-viewer">
+    <img id="img-viewer-img" alt="Viewed image">
+  </div>
 
-            <div id="bottomSheet" class="bottom-sheet">
-              <div class="sheet-handle"></div>
-              <button class="sheet-item" id="sheetCamera">📷 Camera</button>
-              <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
-              <button class="sheet-item" id="sheetFile">📎 File</button>
-              <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
-              <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
-              <button class="sheet-item" id="sheetGif">🎬 GIF</button>
-            </div>
+  <!-- ============================================================
+       FILE PREVIEW STRIP
+  ============================================================ -->
+  <div id="attachmentPreview" class="attachment-preview hidden"></div>
 
-            <emoji-picker id="emojiPicker" data-no-storage></emoji-picker>
+  <!-- ============================================================
+       COMPOSER
+  ============================================================ -->
+  <form id="text_box_reply" autocomplete="off" class="composer">
 
-            <div id="gifPicker" class="hidden gif-picker">
-              <input type="text" id="gifSearch" placeholder="Search GIFs..." />
-              <div id="gifResults" class="gif-results"></div>
-            </div>
+    <!-- PLUS BUTTON -->
+    <button type="button" id="plusBtn" class="composer-btn plus">
+      <span class="material-symbols-outlined">add</span>
+    </button>
 
-            <input id="attachment_input" type="file" multiple hidden />
-            <div id="attachmentPreview" class="attachment-preview hidden"></div>
+    <!-- INPUT -->
+    <div id="message_input" contenteditable="true" class="msg-input" aria-label="Type your message"></div>
 
-            <button type="button" id="micBtn">
-              <img src="img/mic.png" alt="microphone">
-            </button>
+    <!-- MIC -->
+    <button type="button" id="micBtn" class="composer-btn mic">
+      <img src="img/mic.png" alt="microphone">
+    </button>
 
-            <div id="message_input" contenteditable="true" class="rich-input" aria-label="Type your message"></div>
+    <!-- SEND -->
+    <button type="submit" class="composer-btn send">
+      <span class="material-symbols-outlined">send</span>
+    </button>
 
-            <button type="submit" class="send-btn">
-              <span class="material-symbols-outlined">send</span>
-            </button>
-          </form>
-        </div>
+    <!-- HIDDEN FILE INPUT -->
+    <input id="attachment_input" type="file" multiple hidden>
+  </form>
+
+  <!-- ============================================================
+       BOTTOM SHEET
+  ============================================================ -->
+  <div id="bottomSheet" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-item" id="sheetCamera">📷 Camera</button>
+    <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
+    <button class="sheet-item" id="sheetFile">📎 File</button>
+    <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
+    <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
+    <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+  </div>
+
+  <!-- ============================================================
+       EMOJI PICKER
+  ============================================================ -->
+  <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
+
+  <!-- ============================================================
+       GIF PICKER
+  ============================================================ -->
+  <div id="gifPicker" class="gif-picker hidden">
+    <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+    <div id="gifResults" class="gif-results"></div>
+  </div>
+
+</div>
+
 
         <!-- MINI CHAT BUBBLE (SHOWN WHEN VIDEO/SETTINGS TAKE OVER) -->
         <button id="miniChatBubble" class="mini-chat-bubble" style="display:none;">
@@ -1630,6 +1664,7 @@ document.addEventListener("mousemove", (e) => {
 
 </script>
 </html>
+
 
 
 
