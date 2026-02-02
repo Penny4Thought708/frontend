@@ -1,5 +1,5 @@
 /* ============================================================
-   HYBRID FLOATING‑SPACE UI CONTROLLER — UX ENHANCED
+   HYBRID FLOATING‑SPACE UI CONTROLLER — UX ENHANCED (FIXED)
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -35,40 +35,36 @@ function initUI() {
   const toggleBtn = document.getElementById("toggleBtn");
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
 
- /* -----------------------------------------------------------
-   PANEL STATE MANAGEMENT (FIXED FOR FLOATING-PANEL SYSTEM)
------------------------------------------------------------ */
-const UIX = {
-  hideAll() {
-    [video, contacts, profile, search, settings, voicemail, fullProfile]
-      .forEach(p => p?.classList.add("hidden"));
+  /* -----------------------------------------------------------
+     PANEL STATE MANAGEMENT — FIXED FOR DEFAULT MESSAGING
+  ----------------------------------------------------------- */
+  const UIX = {
+    hideAllPanelsExceptMessaging() {
+      [video, contacts, profile, search, settings, voicemail, fullProfile]
+        .forEach(p => p?.classList.add("hidden"));
+    },
 
-    messaging.classList.add("hidden");
-    miniChat.classList.add("hidden");
+    showPanel(panel) {
+      this.hideAllPanelsExceptMessaging();
+      messaging.classList.add("hidden");
+      miniChat.classList.remove("hidden");
 
-    document.body.classList.remove("panel-open");
-  },
+      panel.classList.remove("hidden");
+      document.body.classList.add("panel-open");
+    },
 
-  showPanel(panel) {
-    this.hideAll();
-    panel.classList.remove("hidden");
-    miniChat.classList.remove("hidden");
-    document.body.classList.add("panel-open");
-  },
+    showMessaging() {
+      this.hideAllPanelsExceptMessaging();
+      messaging.classList.remove("hidden");
+      miniChat.classList.add("hidden");
+      document.body.classList.remove("panel-open");
+    },
 
-  showMessaging() {
-    this.hideAll();
-    messaging.classList.remove("hidden");
-    miniChat.classList.add("hidden");
-    document.body.classList.remove("panel-open");
-  },
-
-  collapseMessaging() {
-    messaging.classList.add("hidden");
-    miniChat.classList.remove("hidden");
-  }
-};
-
+    collapseMessaging() {
+      messaging.classList.add("hidden");
+      miniChat.classList.remove("hidden");
+    }
+  };
 
   /* -----------------------------------------------------------
      THEME TOGGLE
@@ -156,6 +152,11 @@ const UIX = {
       railButtons.forEach(b => b.classList.remove("active"));
     }
   });
+
+  /* -----------------------------------------------------------
+     DEFAULT STATE — SHOW MESSAGING ON LOAD
+  ----------------------------------------------------------- */
+  UIX.showMessaging();
 }
 
 /* -----------------------------------------------------------
@@ -177,7 +178,7 @@ function showToast(msg) {
 }
 
 /* ============================================================
-   SETTINGS CONTROLLER (unchanged, but now works with new UI)
+   SETTINGS CONTROLLER (unchanged)
 ============================================================ */
 
 const Settings = {
@@ -369,6 +370,8 @@ const Settings = {
     location.reload();
   }
 };
+
+
 
 
 
