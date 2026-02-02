@@ -16,10 +16,8 @@ import { getMyUserId, getJson, postForm } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
-// Messaging engine + UI
-import { MessagingEngine } from "./messaging/MessagingEngine.js";
-import { renderMessages, renderIncomingMessage } from "./messaging/MessageUI.js";
-import "./messaging/TypingUI.js";
+// Messaging (new engine: pure logic in messaging.js)
+import { setReceiver, loadMessages } from "./messaging.js";
 
 // Contacts
 import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
@@ -575,7 +573,7 @@ function initContentMenu() {
     const sav = document.querySelector("#sav_con");
     const bl = document.querySelector("#bl_con");
     const vm = document.querySelector("#voicemail_list");
-    const msg = document.querySelector("#messaging_box_container");
+    const msg = document.querySelector("#messaging_box");
 
     if (sav) sav.style.display = "none";
     if (bl) bl.style.display = "none";
@@ -629,7 +627,7 @@ function initContentMenu() {
         break;
 
       case "messages": {
-        const msg = document.querySelector("#messaging_box_container");
+        const msg = document.querySelector("#messaging_box");
         if (msg) {
           msg.style.display = "block";
           forceChildrenDisplay(msg);
@@ -720,7 +718,7 @@ socket.on("call:incoming", (data) => {
 });
 
 /* -------------------------------------------------------
-   Bottom sheet + emoji + GIF + send
+   Bottom sheet + emoji + GIF (UI only, no sending)
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
   const plusBtn = document.getElementById("plusBtn");
@@ -739,10 +737,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const gifResults = document.getElementById("gifResults");
 
   const messageInput = document.getElementById("message_input");
-  const form = document.getElementById("text_box_reply");
   const attachmentInput = document.getElementById("attachment_input");
+  const micBtn = document.getElementById("micBtn");
 
-  if (!messageInput || !form) return;
+  // expose micBtn for other modules if needed
+  window.micBtn = micBtn;
+
+  if (!messageInput) return;
 
   const closeAll = () => {
     bottomSheet?.classList.remove("visible");
@@ -786,6 +787,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   sheetCamera?.addEventListener("click", () => {
     closeAll();
+    // camera flow could be added here later
   });
 
   sheetGallery?.addEventListener("click", () => {
@@ -800,7 +802,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   sheetAudio?.addEventListener("click", () => {
     closeAll();
-    window.micBtn?.click();
+    micBtn?.click();
   });
 
   sheetEmoji?.addEventListener("click", (e) => {
@@ -887,84 +889,8 @@ document.addEventListener("DOMContentLoaded", () => {
     else searchGIFs(q);
   });
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const targetId = window.receiver_id;
-    if (!targetId) {
-      window.showError?.("No receiver selected");
-      return;
-    }
-
-    const raw = messageInput.innerHTML.trim();
-    if (!raw) return;
-
-    const temp = document.createElement("div");
-    temp.innerHTML = raw;
-    const text = (temp.textContent || "").trim();
-
-    const gifMatch = raw.match(/<img[^>]+src="([^"]+\.gif)"/i);
-    const gifUrl = gifMatch ? gifMatch[1] : null;
-
-    try {
-      if (gifUrl && !text) {
-        const data = await postForm("/messages/send", {
-          receiver_id: targetId,
-          file: 1,
-          file_url: gifUrl,
-          message: "",
-        });
-
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success && typeof window.renderMessage === "function") {
-          window.renderMessage({
-            id: data.id,
-            is_me: true,
-            file: 1,
-            file_url: gifUrl,
-            created_at: data.created_at,
-            sender_id: getMyUserId(),
-            sender_name: "You",
-            type: "gif",
-            message: "",
-          });
-        } else if (!success) {
-          const errMsg = data?.error || "Failed to send GIF";
-          window.showError?.(errMsg);
-        }
-      } else if (text) {
-        const data = await postForm("/messages/send", {
-          receiver_id: targetId,
-          message: text,
-        });
-
-        const success =
-          data && (data.success === true || typeof data.id !== "undefined");
-
-        if (success && typeof window.renderMessage === "function") {
-          window.renderMessage({
-            id: data.id,
-            is_me: true,
-            message: data.message,
-            created_at: data.created_at,
-            sender_id: getMyUserId(),
-            sender_name: "You",
-            type: "text",
-          });
-        } else {
-          const msg = data?.error || "Failed to send message";
-          window.showError?.(msg);
-        }
-      }
-    } catch (err) {
-      console.error("[SEND] error:", err);
-      window.showError?.("Failed to send message");
-    }
-
-    messageInput.innerHTML = "";
-  });
+  // IMPORTANT: no form submit handler here.
+  // messaging.js owns sending logic for #text_box_reply.
 });
 
 /* -------------------------------------------------------
@@ -976,13 +902,6 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  const messaging = new MessagingEngine(
-    socket,
-    renderMessages,
-    renderIncomingMessage,
-    "/api/messages"
-  );
-
   const rtc = new WebRTCController(socket);
   initCallUI(rtc);
 
@@ -990,14 +909,27 @@ socket.on("connect", async () => {
   loadMessageList();
   loadVoicemails();
 
+  // Open chat for a given contactId using new messaging.js
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
-    await messaging.loadMessages(contactId);
+    setReceiver(contactId);
+
+    const panel = document.getElementById("messaging_box");
+    if (panel) {
+      panel.style.display = "block";
+      panel.classList.remove("hidden");
+    }
+
+    const miniBubble = document.getElementById("miniChatBubble");
+    if (miniBubble) miniBubble.style.display = "none";
+
+    await loadMessages();
   };
 
   initContentMenu();
   initDndFromContactsMenu();
 });
+
 
 
 
