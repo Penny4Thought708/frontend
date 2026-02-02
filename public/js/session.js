@@ -1,17 +1,17 @@
-// public/js/session.js
-// -------------------------------------------------------
-// Session + DOM + Helpers (Node backend compatible)
-// -------------------------------------------------------
+/* ============================================================
+   SESSION + DOM + HELPERS (Node backend compatible)
+   Fully rewritten for new UI architecture
+============================================================ */
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Imports MUST be first in ES modules
-// -------------------------------------------------------
+// -----------------------------------------------------------
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
-// -------------------------------------------------------
-// Prevent duplicate session.js execution
-// -------------------------------------------------------
+// -----------------------------------------------------------
+// Prevent duplicate execution
+// -----------------------------------------------------------
 if (window.__SESSION_ALREADY_LOADED__) {
   console.warn("[session] Duplicate session.js ignored");
 } else {
@@ -24,14 +24,14 @@ console.log("[session] LOADED");
 window._session_debug = (window._session_debug || 0) + 1;
 console.log("session.js load count:", window._session_debug);
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // API base
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export const API_BASE = "https://letsee-backend.onrender.com";
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Load identity from backend
-// -------------------------------------------------------
+// -----------------------------------------------------------
 async function loadIdentity() {
   try {
     const res = await fetch(`${API_BASE}/api/auth/me`, {
@@ -55,51 +55,43 @@ async function loadIdentity() {
 
 loadIdentity();
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Identity getters
-// -------------------------------------------------------
-export function getMyUserId() {
-  return window.user_id ? Number(window.user_id) : null;
-}
+// -----------------------------------------------------------
+export const getMyUserId = () =>
+  window.user_id ? Number(window.user_id) : null;
 
-export function getMyFullname() {
-  return window.fullname || "";
-}
+export const getMyFullname = () => window.fullname || "";
 
-export function getMyAvatar() {
-  return window.avatar || null;
-}
+export const getMyAvatar = () => window.avatar || null;
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Avatar URL helper
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export function avatarUrl(path) {
   if (!path) return "/img/defaultUser.png";
 
-  // Already a full URL
   if (path.startsWith("http")) return path;
 
-  // Already normalized by backend
   if (path.startsWith("/uploads/")) {
     return `${API_BASE}${path}`;
   }
 
-  // Raw filename from DB
   return `${API_BASE}/uploads/avatars/${path}`;
 }
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // DOM helpers
-// -------------------------------------------------------
+// -----------------------------------------------------------
 const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 
-// -------------------------------------------------------
-// Messaging UI Elements
-// -------------------------------------------------------
+// -----------------------------------------------------------
+// Messaging UI Elements (UPDATED FOR NEW UI)
+// -----------------------------------------------------------
 export const msgForm = el("text_box_reply");
 export const msgInput = el("message_input");
-export const messageWin = qs(".message_win1");
+export const messageWin = el("messageWin"); // FIXED selector
 
 export const attachmentInput = el("attachment_input");
 export const previewDiv = el("attachmentPreview");
@@ -108,19 +100,17 @@ export const notificationSound = el("notification");
 
 export const badge = qs(".notification-badge .badge");
 export const messageBox = el("messaging_box");
-export const msgOpenBtn = el("msg_open_btn");
-export const closeMsgBtn = el("close_msg_box");
 
-// -------------------------------------------------------
-// Lookup UI
-// -------------------------------------------------------
+// -----------------------------------------------------------
+// Lookup UI (Conwrap)
+// -----------------------------------------------------------
 export const lookupBtn = el("lookup-btn");
 export const lookupInput = el("lookup-input");
 export const lookupResults = el("contacts-lookup");
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Call UI Elements
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export const videoContainer = el("video-container");
 export const remoteWrapper = el("remoteWrapper");
 export const localWrapper = el("localVideoWrapper");
@@ -157,9 +147,9 @@ export const callControls = el("call-controls");
 export const endBtn = el("end-call");
 export const callerOverlay = el("callerOverlay");
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Search UI
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export const contractorQuery = el("contractorQuery");
 export const searchBtn = el("searchBtn");
 export const searchResults = el("searchResults");
@@ -170,9 +160,9 @@ export const messagesContainer = messageWin;
 // Top bar
 export const topBar = el("topBar");
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Helpers
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export function safeJSON(obj) {
   try {
     return JSON.stringify(obj);
@@ -189,9 +179,9 @@ export function playNotification() {
     .catch((err) => console.warn("Notification sound blocked:", err));
 }
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Node-compatible API helpers
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export async function getJson(url) {
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`);
@@ -232,17 +222,17 @@ export async function postForm(path, payload) {
   }
 }
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Scroll helper
-// -------------------------------------------------------
+// -----------------------------------------------------------
 export function scrollMessagesToBottom() {
   if (!messagesContainer) return;
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Socket registration
-// -------------------------------------------------------
+// -----------------------------------------------------------
 window.socketRegistered = false;
 
 socket.on("connect", () => {
@@ -283,9 +273,9 @@ socket.on("error", (err) => {
   }
 });
 
-// -------------------------------------------------------
+// -----------------------------------------------------------
 // Auto logout after inactivity
-// -------------------------------------------------------
+// -----------------------------------------------------------
 let inactivityTimer;
 const AUTO_LOGOUT_MINUTES = 30;
 
@@ -308,7 +298,6 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
-
 
 
 
