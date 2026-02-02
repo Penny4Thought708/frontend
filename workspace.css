@@ -1,0 +1,77 @@
+/* ============================================================
+   WORKSPACE LAYOUT FIX
+   (This is why the messaging panel was invisible)
+============================================================ */
+
+.workspace {
+  position: relative;
+  display: flex;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.workspace-center {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+/* Ensures floating panels inside workspace-center are visible */
+.workspace-center > .floating-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ============================================================
+   MESSAGING PANEL FIX
+============================================================ */
+
+#messaging_box {
+  width: 420px;
+  max-height: calc(100vh - 96px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999;
+}
+
+/* When hidden */
+#messaging_box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -40%) scale(0.96);
+}
+
+/* When visible */
+#messaging_box.floating-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ============================================================
+   MESSAGE WINDOW FIX
+============================================================ */
+
+.message-window {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Prevents collapse */
+.messaging-panel {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
