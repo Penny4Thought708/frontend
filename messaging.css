@@ -20,6 +20,7 @@
   overflow: visible;
 }
 
+/* Force floating panels to center when inside workspace-center */
 .workspace-center > .floating-panel {
   position: absolute;
   top: 50%;
@@ -27,6 +28,7 @@
   transform: translate(-50%, -50%);
 }
 
+/* Background parallax */
 .workspace-bg {
   position: absolute;
   inset: 0;
@@ -36,7 +38,10 @@
   will-change: transform;
 }
 
-/* Floating panel base */
+/* ============================================================
+   FLOATING PANEL BASE (NO POSITIONING)
+============================================================ */
+
 .floating-panel {
   background: var(--bg-panel);
   border-radius: var(--radius-panel);
@@ -48,10 +53,11 @@
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
+/* Hidden state */
 .floating-panel.hidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateY(16px) scale(0.96);
+  transform: translate(-50%, -40%) scale(0.96);
 }
 
 /* ============================================================
@@ -67,12 +73,7 @@
   z-index: 10;
 }
 
-#messaging_box.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -40%) scale(0.96);
-}
-
+/* Center messaging panel */
 .workspace-center #messaging_box {
   position: absolute;
   top: 50%;
@@ -80,6 +81,22 @@
   transform: translate(-50%, -50%);
 }
 
+/* Remove slide-from-right conflicts */
+#messaging_box.slide-from-right {
+  left: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: 420px !important;
+}
+
+/* Hidden state */
+#messaging_box.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -40%) scale(0.96);
+}
+
+/* Internal layout */
 .messaging-panel {
   display: flex;
   flex-direction: column;
@@ -100,7 +117,6 @@
    VISUAL SKIN (NO LAYOUT PROPERTIES)
 ============================================================ */
 
-/* Header */
 .msg-header {
   display: flex;
   align-items: center;
@@ -130,7 +146,6 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* Message window visuals */
 .message-window.drag-over {
   outline: 2px dashed var(--accent-primary);
   outline-offset: -6px;
