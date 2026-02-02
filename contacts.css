@@ -1,0 +1,193 @@
+/* ============================================================
+   CONTACTS PANEL — LAYOUT + POLISH
+============================================================ */
+
+/* Main container */
+#conwrap.contacts-shell {
+  display: flex;
+  height: 100%;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  background: rgba(10, 12, 18, 0.92);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* LEFT SIDEBAR */
+.contacts-sidebar {
+  width: 250px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(15, 23, 42, 0.92);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(20px);
+}
+
+/* Search bar */
+.contact-lookup {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.contact-lookup input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: rgba(15,23,42,0.85);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: var(--motion-fast);
+}
+
+.contact-lookup input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(123,92,255,0.45);
+}
+
+.contact-lookup button {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(123,92,255,0.2);
+  border: 1px solid rgba(123,92,255,0.4);
+  color: #fff;
+  font-size: 1.1rem;
+  transition: var(--motion-fast);
+}
+
+.contact-lookup button:hover {
+  background: rgba(123,92,255,0.35);
+  transform: var(--hover-lift);
+}
+
+/* Lookup results */
+#contacts-lookup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* RIGHT MAIN PANEL */
+.contacts-main {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(10,12,18,0.85);
+  backdrop-filter: blur(18px);
+}
+
+.contacts-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Section blocks */
+.panel-section {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 0 22px rgba(0,0,0,0.35);
+  backdrop-filter: blur(14px);
+  transition: var(--motion-medium);
+}
+.panel-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 26px rgba(123,92,255,0.25);
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Lists */
+#contacts,
+#blocked-contacts,
+#messaging_list,
+#voiceMList,
+#callLogList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#contacts li,
+#blocked-contacts li,
+#messaging_list li,
+#voiceMList li,
+#callLogList li {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: var(--motion-medium);
+}
+
+#contacts li:hover,
+#blocked-contacts li:hover,
+#messaging_list li:hover,
+#voiceMList li:hover,
+#callLogList li:hover {
+  background: rgba(255,255,255,0.08);
+  transform: var(--hover-lift);
+  box-shadow: 0 0 14px rgba(123,92,255,0.25);
+}
+
+/* Voicemail */
+.vm-badge {
+  background: rgba(255, 80, 80, 0.9);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255,80,80,0.5);
+}
+
+.voicemail-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Call log */
+.call-log-actions input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: rgba(15,23,42,0.85);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.call-stats {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Messaging section */
+#messaging_box_container h3 {
+  margin-bottom: 8px;
+}
+
+/* Blocked contacts */
+#bloc_box h3 {
+  margin-bottom: 8px;
+}
