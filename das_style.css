@@ -375,21 +375,282 @@ ul {
   max-height: calc(100vh - 96px);
   overflow: hidden;
 }
-.slide-from-left.hidden {
-  transform: translate3d(-40px, -50%, 0);
+/* ============================================================
+   CONTACTS PANEL — PREMIUM UPGRADE
+============================================================ */
+
+#conwrap.contacts-shell {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  animation: panelEnter var(--motion-medium);
 }
 
-.slide-from-right {
-  right: 16px;
-  top: 50%;
-  transform: translate3d(16px, -50%, 0);
-  width: 460px;
-  max-height: calc(100vh - 96px);
-  overflow: hidden;
+/* Sidebar */
+.contacts-sidebar {
+  width: 240px;
+  background: rgba(15, 23, 42, 0.92);
+  border-right: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 14px;
+  backdrop-filter: blur(18px);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,0.05);
 }
-.slide-from-right.hidden {
-  transform: translate3d(40px, -50%, 0);
+
+/* Search bar */
+.contact-lookup {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
 }
+
+.contact-lookup input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: rgba(15,23,42,0.85);
+  color: var(--text-primary);
+  transition: var(--motion-fast);
+}
+
+.contact-lookup input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(123,92,255,0.4);
+}
+
+.contact-lookup button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(123,92,255,0.15);
+  border: 1px solid rgba(123,92,255,0.4);
+  color: #fff;
+  transition: var(--motion-fast);
+}
+
+.contact-lookup button:hover {
+  background: rgba(123,92,255,0.3);
+  transform: var(--hover-lift);
+}
+
+/* Main contacts area */
+.contacts-main {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(10,12,18,0.85);
+  backdrop-filter: blur(14px);
+}
+
+/* Panel header */
+.contacts-panel .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.contacts-panel .panel-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Lists */
+#contacts,
+#voiceMList,
+#callLogList,
+#messaging_list,
+#blocked-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Contact item */
+#contacts li,
+#voiceMList li,
+#callLogList .call-entry,
+#messaging_list li {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: var(--motion-medium);
+}
+
+#contacts li:hover,
+#voiceMList li:hover,
+#callLogList .call-entry:hover,
+#messaging_list li:hover {
+  background: rgba(255,255,255,0.08);
+  transform: var(--hover-lift);
+  box-shadow: 0 0 12px rgba(123,92,255,0.25);
+}
+
+/* Voicemail badge */
+.vm-badge {
+  background: rgba(255, 80, 80, 0.9);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255,80,80,0.5);
+}
+
+/* ============================================================
+   PROFILE PANEL — PREMIUM UPGRADE
+============================================================ */
+
+#contact_window.profile-panel {
+  padding: 16px;
+  animation: panelEnter var(--motion-medium);
+}
+
+/* Profile card */
+.profile_card {
+  background: rgba(15,23,42,0.85);
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid rgba(148,163,184,0.35);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  transition: var(--motion-medium);
+}
+
+.profile_card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 60px rgba(0,0,0,0.55);
+}
+
+/* Avatar */
+.profile-avatar {
+  text-align: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.profile-avatar img {
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
+  border: 3px solid rgba(123,92,255,0.6);
+  box-shadow: 0 0 18px rgba(123,92,255,0.4);
+  transition: var(--motion-medium);
+}
+
+.profile-avatar img:hover {
+  transform: scale(1.05);
+}
+
+/* Status dot */
+.status-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: rgba(34,197,94,0.9);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(34,197,94,0.6);
+}
+
+/* Upload buttons */
+.profile_chgBtn {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-btn {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(123,92,255,0.2);
+  border: 1px solid rgba(123,92,255,0.4);
+  color: #fff;
+  transition: var(--motion-fast);
+  text-align: center;
+}
+
+.upload-btn:hover {
+  background: rgba(123,92,255,0.35);
+  transform: var(--hover-lift);
+}
+
+/* Profile fields */
+.profile-field {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-field input,
+.profile-field textarea {
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: rgba(15,23,42,0.85);
+  color: var(--text-primary);
+  transition: var(--motion-fast);
+}
+
+.profile-field input:focus,
+.profile-field textarea:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(123,92,255,0.4);
+}
+
+/* Toggles */
+.toggle-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Actions */
+.profile-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-actions button,
+.profile-actions a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: rgba(15,23,42,0.85);
+  color: #fff;
+  transition: var(--motion-fast);
+}
+
+.profile-actions button:hover,
+.profile-actions a:hover {
+  border-color: var(--accent-primary);
+  transform: var(--hover-lift);
+}
+
+/* ============================================================
+   ANIMATIONS
+============================================================ */
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 
 /* ============================================================
    MESSAGING PANEL
@@ -516,6 +777,7 @@ ul {
     transform: translate3d(-50%, -50%, 0);
   }
 }
+
 
 
 
