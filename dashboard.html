@@ -1560,12 +1560,19 @@ document.addEventListener("keydown", (e) => {
     case "6": document.getElementById("btn_settings").click(); break;
   }
 });
+document.addEventListener("mousemove", (e) => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 10;
+  const y = (e.clientY / window.innerHeight - 0.5) * 10;
+  const bg = document.querySelector(".workspace-bg");
+  if (bg) bg.style.transform = `translate(${x}px, ${y}px)`;
+});
 
     
   }
 
 </script>
 </html>
+
 
 
 
