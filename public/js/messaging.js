@@ -1,6 +1,7 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (Node backend, new floating layout, FULL LOGGING)
+// Messaging System (Node backend, new floating layout, NO UI LOGIC)
+// -------------------------------------------------------
 
 import {
   getMyUserId,
@@ -8,12 +9,7 @@ import {
   msgForm,
   msgInput,
   badge,
-  messageBox,
-  msgOpenBtn,
-  closeMsgBtn,
   attachmentInput,
-  attachmentBtn,
-  previewDiv,
   safeJSON,
   playNotification,
 } from "./session.js";
@@ -21,43 +17,36 @@ import {
 import { socket } from "./socket.js";
 import { userNames, userAvatars } from "./shared/user-cache.js";
 
-// ===== CONFIG =====
 const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
-console.log("[messaging] Loaded messaging.js (new layout)");
+console.log("[messaging] Loaded messaging.js (UI-clean rewrite)");
 
-// ===== STATE =====
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
 let readObserver = null;
 
-// New layout: dedicated attachment preview strip
-const previewEl =
-  document.getElementById("attachmentPreview") || previewDiv || null;
+// New layout: dedicated preview strip
+const previewEl = document.getElementById("attachmentPreview");
 
 // ===== RTC ACCESSORS =====
 function getDataChannel() {
-  return typeof window !== "undefined" ? window.dataChannel : undefined;
+  return window?.dataChannel;
 }
 function getPeerId() {
-  return typeof window !== "undefined" ? window.peerId : undefined;
+  return window?.peerId;
 }
 function isChannelOpen(dc) {
   return !!dc && dc.readyState === "open";
 }
 
-/* -------------------------------------------------------
-   Receiver Setter
-------------------------------------------------------- */
-
+// -------------------------------------------------------
+// RECEIVER
+// -------------------------------------------------------
 export function setReceiver(id) {
   receiver_id = id;
-  if (typeof window !== "undefined") {
-    window.receiver_id = id;
-    window.currentReceiverId = id;
-  }
-  console.log("[messaging] Receiver set:", receiver_id);
-  console.log("[GLOBAL] window.receiver_id =", window.receiver_id);
+  window.receiver_id = id;
+  window.currentReceiverId = id;
+  console.log("[messaging] Receiver set:", id);
 }
 
 export function getReceiver() {
@@ -72,10 +61,6 @@ function showError(msg) {
   }
 }
 
-function $(sel, root = document) {
-  return root.querySelector(sel);
-}
-
 function smartScroll() {
   if (!messageWin) return;
   const nearBottom =
@@ -86,7 +71,9 @@ function smartScroll() {
   if (nearBottom) messageWin.scrollTop = messageWin.scrollHeight;
 }
 
-// ===== NETWORK HELPERS =====
+// -------------------------------------------------------
+// NETWORK HELPERS
+// -------------------------------------------------------
 async function apiGet(path) {
   const url = `${MESSAGES_API_BASE}${path}`;
   console.log("[messaging] GET:", url);
@@ -94,7 +81,6 @@ async function apiGet(path) {
   try {
     const res = await fetch(url, { method: "GET", credentials: "include" });
     const text = await res.text();
-    console.log("[messaging] GET response:", text);
     return JSON.parse(text);
   } catch (err) {
     console.error("[messaging] GET failed:", err);
@@ -115,7 +101,6 @@ async function apiPost(path, body) {
     });
 
     const text = await res.text();
-    console.log("[messaging] POST response:", text);
     return JSON.parse(text);
   } catch (err) {
     console.error("[messaging] POST failed:", err);
@@ -123,28 +108,21 @@ async function apiPost(path, body) {
   }
 }
 
-// ===== FILE RENDERING HELPER =====
+// -------------------------------------------------------
+// FILE RENDERING
+// -------------------------------------------------------
 function appendFileContentToParagraph(p, options) {
   const { name, url, comment = "" } = options;
 
-  const src = url;
-  if (!src) {
-    console.warn("[messaging] Missing file URL/data for:", name);
-    return;
-  }
+  if (!url) return;
 
-  if (/\.(png|jpe?g|gif|webp)$/i.test(name || "")) {
+  if (/\.(png|jpe?g|gif|webp)$/i.test(name)) {
     const img = document.createElement("img");
-    img.src = src;
+    img.src = url;
     img.alt = name;
     img.style.maxWidth = "200px";
     img.style.display = "block";
     p.appendChild(img);
-
-    const caption = document.createElement("span");
-    caption.textContent = name;
-    caption.className = "file-caption";
-    p.appendChild(caption);
 
     img.onclick = () => {
       const viewer = document.getElementById("img-viewer");
@@ -156,7 +134,7 @@ function appendFileContentToParagraph(p, options) {
     };
   } else {
     const a = document.createElement("a");
-    a.href = src;
+    a.href = url;
     a.download = name;
     a.textContent = name;
     a.target = "_blank";
@@ -171,50 +149,41 @@ function appendFileContentToParagraph(p, options) {
   }
 }
 
-// Close full-screen viewer when clicking overlay
+// Close viewer
 document.getElementById("img-viewer")?.addEventListener("click", () => {
-  const viewer = document.getElementById("img-viewer");
-  if (viewer) viewer.style.display = "none";
+  document.getElementById("img-viewer").style.display = "none";
 });
 
-// ===== DELETE MESSAGE =====
+// -------------------------------------------------------
+// DELETE MESSAGE
+// -------------------------------------------------------
 async function deleteMessage(messageId) {
-  console.log("[messaging] deleteMessage:", messageId);
+  if (!messageId) return;
 
-  if (!messageId) {
-    console.error("[messaging] deleteMessage missing ID");
-    return;
-  }
-
-  const el = document.querySelector(`[data-msg-id="${String(messageId)}"]`);
+  const el = document.querySelector(`[data-msg-id="${messageId}"]`);
   if (el) el.remove();
 
   try {
     await apiPost("/delete", { id: messageId });
-    console.log("[messaging] deleteMessage success");
   } catch (err) {
     console.error("[messaging] deleteMessage failed:", err);
   }
 }
 
-// ===== REACTIONS =====
+// -------------------------------------------------------
+// REACTIONS
+// -------------------------------------------------------
 function addReactionToMessage(id, emoji) {
-  console.log("[messaging] addReaction:", id, emoji);
-
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
   );
-  if (!container) {
-    console.warn("[messaging] reaction container missing");
-    return;
-  }
+  if (!container) return;
 
   let bubble = container.querySelector(`[data-emoji="${emoji}"]`);
 
   if (bubble) {
     const countEl = bubble.querySelector(".react-count");
-    const current = parseInt(countEl.textContent, 10) || 1;
-    countEl.textContent = current + 1;
+    countEl.textContent = Number(countEl.textContent) + 1;
   } else {
     bubble = document.createElement("span");
     bubble.className = "reaction-bubble pop";
@@ -228,132 +197,58 @@ function addReactionToMessage(id, emoji) {
   }
 }
 
-function removeReactionFromMessage(id, emoji) {
-  console.log("[messaging] removeReaction:", id, emoji);
-
-  const container = document.querySelector(
-    `[data-msg-id="${id}"] .reaction-display`
-  );
-  if (!container) return;
-
-  const bubble = container.querySelector(`[data-emoji="${emoji}"]`);
-  if (!bubble) return;
-
-  const countEl = bubble.querySelector(".react-count");
-  const current = parseInt(countEl.textContent, 10);
-
-  if (current > 1) {
-    countEl.textContent = current - 1;
-  } else {
-    bubble.remove();
-  }
-}
-
-// ===== RENDER MESSAGE (NEW FLOATING PANEL LAYOUT) =====
+// -------------------------------------------------------
+// RENDER MESSAGE (NEW LAYOUT)
+// -------------------------------------------------------
 function renderMessage(msg) {
-  console.log("[messaging] renderMessage:", msg);
-
-  if (!messageWin) {
-    console.error("[messaging] messageWin missing");
-    return;
-  }
+  if (!messageWin) return;
 
   const isFileMessage =
     msg.type === "file" ||
     msg.file ||
     /^File:/i.test(msg.message || "");
 
-  // ===== Outer wrapper =====
   const wrapper = document.createElement("div");
   wrapper.className = msg.is_me
     ? "msg-wrapper sender_msg"
     : "msg-wrapper receiver_msg";
 
-  if (msg.id != null) wrapper.dataset.msgId = String(msg.id);
-  if (!msg.is_me && msg.sender_id) wrapper.dataset.senderId = String(msg.sender_id);
+  if (msg.id) wrapper.dataset.msgId = msg.id;
+  if (!msg.is_me && msg.sender_id)
+    wrapper.dataset.senderId = msg.sender_id;
 
-  // ===== Sender name (only for received messages) =====
+  // Sender name
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
     nameEl.textContent =
       msg.sender_name ||
-      userNames[String(msg.sender_id)] ||
+      userNames[msg.sender_id] ||
       "Unknown";
     wrapper.appendChild(nameEl);
   }
 
-  // ===== Bubble =====
+  // Bubble
   const bubble = document.createElement("p");
   bubble.className = "msg-bubble-text";
   wrapper.appendChild(bubble);
 
-  // ===== File or Text =====
   if (isFileMessage) {
-    const name =
-      msg.name ||
-      msg.filename ||
-      (msg.message || "").replace(/^File:\s*/, "");
-
-    const fileUrl = msg.url || msg.file_url || msg.data || null;
-
     appendFileContentToParagraph(bubble, {
-      name,
-      url: fileUrl,
+      name: msg.name || msg.filename,
+      url: msg.url || msg.data,
       comment: msg.comment,
     });
   } else {
     bubble.textContent = msg.message ?? "";
-
-    // ===== Inline editing for your messages =====
-    if (msg.is_me && msg.id) {
-      bubble.ondblclick = () => {
-        console.log("[messaging] edit dblclick:", msg.id);
-
-        const original = msg.message ?? "";
-        const input = document.createElement("input");
-        input.type = "text";
-        input.value = original;
-        input.className = "edit-input";
-
-        bubble.innerHTML = "";
-        bubble.appendChild(input);
-        input.focus();
-
-        input.onkeydown = async (e) => {
-          if (e.key === "Escape") {
-            bubble.textContent = original;
-          }
-          if (e.key === "Enter") {
-            const newText = input.value.trim();
-            if (!newText || newText === original) {
-              bubble.textContent = original;
-              return;
-            }
-
-            bubble.textContent = newText;
-
-            try {
-              const res = await apiPost("/edit", {
-                id: msg.id,
-                message: newText,
-              });
-              console.log("[messaging] edit success:", res);
-            } catch (err) {
-              console.error("[messaging] edit failed:", err);
-            }
-          }
-        };
-      };
-    }
   }
 
-  // ===== Reaction display container =====
+  // Reaction display
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
   wrapper.appendChild(reactionDisplay);
 
-  // ===== Reaction bar =====
+  // Reaction bar
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -369,8 +264,6 @@ function renderMessage(msg) {
     const emoji = e.target.closest(".react-emoji")?.textContent;
     if (!emoji || !msg.id) return;
 
-    console.log("[messaging] reaction clicked:", emoji, "msg:", msg.id);
-
     socket.emit("message:reaction", {
       messageId: msg.id,
       from: getMyUserId(),
@@ -380,44 +273,36 @@ function renderMessage(msg) {
     addReactionToMessage(msg.id, emoji);
   });
 
-  // ===== Meta (timestamp + delete) =====
-  const ts =
-    msg.created_at instanceof Date
-      ? msg.created_at
-      : new Date(msg.created_at || Date.now());
+  // Meta
+  const ts = new Date(msg.created_at || Date.now());
+  const meta = document.createElement("div");
+  meta.className = "meta";
 
   const small = document.createElement("small");
   small.textContent = ts.toLocaleString();
-
-  const statusSpan = document.createElement("span");
-  statusSpan.className = "status-flags";
+  meta.appendChild(small);
 
   if (msg.id) {
     const del = document.createElement("button");
-    del.type = "button";
     del.className = "delete-msg";
     del.textContent = "🗑";
-    del.addEventListener("click", () => deleteMessage(msg.id));
-    statusSpan.appendChild(del);
+    del.onclick = () => deleteMessage(msg.id);
+    meta.appendChild(del);
   }
 
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.appendChild(small);
-  meta.appendChild(statusSpan);
   wrapper.appendChild(meta);
 
-  // ===== Append to DOM =====
   messageWin.appendChild(wrapper);
   smartScroll();
   observeMessagesForRead();
 }
 
-// ===== FILE PREVIEW (NEW STRIP) =====
+// -------------------------------------------------------
+// FILE PREVIEW STRIP (NO UI LOGIC, JUST RENDER)
+// -------------------------------------------------------
 function renderPreviews(files) {
-  console.log("[messaging] renderPreviews:", files);
-
   if (!previewEl) return;
+
   previewEl.innerHTML = "";
 
   if (!files.length) {
@@ -428,289 +313,193 @@ function renderPreviews(files) {
   previewEl.classList.remove("hidden");
 
   files.forEach((file) => {
-    const wrapper = document.createElement("div");
-    wrapper.className = "preview-wrapper";
+    const wrap = document.createElement("div");
+    wrap.className = "preview-wrapper";
 
     if (file.type.startsWith("image/")) {
       const img = document.createElement("img");
-      const objUrl = URL.createObjectURL(file);
-      img.src = objUrl;
-      img.alt = file.name;
-      img.style.maxWidth = "100px";
-      img.style.maxHeight = "100px";
-      img.onload = () => URL.revokeObjectURL(objUrl);
-      wrapper.appendChild(img);
+      img.src = URL.createObjectURL(file);
+      img.onload = () => URL.revokeObjectURL(img.src);
+      wrap.appendChild(img);
     } else {
-      const link = document.createElement("a");
-      const objUrl = URL.createObjectURL(file);
-      link.href = objUrl;
-      link.download = file.name;
+      const link = document.createElement("span");
       link.textContent = file.name;
-      wrapper.appendChild(link);
+      wrap.appendChild(link);
     }
 
     const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.textContent = "✖";
     removeBtn.className = "remove-preview";
+    removeBtn.textContent = "✖";
     removeBtn.onclick = () => {
-      console.log("[messaging] removePreview:", file.name);
-
-      const current = Array.from(attachmentInput.files || []);
+      const current = Array.from(attachmentInput.files);
       const newFiles = current.filter((f) => f !== file);
       const dt = new DataTransfer();
       newFiles.forEach((f) => dt.items.add(f));
       attachmentInput.files = dt.files;
       renderPreviews(newFiles);
     };
-    wrapper.appendChild(removeBtn);
 
-    previewEl.appendChild(wrapper);
+    wrap.appendChild(removeBtn);
+    previewEl.appendChild(wrap);
   });
 }
-
-attachmentBtn?.addEventListener("click", () => {
-  console.log("[messaging] attachmentBtn clicked");
-  attachmentInput?.click();
-});
 
 attachmentInput?.addEventListener("change", () => {
-  console.log("[messaging] attachmentInput changed");
-  const files = Array.from(attachmentInput.files || []);
-  renderPreviews(files);
+  renderPreviews(Array.from(attachmentInput.files));
 });
 
-// ===== DRAG & DROP (onto message window) =====
-if (messageWin) {
-  messageWin.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    messageWin.classList.add("drag-over");
-  });
+// -------------------------------------------------------
+// SEND MESSAGES (contenteditable input)
+// -------------------------------------------------------
+msgForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  messageWin.addEventListener("dragleave", (e) => {
-    if (e.target === messageWin) {
-      messageWin.classList.remove("drag-over");
-    }
-  });
+  const text = msgInput?.innerText.trim() || "";
+  const files = Array.from(attachmentInput?.files || []);
+  const dc = getDataChannel();
+  const peerId = getPeerId();
+  const targetId = peerId || receiver_id;
+  const myUserId = getMyUserId();
 
-  messageWin.addEventListener("drop", (e) => {
-    e.preventDefault();
-    messageWin.classList.remove("drag-over");
-
-    const dt = new DataTransfer();
-    [...e.dataTransfer.files].forEach((f) => dt.items.add(f));
-    attachmentInput.files = dt.files;
-
-    renderPreviews([...dt.files]);
-  });
-}
-
-// ===== SEND MESSAGES (NEW COMPOSER: contenteditable) =====
-if (msgForm) {
-  msgForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    console.log("[messaging] msgForm submit");
-
-    const rawText = (msgInput?.innerText ?? "").trim();
-    const files = Array.from(attachmentInput?.files || []);
-
-    const dc = getDataChannel();
-    const peerId = getPeerId();
-    const targetId = peerId || receiver_id;
-    const myUserId = getMyUserId();
-
-    if (!targetId && (!rawText && !files.length)) {
-      showError("No receiver selected");
-      return;
-    }
-
-    // FILES
-    if (files.length > 0) {
-      console.log("[messaging] sending files:", files);
-
-      for (const file of files) {
-        if (isChannelOpen(dc)) {
-          console.log("[messaging] sending file via WebRTC:", file.name);
-
-          const reader = new FileReader();
-          reader.onload = async () => {
-            const payload = {
-              type: "file",
-              name: file.name,
-              mime: file.type,
-              size: file.size,
-              data: reader.result,
-              sender_name: "You",
-            };
-            dc.send(JSON.stringify(payload));
-
-            try {
-              const res = await apiPost("/send", {
-                receiver_id: targetId,
-                message: `File: ${file.name}`,
-                transport: "webrtc",
-                file: 1,
-                filename: file.name,
-                file_url: null,
-              });
-              console.log("[messaging] persist P2P file:", res);
-            } catch (err) {
-              console.error("[messaging] persist P2P file failed:", err);
-            }
-
-            renderMessage({
-              is_me: true,
-              type: "file",
-              name: file.name,
-              data: reader.result,
-              created_at: new Date(),
-              sender_id: myUserId,
-              sender_name: "You",
-              file: 1,
-            });
-          };
-          reader.readAsDataURL(file);
-        } else {
-          console.log("[messaging] uploading file via HTTP:", file.name);
-
-          const fd = new FormData();
-          fd.append("audio", file);
-
-          try {
-            const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
-              method: "POST",
-              body: fd,
-              credentials: "include",
-            });
-
-            const uploadData = await uploadRes.json();
-            console.log("[messaging] upload response:", uploadData);
-
-            if (uploadData?.success && uploadData.url) {
-              const msgRes = await apiPost("/send", {
-                receiver_id: targetId,
-                message: `File: ${file.name}`,
-                transport: "http",
-                file: 1,
-                filename: file.name,
-                file_url: uploadData.url,
-              });
-
-              console.log("[messaging] send file response:", msgRes);
-
-              renderMessage({
-                id: msgRes.id,
-                is_me: true,
-                type: "file",
-                filename: msgRes.filename || file.name,
-                url: msgRes.url || uploadData.url,
-                comment: msgRes.comment || "",
-                created_at: msgRes.created_at,
-                sender_id: myUserId,
-                sender_name: "You",
-                file: 1,
-              });
-            } else {
-              showError("Upload failed");
-            }
-          } catch (err) {
-            console.error("[messaging] upload HTTP failed:", err);
-            showError("Upload failed");
-          }
-        }
-      }
-
-      attachmentInput.value = "";
-      if (previewEl) {
-        previewEl.innerHTML = "";
-        previewEl.classList.add("hidden");
-      }
-    }
-
-    // TEXT
-    if (rawText && targetId) {
-      console.log("[messaging] sending text:", rawText);
-
-      if (isChannelOpen(dc)) {
-        dc.send(rawText);
-
-        renderMessage({
-          is_me: true,
-          message: rawText,
-          created_at: new Date(),
-          sender_id: myUserId,
-          sender_name: "You",
-        });
-
-        apiPost("/send", {
-          receiver_id: targetId,
-          message: rawText,
-          transport: "webrtc",
-        })
-          .then((res) => {
-            console.log("[messaging] P2P text persisted:", res);
-          })
-          .catch((err) => {
-            console.error("[messaging] P2P text persist failed:", err);
-          });
-      } else {
-        console.log("[messaging] sending text via HTTP:", rawText);
-
-        try {
-          const data = await apiPost("/send", {
-            receiver_id: targetId,
-            message: rawText,
-          });
-          console.log("[messaging] HTTP text send response:", data);
-
-          if (data?.success) {
-            renderMessage({
-              id: data.id,
-              is_me: true,
-              message: data.message,
-              created_at: data.created_at,
-              sender_id: myUserId,
-              sender_name: "You",
-            });
-          } else {
-            console.error("[messaging] HTTP text send failed:", data);
-            showError(data?.error || "Failed to send message");
-          }
-        } catch (err) {
-          console.error("[messaging] HTTP text send exception:", err);
-          showError("Failed to send message");
-        }
-      }
-    }
-
-    if (msgInput) msgInput.innerText = "";
-  });
-} else {
-  console.warn("[messaging] msgForm not found — submit handler not attached");
-}
-
-// ===== Receiving messages via DataChannel (text + files) =====
-export function setupDataChannel(channel) {
-  console.log("[messaging] setupDataChannel called");
-
-  if (!channel) {
-    console.error("[messaging] setupDataChannel: no channel");
+  if (!targetId && !text && !files.length) {
+    showError("No receiver selected");
     return;
   }
 
-  if (typeof window !== "undefined") window.dataChannel = channel;
+  // FILES
+  for (const file of files) {
+    if (isChannelOpen(dc)) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const payload = {
+          type: "file",
+          name: file.name,
+          mime: file.type,
+          size: file.size,
+          data: reader.result,
+          sender_name: "You",
+        };
+        dc.send(JSON.stringify(payload));
+
+        await apiPost("/send", {
+          receiver_id: targetId,
+          message: `File: ${file.name}`,
+          transport: "webrtc",
+          file: 1,
+          filename: file.name,
+        });
+
+        renderMessage({
+          is_me: true,
+          type: "file",
+          name: file.name,
+          data: reader.result,
+          created_at: new Date(),
+          sender_id: myUserId,
+          sender_name: "You",
+          file: 1,
+        });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const fd = new FormData();
+      fd.append("audio", file);
+
+      const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (uploadData?.success && uploadData.url) {
+        const msgRes = await apiPost("/send", {
+          receiver_id: targetId,
+          message: `File: ${file.name}`,
+          transport: "http",
+          file: 1,
+          filename: file.name,
+          file_url: uploadData.url,
+        });
+
+        renderMessage({
+          id: msgRes.id,
+          is_me: true,
+          type: "file",
+          filename: msgRes.filename || file.name,
+          url: msgRes.url || uploadData.url,
+          created_at: msgRes.created_at,
+          sender_id: myUserId,
+          sender_name: "You",
+          file: 1,
+        });
+      } else {
+        showError("Upload failed");
+      }
+    }
+  }
+
+  attachmentInput.value = "";
+  renderPreviews([]);
+
+  // TEXT
+  if (text && targetId) {
+    if (isChannelOpen(dc)) {
+      dc.send(text);
+
+      renderMessage({
+        is_me: true,
+        message: text,
+        created_at: new Date(),
+        sender_id: myUserId,
+        sender_name: "You",
+      });
+
+      apiPost("/send", {
+        receiver_id: targetId,
+        message: text,
+        transport: "webrtc",
+      });
+    } else {
+      const data = await apiPost("/send", {
+        receiver_id: targetId,
+        message: text,
+      });
+
+      if (data?.success) {
+        renderMessage({
+          id: data.id,
+          is_me: true,
+          message: data.message,
+          created_at: data.created_at,
+          sender_id: myUserId,
+          sender_name: "You",
+        });
+      } else {
+        showError("Failed to send message");
+      }
+    }
+  }
+
+  msgInput.innerText = "";
+});
+
+// -------------------------------------------------------
+// RECEIVE VIA DATACHANNEL
+// -------------------------------------------------------
+export function setupDataChannel(channel) {
+  if (!channel) return;
+  window.dataChannel = channel;
 
   channel.onmessage = async (e) => {
-    console.log("[messaging] DataChannel message:", e.data);
-
     let payload = e.data;
 
-    if (typeof e.data === "string") {
+    if (typeof payload === "string") {
       try {
-        payload = JSON.parse(e.data);
+        payload = JSON.parse(payload);
       } catch {
-        console.warn("[messaging] DataChannel payload not JSON");
-        payload = e.data;
+        // plain text
       }
     }
 
@@ -718,47 +507,28 @@ export function setupDataChannel(channel) {
     const myUserId = getMyUserId();
 
     // FILE
-    if (payload && payload.type === "file") {
-      console.log("[messaging] Incoming P2P file:", payload);
-
-      const unified = {
+    if (payload?.type === "file") {
+      renderMessage({
         id: null,
         type: "file",
         name: payload.name,
         url: payload.url || null,
         data: payload.data || null,
-        comment: payload.comment || "",
         sender_id: getPeerId(),
         sender_name: payload.sender_name || "Peer",
         created_at: new Date(),
         is_me: false,
         file: 1,
-      };
-
-      renderMessage(unified);
-
-      socket.emit("message:delivered", {
-        from: getPeerId() || "",
-        to: myUserId,
-        messageId: null,
       });
 
-      try {
-        const res = await apiPost("/send", {
-          sender_id: getPeerId() || "",
-          receiver_id: myUserId || "",
-          message: `File: ${payload.name}`,
-          transport: "webrtc",
-          file: 1,
-          filename: payload.name,
-          file_url: null,
-          comment: payload.comment || "",
-        });
-
-        console.log("[messaging] Persist incoming P2P file:", res);
-      } catch (err) {
-        console.error("[messaging] Persist incoming P2P file failed:", err);
-      }
+      apiPost("/send", {
+        sender_id: getPeerId(),
+        receiver_id: myUserId,
+        message: `File: ${payload.name}`,
+        transport: "webrtc",
+        file: 1,
+        filename: payload.name,
+      });
 
       return;
     }
@@ -767,8 +537,6 @@ export function setupDataChannel(channel) {
     const text =
       typeof payload === "string" ? payload : safeJSON(payload);
 
-    console.log("[messaging] Incoming P2P text:", text);
-
     renderMessage({
       is_me: false,
       message: text,
@@ -776,17 +544,13 @@ export function setupDataChannel(channel) {
       sender_name: "Peer",
     });
 
-    socket.emit("message:delivered", {
-      from: getPeerId() || "",
-      to: myUserId,
-      messageId: null,
-    });
-
     observeMessagesForRead();
   };
 }
 
-// ===== Normalization =====
+// -------------------------------------------------------
+// NORMALIZATION
+// -------------------------------------------------------
 function normalizeMessage(msg) {
   const myUserId = getMyUserId();
 
@@ -794,93 +558,70 @@ function normalizeMessage(msg) {
     ...msg,
     is_me: msg.sender_id === myUserId,
     sender_name:
-      userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
+      userNames[msg.sender_id] || `User ${msg.sender_id}`,
     sender_avatar:
-      userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
+      userAvatars[msg.sender_id] || "img/defaultUser.png",
   };
 }
 
-// ===== Loading messages =====
+// -------------------------------------------------------
+// LOAD MESSAGES
+// -------------------------------------------------------
 export async function loadMessages() {
-  console.log("[messaging] loadMessages called for receiver:", receiver_id);
-  console.log("userNames cache right now:", userNames);
-
-  if (!receiver_id) {
-    console.warn("[messaging] loadMessages: no receiver_id");
-    return [];
-  }
+  if (!receiver_id) return [];
 
   try {
-    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
-    console.log("[messaging] loadMessages raw:", res);
+    const res = await apiGet(`/thread/${receiver_id}`);
 
-    if (!res || !res.success || !Array.isArray(res.messages)) {
-      console.error("[messaging] loadMessages: invalid response format");
-      return [];
-    }
+    if (!res?.success || !Array.isArray(res.messages)) return [];
 
-    let messages = res.messages.map(normalizeMessage);
+    const messages = res.messages.map(normalizeMessage);
     lastLoadedMessages = messages;
+
     const myUserId = getMyUserId();
 
-    if (messageWin) {
-      messages.forEach((msg) => {
-        const msgId = msg.id != null ? String(msg.id) : null;
+    messages.forEach((msg) => {
+      const exists = msg.id
+        ? document.querySelector(`[data-msg-id="${msg.id}"]`)
+        : null;
 
-        const exists = msgId
-          ? document.querySelector(`[data-msg-id="${msgId}"]`)
-          : null;
+      if (!exists) {
+        renderMessage(msg);
 
-        if (!exists) {
-          renderMessage(msg);
+        if (!msg.is_me && msg.id) {
+          socket.emit("message:delivered", {
+            from: msg.sender_id,
+            to: myUserId,
+            messageId: msg.id,
+          });
+        }
+      }
 
-          if (!msg.is_me && msg.id !== undefined) {
-            socket.emit("message:delivered", {
-              from: msg.sender_id,
-              to: myUserId,
-              messageId: msg.id,
-            });
+      const display = document.querySelector(
+        `[data-msg-id="${msg.id}"] .reaction-display`
+      );
+      if (display) display.innerHTML = "";
+
+      if (msg.reactions) {
+        const counts = {};
+        msg.reactions.forEach((emoji) => {
+          counts[emoji] = (counts[emoji] || 0) + 1;
+        });
+
+        Object.entries(counts).forEach(([emoji, count]) => {
+          for (let i = 0; i < count; i++) {
+            addReactionToMessage(msg.id, emoji);
           }
-        }
-
-        const display = document.querySelector(
-          `[data-msg-id="${msg.id}"] .reaction-display`
-        );
-        if (display) display.innerHTML = "";
-
-        if (msg.reactions) {
-          const counts = {};
-          msg.reactions.forEach((emoji) => {
-            counts[emoji] = (counts[emoji] || 0) + 1;
-          });
-
-          Object.entries(counts).forEach(([emoji, count]) => {
-            for (let i = 0; i < count; i++) {
-              addReactionToMessage(msg.id, emoji);
-            }
-          });
-        }
-      });
-    }
+        });
+      }
+    });
 
     const last = messages[messages.length - 1];
-    if (
-      last &&
-      typeof last.id === "number" &&
-      last.id > lastSeenMessageId &&
-      !last.is_me
-    ) {
+    if (last && !last.is_me && last.id > lastSeenMessageId) {
       playNotification();
-      const bell = document.querySelector(".notification-bell");
-      if (bell) {
-        bell.classList.add("active");
-        setTimeout(() => bell.classList.remove("active"), 1000);
-      }
     }
 
-    if (last && typeof last.id === "number") {
-      lastSeenMessageId = last.id;
-    }
+    if (last?.id) lastSeenMessageId = last.id;
 
     observeMessagesForRead();
     return messages;
@@ -890,8 +631,10 @@ export async function loadMessages() {
   }
 }
 
-// ===== Typing indicators (NEW BUBBLE STYLE) =====
-const typingIndicator = $(".typing-indicator");
+// -------------------------------------------------------
+// TYPING INDICATOR (NEW BUBBLE STYLE)
+// -------------------------------------------------------
+const typingIndicator = document.querySelector(".typing-indicator");
 let typingStopTimer = null;
 
 msgInput?.addEventListener("input", () => {
@@ -901,7 +644,7 @@ msgInput?.addEventListener("input", () => {
 
   socket.emit("typing:start", { from: myUserId, to: targetId });
 
-  if (typingStopTimer) clearTimeout(typingStopTimer);
+  clearTimeout(typingStopTimer);
   typingStopTimer = setTimeout(() => {
     socket.emit("typing:stop", { from: myUserId, to: targetId });
   }, 800);
@@ -910,33 +653,32 @@ msgInput?.addEventListener("input", () => {
 socket.on("typing:start", ({ from, fullname }) => {
   const currentChatPartner = receiver_id || getPeerId();
   if (!typingIndicator || !currentChatPartner) return;
+  if (String(from) !== String(currentChatPartner)) return;
 
-  if (String(from) === String(currentChatPartner)) {
-    const name =
-      fullname || userNames[String(from)] || `User ${from}`;
+  const name =
+    fullname || userNames[String(from)] || `User ${from}`;
 
-    typingIndicator.classList.add("active");
+  typingIndicator.classList.add("active");
 
-    // Optional: set avatar if we have it
-    const avatarImg = typingIndicator.querySelector(".typing-avatar");
-    if (avatarImg) {
-      avatarImg.src =
-        userAvatars[String(from)] || "img/defaultUser.png";
-      avatarImg.alt = name;
-    }
+  const avatarImg = typingIndicator.querySelector(".typing-avatar");
+  if (avatarImg) {
+    avatarImg.src =
+      userAvatars[String(from)] || "img/defaultUser.png";
+    avatarImg.alt = name;
   }
 });
 
 socket.on("typing:stop", ({ from }) => {
   const currentChatPartner = receiver_id || getPeerId();
   if (!typingIndicator || !currentChatPartner) return;
+  if (String(from) !== String(currentChatPartner)) return;
 
-  if (String(from) === String(currentChatPartner)) {
-    typingIndicator.classList.remove("active");
-  }
+  typingIndicator.classList.remove("active");
 });
 
-// ===== Read receipts =====
+// -------------------------------------------------------
+// READ RECEIPTS
+// -------------------------------------------------------
 socket.on("message:delivered", ({ messageId }) => {
   if (!messageId) return;
 
@@ -959,7 +701,9 @@ socket.on("message:read", ({ messageId }) => {
   }
 });
 
-// ===== Presence updates =====
+// -------------------------------------------------------
+// PRESENCE UPDATES
+// -------------------------------------------------------
 socket.on("statusUpdate", ({ contact_id, online, away }) => {
   const statusText = away ? "Away" : online ? "Online" : "Offline";
   console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
@@ -973,7 +717,9 @@ socket.on("statusUpdate", ({ contact_id, online, away }) => {
   }
 });
 
-// ===== Read observer =====
+// -------------------------------------------------------
+// READ OBSERVER
+// -------------------------------------------------------
 function createReadObserver() {
   if (!messageWin) return null;
 
@@ -1012,15 +758,19 @@ function observeMessagesForRead() {
     if (!readObserver) return;
   }
 
-  messageWin.querySelectorAll(".msg-wrapper.receiver_msg").forEach((el) => {
-    if (!el.dataset.observing) {
-      readObserver.observe(el);
-      el.dataset.observing = "1";
-    }
-  });
+  messageWin
+    .querySelectorAll(".msg-wrapper.receiver_msg")
+    .forEach((el) => {
+      if (!el.dataset.observing) {
+        readObserver.observe(el);
+        el.dataset.observing = "1";
+      }
+    });
 }
 
-// ===== Activity tracking =====
+// -------------------------------------------------------
+// ACTIVITY TRACKING
+// -------------------------------------------------------
 let activityTimeout;
 ["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
   document.addEventListener(evt, () => {
@@ -1035,7 +785,9 @@ let activityTimeout;
   });
 });
 
-// ===== Polling =====
+// -------------------------------------------------------
+// POLLING
+// -------------------------------------------------------
 setInterval(() => {
   if (receiver_id) {
     loadMessages().catch((err) =>
@@ -1044,102 +796,6 @@ setInterval(() => {
   }
 }, 8000);
 
-// -------------------------------------------------------
-// ⭐ COMPOSER UI CONTROLS (NEW LAYOUT)
-// -------------------------------------------------------
-
-const plusBtn = document.getElementById("plusBtn");
-const bottomSheet = document.getElementById("bottomSheet");
-const sheetEmoji = document.getElementById("sheetEmoji");
-const sheetGif = document.getElementById("sheetGif");
-const sheetFile = document.getElementById("sheetFile");
-const sheetAudio = document.getElementById("sheetAudio");
-const emojiPicker = document.getElementById("emojiPicker");
-const gifPicker = document.getElementById("gifPicker");
-const gifSearch = document.getElementById("gifSearch");
-const gifResults = document.getElementById("gifResults");
-const micBtn = document.getElementById("micBtn");
-
-// ===== Toggle bottom sheet =====
-plusBtn?.addEventListener("click", () => {
-  bottomSheet?.classList.toggle("active");
-});
-
-// ===== Emoji Picker =====
-sheetEmoji?.addEventListener("click", () => {
-  bottomSheet?.classList.remove("active");
-  emojiPicker?.classList.toggle("active");
-});
-
-emojiPicker?.addEventListener("emoji-click", (e) => {
-  if (!msgInput) return;
-  msgInput.innerText += e.detail.unicode;
-  emojiPicker.classList.remove("active");
-});
-
-// ===== GIF Picker =====
-sheetGif?.addEventListener("click", () => {
-  bottomSheet?.classList.remove("active");
-  gifPicker?.classList.toggle("hidden");
-  gifSearch?.focus();
-});
-
-// Simple GIF search using Tenor API
-gifSearch?.addEventListener("input", async () => {
-  if (!gifSearch || !gifResults) return;
-
-  const q = gifSearch.value.trim();
-  if (!q) return;
-
-  gifResults.innerHTML = "Searching…";
-
-  try {
-    const res = await fetch(
-      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
-        q
-      )}&key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&limit=20`
-    );
-    const data = await res.json();
-
-    gifResults.innerHTML = "";
-
-    (data.results || []).forEach((gif) => {
-      const url = gif.media_formats?.tinygif?.url;
-      if (!url) return;
-
-      const img = document.createElement("img");
-      img.src = url;
-      img.className = "gif-thumb";
-      img.onclick = () => {
-        if (!msgInput) return;
-        // For now, insert URL; could be upgraded to inline <img> if desired
-        msgInput.innerText += ` ${url} `;
-        gifPicker.classList.add("hidden");
-      };
-      gifResults.appendChild(img);
-    });
-  } catch (err) {
-    console.error("[GIF] error:", err);
-    gifResults.innerHTML = "Error loading GIFs";
-  }
-});
-
-// ===== File Picker =====
-sheetFile?.addEventListener("click", () => {
-  bottomSheet?.classList.remove("active");
-  attachmentInput?.click();
-});
-
-// ===== Audio Recording (placeholder) =====
-sheetAudio?.addEventListener("click", () => {
-  bottomSheet?.classList.remove("active");
-  console.log("[composer] Voice message coming soon");
-});
-
-// ===== Mic Button (same as sheetAudio for now) =====
-micBtn?.addEventListener("click", () => {
-  console.log("[composer] Mic button clicked");
-});
 
 
 
