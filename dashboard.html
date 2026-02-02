@@ -298,56 +298,91 @@ window.currentUserAvatar = user.avatar;
       </div>
 
       <!-- FLOATING LAYER: CONTACTS / CALL LOG / VOICEMAIL -->
-      <div id="conwrap" class="panel contacts-shell floating-panel slide-from-left hidden">
-        <aside class="sidebar contacts-sidebar">
-          <div class="contact-lookup">
-            <label for="lookup-input" class="sr-only">Search Contacts</label>
-            <input type="text" id="lookup-input" placeholder="Search for users by name or email..." autocomplete="on" />
-            <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
-          </div>
-          <ul id="contacts-lookup" aria-label="Contact results"></ul>
-        </aside>
+<div id="conwrap" class="panel contacts-shell floating-panel slide-from-left hidden">
 
-        <div id="con_main" class="contacts-main">
-          <div id="contacts_panel" class="contacts-panel">
-            <div class="panel-header">
-              <h2 id="panelTitle">Call Log</h2>
-              <contacts-menu></contacts-menu>
-            </div>
+  <!-- LEFT SIDEBAR: SEARCH + LOOKUP RESULTS -->
+  <aside class="sidebar contacts-sidebar">
 
-            <div id="voicemail_list">
-              <div class="voicemail-topbar">
-                <span id="voicemailBadge" class="vm-badge">0</span>
-              </div>
-              <ul id="voiceMList" class="voicemail-list"></ul>
-            </div>
+    <!-- Search Bar -->
+    <div class="contact-lookup">
+      <label for="lookup-input" class="sr-only">Search Contacts</label>
+      <input 
+        type="text" 
+        id="lookup-input" 
+        placeholder="Search for users by name or email..." 
+        autocomplete="on" 
+      />
+      <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
+    </div>
 
-            <div id="bl_con">
-              <ul id="contacts" aria-label="Contacts list"></ul>
-            </div>
+    <!-- Lookup Results -->
+    <ul id="contacts-lookup" aria-label="Contact results"></ul>
 
-            <div id="sav_con" class="call-log-container">
-              <div class="call-log-header">
-                <div class="call-log-actions">
-                  <input id="callLogSearch" type="text" placeholder="Search calls…" />
-                </div>
-              </div>
+  </aside>
 
-              <div id="callStats" class="call-stats"></div>
-              <div id="callLogList" class="call-log-list"></div>
-            </div>
+  <!-- RIGHT MAIN PANEL -->
+  <div id="con_main" class="contacts-main">
 
-            <div id="messaging_box_container">
-              <h2 id="unread_header"></h2>
-              <ul id="messaging_list"></ul>
-            </div>
+    <div id="contacts_panel" class="contacts-panel">
 
-            <div id="bloc_box">
-              <ul id="blocked-contacts"></ul>
-            </div>
-          </div>
-        </div>
+      <!-- Header -->
+      <div class="panel-header">
+        <h2 id="panelTitle">Call Log</h2>
+        <contacts-menu></contacts-menu>
       </div>
+
+      <!-- VOICEMAIL SECTION -->
+      <section id="voicemail_list" class="panel-section">
+        <header class="section-header">
+          <h3>Voicemail</h3>
+          <span id="voicemailBadge" class="vm-badge">0</span>
+        </header>
+        <ul id="voiceMList" class="voicemail-list"></ul>
+      </section>
+
+      <!-- CONTACTS SECTION -->
+      <section id="bl_con" class="panel-section">
+        <header class="section-header">
+          <h3>Contacts</h3>
+        </header>
+        <ul id="contacts" aria-label="Contacts list"></ul>
+      </section>
+
+      <!-- CALL LOG SECTION -->
+      <section id="sav_con" class="panel-section call-log-container">
+
+        <header class="section-header call-log-header">
+          <h3>Call History</h3>
+          <div class="call-log-actions">
+            <input id="callLogSearch" type="text" placeholder="Search calls…" />
+          </div>
+        </header>
+
+        <div id="callStats" class="call-stats"></div>
+        <ul id="callLogList" class="call-log-list"></ul>
+
+      </section>
+
+      <!-- MESSAGING SECTION -->
+      <section id="messaging_box_container" class="panel-section">
+        <header class="section-header">
+          <h3 id="unread_header">Messages</h3>
+        </header>
+        <ul id="messaging_list"></ul>
+      </section>
+
+      <!-- BLOCKED CONTACTS -->
+      <section id="bloc_box" class="panel-section">
+        <header class="section-header">
+          <h3>Blocked Contacts</h3>
+        </header>
+        <ul id="blocked-contacts"></ul>
+      </section>
+
+    </div>
+  </div>
+</div>
+
 
       <!-- FLOATING LAYER: PROFILE PANEL -->
       <section id="contact_window" class="panel profile-panel floating-panel slide-from-left hidden">
@@ -1572,6 +1607,7 @@ document.addEventListener("mousemove", (e) => {
 
 </script>
 </html>
+
 
 
 
