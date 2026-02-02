@@ -1,5 +1,5 @@
 /* ============================================================
-   HYBRID FLOATING‑SPACE UI CONTROLLER — UX ENHANCED (FIXED)
+   HYBRID FLOATING‑SPACE UI CONTROLLER — FINAL ARCHITECTURE
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -24,11 +24,11 @@ function initUI() {
   const messaging = document.getElementById("messaging_box");
   const miniChat = document.getElementById("miniChatBubble");
 
+  const conwrap = document.getElementById("conwrap"); // LEFT SLIDE PANEL
   const video = document.getElementById("video-container");
-  const contacts = document.getElementById("conwrap");
-  const profile = document.getElementById("contact_window");
   const search = document.getElementById("search_panel");
   const settings = document.getElementById("settings_container");
+  const profile = document.getElementById("contact_window");
   const voicemail = document.getElementById("voicemailModal");
   const fullProfile = document.getElementById("fullProfileModal");
 
@@ -36,23 +36,16 @@ function initUI() {
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
 
   /* -----------------------------------------------------------
-     PANEL STATE MANAGEMENT — FIXED FOR DEFAULT MESSAGING
+     PANEL STATE MANAGEMENT — FINAL
   ----------------------------------------------------------- */
   const UIX = {
+    /* Hide all panels EXCEPT messaging */
     hideAllPanelsExceptMessaging() {
-      [video, contacts, profile, search, settings, voicemail, fullProfile]
+      [conwrap, video, search, settings, profile, voicemail, fullProfile]
         .forEach(p => p?.classList.add("hidden"));
     },
 
-    showPanel(panel) {
-      this.hideAllPanelsExceptMessaging();
-      messaging.classList.add("hidden");
-      miniChat.classList.remove("hidden");
-
-      panel.classList.remove("hidden");
-      document.body.classList.add("panel-open");
-    },
-
+    /* Show messaging (center floating panel) */
     showMessaging() {
       this.hideAllPanelsExceptMessaging();
       messaging.classList.remove("hidden");
@@ -60,9 +53,26 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
+    /* Collapse messaging into bubble */
     collapseMessaging() {
       messaging.classList.add("hidden");
       miniChat.classList.remove("hidden");
+    },
+
+    /* Show a centered floating panel */
+    showFloating(panel) {
+      this.hideAllPanelsExceptMessaging();
+      this.collapseMessaging();
+      panel.classList.remove("hidden");
+      document.body.classList.add("panel-open");
+    },
+
+    /* Show the left slide panel (conwrap) */
+    showLeftPanel() {
+      this.hideAllPanelsExceptMessaging();
+      this.collapseMessaging();
+      conwrap.classList.remove("hidden");
+      document.body.classList.add("panel-open");
     }
   };
 
@@ -77,7 +87,7 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     LEFT RAIL BUTTONS — UX ENHANCED
+     LEFT RAIL BUTTONS — FINAL LOGIC
   ----------------------------------------------------------- */
   railButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -90,19 +100,19 @@ function initUI() {
           break;
 
         case "contact_widget":
-          UIX.showPanel(contacts);
+          UIX.showLeftPanel();
           break;
 
         case "btn_search":
-          UIX.showPanel(search);
+          UIX.showFloating(search);
           break;
 
         case "btn_settings":
-          UIX.showPanel(settings);
+          UIX.showFloating(settings);
           break;
 
         case "voicemail_Btn":
-          UIX.showPanel(voicemail);
+          UIX.showFloating(voicemail);
           break;
 
         case "btn_notifications":
@@ -120,7 +130,7 @@ function initUI() {
      VIDEO CALL OVERRIDE
   ----------------------------------------------------------- */
   document.getElementById("videoBtn")?.addEventListener("click", () => {
-    UIX.showPanel(video);
+    UIX.showFloating(video);
   });
 
   document.getElementById("end-call")?.addEventListener("click", () => {
@@ -160,7 +170,7 @@ function initUI() {
 }
 
 /* -----------------------------------------------------------
-   TOAST UTILITY (UX UPGRADE)
+   TOAST UTILITY
 ----------------------------------------------------------- */
 function showToast(msg) {
   const toast = document.createElement("div");
@@ -370,6 +380,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
