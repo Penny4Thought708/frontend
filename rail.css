@@ -1,0 +1,123 @@
+/* ============================================================
+   LEFT RAIL
+============================================================ */
+
+.app-rail {
+  background: #05070c;
+  border-right: 1px solid #181c24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 8px;
+  position: relative;
+  z-index: 15;
+  width: 72px;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.app-rail:hover {
+  width: 180px;
+}
+
+.rail-notifications {
+  margin-bottom: 6px;
+  color: #f97316;
+  font-size: 0.8rem;
+  position: relative;
+}
+
+#notificationCount {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ff3b3b;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px rgba(255,0,0,0.6);
+  animation: pulseBadge 1.4s infinite ease-in-out;
+}
+
+.rail-btn {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e5e7eb;
+  transition: var(--motion-medium);
+  overflow: hidden;
+}
+
+.rail-btn img {
+  max-width: 24px;
+  max-height: 24px;
+}
+
+.rail-btn:hover {
+  transform: var(--hover-lift);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 12px rgba(123,92,255,0.35);
+}
+
+.rail-btn.active {
+  background: rgba(123,92,255,0.25);
+  border-color: rgba(123,92,255,0.6);
+  box-shadow: 0 0 18px rgba(123,92,255,0.55);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.rail-btn:active {
+  transform: var(--press-down);
+}
+
+.rail-btn::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(123,92,255,0.5);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.rail-btn:active::before {
+  transform: scale(12);
+  opacity: 0.12;
+}
+
+.rail-spacer {
+  flex: 1;
+}
+
+.rail-btn[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-10px);
+  background: rgba(15,23,42,0.9);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(123,92,255,0.4);
+  color: #e5e7eb;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--motion-medium);
+  white-space: nowrap;
+}
+
+.rail-btn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
