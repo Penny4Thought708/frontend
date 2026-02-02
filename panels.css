@@ -95,13 +95,20 @@ body:not(.panel-open)::before {
 }
 
 /* Panel hover glass effect */
-.panel:hover,
-.floating-panel:hover {
-  backdrop-filter: blur(24px) brightness(1.08);
-  transform: translateY(-2px);
-  box-shadow: 0 26px 70px rgba(0,0,0,0.75);
+/* Panels should NOT react to hover */
+.panel,
+.floating-panel {
   transition: var(--motion-medium);
 }
+
+/* No hover lift or glow */
+.panel:hover,
+.floating-panel:hover {
+  transform: none;
+  box-shadow: var(--shadow-hard);
+  backdrop-filter: blur(20px);
+}
+
 
 @media (max-width: 900px) {
   .slide-from-left,
