@@ -9,7 +9,7 @@ if (window.__APP_ALREADY_LOADED__) {
   window.__APP_ALREADY_LOADED__ = true;
 }
 
-// -------------------------------------------------------
+/*-------------------------------------------------------*/
 // Imports
 // -------------------------------------------------------
 import { getMyUserId, getJson, postForm } from "./session.js";
@@ -998,6 +998,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu();
 });
+
 
 
 
