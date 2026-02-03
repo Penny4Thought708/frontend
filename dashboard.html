@@ -119,9 +119,37 @@ window.currentUserAvatar = user.avatar;
   <script src="https://unpkg.com/wavesurfer.js"></script>
 </head>
 
-<body class="dark-mode">
+<body class="dark-mode theme-tron">
 
-  <!-- TOP APP BAR -->
+  <!-- ============================================================
+       TRON HUD — PARALLAX + GRID BACKGROUND STACK
+  ============================================================ -->
+  <!-- Layer 1: Deep Hex Grid -->
+  <div class="hud-layer depth-1">
+    <div class="hex-grid"></div>
+  </div>
+
+  <!-- Layer 2: Stronger Hex Lines -->
+  <div class="hud-layer depth-2">
+    <div class="hex-grid hex-strong"></div>
+  </div>
+
+  <!-- Layer 3: Particle Field -->
+  <div class="hud-layer depth-3">
+    <div class="hud-particles"></div>
+  </div>
+
+  <!-- Layer 4: Scanline Overlay -->
+  <div class="hud-layer depth-4">
+    <div class="scanlines"></div>
+  </div>
+
+  <!-- Layer 5: Flicker Layer -->
+  <div class="hud-layer depth-5">
+    <div class="hud-flicker"></div>
+  </div>
+
+  <!-- TOP APP BAR (UNCHANGED) -->
   <header class="site-header app-header">
     <div class="brand-logo">
       <span class="brand">Scrubber's</span>
@@ -142,859 +170,780 @@ window.currentUserAvatar = user.avatar;
     </div>
   </header>
 
-  <!-- APP SHELL -->
-  <main class="app-shell">
-
-    <!-- LEFT RAIL -->
- <!-- ============================================================
-     TRON HUD — COMMAND RAIL (PHASE 4)
-============================================================ -->
-<!-- ============================================================
-     TRON HUD — COMMAND RAIL (PHASE 4)
-============================================================ -->
-<aside class="hud-rail">
-
-  <!-- Rail Glow Spine -->
-  <div class="rail-glow"></div>
-
-  <!-- HUD Buttons -->
-  <button class="hud-btn" id="btn_home" data-tip="Dashboard">🏠</button>
-  <button class="hud-btn" id="btn_search" data-tip="Search">🔍</button>
-  <button class="hud-btn" id="btn_chat_main" data-tip="Chat">💬</button>
-
-  <button class="hud-btn" id="contact_widget" data-tip="Contacts">
-    <img src="Contacts.png" alt="">
-  </button>
-
-  <button class="hud-btn" id="voicemail_Btn" data-tip="Voicemail">
-    <img src="img/voicemail.png" alt="">
-  </button>
-
-  <button class="hud-btn" id="btn_notifications" data-tip="Notifications">🔔</button>
-
-  <!-- NEW HUD TOOLS -->
-  <button class="hud-btn" id="btn_ai_console" data-tip="AI Console">🤖</button>
-  <button class="hud-btn" id="btn_system_monitor" data-tip="System Monitor">📊</button>
-  <button class="hud-btn" id="btn_files" data-tip="Files">🗂️</button>
-  <button class="hud-btn" id="btn_mission_log" data-tip="Mission Log">📜</button>
-  <button class="hud-btn" id="btn_quick_actions" data-tip="Quick Actions">⚡</button>
-
-  <button class="hud-btn" id="btn_settings" data-tip="Settings">
-    <span class="material-symbols-outlined">settings</span>
-  </button>
-
-  <button class="hud-btn" id="toggleBtn" data-tip="Theme">🌙</button>
-
-  <div class="rail-spacer"></div>
-
-  <button class="hud-btn logoutBtn" onclick="showLogoutModal()" data-tip="Logout">
-    <img src="logout.png" alt="">
-  </button>
-
-  <button class="hud-btn" id="btn_help" data-tip="Help">❓</button>
-
-</aside>
-
-
-
-    <!-- CENTRAL WORKSPACE -->
-    <section class="workspace">
-
-      <!-- BACKGROUND LAYER (for subtle gradients / particles if you want later) -->
-      <div class="workspace-bg"></div>
-
-      <!-- CORE CENTER PANEL: MESSAGING (HOME BASE) -->
-      <div class="workspace-center">
-
-        <!-- MESSAGING PANEL -->
-<div id="messaging_box" class="floating-panel hidden messaging-panel">
-
   <!-- ============================================================
-       HEADER
+       APP SHELL — TRON HUD WORKSPACE
   ============================================================ -->
-  <div class="panel-header msg-header">
-    <div class="msg-header-left">
-      <h2 id="msgHeaderName" class="msg-contact-name"></h2>
-    </div>
+  <main class="app-shell hud-workspace">
 
-    <div class="msg-header-right">
-      <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
-        <img src="voice.png" alt="Voice Call" height="25" width="25">
+    <!-- LEFT RAIL (KEPT, TRON-STYLED) -->
+    <aside class="hud-rail">
+
+      <!-- Rail Glow Spine -->
+      <div class="rail-glow"></div>
+
+      <!-- HUD Buttons -->
+      <button class="hud-btn" id="btn_home" data-tip="Dashboard">🏠</button>
+      <button class="hud-btn" id="btn_search" data-tip="Search">🔍</button>
+      <button class="hud-btn" id="btn_chat_main" data-tip="Chat">💬</button>
+
+      <button class="hud-btn" id="contact_widget" data-tip="Contacts">
+        <img src="Contacts.png" alt="">
       </button>
 
-      <button id="videoBtn" class="msg-icon-btn" title="Video Call">
-        <img src="img/app.png" alt="Video Call" height="28" width="28">
+      <button class="hud-btn" id="voicemail_Btn" data-tip="Voicemail">
+        <img src="img/voicemail.png" alt="">
       </button>
 
-      <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">🐞</button>
-    </div>
-  </div>
+      <button class="hud-btn" id="btn_notifications" data-tip="Notifications">🔔</button>
 
-  <!-- ============================================================
-       MESSAGE WINDOW
-  ============================================================ -->
-  <div id="messageWin" class="message-window"></div>
+      <!-- NEW HUD TOOLS -->
+      <button class="hud-btn" id="btn_ai_console" data-tip="AI Console">🤖</button>
+      <button class="hud-btn" id="btn_system_monitor" data-tip="System Monitor">📊</button>
+      <button class="hud-btn" id="btn_files" data-tip="Files">🗂️</button>
+      <button class="hud-btn" id="btn_mission_log" data-tip="Mission Log">📜</button>
+      <button class="hud-btn" id="btn_quick_actions" data-tip="Quick Actions">⚡</button>
 
-  <!-- ============================================================
-       TYPING INDICATOR (NEW STYLE)
-  ============================================================ -->
-  <div class="typing-indicator">
-    <img class="typing-avatar" src="" alt="">
-    <div class="typing-bubble"><span></span><span></span><span></span></div>
-  </div>
+      <button class="hud-btn" id="btn_settings" data-tip="Settings">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
 
-  <!-- ============================================================
-       RECORDING INDICATOR
-  ============================================================ -->
-  <div class="recording-indicator">
-    <div class="recording-bubble">
-      <span class="mic-icon">🎤</span>
-      <span class="recording-text">Recording audio…</span>
-      <div class="pulse-ring"></div>
-    </div>
-  </div>
+      <button class="hud-btn" id="toggleBtn" data-tip="Theme">🌙</button>
 
-  <!-- ============================================================
-       IMAGE VIEWER
-  ============================================================ -->
-  <div id="img-viewer" class="img-viewer">
-    <img id="img-viewer-img" alt="Viewed image">
-  </div>
+      <div class="rail-spacer"></div>
 
-  <!-- ============================================================
-       FILE PREVIEW STRIP
-  ============================================================ -->
-  <div id="attachmentPreview" class="attachment-preview hidden"></div>
+      <button class="hud-btn logoutBtn" onclick="showLogoutModal()" data-tip="Logout">
+        <img src="logout.png" alt="">
+      </button>
 
-  <!-- ============================================================
-       COMPOSER
-  ============================================================ -->
-  <form id="text_box_reply" autocomplete="off" class="composer">
+      <button class="hud-btn" id="btn_help" data-tip="Help">❓</button>
 
-    <!-- PLUS BUTTON -->
-    <button type="button" id="plusBtn" class="composer-btn plus">
-      <span class="material-symbols-outlined">add</span>
-    </button>
+    </aside>
 
-    <!-- INPUT -->
-    <div id="message_input" contenteditable="true" class="msg-input" aria-label="Type your message"></div>
+    <!-- ============================================================
+         HUD COLUMNS LAYOUT (HYBRID)
+    ============================================================ -->
+    <section class="workspace workspace-grid">
 
-    <!-- MIC -->
-    <button type="button" id="micBtn" class="composer-btn mic">
-      <img src="img/mic.png" alt="microphone">
-    </button>
+      <!-- =======================
+           LEFT COLUMN
+           Contacts / Search / Logs
+      ======================== -->
+      <section class="hud-column hud-left">
 
-    <!-- SEND -->
-    <button type="submit" class="composer-btn send">
-      <span class="material-symbols-outlined">send</span>
-    </button>
+        <!-- CONTACTS / CALL LOG / VOICEMAIL SHELL -->
+        <div id="conwrap" class="panel contacts-shell slide-from-left hidden hud-panel">
 
-    <!-- HIDDEN FILE INPUT -->
-    <input id="attachment_input" type="file" multiple hidden>
-  </form>
+          <!-- LEFT SIDEBAR: SEARCH + LOOKUP RESULTS -->
+          <aside class="sidebar contacts-sidebar">
 
-  <!-- ============================================================
-       BOTTOM SHEET
-  ============================================================ -->
-  <div id="bottomSheet" class="bottom-sheet">
-    <div class="sheet-handle"></div>
-    <button class="sheet-item" id="sheetCamera">📷 Camera</button>
-    <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
-    <button class="sheet-item" id="sheetFile">📎 File</button>
-    <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
-    <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
-    <button class="sheet-item" id="sheetGif">🎬 GIF</button>
-  </div>
+            <!-- Search Bar -->
+            <div class="contact-lookup">
+              <label for="lookup-input" class="sr-only">Search Contacts</label>
+              <input 
+                type="text" 
+                id="lookup-input" 
+                placeholder="Search for users by name or email..." 
+                autocomplete="on" 
+              />
+              <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
+            </div>
 
-  <!-- ============================================================
-       EMOJI PICKER
-  ============================================================ -->
-  <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
+            <!-- Lookup Results -->
+            <ul id="contacts-lookup" aria-label="Contact results"></ul>
 
-  <!-- ============================================================
-       GIF PICKER
-  ============================================================ -->
-  <div id="gifPicker" class="gif-picker hidden">
-    <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
-    <div id="gifResults" class="gif-results"></div>
-  </div>
+          </aside>
 
-</div>
+          <!-- RIGHT MAIN PANEL -->
+          <div id="con_main" class="contacts-main">
 
+            <div id="contacts_panel" class="contacts-panel">
 
-        <!-- MINI CHAT BUBBLE (SHOWN WHEN VIDEO/SETTINGS TAKE OVER) -->
-        <button id="miniChatBubble" class="mini-chat-bubble" style="display:none;">
-          💬
-        </button>
-      </div>
+              <!-- Header -->
+              <div class="panel-header">
+                <h2 id="panelTitle">Call Log</h2>
+                <contacts-menu></contacts-menu>
+              </div>
 
-      <!-- FLOATING LAYER: VIDEO CALL (OVERRIDES CENTER WHEN ACTIVE) -->
-      <div id="video-container" class="panel video-panel floating-panel hidden">
-        <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
-          <video id="remoteVideo" autoplay playsinline></video>
+              <!-- VOICEMAIL SECTION -->
+              <section id="voicemail_list" class="panel-section">
+                <header class="section-header">
+                  <h3>Voicemail</h3>
+                  <span id="voicemailBadge" class="vm-badge">0</span>
+                </header>
+                <ul id="voiceMList" class="voicemail-list"></ul>
+              </section>
 
-          <div class="avatar remote-avatar" id="remoteAvatar">
-            <img id="remoteAvatarImg" src="" alt="Remote Avatar">
-            <div class="avatar-ring"></div>
-          </div>
+              <!-- CONTACTS SECTION -->
+              <section id="bl_con" class="panel-section">
+                <header class="section-header">
+                  <h3>Contacts</h3>
+                </header>
+                <ul id="contacts" aria-label="Contacts list"></ul>
+              </section>
 
-          <div id="callerOverlay" class="call-overlay" style="display:none;"></div>
-        </div>
+              <!-- CALL LOG SECTION -->
+              <section id="sav_con" class="panel-section call-log-container">
 
-        <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
-          <video id="localVideo" autoplay playsinline muted></video>
+                <header class="section-header call-log-header">
+                  <h3>Call History</h3>
+                  <div class="call-log-actions">
+                    <input id="callLogSearch" type="text" placeholder="Search calls…" />
+                  </div>
+                </header>
 
-          <div class="avatar local-avatar" id="localAvatar">
-            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
+                <div id="callStats" class="call-stats"></div>
+                <ul id="callLogList" class="call-log-list"></ul>
+
+              </section>
+
+              <!-- MESSAGING SECTION -->
+              <section id="messaging_box_container" class="panel-section">
+                <header class="section-header">
+                  <h3 id="unread_header">Messages</h3>
+                </header>
+                <ul id="messaging_list"></ul>
+              </section>
+
+              <!-- BLOCKED CONTACTS -->
+              <section id="bloc_box" class="panel-section">
+                <header class="section-header">
+                  <h3>Blocked Contacts</h3>
+                </header>
+                <ul id="blocked-contacts"></ul>
+              </section>
+
+            </div>
           </div>
         </div>
 
-        <div id="call-status" class="status"></div>
+        <!-- SEARCH PANEL (RIGHT FLOAT IN ORIGINAL, NOW LEFT COLUMN PANEL) -->
+        <div id="search_panel" class="search-panel hidden hud-panel">
+          <div class="search-panel-inner">
+            <div class="search_">
+              <div class="search-header">
+                <h2>Search For Contractors</h2>
+                <button id="close_search">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
 
-        <audio id="remoteAudio" autoplay playsinline></audio>
+              <div class="search-input">
+                <input id="contractor_query_panel" type="text" placeholder="Search contractors..." />
+                <button id="search_submit_panel" type="button">
+                  <span class="material-symbols-outlined">search</span>
+                </button>
+                <ul id="autocomplete_list_panel" class="autocomplete-list"></ul>
+              </div>
 
-        <div id="call-controls" class="call-controls">
-          <div id="call-timer" class="call-timer">00:00</div>
-          <button id="decline-call">❌ Decline</button>
-          <button id="answer-call">✅ Answer</button>
-          <button id="mute-call">🔇 Mute</button>
-          <button id="camera-toggle">
-            <span class="material-symbols-outlined">flip_camera_android</span>
+              <div class="search-filters">
+                <button class="filter-chip active" data-category="all">All</button>
+                <button class="filter-chip" data-category="roofing">Roofing</button>
+                <button class="filter-chip" data-category="plumbing">Plumbing</button>
+                <button class="filter-chip" data-category="hvac">HVAC</button>
+                <button class="filter-chip" data-category="electrical">Electrical</button>
+                <button class="filter-chip" data-category="general">General</button>
+              </div>
+
+              <div id="search_results"></div>
+            </div>
+
+            <div class="map-container">
+              <iframe id="contractor_map"
+                src="https://www.google.com/maps/embed/v1/search?key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&q=contractors+near+me"
+                allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =======================
+           CENTER COLUMN
+           Messaging / Core
+      ======================== -->
+      <section class="hud-column hud-center">
+
+        <!-- BACKGROUND LAYER (kept) -->
+        <div class="workspace-bg"></div>
+
+        <!-- CORE CENTER PANEL: MESSAGING (HOME BASE) -->
+        <div class="workspace-center">
+
+          <!-- MESSAGING PANEL -->
+          <div id="messaging_box" class="floating-panel hidden messaging-panel hud-panel">
+
+            <!-- HEADER -->
+            <div class="panel-header msg-header">
+              <div class="msg-header-left">
+                <h2 id="msgHeaderName" class="msg-contact-name"></h2>
+              </div>
+
+              <div class="msg-header-right">
+                <button id="voiceBtn" class="msg-icon-btn" title="Voice Call">
+                  <img src="voice.png" alt="Voice Call" height="25" width="25">
+                </button>
+
+                <button id="videoBtn" class="msg-icon-btn" title="Video Call">
+                  <img src="img/app.png" alt="Video Call" height="28" width="28">
+                </button>
+
+                <button id="call-debug-toggle" class="msg-debug-btn" title="Debug">🐞</button>
+              </div>
+            </div>
+
+            <!-- MESSAGE WINDOW -->
+            <div id="messageWin" class="message-window"></div>
+
+            <!-- TYPING INDICATOR -->
+            <div class="typing-indicator">
+              <img class="typing-avatar" src="" alt="">
+              <div class="typing-bubble"><span></span><span></span><span></span></div>
+            </div>
+
+            <!-- RECORDING INDICATOR -->
+            <div class="recording-indicator">
+              <div class="recording-bubble">
+                <span class="mic-icon">🎤</span>
+                <span class="recording-text">Recording audio…</span>
+                <div class="pulse-ring"></div>
+              </div>
+            </div>
+
+            <!-- IMAGE VIEWER -->
+            <div id="img-viewer" class="img-viewer">
+              <img id="img-viewer-img" alt="Viewed image">
+            </div>
+
+            <!-- FILE PREVIEW STRIP -->
+            <div id="attachmentPreview" class="attachment-preview hidden"></div>
+
+            <!-- COMPOSER -->
+            <form id="text_box_reply" autocomplete="off" class="composer">
+
+              <!-- PLUS BUTTON -->
+              <button type="button" id="plusBtn" class="composer-btn plus">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+
+              <!-- INPUT -->
+              <div id="message_input" contenteditable="true" class="msg-input" aria-label="Type your message"></div>
+
+              <!-- MIC -->
+              <button type="button" id="micBtn" class="composer-btn mic">
+                <img src="img/mic.png" alt="microphone">
+              </button>
+
+              <!-- SEND -->
+              <button type="submit" class="composer-btn send">
+                <span class="material-symbols-outlined">send</span>
+              </button>
+
+              <!-- HIDDEN FILE INPUT -->
+              <input id="attachment_input" type="file" multiple hidden>
+            </form>
+
+            <!-- BOTTOM SHEET -->
+            <div id="bottomSheet" class="bottom-sheet">
+              <div class="sheet-handle"></div>
+              <button class="sheet-item" id="sheetCamera">📷 Camera</button>
+              <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
+              <button class="sheet-item" id="sheetFile">📎 File</button>
+              <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
+              <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
+              <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+            </div>
+
+            <!-- EMOJI PICKER -->
+            <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
+
+            <!-- GIF PICKER -->
+            <div id="gifPicker" class="gif-picker hidden">
+              <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+              <div id="gifResults" class="gif-results"></div>
+            </div>
+
+          </div>
+
+          <!-- MINI CHAT BUBBLE -->
+          <button id="miniChatBubble" class="mini-chat-bubble" style="display:none;">
+            💬
           </button>
-          <button id="end-call">📞 Hang Up</button>
         </div>
-      </div>
-
-      <!-- FLOATING LAYER: CONTACTS / CALL LOG / VOICEMAIL -->
-<div id="conwrap" class="panel contacts-shell slide-from-left hidden">
-
-  <!-- LEFT SIDEBAR: SEARCH + LOOKUP RESULTS -->
-  <aside class="sidebar contacts-sidebar">
-
-    <!-- Search Bar -->
-    <div class="contact-lookup">
-      <label for="lookup-input" class="sr-only">Search Contacts</label>
-      <input 
-        type="text" 
-        id="lookup-input" 
-        placeholder="Search for users by name or email..." 
-        autocomplete="on" 
-      />
-      <button type="button" id="lookup-btn" aria-label="Search contacts">🔍</button>
-    </div>
-
-    <!-- Lookup Results -->
-    <ul id="contacts-lookup" aria-label="Contact results"></ul>
-
-  </aside>
-
-  <!-- RIGHT MAIN PANEL -->
-  <div id="con_main" class="contacts-main">
-
-    <div id="contacts_panel" class="contacts-panel">
-
-      <!-- Header -->
-      <div class="panel-header">
-        <h2 id="panelTitle">Call Log</h2>
-        <contacts-menu></contacts-menu>
-      </div>
-
-      <!-- VOICEMAIL SECTION -->
-      <section id="voicemail_list" class="panel-section">
-        <header class="section-header">
-          <h3>Voicemail</h3>
-          <span id="voicemailBadge" class="vm-badge">0</span>
-        </header>
-        <ul id="voiceMList" class="voicemail-list"></ul>
-      </section>
-
-      <!-- CONTACTS SECTION -->
-      <section id="bl_con" class="panel-section">
-        <header class="section-header">
-          <h3>Contacts</h3>
-        </header>
-        <ul id="contacts" aria-label="Contacts list"></ul>
-      </section>
-
-      <!-- CALL LOG SECTION -->
-      <section id="sav_con" class="panel-section call-log-container">
-
-        <header class="section-header call-log-header">
-          <h3>Call History</h3>
-          <div class="call-log-actions">
-            <input id="callLogSearch" type="text" placeholder="Search calls…" />
-          </div>
-        </header>
-
-        <div id="callStats" class="call-stats"></div>
-        <ul id="callLogList" class="call-log-list"></ul>
 
       </section>
 
-      <!-- MESSAGING SECTION -->
-      <section id="messaging_box_container" class="panel-section">
-        <header class="section-header">
-          <h3 id="unread_header">Messages</h3>
-        </header>
-        <ul id="messaging_list"></ul>
-      </section>
+      <!-- =======================
+           RIGHT COLUMN
+           Settings / Profile / etc.
+      ======================== -->
+      <section class="hud-column hud-right">
 
-      <!-- BLOCKED CONTACTS -->
-      <section id="bloc_box" class="panel-section">
-        <header class="section-header">
-          <h3>Blocked Contacts</h3>
-        </header>
-        <ul id="blocked-contacts"></ul>
-      </section>
+        <!-- SETTINGS CONTAINER -->
+        <div id="settings_container" class="panel settings-shell floating-panel slide-from-right hidden hud-panel">
 
-    </div>
-  </div>
-</div>
+          <aside class="sidebar_layout3 settings_left_ active">
 
+            <h2 class="settings-title">Settings</h2>
 
-      <!-- FLOATING LAYER: PROFILE PANEL -->
-      <section id="contact_window" class="panel profile-panel floating-panel slide-from-left hidden">
-        <div id="leftcontent">
-          <div id="contact_box">
-            <div id="menu_Btn_contact" class="icon-button">
-              <img src="menu.png" alt="contact-menu">
-            </div>
+            <section class="settings-card">
+              <h3 class="settings-card-title">Appearance</h3>
 
-            <div id="contact_menu_box">
-              <ul id="contact_menu_list">
-                <li id="select_contact">Select</li>
-                <li id="block_contact">Block Contact</li>
-                <li id="delete_contact">Deleted Contact</li>
-                <li id="view_profile">View Profile</li>
-                <li id="add_contact">Add Contact</li>
-                <li id="settings">Settings</li>
-              </ul>
-            </div>
+              <div class="settings-row">
+                <label for="theme_select">Theme</label>
+                <select id="theme_select">
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="system">System Default</option>
+                </select>
+              </div>
 
-            <div class="profile_card">
-              <div class="profile-avatar">
-                <div class="status-dot online"><h3>Online</h3></div>
-                <img id="profilePreview" src="img/defaultUser.png" alt="Profile Picture">
+              <div class="settings-row">
+                <label for="accent_color">Accent Color</label>
+                <input type="color" id="accent_color" value="#4CAF50">
+              </div>
 
-                <div class="profile_chgBtn">
-                  <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
-                  <label for="profileImage" class="upload-btn">Change Photo</label>
-                  <input type="file" id="profileImage" accept="image/*">
-                  <button id="removeAvatar" class="delete-account-btn">Remove Avatar</button>
+              <div class="settings-row">
+                <label for="font_size">Font Size</label>
+                <input type="range" id="font_size" min="12" max="24" value="16">
+              </div>
+            </section>
+
+            <section class="settings-card">
+              <h3 class="settings-card-title">Video</h3>
+
+              <div class="settings-row">
+                <label>Camera</label>
+                <select id="camera_select"></select>
+              </div>
+
+              <div class="settings-row">
+                <label>Resolution</label>
+                <select id="resolution_select">
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                  <option value="4k">4K</option>
+                </select>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Background Blur</span>
+                <label class="toggle">
+                  <input type="checkbox" id="background_blur">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Mirror Video</span>
+                <label class="toggle">
+                  <input type="checkbox" id="mirror_video">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-row camera-preview-row">
+                <label>Preview</label>
+                <video id="camera_preview" autoplay playsinline muted></video>
+              </div>
+            </section>
+
+            <section class="settings-card">
+              <h3 class="settings-card-title">Audio</h3>
+
+              <div class="settings-row">
+                <label>Microphone</label>
+                <select id="microphone_select"></select>
+              </div>
+
+              <div class="settings-row">
+                <label>Speaker</label>
+                <select id="speaker_select"></select>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Noise Suppression</span>
+                <label class="toggle">
+                  <input type="checkbox" id="noise_suppression">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Echo Cancellation</span>
+                <label class="toggle">
+                  <input type="checkbox" id="echo_cancellation">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Auto Gain Control</span>
+                <label class="toggle">
+                  <input type="checkbox" id="auto_gain">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-row">
+                <label>Microphone Level</label>
+                <div id="mic_level_bar" class="mic-level-bar">
+                  <div class="mic-level-fill"></div>
                 </div>
               </div>
 
-              <div class="profile-info">
-                <h2 class="profile-name"></h2>
-                <p class="profile-username"></p>
+              <div class="settings-row">
+                <label>Test Speaker</label>
+                <button type="button" id="test_speaker_btn" class="settings-btn">Play Test Sound</button>
+              </div>
+            </section>
 
-                <div class="profile-field">
-                  <label>Bio</label>
-                  <textarea name="bio" id="bioInput" placeholder="Write something about yourself..."></textarea>
+            <section class="settings-card">
+              <h3 class="settings-card-title">Notifications</h3>
+
+              <div class="settings-toggle-row">
+                <span>Call Alerts</span>
+                <label class="toggle">
+                  <input type="checkbox" id="call_alerts" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Message Alerts</span>
+                <label class="toggle">
+                  <input type="checkbox" id="message_alerts" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Sound Effects</span>
+                <label class="toggle">
+                  <input type="checkbox" id="sound_effects" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </section>
+
+            <section class="settings-card">
+              <h3 class="settings-card-title">Accessibility</h3>
+
+              <div class="settings-toggle-row">
+                <span>High Contrast Mode</span>
+                <label class="toggle">
+                  <input type="checkbox" id="high_contrast">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Keyboard Shortcuts</span>
+                <label class="toggle">
+                  <input type="checkbox" id="keyboard_shortcuts" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-toggle-row">
+                <span>Screen Reader Support</span>
+                <label class="toggle">
+                  <input type="checkbox" id="screen_reader">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </section>
+
+            <section class="settings-card">
+              <button id="save_settings" class="settings-btn primary">Save Settings</button>
+              <button id="reset_settings" class="settings-btn">Reset to Default</button>
+            </section>
+
+          </aside>
+
+          <aside id="profile_settings" class="profile-settings-panel">
+            <button id="contact_close" class="close-btn">✕</button>
+
+            <div id="contact_settings_panel">
+
+              <header class="settings-header">
+                <h2>Profile Settings</h2>
+                <button id="close_contact_settings" class="close-btn">✕</button>
+              </header>
+
+              <section class="settings-card">
+                <h3 class="settings-card-title">Profile</h3>
+
+                <div class="settings-row">
+                  <label>Profile Picture</label>
+                  <input type="file" id="contact_profile_picture" accept="image/*">
                 </div>
 
-                <div class="profile-field">
+                <div class="settings-row">
                   <label>Display Name</label>
-                  <input type="text" name="fullname" id="fullnameInput" />
+                  <input type="text" id="contact_display_name" placeholder="Enter name">
                 </div>
 
-                <div class="profile-field">
+                <div class="settings-row">
                   <label>Email</label>
-                  <input type="email" name="email" id="emailInput">
+                  <input type="email" id="contact_email" placeholder="Enter email">
+                </div>
+              </section>
+
+              <section class="settings-card">
+                <h3 class="settings-card-title">Privacy</h3>
+
+                <div class="settings-toggle-row">
+                  <span>Show Online Status</span>
+                  <label class="toggle">
+                    <input type="checkbox" id="show_online">
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
 
-                <div class="profile-field">
-                  <label>Current Password</label>
-                  <input type="password" id="currentPasswordInput" placeholder="Enter current password">
+                <div class="settings-toggle-row">
+                  <span>Allow Messages</span>
+                  <label class="toggle">
+                    <input type="checkbox" id="allow_messages">
+                    <span class="toggle-slider"></span>
+                  </label>
                 </div>
+              </section>
 
-                <div class="profile-field">
-                  <label>New Password</label>
-                  <input type="password" id="newPasswordInput" placeholder="Enter new password">
-                </div>
+              <section class="settings-card">
+                <h3 class="settings-card-title">Blocked Contacts</h3>
+                <ul id="blocked_list"></ul>
+              </section>
 
-                <div class="profile-field">
-                  <label>Confirm New Password</label>
-                  <input type="password" id="confirmPasswordInput" placeholder="Confirm new password">
-                </div>
+            </div>
+          </aside>
 
-                <button class="save-profile-btn" id="changePasswordBtn">Change Password</button>
+        </div>
 
-                <div class="profile-social">
-                  <label>Social Links</label>
-                  <div class="social-inputs">
-                    <input type="url" name="website" id="websiteInput" placeholder="Website URL">
-                    <input type="url" name="twitter" id="twitterInput" placeholder="Twitter / X">
-                    <input type="url" name="instagram" id="instagramInput" placeholder="Instagram">
+        <!-- PROFILE PANEL (LEFT FLOAT IN ORIGINAL, NOW RIGHT COLUMN PANEL) -->
+        <section id="contact_window" class="panel profile-panel floating-panel slide-from-left hidden hud-panel">
+          <div id="leftcontent">
+            <div id="contact_box">
+              <div id="menu_Btn_contact" class="icon-button">
+                <img src="menu.png" alt="contact-menu">
+              </div>
+
+              <div id="contact_menu_box">
+                <ul id="contact_menu_list">
+                  <li id="select_contact">Select</li>
+                  <li id="block_contact">Block Contact</li>
+                  <li id="delete_contact">Deleted Contact</li>
+                  <li id="view_profile">View Profile</li>
+                  <li id="add_contact">Add Contact</li>
+                  <li id="settings">Settings</li>
+                </ul>
+              </div>
+
+              <div class="profile_card">
+                <div class="profile-avatar">
+                  <div class="status-dot online"><h3>Online</h3></div>
+                  <img id="profilePreview" src="img/defaultUser.png" alt="Profile Picture">
+
+                  <div class="profile_chgBtn">
+                    <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
+                    <label for="profileImage" class="upload-btn">Change Photo</label>
+                    <input type="file" id="profileImage" accept="image/*">
+                    <button id="removeAvatar" class="delete-account-btn">Remove Avatar</button>
                   </div>
                 </div>
 
-                <label class="toggle-row">
-                  <span>Show Online Status</span>
-                  <input type="checkbox" name="show_online" id="showOnlineInput" checked>
-                  <div class="toggle-slider"></div>
-                </label>
+                <div class="profile-info">
+                  <h2 class="profile-name"></h2>
+                  <p class="profile-username"></p>
 
-                <label class="toggle-row">
-                  <span>Allow Messages</span>
-                  <input type="checkbox" name="allow_messages" id="allowMessagesInput" checked>
-                  <div class="toggle-slider"></div>
-                </label>
+                  <div class="profile-field">
+                    <label>Bio</label>
+                    <textarea name="bio" id="bioInput" placeholder="Write something about yourself..."></textarea>
+                  </div>
 
-                <div class="profile-actions">
-                  <button class="save-profile-btn" id="saveProfileBtn">Save Changes</button>
-                  <a href="#" class="logout-btn" onclick="logout()" title="Logout">Log Out</a>
-                  <button class="delete-account-btn" id="deleteAccountBtn">Delete Account</button>
+                  <div class="profile-field">
+                    <label>Display Name</label>
+                    <input type="text" name="fullname" id="fullnameInput" />
+                  </div>
+
+                  <div class="profile-field">
+                    <label>Email</label>
+                    <input type="email" name="email" id="emailInput">
+                  </div>
+
+                  <div class="profile-field">
+                    <label>Current Password</label>
+                    <input type="password" id="currentPasswordInput" placeholder="Enter current password">
+                  </div>
+
+                  <div class="profile-field">
+                    <label>New Password</label>
+                    <input type="password" id="newPasswordInput" placeholder="Enter new password">
+                  </div>
+
+                  <div class="profile-field">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirmPasswordInput" placeholder="Confirm new password">
+                  </div>
+
+                  <button class="save-profile-btn" id="changePasswordBtn">Change Password</button>
+
+                  <div class="profile-social">
+                    <label>Social Links</label>
+                    <div class="social-inputs">
+                      <input type="url" name="website" id="websiteInput" placeholder="Website URL">
+                      <input type="url" name="twitter" id="twitterInput" placeholder="Twitter / X">
+                      <input type="url" name="instagram" id="instagramInput" placeholder="Instagram">
+                    </div>
+                  </div>
+
+                  <label class="toggle-row">
+                    <span>Show Online Status</span>
+                    <input type="checkbox" name="show_online" id="showOnlineInput" checked>
+                    <div class="toggle-slider"></div>
+                  </label>
+
+                  <label class="toggle-row">
+                    <span>Allow Messages</span>
+                    <input type="checkbox" name="allow_messages" id="allowMessagesInput" checked>
+                    <div class="toggle-slider"></div>
+                  </label>
+
+                  <div class="profile-actions">
+                    <button class="save-profile-btn" id="saveProfileBtn">Save Changes</button>
+                    <a href="#" class="logout-btn" onclick="logout()" title="Logout">Log Out</a>
+                    <button class="delete-account-btn" id="deleteAccountBtn">Delete Account</button>
+                  </div>
                 </div>
               </div>
-            </div>
 
+            </div>
           </div>
-        </div>
+        </section>
+
       </section>
 
-      <!-- FLOATING LAYER: FULL PROFILE MODAL -->
-      <div id="shared-space">
-        <div id="fullProfileModal" class="full-profile-modal hidden">
-          <button id="closeFullProfile" class="close-full-profile">✕</button>
-          <div class="full-profile-content">
-            <div class="full-profile-banner">
-              <div id="fullProfileBannerWrapper" class="banner-wrapper">
-                <img id="fullProfileBanner" src="" alt="Banner">
-              </div>
+      <!-- ============================================================
+           HUD FLOATING LAYERS (OVERLAYS / MODALS)
+      ============================================================ -->
+      <div class="hud-floating">
+
+        <!-- VIDEO CALL (FLOATING OVERLAY) -->
+        <div id="video-container" class="panel video-panel floating-panel hidden hud-panel">
+          <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
+            <video id="remoteVideo" autoplay playsinline></video>
+
+            <div class="avatar remote-avatar" id="remoteAvatar">
+              <img id="remoteAvatarImg" src="" alt="Remote Avatar">
+              <div class="avatar-ring"></div>
             </div>
 
-            <div class="avatar-frame avatar-glow avatar-pulse online">
-              <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar">
-            </div>
+            <div id="callerOverlay" class="call-overlay" style="display:none;"></div>
+          </div>
 
-            <h2 id="fullProfileName"></h2>
-            <p id="fullProfileEmail"></p>
-            <p id="fullProfilePhone"></p>
-            <div id="fullProfileBio" class="full-profile-bio"></div>
+          <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
+            <video id="localVideo" autoplay playsinline muted></video>
 
-            <div class="profile-line">
-              <img src="https://img.icons8.com/color/48/domain--v1.png" alt="">
-              <a id="fullProfileWebsite" href="#" target="_blank"></a>
-            </div>
-
-            <div class="profile-line">
-              <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="">
-              <a id="fullProfileTwitter" href="#" target="_blank"></a>
-            </div>
-
-            <div class="profile-line">
-              <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="">
-              <a id="fullProfileInstagram" href="#" target="_blank"></a>
-            </div>
-
-            <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
-            <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
-
-            <div class="copy-row">
-              <button id="copyEmailBtn" class="copy-btn">Copy Email</button>
-              <button id="copyPhoneBtn" class="copy-btn">Copy Phone</button>
-            </div>
-
-            <button id="saveLookupContact" class="profile-save-btn">➕ Add To Contacts</button>
-
-            <div class="profile-actions">
-              <button id="profileCallBtn" class="profile-action-btn">📞 Call</button>
-              <button id="profileVideoBtn" class="profile-action-btn">🎥 Video</button>
-              <button id="profileBlockBtn" class="profile-action-btn danger">🚫 Block</button>
+            <div class="avatar local-avatar" id="localAvatar">
+              <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- FLOATING LAYER: SEARCH PANEL (RIGHT) -->
-      <div id="search_panel" class="search-panel hidden">
-        <div class="search-panel-inner">
-        <div class="search_">
-          <div class="search-header">
-            <h2>Search For Contractors</h2>
-            <button id="close_search">
-              <span class="material-symbols-outlined">close</span>
+          <div id="call-status" class="status"></div>
+
+          <audio id="remoteAudio" autoplay playsinline></audio>
+
+          <div id="call-controls" class="call-controls">
+            <div id="call-timer" class="call-timer">00:00</div>
+            <button id="decline-call">❌ Decline</button>
+            <button id="answer-call">✅ Answer</button>
+            <button id="mute-call">🔇 Mute</button>
+            <button id="camera-toggle">
+              <span class="material-symbols-outlined">flip_camera_android</span>
             </button>
-          </div>
-
-          <div class="search-input">
-            <input id="contractor_query_panel" type="text" placeholder="Search contractors..." />
-            <button id="search_submit_panel" type="button">
-              <span class="material-symbols-outlined">search</span>
-            </button>
-            <ul id="autocomplete_list_panel" class="autocomplete-list"></ul>
-          </div>
-
-          <div class="search-filters">
-            <button class="filter-chip active" data-category="all">All</button>
-            <button class="filter-chip" data-category="roofing">Roofing</button>
-            <button class="filter-chip" data-category="plumbing">Plumbing</button>
-            <button class="filter-chip" data-category="hvac">HVAC</button>
-            <button class="filter-chip" data-category="electrical">Electrical</button>
-            <button class="filter-chip" data-category="general">General</button>
-          </div>
-
-          <div id="search_results"></div>
-        </div>
-
-        <div class="map-container">
-          <iframe id="contractor_map"
-            src="https://www.google.com/maps/embed/v1/search?key=AIzaSyAdubke7aspKLSHGddez2EbaeRYrHtvtCQ&q=contractors+near+me"
-            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-      </div>
-      </div>
-      <!-- FLOATING LAYER: SETTINGS (RIGHT) -->
-      <div id="settings_container" class="panel settings-shell floating-panel slide-from-right hidden">
-
-        <aside class="sidebar_layout3 settings_left_ active">
-
-          <h2 class="settings-title">Settings</h2>
-
-          <section class="settings-card">
-            <h3 class="settings-card-title">Appearance</h3>
-
-            <div class="settings-row">
-              <label for="theme_select">Theme</label>
-              <select id="theme_select">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="system">System Default</option>
-              </select>
-            </div>
-
-            <div class="settings-row">
-              <label for="accent_color">Accent Color</label>
-              <input type="color" id="accent_color" value="#4CAF50">
-            </div>
-
-            <div class="settings-row">
-              <label for="font_size">Font Size</label>
-              <input type="range" id="font_size" min="12" max="24" value="16">
-            </div>
-          </section>
-
-          <section class="settings-card">
-            <h3 class="settings-card-title">Video</h3>
-
-            <div class="settings-row">
-              <label>Camera</label>
-              <select id="camera_select"></select>
-            </div>
-
-            <div class="settings-row">
-              <label>Resolution</label>
-              <select id="resolution_select">
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
-                <option value="4k">4K</option>
-              </select>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Background Blur</span>
-              <label class="toggle">
-                <input type="checkbox" id="background_blur">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Mirror Video</span>
-              <label class="toggle">
-                <input type="checkbox" id="mirror_video">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-row camera-preview-row">
-              <label>Preview</label>
-              <video id="camera_preview" autoplay playsinline muted></video>
-            </div>
-          </section>
-
-          <section class="settings-card">
-            <h3 class="settings-card-title">Audio</h3>
-
-            <div class="settings-row">
-              <label>Microphone</label>
-              <select id="microphone_select"></select>
-            </div>
-
-            <div class="settings-row">
-              <label>Speaker</label>
-              <select id="speaker_select"></select>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Noise Suppression</span>
-              <label class="toggle">
-                <input type="checkbox" id="noise_suppression">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Echo Cancellation</span>
-              <label class="toggle">
-                <input type="checkbox" id="echo_cancellation">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Auto Gain Control</span>
-              <label class="toggle">
-                <input type="checkbox" id="auto_gain">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-row">
-              <label>Microphone Level</label>
-              <div id="mic_level_bar" class="mic-level-bar">
-                <div class="mic-level-fill"></div>
-              </div>
-            </div>
-
-            <div class="settings-row">
-              <label>Test Speaker</label>
-              <button type="button" id="test_speaker_btn" class="settings-btn">Play Test Sound</button>
-            </div>
-          </section>
-
-          <section class="settings-card">
-            <h3 class="settings-card-title">Notifications</h3>
-
-            <div class="settings-toggle-row">
-              <span>Call Alerts</span>
-              <label class="toggle">
-                <input type="checkbox" id="call_alerts" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Message Alerts</span>
-              <label class="toggle">
-                <input type="checkbox" id="message_alerts" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Sound Effects</span>
-              <label class="toggle">
-                <input type="checkbox" id="sound_effects" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </section>
-
-          <section class="settings-card">
-            <h3 class="settings-card-title">Accessibility</h3>
-
-            <div class="settings-toggle-row">
-              <span>High Contrast Mode</span>
-              <label class="toggle">
-                <input type="checkbox" id="high_contrast">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Keyboard Shortcuts</span>
-              <label class="toggle">
-                <input type="checkbox" id="keyboard_shortcuts" checked>
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-
-            <div class="settings-toggle-row">
-              <span>Screen Reader Support</span>
-              <label class="toggle">
-                <input type="checkbox" id="screen_reader">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </section>
-
-          <section class="settings-card">
-            <button id="save_settings" class="settings-btn primary">Save Settings</button>
-            <button id="reset_settings" class="settings-btn">Reset to Default</button>
-          </section>
-
-        </aside>
-
-        <aside id="profile_settings" class="profile-settings-panel">
-          <button id="contact_close" class="close-btn">✕</button>
-
-          <div id="contact_settings_panel">
-
-            <header class="settings-header">
-              <h2>Profile Settings</h2>
-              <button id="close_contact_settings" class="close-btn">✕</button>
-            </header>
-
-            <section class="settings-card">
-              <h3 class="settings-card-title">Profile</h3>
-
-              <div class="settings-row">
-                <label>Profile Picture</label>
-                <input type="file" id="contact_profile_picture" accept="image/*">
-              </div>
-
-              <div class="settings-row">
-                <label>Display Name</label>
-                <input type="text" id="contact_display_name" placeholder="Enter name">
-              </div>
-
-              <div class="settings-row">
-                <label>Email</label>
-                <input type="email" id="contact_email" placeholder="Enter email">
-              </div>
-            </section>
-
-            <section class="settings-card">
-              <h3 class="settings-card-title">Privacy</h3>
-
-              <div class="settings-toggle-row">
-                <span>Show Online Status</span>
-                <label class="toggle">
-                  <input type="checkbox" id="show_online">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-
-              <div class="settings-toggle-row">
-                <span>Allow Messages</span>
-                <label class="toggle">
-                  <input type="checkbox" id="allow_messages">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </section>
-
-            <section class="settings-card">
-              <h3 class="settings-card-title">Blocked Contacts</h3>
-              <ul id="blocked_list"></ul>
-            </section>
-
-          </div>
-        </aside>
-
-      </div>
-
-      <!-- VOICEMAIL MODAL (FLOATING) -->
-      <div id="voicemailModal" class="voicemail-modal hidden">
-        <div class="vm-card">
-          <div id="vmStatus">Ready</div>
-          <div id="vmTimer">00:00</div>
-          <div class="vm-wave">
-            <div></div><div></div><div></div><div></div><div></div>
-          </div>
-          <div id="vmControls">
-            <button id="vmRecordBtn">Record</button>
-            <button id="vmStopBtn" style="display:none;">Stop</button>
-            <button id="vmPlayBtn" style="display:none;">Play</button>
-            <button id="vmSendBtn" style="display:none;">Send</button>
-            <button id="vmDeleteBtn" style="display:none;">Delete</button>
+            <button id="end-call">📞 Hang Up</button>
           </div>
         </div>
-      </div>
 
-      <!-- IMAGE VIEWER OVERLAY -->
-      <div id="image-viewer-overlay" aria-hidden="true">
-        <button id="image-prev" class="image-nav-btn">❮</button>
-        <img id="image-viewer-img" src="" alt="Image viewer">
-        <button id="image-next" class="image-nav-btn">❯</button>
-      </div>
+        <!-- FULL PROFILE MODAL -->
+        <div id="shared-space">
+          <div id="fullProfileModal" class="full-profile-modal hidden">
+            <button id="closeFullProfile" class="close-full-profile">✕</button>
+            <div class="full-profile-content">
+              <div class="full-profile-banner">
+                <div id="fullProfileBannerWrapper" class="banner-wrapper">
+                  <img id="fullProfileBanner" src="" alt="Banner">
+                </div>
+              </div>
 
-      <!-- HIDDEN MESSAGES PANEL -->
-      <div id="hiddenMessagesPanel" class="hidden-panel" aria-hidden="true">
-        <h3>Hidden Messages</h3>
-        <div id="hiddenList"></div>
-        <button onclick="closeHiddenPanel()">Close</button>
-      </div>
+              <div class="avatar-frame avatar-glow avatar-pulse online">
+                <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar">
+              </div>
 
-      <!-- TOAST -->
-      <div id="toast" class="toast" style="display:none;"></div>
+              <h2 id="fullProfileName"></h2>
+              <p id="fullProfileEmail"></p>
+              <p id="fullProfilePhone"></p>
+              <div id="fullProfileBio" class="full-profile-bio"></div>
 
-      <!-- LOGOUT MODAL -->
-      <div id="logoutModal" class="modal-1 hidden">
-        <div class="modal-content-1">
-          <h3>Log out?</h3>
-          <p>You will be signed out of your account.</p>
+              <div class="profile-line">
+                <img src="https://img.icons8.com/color/48/domain--v1.png" alt="">
+                <a id="fullProfileWebsite" href="#" target="_blank"></a>
+              </div>
 
-          <button id="confirmLogout" class="btn-danger">Log Out</button>
-          <button id="cancelLogout" class="btn-secondary">Cancel</button>
+              <div class="profile-line">
+                <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="">
+                <a id="fullProfileTwitter" href="#" target="_blank"></a>
+              </div>
+
+              <div class="profile-line">
+                <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="">
+                <a id="fullProfileInstagram" href="#" target="_blank"></a>
+              </div>
+
+              <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
+              <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
+
+              <div class="copy-row">
+                <button id="copyEmailBtn" class="copy-btn">Copy Email</button>
+                <button id="copyPhoneBtn" class="copy-btn">Copy Phone</button>
+              </div>
+
+              <button id="saveLookupContact" class="profile-save-btn">➕ Add To Contacts</button>
+
+              <div class="profile-actions">
+                <button id="profileCallBtn" class="profile-action-btn">📞 Call</button>
+                <button id="profileVideoBtn" class="profile-action-btn">🎥 Video</button>
+                <button id="profileBlockBtn" class="profile-action-btn danger">🚫 Block</button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="notification-wrapper">
-          <span class="notification-bell">
-            <span class="material-symbols-outlined" style="font-size:62px;">notifications</span>
-          </span>
+        <!-- VOICEMAIL MODAL -->
+        <div id="voicemailModal" class="voicemail-modal hidden">
+          <div class="vm-card">
+            <div id="vmStatus">Ready</div>
+            <div id="vmTimer">00:00</div>
+            <div class="vm-wave">
+              <div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <div id="vmControls">
+              <button id="vmRecordBtn">Record</button>
+              <button id="vmStopBtn" style="display:none;">Stop</button>
+              <button id="vmPlayBtn" style="display:none;">Play</button>
+              <button id="vmSendBtn" style="display:none;">Send</button>
+              <button id="vmDeleteBtn">Delete</button>
+            </div>
+          </div>
         </div>
+
       </div>
 
     </section>
-
   </main>
 
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-content">
-      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
-      <nav class="footer-nav">
-        <a href="/about">About Us</a>
-        <a href="/services">Services</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy Policy</a>
-      </nav>
-      <div class="social-links">
-        <a href="https://facebook.com" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i> Facebook</a>
-        <a href="https://twitter.com" target="_blank" rel="noopener"><i class="fab fa-twitter"></i> Twitter</a>
-        <a href="https://instagram.com" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
-      </div>
-    </div>
-  </footer>
-
-  <audio id="ringtone" src="ringtone.mp3" preload="auto"></audio>
-  <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
-  <audio id="notification" src="notification.mp3" preload="auto"></audio>
-
-  <!-- your existing scripts stay the same -->
 
 </body>
-<!-- ============================================================
-     TRON HUD — PARALLAX + GRID BACKGROUND STACK (PHASE 3)
-============================================================ -->
 
-<!-- Layer 1: Deep Hex Grid -->
-<div class="hud-layer depth-1">
-  <div class="hex-grid"></div>
-</div>
-
-<!-- Layer 2: Stronger Hex Lines -->
-<div class="hud-layer depth-2">
-  <div class="hex-grid hex-strong"></div>
-</div>
-
-<!-- Layer 3: Particle Field -->
-<div class="hud-layer depth-3">
-  <div class="hud-particles"></div>
-</div>
-
-<!-- Layer 4: Scanline Overlay -->
-<div class="hud-layer depth-4">
-  <div class="scanlines"></div>
-</div>
-
-<!-- Layer 5: Flicker Layer -->
-<div class="hud-layer depth-5">
-  <div class="hud-flicker"></div>
-</div>
 
 
 <script type="module" src="public/js/app.js?v=3"></script>
@@ -1752,6 +1701,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
