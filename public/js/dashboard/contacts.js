@@ -448,32 +448,42 @@ export function renderBlockedCard(user) {
 }
 
 /* -------------------------------------------------------
-   OPEN MESSAGES
+   OPEN MESSAGES (UPDATED FOR NEW UI)
 ------------------------------------------------------- */
 export function openMessagesFor(user) {
   console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", user);
 
-  // ⭐ Correct name injection
+  // Store name for lookup
   userNames[String(user.contact_id)] = user.contact_name;
 
   activeContact = user;
   window.currentChatUserId = user.contact_id;
 
+  // Set receiver for messaging.js
   setReceiver(user.contact_id);
 
-  const header = $(".header_msg_box h2");
-  if (!header) {
-    console.error("[contacts] ERROR: .header_msg_box h2 not found");
-  } else {
+  // ⭐ NEW HEADER TARGET
+  const header = document.getElementById("msgHeaderName");
+  if (header) {
     header.textContent = user.contact_name;
-  }
-
-  if (!messageBox) {
-    console.error("[contacts] ERROR: messageBox not found");
   } else {
-    messageBox.classList.add("active");
+    console.error("[contacts] ERROR: #msgHeaderName not found");
   }
 
+  // ⭐ OPEN THE NEW FLOATING MESSAGING PANEL
+  const panel = document.getElementById("messaging_box");
+  if (panel) {
+    panel.style.display = "flex";
+    panel.classList.remove("hidden");
+  } else {
+    console.error("[contacts] ERROR: #messaging_box not found");
+  }
+
+  // ⭐ HIDE MINI CHAT BUBBLE IF VISIBLE
+  const bubble = document.getElementById("miniChatBubble");
+  if (bubble) bubble.style.display = "none";
+
+  // Load messages once
   loadMessages();
 }
 
@@ -786,6 +796,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
