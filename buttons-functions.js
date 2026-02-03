@@ -24,7 +24,7 @@ function initUI() {
   const messaging = document.getElementById("messaging_box");
   const miniChat = document.getElementById("miniChatBubble");
 
-  const conwrap = document.getElementById("conwrap"); // LEFT SLIDE PANEL
+  const conwrap = document.getElementById("conwrap"); 
   const video = document.getElementById("video-container");
   const search = document.getElementById("search_panel");
   const settings = document.getElementById("settings_container");
@@ -39,13 +39,11 @@ function initUI() {
      PANEL STATE MANAGEMENT — FINAL
   ----------------------------------------------------------- */
   const UIX = {
-    /* Hide all panels EXCEPT messaging */
     hideAllPanelsExceptMessaging() {
       [conwrap, video, search, settings, profile, voicemail, fullProfile]
         .forEach(p => p?.classList.add("hidden"));
     },
 
-    /* Show messaging (center floating panel) */
     showMessaging() {
       this.hideAllPanelsExceptMessaging();
       messaging.classList.remove("hidden");
@@ -53,21 +51,27 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
-    /* Collapse messaging into bubble */
     collapseMessaging() {
       messaging.classList.add("hidden");
       miniChat.classList.remove("hidden");
     },
 
-    /* Show a centered floating panel */
     showFloating(panel) {
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
       panel.classList.remove("hidden");
       document.body.classList.add("panel-open");
+
+      /* ⭐ SEARCH PANEL SPECIAL BEHAVIOR */
+      if (panel === search) {
+        const left = document.querySelector(".search_");
+        const map = document.querySelector(".map-container");
+
+        left?.classList.add("active");      // slide in
+        map?.classList.remove("visible");   // hide map until results
+      }
     },
 
-    /* Show the left slide panel (conwrap) */
     showLeftPanel() {
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
@@ -380,6 +384,8 @@ const Settings = {
     location.reload();
   }
 };
+
+
 
 
 
