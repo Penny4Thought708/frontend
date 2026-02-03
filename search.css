@@ -7,160 +7,66 @@
   width: 98%;
   left: 0;
 
-  /* ⭐ EXACT 1/3 + 2/3 SPLIT */
+  /* 1/3 left, 2/3 right */
   grid-template-columns: 1fr 2fr;
 
   height: 100%;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255,255,255,0.04);
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255,255,255,0.08);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   overflow: hidden;
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 8px 28px rgba(0,0,0,0.35),
     0 0 22px rgba(var(--accent-rgb), 0.25);
+  position: relative;
 }
 
-/* Left content area (1/3) */
+/* ============================================================
+   LEFT PANEL SLIDE-IN
+============================================================ */
+
 .search_ {
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 
-  /* ⭐ Remove width override */
-  width: 100%;
+  /* Start off-screen */
+  transform: translateX(-120%);
+  opacity: 0;
+
+  transition: transform 0.35s ease, opacity 0.35s ease;
 }
 
-/* Header */
-.search-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* When activated */
+.search_.active {
+  transform: translateX(0);
+  opacity: 1;
 }
 
-.search-header h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
+/* ============================================================
+   MAP HIDDEN UNTIL RESULTS
+============================================================ */
 
-.search-header button {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.22s ease;
-}
-
-.search-header button:hover {
-  background: rgba(255,255,255,0.18);
-  transform: scale(1.08);
-}
-
-/* Search input + button */
-.search-input {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.search-input input {
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-  outline: none;
-  transition: 0.22s ease;
-}
-
-.search-input input:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
-}
-
-.search-input button {
-  align-self: flex-end;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.22s ease;
-}
-
-.search-input button:hover {
-  background: rgba(255,255,255,0.18);
-  transform: scale(1.08);
-}
-
-/* Autocomplete list */
-.autocomplete-list {
-  max-height: 200px;
-  overflow-y: auto;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(15,23,42,0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  padding: 6px 0;
-}
-
-.autocomplete-list li {
-  padding: 12px 16px;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: 0.18s ease;
-}
-
-.autocomplete-list li:hover {
-  background: rgba(255,255,255,0.12);
-}
-
-/* Filters */
-.search-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.filter-chip {
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.08);
-  font-size: 0.82rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: 0.22s ease;
-}
-
-.filter-chip:hover {
-  background: rgba(255,255,255,0.18);
-}
-
-.filter-chip.active {
-  border-color: var(--accent-primary);
-  background: rgba(var(--accent-rgb), 0.25);
-  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
-}
-
-/* Map container (2/3) */
 .map-container {
   background: rgba(0,0,0,0.35);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.96);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+/* When results exist */
+.map-container.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
 .map-container iframe {
@@ -180,5 +86,6 @@
     height: 300px;
   }
 }
+
 
 
