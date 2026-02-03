@@ -1,72 +1,145 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-}
+/* ============================================================
+   GLOBAL BACKGROUND — MIDNIGHT GRADIENT + HEX GRID (H3)
+============================================================ */
 
-#contacts_btn {
-  padding: 10px 20px;
-  font-size: 16px;
+body.dark-mode {
+  background: var(--hud-bg-gradient);
+  color: var(--hud-cyan-soft);
+  font-family: var(--font-family-body);
+  overflow: hidden;
+  position: relative;
+  perspective: 1400px; /* enables parallax depth */
 }
+/* ============================================================
+   PARALLAX DEPTH LAYERS (D3 — Immersive)
+============================================================ */
 
-#contacts_overlay {
+.hud-layer {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: none;
+  inset: 0;
+  pointer-events: none;
+  z-index: -10;
+  transform-style: preserve-3d;
 }
 
-#contacts_overlay.active {
-  display: block;
-}
+.hud-layer.depth-1 { transform: var(--depth-1); }
+.hud-layer.depth-2 { transform: var(--depth-2); }
+.hud-layer.depth-3 { transform: var(--depth-3); }
+.hud-layer.depth-4 { transform: var(--depth-4); }
+.hud-layer.depth-5 { transform: var(--depth-5); }
+/* ============================================================
+   HOLOGRAPHIC HEX GRID — Dynamic (H3)
+============================================================ */
 
-#contacts_panel {
-  position: fixed;
-  right: -400px;
-  top: 0;
-  width: 400px;
+.hex-grid {
+  width: 100%;
   height: 100%;
-  background: #fff;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-  padding: 20px;
-  transition: right 0.3s ease;
+  background-size: var(--hex-size) var(--hex-size);
+  background-image:
+    linear-gradient(
+      60deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      -60deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      0deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    );
+  animation: hexPulse 6s ease-in-out infinite,
+             hexDrift 40s linear infinite;
+  opacity: 0.55;
 }
 
-#contacts_panel.active {
-  right: 0;
+/* Hex pulse waves */
+@keyframes hexPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.75; }
 }
 
-#contacts_panel h2 {
-  margin-top: 20px;
+/* Slow drifting movement */
+@keyframes hexDrift {
+  0% { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(-120px, -80px, 0); }
+}
+/* ============================================================
+   HOLOGRAPHIC HEX GRID — Dynamic (H3)
+============================================================ */
+
+.hex-grid {
+  width: 100%;
+  height: 100%;
+  background-size: var(--hex-size) var(--hex-size);
+  background-image:
+    linear-gradient(
+      60deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      -60deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      0deg,
+      var(--hex-line) 1px,
+      transparent 1px
+    );
+  animation: hexPulse 6s ease-in-out infinite,
+             hexDrift 40s linear infinite;
+  opacity: 0.55;
 }
 
-#contacts_panel ul {
-  list-style: none;
-  padding: 0;
+/* Hex pulse waves */
+@keyframes hexPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.75; }
 }
 
-#contacts_panel li {
-  display: flex;
-  justify-content: space-between;
-  margin: 5px 0;
-  padding: 5px;
-  border-bottom: 1px solid #ddd;
+/* Slow drifting movement */
+@keyframes hexDrift {
+  0% { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(-120px, -80px, 0); }
+}
+/* ============================================================
+   FLICKER ENGINE — Retro‑Futuristic (T2)
+============================================================ */
+
+.hud-flicker {
+  animation: hudFlicker var(--hud-flicker-speed) steps(2, end) infinite;
 }
 
-.contact-actions button {
-  margin-left: 5px;
+@keyframes hudFlicker {
+  0% { opacity: 1; }
+  50% { opacity: 0.85; }
+  100% { opacity: 1; }
+}
+/* ============================================================
+   HOLOGRAPHIC PARTICLE FIELD
+============================================================ */
+
+.hud-particles {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 234, 255, 0.35) 1px,
+    transparent 1px
+  );
+  background-size: 3px 3px;
+  opacity: 0.15;
+  animation: particleDrift 60s linear infinite;
+  z-index: -8;
 }
 
-#call_ui {
-  margin-top: 20px;
-}
-
-video,
-audio {
-  max-width: 300px;
-  margin: 10px;
-  background: #000;
+@keyframes particleDrift {
+  0% { transform: translate3d(0,0,0); }
+  100% { transform: translate3d(80px, 120px, 0); }
 }
