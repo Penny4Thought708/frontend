@@ -1,50 +1,35 @@
-/* ============================================================
-   VIDEO.CSS — TRON HUD VIDEO CALL SYSTEM
-   Matches your rewritten HTML exactly.
-============================================================ */
+/* VIDEO.CSS — Video call UI */
 
-/* ------------------------------------------------------------
-   VIDEO PANEL BASE
------------------------------------------------------------- */
 #video-container {
   width: 720px;
-  height: 480px;
-  position: absolute;
+  max-width: 100%;
+  height: 460px;
+  position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(0.95);
-  background: var(--theme-panel-bg);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 12px;
-  backdrop-filter: blur(14px);
-  box-shadow: 0 0 22px var(--theme-accent-glow);
+  transform: translate(-50%, -50%);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(26px);
   padding: var(--space-4);
-  display: flex;
+  display: none;
   flex-direction: column;
-  gap: var(--space-4);
-  opacity: 0;
-  pointer-events: none;
-  transition: var(--motion-medium);
+  gap: var(--space-3);
   z-index: 400;
 }
 
 #video-container.active {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1);
+  display: flex;
 }
 
-/* ------------------------------------------------------------
-   REMOTE VIDEO WRAPPER
------------------------------------------------------------- */
+/* Remote */
 #remoteWrapper {
   flex: 1;
-  position: relative;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid var(--theme-panel-border);
-  background: rgba(0, 20, 40, 0.45);
-  box-shadow: inset 0 0 18px var(--theme-accent-glow);
+  background: #000;
 }
 
 #remoteVideo {
@@ -53,180 +38,41 @@
   object-fit: cover;
 }
 
-/* Remote avatar fallback */
-.remote-avatar {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.remote-avatar img {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  border: 2px solid var(--theme-panel-border-strong);
-  box-shadow: 0 0 22px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   LOCAL VIDEO WRAPPER
------------------------------------------------------------- */
+/* Local */
 #localVideoWrapper {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 180px;
-  height: 120px;
-  border-radius: 10px;
+  bottom: 24px;
+  right: 24px;
+  width: 160px;
+  height: 100px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--theme-panel-border);
-  background: rgba(0, 20, 40, 0.45);
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-  z-index: 20;
+  border: 1px solid var(--border-subtle);
+  background: #000;
 }
 
-#localVideo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Local avatar fallback */
-.local-avatar {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.local-avatar img {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  border: 2px solid var(--theme-panel-border-strong);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   CALL STATUS TEXT
------------------------------------------------------------- */
-#call-status {
-  text-align: center;
-  font-family: var(--font-family-hud);
-  font-size: var(--font-md);
-  color: var(--theme-accent);
-  text-shadow: 0 0 8px var(--theme-accent-glow);
-  margin-top: var(--space-2);
-}
-
-/* ------------------------------------------------------------
-   CALL CONTROLS
------------------------------------------------------------- */
+/* Controls */
 #call-controls {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: var(--space-4);
-  padding-top: var(--space-3);
+  gap: var(--space-3);
 }
 
 #call-controls button {
-  padding: var(--space-3);
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  color: var(--theme-accent);
-  font-size: 1.4rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
   cursor: pointer;
   transition: var(--motion-fast);
 }
 
 #call-controls button:hover {
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* End call button */
 #end-call {
-  background: rgba(255, 80, 80, 0.25);
-  border-color: rgba(255, 80, 80, 0.55);
-  color: rgba(255, 80, 80, 0.85);
-}
-
-#end-call:hover {
-  box-shadow: 0 0 18px rgba(255, 80, 80, 0.75);
-}
-
-/* Answer button */
-#answer-call {
-  background: rgba(0, 255, 136, 0.25);
-  border-color: rgba(0, 255, 136, 0.55);
-  color: rgba(0, 255, 136, 0.85);
-}
-
-#answer-call:hover {
-  box-shadow: 0 0 18px rgba(0, 255, 136, 0.75);
-}
-
-/* ------------------------------------------------------------
-   CALL TIMER
------------------------------------------------------------- */
-#call-timer {
-  font-family: var(--font-family-hud);
-  font-size: var(--font-md);
-  color: var(--theme-accent);
-  text-shadow: 0 0 8px var(--theme-accent-glow);
-  margin-right: var(--space-4);
-}
-
-/* ------------------------------------------------------------
-   CALL OVERLAY (Ringing / Connecting)
------------------------------------------------------------- */
-#callerOverlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 30;
-}
-
-#callerOverlay.active {
-  display: flex;
-}
-
-#callerOverlay::after {
-  content: "Connecting…";
-  font-family: var(--font-family-hud);
-  font-size: var(--font-lg);
-  color: var(--theme-accent);
-  text-shadow: 0 0 12px var(--theme-accent-glow);
-  animation: pulseText 1.4s infinite;
-}
-
-@keyframes pulseText {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
-}
-
-/* ------------------------------------------------------------
-   RESPONSIVE BEHAVIOR
------------------------------------------------------------- */
-@media (max-width: 900px) {
-  #video-container {
-    width: 95%;
-    height: auto;
-  }
-
-  #localVideoWrapper {
-    width: 140px;
-    height: 90px;
-  }
+  background: var(--danger-soft);
+  color: var(--danger-strong);
 }
