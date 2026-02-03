@@ -1,108 +1,142 @@
 /* ============================================================
-   TRON HUD — COMMAND RAIL (PHASE 4)
+   RAIL.CSS — TRON HUD COMMAND RAIL
+   Controls the left vertical navigation rail.
 ============================================================ */
 
+/* ------------------------------------------------------------
+   RAIL CONTAINER
+------------------------------------------------------------ */
 .hud-rail {
   position: fixed;
   left: 0;
   top: 0;
-  bottom: 0;
-  width: 78px;
+  width: 72px;
+  height: 100vh;
   background: rgba(0, 10, 20, 0.55);
-  border-right: 1px solid var(--hud-cyan-glow);
-  backdrop-filter: blur(18px);
+  border-right: 1px solid var(--theme-panel-border);
+  backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
   align-items: center;
   padding-top: var(--space-5);
-  gap: var(--space-3);
-  z-index: 2000;
-  box-shadow: 0 0 22px rgba(0, 234, 255, 0.25);
+  z-index: 150;
+  box-shadow: 0 0 22px rgba(0, 234, 255, 0.15);
 }
 
-/* Vertical glow spine */
+/* ------------------------------------------------------------
+   RAIL GLOW SPINE
+------------------------------------------------------------ */
 .rail-glow {
   position: absolute;
   left: 0;
   top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--hud-cyan-glow);
-  box-shadow: 0 0 18px var(--hud-cyan-glow);
+  width: 4px;
+  height: 100%;
+  background: var(--theme-accent);
+  box-shadow: 0 0 18px var(--theme-accent-glow);
+  opacity: 0.75;
 }
 
-/* HUD Buttons */
+/* ------------------------------------------------------------
+   HUD BUTTONS
+------------------------------------------------------------ */
 .hud-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-4);
+  border-radius: 10px;
   background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--hud-cyan-faint);
-  color: var(--hud-cyan);
+  border: 1px solid var(--theme-panel-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+  color: var(--theme-accent);
+  font-size: 1.4rem;
   cursor: pointer;
   transition: var(--motion-medium);
   position: relative;
-  box-shadow: 0 0 12px rgba(0, 234, 255, 0.15);
 }
 
 .hud-btn img {
   width: 26px;
   height: 26px;
-  filter: drop-shadow(0 0 6px var(--hud-cyan-glow));
+  filter: drop-shadow(0 0 6px var(--theme-accent-glow));
 }
 
-/* Hover */
+/* Hover glow */
 .hud-btn:hover {
-  border-color: var(--hud-cyan);
-  box-shadow: 0 0 18px var(--hud-cyan-glow);
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 18px var(--theme-accent-glow);
   transform: translateY(-3px);
 }
 
-/* Active */
+/* Active state */
 .hud-btn.active {
-  border-color: var(--hud-cyan-glow-strong);
-  box-shadow: 0 0 22px var(--hud-cyan-glow-strong);
-  background: rgba(0, 234, 255, 0.15);
+  background: rgba(0, 234, 255, 0.18);
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 22px var(--theme-accent-glow);
 }
 
-/* HUD Tooltips */
-.hud-btn::after {
+/* ------------------------------------------------------------
+   TOOLTIP SYSTEM
+------------------------------------------------------------ */
+.hud-btn[data-tip]::after {
   content: attr(data-tip);
   position: absolute;
-  left: 70px;
+  left: 60px;
+  top: 50%;
+  transform: translateY(-50%);
   background: rgba(0, 20, 40, 0.85);
-  border: 1px solid var(--hud-cyan-glow);
-  padding: 6px 12px;
+  border: 1px solid var(--theme-panel-border);
+  padding: 6px 10px;
   border-radius: 6px;
-  color: var(--hud-cyan);
-  font-size: var(--font-xs);
+  color: var(--theme-accent);
+  font-size: var(--font-sm);
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-10px);
   transition: var(--motion-medium);
-  white-space: nowrap;
+  text-shadow: 0 0 6px var(--theme-accent-glow);
 }
 
-.hud-btn:hover::after {
+.hud-btn:hover[data-tip]::after {
   opacity: 1;
-  transform: translateX(0);
+  transform: translateY(-50%) translateX(4px);
 }
 
-/* Spacer */
+/* ------------------------------------------------------------
+   SPACER
+------------------------------------------------------------ */
 .rail-spacer {
   flex: 1;
 }
-/* Flicker pulse on hover */
-.hud-btn:hover {
-  animation: hudPulse 0.6s ease-out;
+
+/* ------------------------------------------------------------
+   LOGOUT BUTTON SPECIAL STYLE
+------------------------------------------------------------ */
+.logoutBtn img {
+  width: 24px;
+  height: 24px;
+  filter: drop-shadow(0 0 6px rgba(255, 80, 80, 0.75));
 }
 
-@keyframes hudPulse {
-  0% { box-shadow: 0 0 0px var(--hud-cyan-glow); }
-  50% { box-shadow: 0 0 22px var(--hud-cyan-glow); }
-  100% { box-shadow: 0 0 12px var(--hud-cyan-glow); }
+.logoutBtn:hover {
+  border-color: rgba(255, 80, 80, 0.75);
+  box-shadow: 0 0 18px rgba(255, 80, 80, 0.75);
+}
+
+/* ------------------------------------------------------------
+   HELP BUTTON
+------------------------------------------------------------ */
+#btn_help {
+  margin-bottom: var(--space-5);
+}
+
+/* ------------------------------------------------------------
+   MATERIAL ICONS FIX
+------------------------------------------------------------ */
+.hud-btn .material-symbols-outlined {
+  font-size: 26px;
+  color: var(--theme-accent);
+  text-shadow: 0 0 6px var(--theme-accent-glow);
 }
