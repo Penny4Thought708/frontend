@@ -1,101 +1,187 @@
 /* ============================================================
-   TRON ARCADE HUD — GLOBAL ROOT SYSTEM
-   (Electric Cyan • Glow‑2 • Midnight Gradient • Cinematic Motion)
+   LAYOUT.CSS — TRON HUD STRUCTURAL LAYOUT
+   Defines the 3‑column workspace, grid, and global structure.
 ============================================================ */
 
-:root {
-  /* ------------------------------------------------------------
-     COLOR SYSTEM — ELECTRIC CYAN (Primary)
-  ------------------------------------------------------------ */
-  --hud-cyan: #00eaff;
-  --hud-cyan-soft: rgba(0, 234, 255, 0.65);
-  --hud-cyan-faint: rgba(0, 234, 255, 0.25);
-  --hud-cyan-glow: rgba(0, 234, 255, 0.55); /* Glow‑2 */
-  --hud-cyan-glow-strong: rgba(0, 234, 255, 0.75);
+/* ------------------------------------------------------------
+   BODY + ROOT LAYOUT
+------------------------------------------------------------ */
+body.dark-mode {
+  background: var(--hud-bg-gradient);
+  color: #fff;
+  font-family: var(--font-family-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
 
-  /* ------------------------------------------------------------
-     BACKGROUND — MIDNIGHT BLUE GRADIENT (BG‑3)
-  ------------------------------------------------------------ */
-  --hud-bg-1: #000814;
-  --hud-bg-2: #001122;
-  --hud-bg-3: #001a33;
+/* Keep your header exactly as-is */
+.site-header.app-header {
+  position: relative;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hud-cyan-faint);
+  padding: var(--space-4) var(--space-5);
+}
 
-  --hud-bg-gradient: linear-gradient(
-    180deg,
-    var(--hud-bg-1) 0%,
-    var(--hud-bg-2) 40%,
-    var(--hud-bg-3) 100%
-  );
+/* ------------------------------------------------------------
+   APP SHELL
+------------------------------------------------------------ */
+.app-shell {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 90px); /* subtract header height */
+  position: relative;
+  overflow: hidden;
+}
 
-  /* ------------------------------------------------------------
-     PANEL GLASS SYSTEM
-  ------------------------------------------------------------ */
-  --hud-panel-bg: rgba(0, 20, 40, 0.45);
-  --hud-panel-border: rgba(0, 234, 255, 0.35);
-  --hud-panel-border-strong: rgba(0, 234, 255, 0.55);
-  --hud-panel-shadow: 0 0 22px rgba(0, 234, 255, 0.25);
+/* ------------------------------------------------------------
+   HUD WORKSPACE GRID (3‑column layout)
+------------------------------------------------------------ */
+.hud-workspace {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
 
-  /* ------------------------------------------------------------
-     SPACING SCALE (P2 — Balanced HUD)
-  ------------------------------------------------------------ */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+/* The grid wrapper */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 360px;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  padding-left: 72px; /* space for left rail */
+}
 
-  /* ------------------------------------------------------------
-     TYPOGRAPHY SCALE
-  ------------------------------------------------------------ */
-  --font-xs: 0.75rem;
-  --font-sm: 0.85rem;
-  --font-md: 1rem;
-  --font-lg: 1.25rem;
-  --font-xl: 1.6rem;
-  --font-xxl: 2.2rem;
+/* ------------------------------------------------------------
+   HUD COLUMNS
+------------------------------------------------------------ */
+.hud-column {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
 
-  --font-family-hud: 'Orbitron', 'Rajdhani', 'Segoe UI', sans-serif;
-  --font-family-body: 'Inter', 'Segoe UI', sans-serif;
+/* Left column */
+.hud-left {
+  border-right: 1px solid var(--hud-cyan-faint);
+  background: rgba(0, 10, 20, 0.25);
+}
 
-  /* ------------------------------------------------------------
-     ANIMATION SYSTEM — CINEMATIC TRON (B)
-  ------------------------------------------------------------ */
-  --motion-fast: 120ms cubic-bezier(.22, .61, .36, 1);
-  --motion-medium: 260ms cubic-bezier(.22, .61, .36, 1);
-  --motion-slow: 480ms cubic-bezier(.22, .61, .36, 1);
+/* Center column */
+.hud-center {
+  background: rgba(0, 10, 20, 0.15);
+  border-right: 1px solid var(--hud-cyan-faint);
+}
 
-  /* Flicker + Scanline Timing */
-  --hud-flicker-speed: 0.12s;
-  --hud-scanline-speed: 14s;
+/* Right column */
+.hud-right {
+  background: rgba(0, 10, 20, 0.25);
+}
 
-  /* ------------------------------------------------------------
-     DEPTH SYSTEM — IMMERSIVE PARALLAX (D3)
-  ------------------------------------------------------------ */
-  --depth-1: translateZ(-60px) scale(1.1);
-  --depth-2: translateZ(-30px) scale(1.05);
-  --depth-3: translateZ(0px) scale(1);
-  --depth-4: translateZ(40px) scale(0.97);
-  --depth-5: translateZ(80px) scale(0.94);
+/* ------------------------------------------------------------
+   WORKSPACE BACKGROUND LAYER
+------------------------------------------------------------ */
+.workspace-bg {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 0;
+}
 
-  /* Panel tilt */
-  --hud-tilt-angle: 2deg;
+/* ------------------------------------------------------------
+   FLOATING PANELS (video, modals, overlays)
+------------------------------------------------------------ */
+.hud-floating {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+}
 
-  /* ------------------------------------------------------------
-     HEX GRID SYSTEM — HOLOGRAPHIC (G3 + H3)
-  ------------------------------------------------------------ */
-  --hex-size: 42px;
-  --hex-line: rgba(0, 234, 255, 0.18);
-  --hex-line-strong: rgba(0, 234, 255, 0.35);
-  --hex-pulse: rgba(0, 234, 255, 0.55);
+.hud-floating > * {
+  pointer-events: auto;
+}
 
-  /* ------------------------------------------------------------
-     THEME ENGINE (C1–C4)
-     These will be overridden by theme classes later.
-  ------------------------------------------------------------ */
-  --theme-accent: var(--hud-cyan);
-  --theme-accent-glow: var(--hud-cyan-glow);
-  --theme-panel-bg: var(--hud-panel-bg);
-  --theme-panel-border: var(--hud-panel-border);
-  --theme-panel-border-strong: var(--hud-panel-border-strong);
+/* ------------------------------------------------------------
+   FLOATING PANEL BASE
+------------------------------------------------------------ */
+.floating-panel {
+  position: absolute;
+  background: var(--theme-panel-bg);
+  border: 1px solid var(--theme-panel-border);
+  box-shadow: var(--hud-panel-shadow);
+  backdrop-filter: blur(14px);
+  border-radius: 10px;
+  padding: var(--space-4);
+  animation: panelEnter var(--motion-medium) ease-out;
+}
+
+/* Slide-in helpers */
+.slide-from-left {
+  left: 0;
+  top: 0;
+  height: 100%;
+  transform: translateX(-100%);
+  transition: transform var(--motion-medium);
+}
+
+.slide-from-right {
+  right: 0;
+  top: 0;
+  height: 100%;
+  transform: translateX(100%);
+  transition: transform var(--motion-medium);
+}
+
+.slide-from-left.active,
+.slide-from-right.active {
+  transform: translateX(0);
+}
+
+/* ------------------------------------------------------------
+   MINI CHAT BUBBLE
+------------------------------------------------------------ */
+.mini-chat-bubble {
+  position: absolute;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  background: var(--theme-panel-bg);
+  border: 1px solid var(--theme-panel-border);
+  padding: var(--space-3);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+  cursor: pointer;
+  z-index: 300;
+}
+
+/* ------------------------------------------------------------
+   SCROLL BEHAVIOR
+------------------------------------------------------------ */
+.hud-column::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hud-column::-webkit-scrollbar-thumb {
+  background: var(--hud-cyan-faint);
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------
+   PANEL ENTER ANIMATION
+------------------------------------------------------------ */
+@keyframes panelEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
