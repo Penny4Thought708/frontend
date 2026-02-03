@@ -55,7 +55,7 @@
   flex-direction: column;
   gap: 18px;
   height: 100%;
-
+ width:480px;
   /* Slide from left */
   transform: translateX(-140%);
   opacity: 0;
