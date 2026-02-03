@@ -1,22 +1,150 @@
 /* ============================================================
-   TRON HUD — GLASS PANEL SYSTEM (PHASE 5)
+   PANELS.CSS — TRON HUD GLASS PANEL SYSTEM
+   Applies to all panels across the OS.
 ============================================================ */
 
-.hud-panel {
+/* ------------------------------------------------------------
+   BASE PANEL STYLE
+------------------------------------------------------------ */
+.hud-panel,
+.panel,
+.floating-panel,
+.contacts-panel,
+.messaging-panel,
+.profile-panel,
+.settings-shell,
+.video-panel,
+.search-panel {
   background: var(--theme-panel-bg);
   border: 1px solid var(--theme-panel-border);
   border-radius: 10px;
   padding: var(--space-4);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 0 22px rgba(0, 234, 255, 0.18);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(14px);
+  box-shadow: var(--hud-panel-shadow);
   transform-style: preserve-3d;
   transition: var(--motion-medium);
   animation: panelEnter var(--motion-medium) ease-out;
 }
 
-/* Cinematic slide-in */
+/* ------------------------------------------------------------
+   PANEL HOVER TILT (D3)
+------------------------------------------------------------ */
+.hud-panel:hover,
+.panel:hover,
+.floating-panel:hover {
+  transform: rotateX(var(--hud-tilt-angle)) rotateY(calc(var(--hud-tilt-angle) * -1));
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 28px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   PANEL HEADER
+------------------------------------------------------------ */
+.hud-panel-header,
+.panel-header {
+  border-bottom: 1px solid var(--theme-panel-border);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-panel-header h2,
+.panel-header h2 {
+  font-family: var(--font-family-hud);
+  font-size: var(--font-lg);
+  color: var(--theme-accent);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   PANEL BODY
+------------------------------------------------------------ */
+.hud-panel-body,
+.panel-section,
+.panel-body {
+  font-size: var(--font-md);
+  color: var(--hud-cyan-soft);
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------
+   CORNER NODES (TRON ACCENTS)
+------------------------------------------------------------ */
+.hud-panel::before,
+.hud-panel::after,
+.panel::before,
+.panel::after,
+.floating-panel::before,
+.floating-panel::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--theme-accent);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.hud-panel::before,
+.panel::before,
+.floating-panel::before {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.hud-panel::after,
+.panel::after,
+.floating-panel::after {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
+
+/* ------------------------------------------------------------
+   SCANLINE OVERLAY
+------------------------------------------------------------ */
+.hud-panel::after,
+.panel::after,
+.floating-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03) 0px,
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px
+  );
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   PANEL ACTIVE PULSE
+------------------------------------------------------------ */
+.hud-panel.active,
+.panel.active,
+.floating-panel.active {
+  animation: panelPulse 0.8s ease-out;
+}
+
+@keyframes panelPulse {
+  0% { box-shadow: 0 0 0px var(--theme-accent-glow); }
+  50% { box-shadow: 0 0 28px var(--theme-accent-glow); }
+  100% { box-shadow: 0 0 18px var(--theme-accent-glow); }
+}
+
+/* ------------------------------------------------------------
+   PANEL ENTER ANIMATION
+------------------------------------------------------------ */
 @keyframes panelEnter {
   0% {
     opacity: 0;
@@ -28,81 +156,119 @@
   }
 }
 
-/* Hover tilt (D3) */
-.hud-panel:hover {
-  transform: rotateX(var(--hud-tilt-angle)) rotateY(calc(var(--hud-tilt-angle) * -1));
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 28px var(--hud-cyan-glow);
-}
-
-/* Panel Header */
-.hud-panel-header {
-  border-bottom: 1px solid var(--theme-panel-border);
-  padding-bottom: var(--space-3);
-  margin-bottom: var(--space-4);
+/* ------------------------------------------------------------
+   SECTION HEADERS (Contacts, Voicemail, etc.)
+------------------------------------------------------------ */
+.section-header {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--theme-panel-border);
 }
 
-.hud-panel-header h2 {
+.section-header h3 {
   font-family: var(--font-family-hud);
-  font-size: var(--font-lg);
-  color: var(--hud-cyan);
-  letter-spacing: 1px;
-  text-shadow: 0 0 8px var(--hud-cyan-glow);
-}
-
-/* Panel Body */
-.hud-panel-body {
   font-size: var(--font-md);
-  color: var(--hud-cyan-soft);
-  line-height: 1.5;
-}
-/* Corner nodes */
-.hud-panel::before,
-.hud-panel::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--hud-cyan);
-  opacity: 0.55;
+  color: var(--theme-accent);
+  text-shadow: 0 0 6px var(--theme-accent-glow);
 }
 
-.hud-panel::before {
-  top: -2px;
-  left: -2px;
-  border-right: none;
-  border-bottom: none;
+/* ------------------------------------------------------------
+   BADGES (Voicemail, Notifications, etc.)
+------------------------------------------------------------ */
+.vm-badge,
+.badge,
+.notification-badge {
+  background: var(--theme-accent);
+  color: #000;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: var(--font-sm);
+  font-weight: bold;
+  box-shadow: 0 0 8px var(--theme-accent-glow);
 }
 
-.hud-panel::after {
-  bottom: -2px;
-  right: -2px;
-  border-left: none;
-  border-top: none;
-}
-/* Panel scanlines */
-.hud-panel::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.03) 0px,
-    rgba(255,255,255,0.03) 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  opacity: 0.15;
-}
-.hud-panel.active {
-  animation: panelPulse 0.8s ease-out;
+/* ------------------------------------------------------------
+   PANEL LISTS (Contacts, Logs, Messages)
+------------------------------------------------------------ */
+.panel-section ul,
+.contacts-panel ul,
+.call-log-list,
+.voicemail-list,
+#messaging_list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-@keyframes panelPulse {
-  0% { box-shadow: 0 0 0px var(--hud-cyan-glow); }
-  50% { box-shadow: 0 0 28px var(--hud-cyan-glow); }
-  100% { box-shadow: 0 0 18px var(--hud-cyan-glow); }
+/* ------------------------------------------------------------
+   PANEL CARDS (Contact rows, log entries)
+------------------------------------------------------------ */
+.panel-card,
+.contact-row,
+.call-log-entry,
+.voicemail-entry {
+  background: rgba(0, 20, 40, 0.35);
+  border: 1px solid var(--theme-panel-border);
+  padding: var(--space-3);
+  border-radius: 8px;
+  transition: var(--motion-medium);
 }
+
+.panel-card:hover,
+.contact-row:hover,
+.call-log-entry:hover,
+.voicemail-entry:hover {
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 14px var(--theme-accent-glow);
+  transform: translateX(6px);
+}
+
+/* ------------------------------------------------------------
+   PANEL BUTTONS
+------------------------------------------------------------ */
+.panel button,
+.panel .btn,
+.hud-panel button {
+  background: rgba(0, 234, 255, 0.12);
+  border: 1px solid var(--theme-accent);
+  color: var(--theme-accent);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 6px;
+  transition: var(--motion-fast);
+}
+
+.panel button:hover,
+.hud-panel button:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+  background: rgba(0, 234, 255, 0.22);
+}
+
+/* ------------------------------------------------------------
+   INPUTS INSIDE PANELS
+------------------------------------------------------------ */
+.hud-panel input,
+.hud-panel textarea,
+.hud-panel select,
+.panel input,
+.panel textarea,
+.panel select {
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  padding: var(--space-3);
+  border-radius: 8px;
+  color: var(--theme-accent);
+  width: 100%;
+  transition: var(--motion-fast);
+}
+
+.hud-panel input:focus,
+.hud-panel textarea:focus,
+.panel input:focus,
+.panel textarea:focus {
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
