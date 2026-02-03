@@ -31,20 +31,21 @@
 @keyframes panelFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(22px);
-    filter: blur(10px);
+    transform: translateY(26px);
+    filter: blur(12px);
   }
-  60% {
+  70% {
     opacity: 1;
-    transform: translateY(0);
-    filter: blur(4px);
+    transform: translateY(-3px);
+    filter: blur(2px);
   }
   100% {
     opacity: 1;
-    transform: translateY(45px);
+    transform: translateY(0);
     filter: blur(0);
   }
 }
+
 
 
 
