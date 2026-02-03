@@ -1,11 +1,5 @@
-/* ============================================================
-   CONTACTS.CSS — TRON HUD CONTACT LIST + PROFILE PREVIEW
-   Matches your rewritten HTML exactly.
-============================================================ */
+/* CONTACTS.CSS — Contact rows, profile preview */
 
-/* ------------------------------------------------------------
-   CONTACT ROWS
------------------------------------------------------------- */
 .contact-row,
 #contacts li,
 #contacts-lookup li,
@@ -14,132 +8,63 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: var(--motion-medium);
+  transition: var(--motion-fast);
 }
 
 .contact-row:hover,
 #contacts li:hover,
 #contacts-lookup li:hover,
 #messaging_list li:hover {
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-  transform: translateX(6px);
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-/* ------------------------------------------------------------
-   CONTACT AVATAR
------------------------------------------------------------- */
+/* Avatar */
 .contact-avatar,
 .profile-avatar img,
 #remoteAvatarImg,
 #localAvatarImg {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid var(--theme-panel-border);
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
   object-fit: cover;
-  box-shadow: 0 0 8px var(--theme-accent-glow);
 }
 
-/* Small avatar (typing indicator, lists) */
-.typing-avatar,
-.small-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--theme-panel-border);
-}
-
-/* ------------------------------------------------------------
-   PRESENCE DOT
------------------------------------------------------------- */
+/* Status dot */
 .status-dot {
   position: absolute;
-  bottom: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #000;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid #05060a;
 }
 
 .status-dot.online {
-  background: #00ff88;
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.75);
+  background: #3ddc84;
 }
 
 .status-dot.offline {
-  background: #888;
+  background: #6b6c75;
 }
 
-/* ------------------------------------------------------------
-   CONTACT MENU (3-dot menu)
------------------------------------------------------------- */
-#menu_Btn_contact {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-#menu_Btn_contact:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* Dropdown */
-#contact_menu_box {
-  position: absolute;
-  top: 60px;
-  right: 20px;
-  background: rgba(0, 20, 40, 0.85);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
-  padding: var(--space-3);
-  display: none;
-  z-index: 200;
-}
-
-#contact_menu_box.active {
-  display: block;
-}
-
-#contact_menu_list li {
-  padding: var(--space-3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-#contact_menu_list li:hover {
-  background: rgba(0, 234, 255, 0.12);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   PROFILE CARD
------------------------------------------------------------- */
+/* Profile card */
 .profile_card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated-soft);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 12px;
-  box-shadow: 0 0 18px var(--theme-accent-glow);
 }
 
-/* Avatar wrapper */
 .profile-avatar {
   position: relative;
   width: 120px;
@@ -149,261 +74,40 @@
 .profile-avatar img {
   width: 120px;
   height: 120px;
-  border-radius: 50%;
+  border-radius: 999px;
+  object-fit: cover;
 }
 
-/* Avatar buttons */
-.profile_chgBtn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.profile_chgBtn .upload-btn,
-.profile_chgBtn .delete-account-btn {
-  padding: var(--space-2) var(--space-3);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 6px;
-  color: var(--theme-accent);
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-.profile_chgBtn .upload-btn:hover,
-.profile_chgBtn .delete-account-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   PROFILE INFO
------------------------------------------------------------- */
-.profile-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.profile-info h2 {
-  font-family: var(--font-family-hud);
-  font-size: var(--font-lg);
-  color: var(--theme-accent);
-  text-align: center;
-  text-shadow: 0 0 8px var(--theme-accent-glow);
-}
-
-.profile-info p {
-  text-align: center;
-  color: var(--hud-cyan-soft);
-}
-
-/* Fields */
-.profile-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.profile-field label {
-  font-size: var(--font-sm);
-  color: var(--theme-accent);
-}
-
-.profile-field input,
-.profile-field textarea {
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  padding: var(--space-3);
-  border-radius: 8px;
-  color: var(--theme-accent);
-  transition: var(--motion-fast);
-}
-
-.profile-field input:focus,
-.profile-field textarea:focus {
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   SOCIAL LINKS
------------------------------------------------------------- */
-.profile-social {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.social-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-/* ------------------------------------------------------------
-   PROFILE ACTIONS
------------------------------------------------------------- */
+/* Profile actions */
 .profile-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .save-profile-btn,
 .logout-btn,
 .delete-account-btn {
   padding: var(--space-3);
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  color: var(--theme-accent);
-  text-align: center;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
+  text-align: center;
   transition: var(--motion-fast);
 }
 
 .save-profile-btn:hover,
-.logout-btn:hover,
-.delete-account-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* Danger button */
 .delete-account-btn {
-  border-color: rgba(255, 80, 80, 0.55);
-  color: rgba(255, 80, 80, 0.85);
+  border-color: rgba(255, 91, 106, 0.4);
+  color: var(--danger-strong);
 }
 
 .delete-account-btn:hover {
-  box-shadow: 0 0 14px rgba(255, 80, 80, 0.75);
-}
-
-/* ------------------------------------------------------------
-   FULL PROFILE MODAL
------------------------------------------------------------- */
-.full-profile-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: var(--motion-medium);
-}
-
-.full-profile-modal.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.full-profile-content {
-  width: 420px;
-  background: rgba(0, 20, 40, 0.65);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 12px;
-  padding: var(--space-5);
-  box-shadow: 0 0 22px var(--theme-accent-glow);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-/* Banner */
-.full-profile-banner {
-  width: 100%;
-  height: 120px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--theme-panel-border);
-}
-
-.full-profile-banner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Avatar */
-.avatar-frame {
-  width: 120px;
-  height: 120px;
-  margin: -60px auto 0;
-  border-radius: 50%;
-  border: 2px solid var(--theme-accent);
-  box-shadow: 0 0 18px var(--theme-accent-glow);
-  overflow: hidden;
-}
-
-.full-profile-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Profile lines */
-.profile-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.profile-line img {
-  width: 24px;
-  height: 24px;
-}
-
-.profile-line a {
-  color: var(--theme-accent);
-  text-shadow: 0 0 6px var(--theme-accent-glow);
-}
-
-/* Copy buttons */
-.copy-row {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.copy-btn {
-  flex: 1;
-  padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 8px;
-  color: var(--theme-accent);
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-.copy-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* Profile modal actions */
-.profile-action-btn {
-  flex: 1;
-  padding: var(--space-3);
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  color: var(--theme-accent);
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-.profile-action-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-.profile-action-btn.danger {
-  border-color: rgba(255, 80, 80, 0.55);
-  color: rgba(255, 80, 80, 0.85);
-}
-
-.profile-action-btn.danger:hover {
-  box-shadow: 0 0 14px rgba(255, 80, 80, 0.75);
+  background: var(--danger-soft);
 }
 
