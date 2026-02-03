@@ -1,187 +1,73 @@
-/* ============================================================
-   LAYOUT.CSS — TRON HUD STRUCTURAL LAYOUT
-   Defines the 3‑column workspace, grid, and global structure.
-============================================================ */
+/* LAYOUT.CSS — App shell, workspace grid */
 
-/* ------------------------------------------------------------
-   BODY + ROOT LAYOUT
------------------------------------------------------------- */
-body.dark-mode {
-  background: var(--hud-bg-gradient);
-  color: #fff;
-  font-family: var(--font-family-body);
-  min-height: 100vh;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* Keep your header exactly as-is */
-.site-header.app-header {
-  position: relative;
-  z-index: 50;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--hud-cyan-faint);
-  padding: var(--space-4) var(--space-5);
-}
-
-/* ------------------------------------------------------------
-   APP SHELL
------------------------------------------------------------- */
-.app-shell {
-  display: flex;
-  width: 100%;
-  height: calc(100vh - 90px); /* subtract header height */
-  position: relative;
-  overflow: hidden;
-}
-
-/* ------------------------------------------------------------
-   HUD WORKSPACE GRID (3‑column layout)
------------------------------------------------------------- */
-.hud-workspace {
-  display: flex;
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-/* The grid wrapper */
-.workspace-grid {
+.app-root {
+  height: 100vh;
   display: grid;
-  grid-template-columns: 320px 1fr 360px;
-  width: 100%;
-  height: 100%;
+  grid-template-columns: 72px minmax(0, 1fr);
+  background: radial-gradient(circle at top, #151827 0, #05060a 55%);
+  color: var(--text-primary);
+}
+
+.app-main {
   position: relative;
-  padding-left: 72px; /* space for left rail */
-}
-
-/* ------------------------------------------------------------
-   HUD COLUMNS
------------------------------------------------------------- */
-.hud-column {
-  position: relative;
-  height: 100%;
-  overflow-y: auto;
   padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-/* Left column */
-.hud-left {
-  border-right: 1px solid var(--hud-cyan-faint);
-  background: rgba(0, 10, 20, 0.25);
+/* Workspace grid */
+.workspace-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1.4fr) 340px;
+  gap: var(--space-4);
+  align-items: stretch;
 }
 
-/* Center column */
-.hud-center {
-  background: rgba(0, 10, 20, 0.15);
-  border-right: 1px solid var(--hud-cyan-faint);
-}
-
-/* Right column */
-.hud-right {
-  background: rgba(0, 10, 20, 0.25);
-}
-
-/* ------------------------------------------------------------
-   WORKSPACE BACKGROUND LAYER
------------------------------------------------------------- */
-.workspace-bg {
-  position: absolute;
-  inset: 0;
-  background: transparent;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ------------------------------------------------------------
-   FLOATING PANELS (video, modals, overlays)
------------------------------------------------------------- */
-.hud-floating {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 200;
-}
-
-.hud-floating > * {
-  pointer-events: auto;
-}
-
-/* ------------------------------------------------------------
-   FLOATING PANEL BASE
------------------------------------------------------------- */
-.floating-panel {
-  position: absolute;
-  background: var(--theme-panel-bg);
-  border: 1px solid var(--theme-panel-border);
-  box-shadow: var(--hud-panel-shadow);
-  backdrop-filter: blur(14px);
-  border-radius: 10px;
+/* Panels */
+.workspace-panel {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(26px);
   padding: var(--space-4);
-  animation: panelEnter var(--motion-medium) ease-out;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-/* Slide-in helpers */
-.slide-from-left {
-  left: 0;
-  top: 0;
-  height: 100%;
-  transform: translateX(-100%);
-  transition: transform var(--motion-medium);
+/* Panel header */
+.workspace-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
 }
 
-.slide-from-right {
-  right: 0;
-  top: 0;
-  height: 100%;
-  transform: translateX(100%);
-  transition: transform var(--motion-medium);
+.workspace-panel-title {
+  font-size: var(--font-md);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
-.slide-from-left.active,
-.slide-from-right.active {
-  transform: translateX(0);
-}
-
-/* ------------------------------------------------------------
-   MINI CHAT BUBBLE
------------------------------------------------------------- */
-.mini-chat-bubble {
-  position: absolute;
-  bottom: var(--space-5);
-  right: var(--space-5);
-  background: var(--theme-panel-bg);
-  border: 1px solid var(--theme-panel-border);
-  padding: var(--space-3);
-  border-radius: 50%;
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-  cursor: pointer;
-  z-index: 300;
-}
-
-/* ------------------------------------------------------------
-   SCROLL BEHAVIOR
------------------------------------------------------------- */
-.hud-column::-webkit-scrollbar {
-  width: 8px;
-}
-
-.hud-column::-webkit-scrollbar-thumb {
-  background: var(--hud-cyan-faint);
-  border-radius: 4px;
-}
-
-/* ------------------------------------------------------------
-   PANEL ENTER ANIMATION
------------------------------------------------------------- */
-@keyframes panelEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+/* Responsive */
+@media (max-width: 1200px) {
+  .workspace-grid {
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
   }
 }
+
+@media (max-width: 900px) {
+  .app-root {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+}
+
