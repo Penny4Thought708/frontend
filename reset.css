@@ -53,3 +53,33 @@ ul {
   background: rgba(148, 163, 184, 0.5);
   border-radius: 999px;
 }
+/* ============================================================
+   THEME C2 — CYBERPUNK NEON
+============================================================ */
+.theme-cyberpunk {
+  --theme-accent: #ff00ff;
+  --theme-accent-glow: rgba(255, 0, 255, 0.55);
+  --theme-panel-bg: rgba(20, 0, 40, 0.45);
+  --theme-panel-border: rgba(255, 0, 255, 0.35);
+  --theme-panel-border-strong: rgba(255, 0, 255, 0.55);
+}
+/* ============================================================
+   THEME C3 — TACTICAL HUD
+============================================================ */
+.theme-tactical {
+  --theme-accent: #00ff88;
+  --theme-accent-glow: rgba(0, 255, 136, 0.55);
+  --theme-panel-bg: rgba(0, 40, 20, 0.45);
+  --theme-panel-border: rgba(0, 255, 136, 0.35);
+  --theme-panel-border-strong: rgba(0, 255, 136, 0.55);
+}
+/* ============================================================
+   THEME C4 — QUANTUM GLASS
+============================================================ */
+.theme-quantum {
+  --theme-accent: #d0eaff;
+  --theme-accent-glow: rgba(208, 234, 255, 0.55);
+  --theme-panel-bg: rgba(255, 255, 255, 0.12);
+  --theme-panel-border: rgba(208, 234, 255, 0.35);
+  --theme-panel-border-strong: rgba(208, 234, 255, 0.55);
+}
