@@ -1,149 +1,108 @@
 /* ============================================================
-   LEFT RAIL — PREMIUM GLASS / NEON STYLE
+   TRON HUD — COMMAND RAIL (PHASE 4)
 ============================================================ */
 
-.app-rail {
-  background: rgba(5, 7, 12, 0.75);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-
-  border-right: 1px solid rgba(255,255,255,0.06);
-
+.hud-rail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 78px;
+  background: rgba(0, 10, 20, 0.55);
+  border-right: 1px solid var(--hud-cyan-glow);
+  backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  padding: 14px 0;
-  gap: 10px;
-
-  position: relative;
-  z-index: 15;
-
-  width: 72px;          /* FIXED WIDTH */
-  overflow: visible;    /* allow tooltips to show */
-  transition: none;     /* no slide-out */
+  padding-top: var(--space-5);
+  gap: var(--space-3);
+  z-index: 2000;
+  box-shadow: 0 0 22px rgba(0, 234, 255, 0.25);
 }
 
-/* Remove slide-out behavior */
-.app-rail:hover {
-  width: 72px;
-}
-
-/* Notification label */
-.rail-notifications {
-  margin-bottom: 6px;
-  color: #f97316;
-  font-size: 0.8rem;
-  position: relative;
-}
-
-/* Notification badge */
-#notificationCount {
+/* Vertical glow spine */
+.rail-glow {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #ff3b3b;
-  color: white;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  box-shadow: 0 0 8px rgba(255,0,0,0.6);
-  animation: pulseBadge 1.4s infinite ease-in-out;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--hud-cyan-glow);
+  box-shadow: 0 0 18px var(--hud-cyan-glow);
 }
 
-/* Rail button */
-.rail-btn {
-  position: relative;
-  width: 46px;
-  height: 46px;
-
+/* HUD Buttons */
+.hud-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--hud-cyan-faint);
+  color: var(--hud-cyan);
   display: flex;
   align-items: center;
   justify-content: center;
-
-  border-radius: 14px;
-
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-
-  color: #e5e7eb;
+  font-size: 1.35rem;
   cursor: pointer;
-
-  transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+  transition: var(--motion-medium);
+  position: relative;
+  box-shadow: 0 0 12px rgba(0, 234, 255, 0.15);
 }
 
-.rail-btn img {
-  max-width: 24px;
-  max-height: 24px;
+.hud-btn img {
+  width: 26px;
+  height: 26px;
+  filter: drop-shadow(0 0 6px var(--hud-cyan-glow));
 }
 
-/* Hover glow */
-.rail-btn:hover {
-  background: rgba(255,255,255,0.14);
-  transform: translateY(-2px);
-  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.45);
+/* Hover */
+.hud-btn:hover {
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 18px var(--hud-cyan-glow);
+  transform: translateY(-3px);
 }
 
-/* Active state */
-.rail-btn.active {
-  background: rgba(var(--accent-rgb), 0.25);
-  border-color: rgba(var(--accent-rgb), 0.55);
-  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55);
-  transform: translateY(-2px) scale(1.05);
+/* Active */
+.hud-btn.active {
+  border-color: var(--hud-cyan-glow-strong);
+  box-shadow: 0 0 22px var(--hud-cyan-glow-strong);
+  background: rgba(0, 234, 255, 0.15);
 }
 
-/* Pressed */
-.rail-btn:active {
-  transform: scale(0.95);
-}
-
-/* Ripple effect */
-.rail-btn::before {
-  content: "";
+/* HUD Tooltips */
+.hud-btn::after {
+  content: attr(data-tip);
   position: absolute;
-  width: 8px;
-  height: 8px;
-  background: rgba(var(--accent-rgb), 0.5);
-  border-radius: 50%;
-  transform: scale(0);
+  left: 70px;
+  background: rgba(0, 20, 40, 0.85);
+  border: 1px solid var(--hud-cyan-glow);
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--hud-cyan);
+  font-size: var(--font-xs);
   opacity: 0;
-  transition: transform 0.4s ease, opacity 0.4s ease;
+  pointer-events: none;
+  transform: translateX(-10px);
+  transition: var(--motion-medium);
+  white-space: nowrap;
 }
 
-.rail-btn:active::before {
-  transform: scale(12);
-  opacity: 0.12;
+.hud-btn:hover::after {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Spacer */
 .rail-spacer {
   flex: 1;
 }
-
-/* Tooltip */
-.rail-btn[data-tip]::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: 80px;
-  top: 50%;
-  transform: translateY(-50%) translateX(-10px);
-
-  background: rgba(15,23,42,0.92);
-  padding: 6px 10px;
-  border-radius: 8px;
-
-  border: 1px solid rgba(var(--accent-rgb), 0.45);
-  color: #e5e7eb;
-  font-size: 12px;
-
-  opacity: 0;
-  pointer-events: none;
-  white-space: nowrap;
-
-  transition: opacity 0.22s ease, transform 0.22s ease;
+/* Flicker pulse on hover */
+.hud-btn:hover {
+  animation: hudPulse 0.6s ease-out;
 }
 
-.rail-btn:hover::after {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
+@keyframes hudPulse {
+  0% { box-shadow: 0 0 0px var(--hud-cyan-glow); }
+  50% { box-shadow: 0 0 22px var(--hud-cyan-glow); }
+  100% { box-shadow: 0 0 12px var(--hud-cyan-glow); }
 }
