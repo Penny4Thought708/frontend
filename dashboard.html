@@ -146,38 +146,55 @@ window.currentUserAvatar = user.avatar;
   <main class="app-shell">
 
     <!-- LEFT RAIL -->
-   <aside class="app-rail">
-  <div id="notification_container" class="rail-notifications">
-    <span id="notificationCount"></span>
-  </div>
+ <!-- ============================================================
+     TRON HUD — COMMAND RAIL (PHASE 4)
+============================================================ -->
+<!-- ============================================================
+     TRON HUD — COMMAND RAIL (PHASE 4)
+============================================================ -->
+<aside class="hud-rail">
 
-  <button id="btn_search" class="rail-btn" data-tip="Search">🔍</button>
-  <button id="btn_chat_main" class="rail-btn" data-tip="Chat">💬</button>
+  <!-- Rail Glow Spine -->
+  <div class="rail-glow"></div>
 
-  <button id="contact_widget" class="rail-btn" data-tip="Contacts">
-    <img src="Contacts.png" alt="Contacts">
+  <!-- HUD Buttons -->
+  <button class="hud-btn" id="btn_home" data-tip="Dashboard">🏠</button>
+  <button class="hud-btn" id="btn_search" data-tip="Search">🔍</button>
+  <button class="hud-btn" id="btn_chat_main" data-tip="Chat">💬</button>
+
+  <button class="hud-btn" id="contact_widget" data-tip="Contacts">
+    <img src="Contacts.png" alt="">
   </button>
 
-  <button id="voicemail_Btn" class="rail-btn" data-tip="Voicemail">
-    <img src="img/voicemail.png" alt="Voicemail">
+  <button class="hud-btn" id="voicemail_Btn" data-tip="Voicemail">
+    <img src="img/voicemail.png" alt="">
   </button>
 
-  <button id="btn_notifications" class="rail-btn" data-tip="Notifications">🔔</button>
+  <button class="hud-btn" id="btn_notifications" data-tip="Notifications">🔔</button>
 
-  <button id="btn_settings" class="rail-btn" data-tip="Settings">
+  <!-- NEW HUD TOOLS -->
+  <button class="hud-btn" id="btn_ai_console" data-tip="AI Console">🤖</button>
+  <button class="hud-btn" id="btn_system_monitor" data-tip="System Monitor">📊</button>
+  <button class="hud-btn" id="btn_files" data-tip="Files">🗂️</button>
+  <button class="hud-btn" id="btn_mission_log" data-tip="Mission Log">📜</button>
+  <button class="hud-btn" id="btn_quick_actions" data-tip="Quick Actions">⚡</button>
+
+  <button class="hud-btn" id="btn_settings" data-tip="Settings">
     <span class="material-symbols-outlined">settings</span>
   </button>
 
-  <button id="toggleBtn" class="rail-btn" data-tip="Theme">🌙</button>
+  <button class="hud-btn" id="toggleBtn" data-tip="Theme">🌙</button>
 
   <div class="rail-spacer"></div>
 
-  <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout">
-    <img src="logout.png" alt="Logout">
+  <button class="hud-btn logoutBtn" onclick="showLogoutModal()" data-tip="Logout">
+    <img src="logout.png" alt="">
   </button>
 
-  <button id="btn_help" class="rail-btn" data-tip="Help">❓</button>
+  <button class="hud-btn" id="btn_help" data-tip="Help">❓</button>
+
 </aside>
+
 
 
     <!-- CENTRAL WORKSPACE -->
@@ -1718,6 +1735,7 @@ document.addEventListener("mousemove", (e) => {
 
 </script>
 </html>
+
 
 
 
