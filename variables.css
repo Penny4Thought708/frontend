@@ -1,46 +1,166 @@
 /* ============================================================
-   THEME TOKENS — NEON GLASS OS
+   VARIABLES.CSS — TRON HUD ROOT SYSTEM
+   Global variables for colors, glow, spacing, depth, grid,
+   animations, and theme engine.
 ============================================================ */
 
+/* ------------------------------------------------------------
+   COLOR SYSTEM — TRON ELECTRIC CYAN (Primary)
+------------------------------------------------------------ */
 :root {
-  /* Core Backgrounds */
-  --bg-main: #0d0f12;
-  --bg-panel: #13161a;
-  --bg-elevated: #1a1e23;
+  --hud-cyan: #00eaff;
+  --hud-cyan-soft: rgba(0, 234, 255, 0.65);
+  --hud-cyan-faint: rgba(0, 234, 255, 0.25);
+  --hud-cyan-glow: rgba(0, 234, 255, 0.55);
+  --hud-cyan-glow-strong: rgba(0, 234, 255, 0.75);
 
-  /* Borders */
-  --border-subtle: #23282f;
-  --border-strong: #3c465a;
+  /* ------------------------------------------------------------
+     BACKGROUND — MIDNIGHT BLUE GRADIENT (BG‑3)
+  ------------------------------------------------------------ */
+  --hud-bg-1: #000814;
+  --hud-bg-2: #001122;
+  --hud-bg-3: #001a33;
 
-  /* Accent Colors */
-  --accent-primary: #7b5cff;
-  --accent-secondary: #00e0ff;
-  --accent-soft: rgba(123, 92, 255, 0.25);
+  --hud-bg-gradient: linear-gradient(
+    180deg,
+    var(--hud-bg-1) 0%,
+    var(--hud-bg-2) 40%,
+    var(--hud-bg-3) 100%
+  );
 
-  /* Text */
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  /* ------------------------------------------------------------
+     PANEL GLASS SYSTEM
+  ------------------------------------------------------------ */
+  --hud-panel-bg: rgba(0, 20, 40, 0.45);
+  --hud-panel-border: rgba(0, 234, 255, 0.35);
+  --hud-panel-border-strong: rgba(0, 234, 255, 0.55);
+  --hud-panel-shadow: 0 0 22px rgba(0, 234, 255, 0.25);
 
-  /* Radii */
-  --radius-panel: 18px;
-  --radius-chip: 999px;
-  --radius-sm: 10px;
+  /* ------------------------------------------------------------
+     SPACING SCALE (P2 — Balanced HUD)
+  ------------------------------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
 
-  /* Shadows */
-  --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.6);
-  --shadow-hard: 0 26px 70px rgba(0, 0, 0, 0.9);
+  /* ------------------------------------------------------------
+     TYPOGRAPHY SCALE
+  ------------------------------------------------------------ */
+  --font-xs: 0.75rem;
+  --font-sm: 0.85rem;
+  --font-md: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.6rem;
+  --font-xxl: 2.2rem;
 
-  /* Transitions */
-  --transition-fast: 0.22s ease-out;
-  --transition-med: 0.3s ease-out;
+  --font-family-hud: 'Orbitron', 'Rajdhani', 'Segoe UI', sans-serif;
+  --font-family-body: 'Inter', 'Segoe UI', sans-serif;
 
-  /* Motion Tokens */
-  --motion-fast: 120ms cubic-bezier(0.25, 1, 0.5, 1);
-  --motion-medium: 220ms cubic-bezier(0.25, 1, 0.3, 1);
-  --motion-slow: 380ms cubic-bezier(0.25, 1, 0.3, 1);
+  /* ------------------------------------------------------------
+     ANIMATION SYSTEM — CINEMATIC TRON (B)
+  ------------------------------------------------------------ */
+  --motion-fast: 120ms cubic-bezier(.22, .61, .36, 1);
+  --motion-medium: 260ms cubic-bezier(.22, .61, .36, 1);
+  --motion-slow: 480ms cubic-bezier(.22, .61, .36, 1);
 
-  /* Interaction */
-  --hover-lift: translateY(-2px) scale(1.03);
-  --press-down: scale(0.94);
+  /* Flicker + Scanline Timing */
+  --hud-flicker-speed: 0.12s;
+  --hud-scanline-speed: 14s;
+
+  /* ------------------------------------------------------------
+     DEPTH SYSTEM — IMMERSIVE PARALLAX (D3)
+  ------------------------------------------------------------ */
+  --depth-1: translateZ(-60px) scale(1.1);
+  --depth-2: translateZ(-30px) scale(1.05);
+  --depth-3: translateZ(0px) scale(1);
+  --depth-4: translateZ(40px) scale(0.97);
+  --depth-5: translateZ(80px) scale(0.94);
+
+  /* Panel tilt */
+  --hud-tilt-angle: 2deg;
+
+  /* ------------------------------------------------------------
+     HEX GRID SYSTEM — HOLOGRAPHIC (G3 + H3)
+  ------------------------------------------------------------ */
+  --hex-size: 42px;
+  --hex-line: rgba(0, 234, 255, 0.18);
+  --hex-line-strong: rgba(0, 234, 255, 0.35);
+  --hex-pulse: rgba(0, 234, 255, 0.55);
+
+  /* ------------------------------------------------------------
+     THEME ENGINE (C1–C4)
+     These will be overridden by theme classes later.
+  ------------------------------------------------------------ */
+  --theme-accent: var(--hud-cyan);
+  --theme-accent-glow: var(--hud-cyan-glow);
+  --theme-panel-bg: var(--hud-panel-bg);
+  --theme-panel-border: var(--hud-panel-border);
+  --theme-panel-border-strong: var(--hud-panel-border-strong);
+}
+
+/* ============================================================
+   THEME OVERRIDES
+============================================================ */
+
+/* ------------------------------------------------------------
+   C1 — TRON GRID (DEFAULT)
+------------------------------------------------------------ */
+.theme-tron {
+  --theme-accent: var(--hud-cyan);
+  --theme-accent-glow: var(--hud-cyan-glow);
+  --theme-panel-bg: var(--hud-panel-bg);
+  --theme-panel-border: var(--hud-panel-border);
+  --theme-panel-border-strong: var(--hud-panel-border-strong);
+}
+
+/* ------------------------------------------------------------
+   C2 — CYBERPUNK NEON (Magenta)
+------------------------------------------------------------ */
+.theme-cyberpunk {
+  --theme-accent: #ff00ff;
+  --theme-accent-glow: rgba(255, 0, 255, 0.55);
+  --theme-panel-bg: rgba(20, 0, 40, 0.45);
+  --theme-panel-border: rgba(255, 0, 255, 0.35);
+  --theme-panel-border-strong: rgba(255, 0, 255, 0.55);
+}
+
+/* ------------------------------------------------------------
+   C3 — TACTICAL HUD (Green Matrix)
+------------------------------------------------------------ */
+.theme-tactical {
+  --theme-accent: #00ff88;
+  --theme-accent-glow: rgba(0, 255, 136, 0.55);
+  --theme-panel-bg: rgba(0, 40, 20, 0.45);
+  --theme-panel-border: rgba(0, 255, 136, 0.35);
+  --theme-panel-border-strong: rgba(0, 255, 136, 0.55);
+}
+
+/* ------------------------------------------------------------
+   C4 — QUANTUM GLASS (White + Blue)
+------------------------------------------------------------ */
+.theme-quantum {
+  --theme-accent: #d0eaff;
+  --theme-accent-glow: rgba(208, 234, 255, 0.55);
+  --theme-panel-bg: rgba(255, 255, 255, 0.12);
+  --theme-panel-border: rgba(208, 234, 255, 0.35);
+  --theme-panel-border-strong: rgba(208, 234, 255, 0.55);
+}
+
+/* ------------------------------------------------------------
+   THEME TRANSITION MORPHING
+------------------------------------------------------------ */
+:root,
+.theme-tron,
+.theme-cyberpunk,
+.theme-tactical,
+.theme-quantum {
+  transition:
+    --theme-accent 0.45s ease,
+    --theme-accent-glow 0.45s ease,
+    --theme-panel-bg 0.45s ease,
+    --theme-panel-border 0.45s ease,
+    --theme-panel-border-strong 0.45s ease;
 }
