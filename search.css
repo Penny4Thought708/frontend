@@ -41,7 +41,7 @@
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(45px);
     filter: blur(0);
   }
 }
