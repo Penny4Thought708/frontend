@@ -1,4 +1,6 @@
-/* CONWRAP.CSS — Contacts / call log shell */
+/* ============================================================
+   CONTACTS PANEL — LEFT COLUMN
+============================================================ */
 
 #conwrap {
   width: 100%;
@@ -17,14 +19,14 @@
   width: 260px;
   padding: var(--space-4);
   border-right: 1px solid var(--border-subtle);
-  background: linear-gradient(to bottom, rgba(18, 20, 30, 0.95), rgba(10, 12, 20, 0.95));
+  background: var(--bg-subtle);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   overflow-y: auto;
 }
 
-/* Lookup */
+/* Search bar */
 .contact-lookup {
   display: flex;
   gap: var(--space-2);
@@ -74,7 +76,7 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* Main */
+/* Main contacts panel */
 .contacts-main {
   flex: 1;
   padding: var(--space-4);
@@ -84,8 +86,13 @@
   overflow-y: auto;
 }
 
-/* Section headers */
-.panel-section .section-header {
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -94,7 +101,7 @@
   margin-bottom: var(--space-2);
 }
 
-.panel-section .section-header h3 {
+.section-header h3 {
   font-size: var(--font-sm);
   font-weight: 500;
   color: var(--text-secondary);
@@ -131,10 +138,328 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* Blocked */
+/* Blocked contacts */
 #blocked-contacts li {
   background: rgba(255, 91, 106, 0.06);
   border-color: rgba(255, 91, 106, 0.3);
 }
 
+/* ============================================================
+   SEARCH PANEL
+============================================================ */
+
+#search_panel {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.search-panel-inner {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 360px;
+  gap: var(--space-4);
+}
+
+/* Search header */
+.search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#close_search {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+#close_search:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Search input */
+.search-input {
+  position: relative;
+}
+
+#contractor_query_panel {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+#search_submit_panel {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  cursor: pointer;
+}
+
+/* Autocomplete */
+.autocomplete-list {
+  position: absolute;
+  top: 48px;
+  width: 100%;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 20;
+}
+
+.autocomplete-list li {
+  padding: var(--space-3);
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.autocomplete-list li:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Filters */
+.search-filters {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.filter-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+/* Results */
+#search_results {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+}
+
+.result-card {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.result-card:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Map */
+.map-container {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+/* ============================================================
+   MESSAGING PANEL — CENTER COLUMN
+============================================================ */
+
+.messaging-panel {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(26px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.msg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.msg-contact-name {
+  font-size: var(--font-lg);
+  font-weight: 600;
+}
+
+/* Message window */
+.message-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Bubbles */
+.message {
+  max-width: 70%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 18px;
+  font-size: var(--font-md);
+  line-height: 1.4;
+  position: relative;
+}
+
+.message.incoming {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.message.outgoing {
+  align-self: flex-end;
+  background: var(--accent-soft);
+}
+
+/* Images */
+.message img {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: var(--motion-medium);
+}
+
+.typing-indicator.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.typing-bubble span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--text-secondary);
+  opacity: 0.4;
+}
+
+/* Composer */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(10, 12, 20, 0.9);
+}
+
+.msg-input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 120px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  overflow-y: auto;
+}
+
+.composer-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.composer-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Attachment preview */
+.attachment-preview {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.attachment-preview img {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+/* Mini chat bubble */
+.mini-chat-bubble {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.mini-chat-bubble:hover {
+  background: rgba(79, 140, 255, 0.22);
+}
 
