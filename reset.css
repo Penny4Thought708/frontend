@@ -1,85 +1,94 @@
 /* ============================================================
-   RESET + BASE
+   RESET.CSS — TRON HUD OS BASELINE RESET
+   Matches rewritten HTML structure
 ============================================================ */
 
+/* Remove all default margins and padding */
 *,
 *::before,
 *::after {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  background: radial-gradient(circle at top, #151926 0, #050609 55%, #020308 100%);
-  color: var(--text-primary);
-}
-
-/* Links */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Buttons */
-button {
-  font: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-}
-
-/* Lists */
-ul {
+/* Remove default list styles */
+ul,
+ol {
   list-style: none;
 }
 
-/* Scrollbar */
+/* Remove default link styles */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Remove default button styles */
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+/* Remove default input styles */
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  outline: none;
+}
+
+/* Remove default image border */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: none;
+}
+
+/* Reset headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+/* Reset body */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  font-family: sans-serif;
+  background: #000;
+  color: #fff;
+}
+
+/* Remove default table styles */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* Remove default focus outlines (TRON HUD will add custom focus) */
+:focus {
+  outline: none;
+}
+
+/* Scrollbar reset (custom TRON scrollbar added later) */
 ::-webkit-scrollbar {
   width: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
-  border-radius: 999px;
-}
-/* ============================================================
-   THEME C2 — CYBERPUNK NEON
-============================================================ */
-.theme-cyberpunk {
-  --theme-accent: #ff00ff;
-  --theme-accent-glow: rgba(255, 0, 255, 0.55);
-  --theme-panel-bg: rgba(20, 0, 40, 0.45);
-  --theme-panel-border: rgba(255, 0, 255, 0.35);
-  --theme-panel-border-strong: rgba(255, 0, 255, 0.55);
-}
-/* ============================================================
-   THEME C3 — TACTICAL HUD
-============================================================ */
-.theme-tactical {
-  --theme-accent: #00ff88;
-  --theme-accent-glow: rgba(0, 255, 136, 0.55);
-  --theme-panel-bg: rgba(0, 40, 20, 0.45);
-  --theme-panel-border: rgba(0, 255, 136, 0.35);
-  --theme-panel-border-strong: rgba(0, 255, 136, 0.55);
-}
-/* ============================================================
-   THEME C4 — QUANTUM GLASS
-============================================================ */
-.theme-quantum {
-  --theme-accent: #d0eaff;
-  --theme-accent-glow: rgba(208, 234, 255, 0.55);
-  --theme-panel-bg: rgba(255, 255, 255, 0.12);
-  --theme-panel-border: rgba(208, 234, 255, 0.35);
-  --theme-panel-border-strong: rgba(208, 234, 255, 0.55);
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
 }
