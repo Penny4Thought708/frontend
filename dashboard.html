@@ -950,6 +950,34 @@ window.currentUserAvatar = user.avatar;
   <!-- your existing scripts stay the same -->
 
 </body>
+<!-- ============================================================
+     TRON HUD — PARALLAX + GRID BACKGROUND STACK (PHASE 3)
+============================================================ -->
+
+<!-- Layer 1: Deep Hex Grid -->
+<div class="hud-layer depth-1">
+  <div class="hex-grid"></div>
+</div>
+
+<!-- Layer 2: Stronger Hex Lines -->
+<div class="hud-layer depth-2">
+  <div class="hex-grid hex-strong"></div>
+</div>
+
+<!-- Layer 3: Particle Field -->
+<div class="hud-layer depth-3">
+  <div class="hud-particles"></div>
+</div>
+
+<!-- Layer 4: Scanline Overlay -->
+<div class="hud-layer depth-4">
+  <div class="scanlines"></div>
+</div>
+
+<!-- Layer 5: Flicker Layer -->
+<div class="hud-layer depth-5">
+  <div class="hud-flicker"></div>
+</div>
 
 
 <script type="module" src="public/js/app.js?v=3"></script>
@@ -1674,14 +1702,15 @@ document.addEventListener("keydown", (e) => {
 ============================================================ */
 
 document.addEventListener("mousemove", (e) => {
-  const bg = document.querySelector(".workspace-bg");
-  if (!bg) return;
+  const x = (e.clientX / window.innerWidth - 0.5) * 2;
+  const y = (e.clientY / window.innerHeight - 0.5) * 2;
 
-  const x = (e.clientX / window.innerWidth - 0.5) * 12;
-  const y = (e.clientY / window.innerHeight - 0.5) * 12;
-
-  bg.style.transform = `translate(${x}px, ${y}px)`;
+  document.querySelectorAll(".hud-layer").forEach((layer, i) => {
+    const depth = (i + 1) * 6; // stronger depth
+    layer.style.transform = `translate3d(${x * depth}px, ${y * depth}px, 0)`;
+  });
 });
+
 
 
     
@@ -1689,6 +1718,7 @@ document.addEventListener("mousemove", (e) => {
 
 </script>
 </html>
+
 
 
 
