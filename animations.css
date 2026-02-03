@@ -1,57 +1,216 @@
 /* ============================================================
-   ANIMATIONS
+   ANIMATIONS.CSS — TRON HUD GLOBAL ANIMATION SUITE
+   Matches your rewritten HTML exactly.
 ============================================================ */
 
-@keyframes typingDots {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(-3px); opacity: 1; }
+/* ------------------------------------------------------------
+   GLOW PULSE (Accent breathing)
+------------------------------------------------------------ */
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 6px var(--theme-accent-glow); }
+  50% { box-shadow: 0 0 18px var(--theme-accent-glow); }
+  100% { box-shadow: 0 0 6px var(--theme-accent-glow); }
 }
 
+.glow-pulse {
+  animation: glowPulse 2.4s infinite ease-in-out;
+}
+
+/* ------------------------------------------------------------
+   TEXT GLOW PULSE
+------------------------------------------------------------ */
+@keyframes textGlow {
+  0% { text-shadow: 0 0 4px var(--theme-accent-glow); }
+  50% { text-shadow: 0 0 12px var(--theme-accent-glow); }
+  100% { text-shadow: 0 0 4px var(--theme-accent-glow); }
+}
+
+.text-glow {
+  animation: textGlow 2.2s infinite ease-in-out;
+}
+
+/* ------------------------------------------------------------
+   HOLOGRAPHIC SHIMMER
+------------------------------------------------------------ */
+@keyframes shimmer {
+  0% { opacity: 0.15; transform: translateX(-120%); }
+  50% { opacity: 0.35; transform: translateX(120%); }
+  100% { opacity: 0.15; transform: translateX(240%); }
+}
+
+.holo-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.25),
+    transparent
+  );
+  mix-blend-mode: overlay;
+  animation: shimmer 3.2s infinite;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   PANEL SLIDE-IN
+------------------------------------------------------------ */
+@keyframes slideInLeft {
+  0% { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-left {
+  animation: slideInLeft var(--motion-medium) ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight var(--motion-medium) ease-out;
+}
+
+/* ------------------------------------------------------------
+   PANEL SCALE-IN
+------------------------------------------------------------ */
+@keyframes scaleIn {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.scale-in {
+  animation: scaleIn var(--motion-medium) ease-out;
+}
+
+/* ------------------------------------------------------------
+   BUTTON PRESS FEEDBACK
+------------------------------------------------------------ */
+@keyframes btnPress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.btn-press {
+  animation: btnPress 160ms ease-out;
+}
+
+/* ------------------------------------------------------------
+   NEON TRAIL (Hover effect)
+------------------------------------------------------------ */
+@keyframes neonTrail {
+  0% { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.neon-hover:hover::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  background: var(--theme-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+  transform: translateY(-50%);
+  animation: neonTrail 0.25s ease-out;
+}
+
+/* ------------------------------------------------------------
+   HEX PULSE (Background grid)
+------------------------------------------------------------ */
+@keyframes hexPulse {
+  0% { opacity: 0.25; }
+  50% { opacity: 0.55; }
+  100% { opacity: 0.25; }
+}
+
+.hex-pulse {
+  animation: hexPulse 4.5s infinite ease-in-out;
+}
+
+/* ------------------------------------------------------------
+   AMBIENT BREATHING (Panels)
+------------------------------------------------------------ */
+@keyframes ambientBreath {
+  0% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.01); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.95; }
+}
+
+.ambient-breath {
+  animation: ambientBreath 6s infinite ease-in-out;
+}
+
+/* ------------------------------------------------------------
+   FLICKER (Retro CRT)
+------------------------------------------------------------ */
+@keyframes flickerSoft {
+  0% { opacity: 0.9; }
+  50% { opacity: 0.75; }
+  100% { opacity: 0.9; }
+}
+
+.flicker-soft {
+  animation: flickerSoft 0.12s infinite steps(2, end);
+}
+
+/* ------------------------------------------------------------
+   SCANLINE SWEEP
+------------------------------------------------------------ */
+@keyframes scanSweep {
+  0% { background-position-y: 0; }
+  100% { background-position-y: 100%; }
+}
+
+.scan-sweep {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03) 0px,
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px
+  );
+  animation: scanSweep 14s linear infinite;
+}
+
+/* ------------------------------------------------------------
+   FLOATING UP (Particles)
+------------------------------------------------------------ */
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 0.4; }
+  100% { transform: translateY(-40px); opacity: 0.1; }
+}
+
+.float-up {
+  animation: floatUp 6s infinite linear;
+}
+
+/* ------------------------------------------------------------
+   PULSE RING (Recording indicator)
+------------------------------------------------------------ */
 @keyframes pulseRing {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  100% { transform: scale(1.2); opacity: 0; }
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
 }
 
-@keyframes avatarPulse {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  100% { transform: scale(1.1); opacity: 0; }
+.pulse-ring {
+  animation: pulseRing 1.2s infinite;
 }
 
-@keyframes bubblePulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.06); }
-  100% { transform: scale(1); }
+/* ------------------------------------------------------------
+   WAVEFORM PULSE (Voicemail)
+------------------------------------------------------------ */
+@keyframes wavePulse {
+  0% { height: 12px; }
+  50% { height: 48px; }
+  100% { height: 12px; }
 }
 
-@keyframes panelEnter {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 20px, 0) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes pulseBadge {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-@keyframes videoPop {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -48%) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes wave {
-  0%, 100% { height: 10px; }
-  50% { height: 30px; }
+.wave-pulse {
+  animation: wavePulse 1.2s infinite ease-in-out;
 }
