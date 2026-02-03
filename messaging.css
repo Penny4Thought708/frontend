@@ -1,68 +1,358 @@
-/* MESSAGING PANEL */
-.messaging-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
+/* ============================================================
+   MESSAGING.CSS — TRON HUD MESSAGING SYSTEM
+   Matches your rewritten HTML exactly.
+============================================================ */
 
-.messages-body {
-  flex: 1;
+/* ------------------------------------------------------------
+   MESSAGE WINDOW
+------------------------------------------------------------ */
+#messageWin {
+  height: calc(100vh - 260px);
   overflow-y: auto;
-  padding-right: var(--space-2);
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  position: relative;
+  scroll-behavior: smooth;
 }
 
-/* Message bubbles */
-.msg {
+/* Scrollbar */
+#messageWin::-webkit-scrollbar {
+  width: 8px;
+}
+
+#messageWin::-webkit-scrollbar-thumb {
+  background: var(--hud-cyan-faint);
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------
+   MESSAGE BUBBLES
+------------------------------------------------------------ */
+.message {
   max-width: 70%;
-  padding: var(--space-3);
-  border-radius: 10px;
-  background: rgba(0, 20, 40, 0.55);
-  border: 1px solid var(--hud-cyan-faint);
-  box-shadow: 0 0 12px rgba(0, 234, 255, 0.15);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 12px;
+  font-size: var(--font-md);
+  line-height: 1.4;
+  position: relative;
   animation: msgEnter var(--motion-medium) ease-out;
 }
 
-@keyframes msgEnter {
-  0% { opacity: 0; transform: translateY(10px) scale(0.97); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.msg.me {
-  align-self: flex-end;
-  border-color: var(--hud-cyan);
-  background: rgba(0, 234, 255, 0.12);
-}
-
-/* Input bar */
-.message-input {
-  display: flex;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--hud-cyan-faint);
-}
-
-.message-input input {
-  flex: 1;
-  padding: var(--space-3);
+/* Incoming */
+.message.incoming {
   background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--hud-cyan-faint);
-  border-radius: 8px;
-  color: var(--hud-cyan);
+  border: 1px solid var(--theme-panel-border);
+  color: var(--theme-accent);
+  align-self: flex-start;
 }
 
-.send-btn {
-  padding: var(--space-3) var(--space-4);
+/* Outgoing */
+.message.outgoing {
   background: rgba(0, 234, 255, 0.15);
-  border: 1px solid var(--hud-cyan);
-  border-radius: 8px;
-  color: var(--hud-cyan);
+  border: 1px solid var(--theme-panel-border-strong);
+  color: var(--theme-accent);
+  align-self: flex-end;
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* Message enter animation */
+@keyframes msgEnter {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------------------------------------
+   MESSAGE IMAGES
+------------------------------------------------------------ */
+.message img {
+  max-width: 240px;
+  border-radius: 10px;
+  border: 1px solid var(--theme-panel-border);
   cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.message img:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   IMAGE VIEWER (Fullscreen)
+------------------------------------------------------------ */
+#img-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
   transition: var(--motion-medium);
 }
 
-.send-btn:hover {
-  box-shadow: 0 0 14px var(--hud-cyan-glow);
+#img-viewer.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#img-viewer-img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 12px;
+  border: 1px solid var(--theme-panel-border-strong);
+  box-shadow: 0 0 22px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   TYPING INDICATOR
+------------------------------------------------------------ */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: var(--motion-medium);
+}
+
+.typing-indicator.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.typing-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-panel-border);
+}
+
+.typing-bubble {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-bubble span {
+  width: 6px;
+  height: 6px;
+  background: var(--theme-accent);
+  border-radius: 50%;
+  animation: typingBlink 1.2s infinite;
+}
+
+.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBlink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ------------------------------------------------------------
+   RECORDING INDICATOR
+------------------------------------------------------------ */
+.recording-indicator {
+  position: absolute;
+  bottom: 90px;
+  left: 20px;
+  display: none;
+}
+
+.recording-indicator.active {
+  display: block;
+}
+
+.recording-bubble {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgba(255, 0, 0, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.55);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(255, 80, 80, 0.55);
+}
+
+.pulse-ring {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 80, 80, 1);
+  animation: pulseRing 1.2s infinite;
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ------------------------------------------------------------
+   ATTACHMENT PREVIEW STRIP
+------------------------------------------------------------ */
+#attachmentPreview {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: rgba(0, 20, 40, 0.35);
+  border-top: 1px solid var(--theme-panel-border);
+  overflow-x: auto;
+}
+
+#attachmentPreview img,
+#attachmentPreview .file-preview {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid var(--theme-panel-border);
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------
+   COMPOSER BAR
+------------------------------------------------------------ */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-top: 1px solid var(--theme-panel-border);
+  background: rgba(0, 20, 40, 0.45);
+}
+
+.msg-input {
+  flex: 1;
+  min-height: 42px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.35);
+  border: 1px solid var(--theme-panel-border);
+  color: var(--theme-accent);
+}
+
+/* Composer buttons */
+.composer-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(0, 234, 255, 0.12);
+  border: 1px solid var(--theme-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--motion-fast);
+}
+
+.composer-btn:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   BOTTOM SHEET
+------------------------------------------------------------ */
+#bottomSheet {
+  position: absolute;
+  bottom: -260px;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 20, 40, 0.85);
+  border-top: 1px solid var(--theme-panel-border);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: var(--motion-medium);
+  z-index: 50;
+}
+
+#bottomSheet.active {
+  bottom: 0;
+}
+
+.sheet-item {
+  padding: var(--space-3);
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 8px;
+  color: var(--theme-accent);
+  text-align: left;
+  transition: var(--motion-fast);
+}
+
+.sheet-item:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   EMOJI PICKER
+------------------------------------------------------------ */
+emoji-picker {
+  position: absolute;
+  bottom: 70px;
+  right: 20px;
+  width: 320px;
+  height: 360px;
+  background: rgba(0, 20, 40, 0.85);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  box-shadow: 0 0 22px var(--theme-accent-glow);
+  display: none;
+}
+
+emoji-picker.active {
+  display: block;
+}
+
+/* ------------------------------------------------------------
+   GIF PICKER
+------------------------------------------------------------ */
+.gif-picker {
+  position: absolute;
+  bottom: 70px;
+  left: 20px;
+  width: 360px;
+  height: 360px;
+  background: rgba(0, 20, 40, 0.85);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  box-shadow: 0 0 22px var(--theme-accent-glow);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow: hidden;
+}
+
+.gif-search {
+  padding: var(--space-3);
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 8px;
+  color: var(--theme-accent);
+}
+
+.gif-results {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.gif-results img {
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--theme-panel-border);
+  transition: var(--motion-fast);
+}
+
+.gif-results img:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
 }
