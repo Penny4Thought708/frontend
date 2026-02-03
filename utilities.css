@@ -1,155 +1,20 @@
-/* ============================================================
-   UTILITIES.CSS — TRON HUD UTILITY CLASSES
-   Global helpers for spacing, layout, text, visibility, effects.
-============================================================ */
+/* UTILITIES.CSS — Helpers */
 
-/* ------------------------------------------------------------
-   SPACING HELPERS
------------------------------------------------------------- */
 .m-0 { margin: 0 !important; }
-.mt-1 { margin-top: var(--space-1) !important; }
 .mt-2 { margin-top: var(--space-2) !important; }
 .mt-3 { margin-top: var(--space-3) !important; }
-.mt-4 { margin-top: var(--space-4) !important; }
-.mt-5 { margin-top: var(--space-5) !important; }
-
-.mb-1 { margin-bottom: var(--space-1) !important; }
 .mb-2 { margin-bottom: var(--space-2) !important; }
 .mb-3 { margin-bottom: var(--space-3) !important; }
-.mb-4 { margin-bottom: var(--space-4) !important; }
-.mb-5 { margin-bottom: var(--space-5) !important; }
 
-.p-1 { padding: var(--space-1) !important; }
-.p-2 { padding: var(--space-2) !important; }
-.p-3 { padding: var(--space-3) !important; }
-.p-4 { padding: var(--space-4) !important; }
-.p-5 { padding: var(--space-5) !important; }
-
-/* ------------------------------------------------------------
-   FLEX HELPERS
------------------------------------------------------------- */
 .flex { display: flex !important; }
 .flex-col { flex-direction: column !important; }
-.flex-row { flex-direction: row !important; }
 .flex-center { display: flex !important; align-items: center !important; justify-content: center !important; }
-.flex-between { display: flex !important; justify-content: space-between !important; }
-.flex-around { display: flex !important; justify-content: space-around !important; }
-.flex-even { display: flex !important; justify-content: space-evenly !important; }
-.flex-wrap { flex-wrap: wrap !important; }
 
-/* ------------------------------------------------------------
-   GRID HELPERS
------------------------------------------------------------- */
-.grid { display: grid !important; }
-.grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
-.grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
-.grid-4 { grid-template-columns: repeat(4, 1fr) !important; }
-.grid-gap-1 { gap: var(--space-1) !important; }
-.grid-gap-2 { gap: var(--space-2) !important; }
-.grid-gap-3 { gap: var(--space-3) !important; }
-.grid-gap-4 { gap: var(--space-4) !important; }
-
-/* ------------------------------------------------------------
-   TEXT HELPERS
------------------------------------------------------------- */
 .text-center { text-align: center !important; }
-.text-right { text-align: right !important; }
-.text-left { text-align: left !important; }
+.text-muted { color: var(--text-muted) !important; }
 
-.text-accent {
-  color: var(--theme-accent) !important;
-  text-shadow: 0 0 6px var(--theme-accent-glow) !important;
-}
-
-.text-soft { color: var(--hud-cyan-soft) !important; }
-.text-faint { color: var(--hud-cyan-faint) !important; }
-
-/* ------------------------------------------------------------
-   DISPLAY HELPERS
------------------------------------------------------------- */
 .hidden { display: none !important; }
 .block { display: block !important; }
-.inline { display: inline !important; }
-.inline-block { display: inline-block !important; }
 
-/* ------------------------------------------------------------
-   VISIBILITY HELPERS
------------------------------------------------------------- */
-.visible { visibility: visible !important; }
-.invisible { visibility: hidden !important; }
-
-/* ------------------------------------------------------------
-   POSITION HELPERS
------------------------------------------------------------- */
-.relative { position: relative !important; }
-.absolute { position: absolute !important; }
-.fixed { position: fixed !important; }
-.sticky { position: sticky !important; }
-
-/* ------------------------------------------------------------
-   Z-INDEX HELPERS
------------------------------------------------------------- */
-.z-10 { z-index: 10 !important; }
-.z-20 { z-index: 20 !important; }
-.z-30 { z-index: 30 !important; }
-.z-40 { z-index: 40 !important; }
-.z-50 { z-index: 50 !important; }
-.z-100 { z-index: 100 !important; }
-.z-200 { z-index: 200 !important; }
-.z-500 { z-index: 500 !important; }
-
-/* ------------------------------------------------------------
-   WIDTH / HEIGHT HELPERS
------------------------------------------------------------- */
 .w-100 { width: 100% !important; }
 .h-100 { height: 100% !important; }
-.max-w-full { max-width: 100% !important; }
-.max-h-full { max-height: 100% !important; }
-
-/* ------------------------------------------------------------
-   BORDER HELPERS
------------------------------------------------------------- */
-.border { border: 1px solid var(--theme-panel-border) !important; }
-.border-strong { border: 1px solid var(--theme-panel-border-strong) !important; }
-.rounded { border-radius: 8px !important; }
-.rounded-full { border-radius: 999px !important; }
-
-/* ------------------------------------------------------------
-   GLOW HELPERS
------------------------------------------------------------- */
-.glow {
-  box-shadow: 0 0 12px var(--theme-accent-glow) !important;
-}
-
-.glow-strong {
-  box-shadow: 0 0 22px var(--theme-accent-glow) !important;
-}
-
-/* ------------------------------------------------------------
-   CURSOR HELPERS
------------------------------------------------------------- */
-.cursor-pointer { cursor: pointer !important; }
-.cursor-default { cursor: default !important; }
-
-/* ------------------------------------------------------------
-   SCROLL HELPERS
------------------------------------------------------------- */
-.no-scroll { overflow: hidden !important; }
-.scroll-y { overflow-y: auto !important; }
-.scroll-x { overflow-x: auto !important; }
-
-/* ------------------------------------------------------------
-   OPACITY HELPERS
------------------------------------------------------------- */
-.opacity-0 { opacity: 0 !important; }
-.opacity-25 { opacity: 0.25 !important; }
-.opacity-50 { opacity: 0.5 !important; }
-.opacity-75 { opacity: 0.75 !important; }
-.opacity-100 { opacity: 1 !important; }
-
-/* ------------------------------------------------------------
-   TRANSITION HELPERS
------------------------------------------------------------- */
-.transition-fast { transition: var(--motion-fast) !important; }
-.transition-medium { transition: var(--motion-medium) !important; }
-.transition-slow { transition: var(--motion-slow) !important; }
