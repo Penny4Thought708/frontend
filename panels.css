@@ -1,178 +1,108 @@
 /* ============================================================
-   PANELS (BASE + FLOATING) — CLEAN, NON‑CONFLICTING
+   TRON HUD — GLASS PANEL SYSTEM (PHASE 5)
 ============================================================ */
 
-/* Base panel skin */
-.panel {
-  background: rgba(15, 18, 26, 0.96);
-  border-radius: var(--radius-panel);
-  border: 1px solid rgba(60, 70, 90, 0.7);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(18px);
-}
-
-/* ============================================================
-   FLOATING PANELS (CENTERED)
-============================================================ */
-
-.floating-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
-
-  width: 420px;
-  max-height: calc(100vh - 96px);
-
-  background: rgba(10, 12, 18, 0.98);
-  border-radius: var(--radius-panel);
-  border: 1px solid rgba(70, 80, 100, 0.8);
-  box-shadow: var(--shadow-hard);
-  backdrop-filter: blur(20px);
-
-  opacity: 1;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-  animation: panelEnter var(--motion-medium);
+.hud-panel {
+  background: var(--theme-panel-bg);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  padding: var(--space-4);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 0 22px rgba(0, 234, 255, 0.18);
+  position: relative;
   overflow: hidden;
+  transform-style: preserve-3d;
+  transition: var(--motion-medium);
+  animation: panelEnter var(--motion-medium) ease-out;
 }
 
-.floating-panel.hidden {
-  pointer-events: none;
-  opacity: 0;
-  transform: translate(-50%, -40%) scale(0.96);
+/* Cinematic slide-in */
+@keyframes panelEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* ============================================================
-   CONTACTS PANEL (CONWRAP) — MATCHES MESSAGING
-============================================================ */
-
-#conwrap {
-  width: 420px;
-  max-height: calc(100vh - 96px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 10;
+/* Hover tilt (D3) */
+.hud-panel:hover {
+  transform: rotateX(var(--hud-tilt-angle)) rotateY(calc(var(--hud-tilt-angle) * -1));
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 28px var(--hud-cyan-glow);
 }
 
-.workspace-center #conwrap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-#conwrap.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -40%) scale(0.96);
-}
-
-/* ============================================================
-   SLIDE‑IN PANELS (LEFT / RIGHT)
-============================================================ */
-
-.slide-from-left,
-.slide-from-right {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  max-height: calc(100vh - 96px);
-  overflow: hidden;
-  z-index: 10;
-}
-
-/* Left slide */
-.slide-from-left {
-  left: 16px;
-  width: 420px;
-  transform: translate(-16px, -50%);
-}
-.slide-from-left.hidden {
-  transform: translate(-40px, -50%);
-}
-
-/* Right slide */
-.slide-from-right {
-  right: 16px;
-  width: 460px;
-  transform: translate(16px, -50%);
-}
-.slide-from-right.hidden {
-  transform: translate(40px, -50%);
-}
-
-/* ============================================================
-   VIDEO PANEL (CENTERED)
-============================================================ */
-
-.video-panel {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(960px, 100% - 64px);
-  height: min(540px, 100% - 120px);
-  transform: translate(-50%, -50%);
-  z-index: 10;
-}
-
-/* ============================================================
-   PANEL HEADER
-============================================================ */
-
-.panel-header {
+/* Panel Header */
+.hud-panel-header {
+  border-bottom: 1px solid var(--theme-panel-border);
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  gap: var(--space-2);
 }
 
-.panel-header h2 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--text-primary);
+.hud-panel-header h2 {
+  font-family: var(--font-family-hud);
+  font-size: var(--font-lg);
+  color: var(--hud-cyan);
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px var(--hud-cyan-glow);
 }
 
-/* ============================================================
-   AMBIENT GLOW WHEN ANY PANEL IS OPEN
-============================================================ */
-
-body.panel-open::before {
+/* Panel Body */
+.hud-panel-body {
+  font-size: var(--font-md);
+  color: var(--hud-cyan-soft);
+  line-height: 1.5;
+}
+/* Corner nodes */
+.hud-panel::before,
+.hud-panel::after {
   content: "";
-  position: fixed;
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--hud-cyan);
+  opacity: 0.55;
+}
+
+.hud-panel::before {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.hud-panel::after {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
+/* Panel scanlines */
+.hud-panel::after {
+  content: "";
+  position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(123,92,255,0.12), transparent 70%);
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03) 0px,
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px
+  );
   pointer-events: none;
-  z-index: 1;
-  opacity: 1;
-  transition: opacity var(--motion-medium);
+  opacity: 0.15;
+}
+.hud-panel.active {
+  animation: panelPulse 0.8s ease-out;
 }
 
-body:not(.panel-open)::before {
-  opacity: 0;
-}
-
-/* ============================================================
-   PANEL HOVER EFFECT — DISABLED
-============================================================ */
-
-.panel,
-.floating-panel {
-  transition: var(--motion-medium);
-}
-
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media (max-width: 900px) {
-  .slide-from-left,
-  .slide-from-right,
-  .video-panel {
-    width: calc(100% - 32px);
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
+@keyframes panelPulse {
+  0% { box-shadow: 0 0 0px var(--hud-cyan-glow); }
+  50% { box-shadow: 0 0 28px var(--hud-cyan-glow); }
+  100% { box-shadow: 0 0 18px var(--hud-cyan-glow); }
 }
