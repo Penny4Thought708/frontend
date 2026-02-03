@@ -1,46 +1,278 @@
-/* SETTINGS PANEL */
-.settings-section {
-  margin-bottom: var(--space-5);
-}
+/* ============================================================
+   SETTINGS.CSS — TRON HUD SETTINGS PANEL
+   Matches your rewritten HTML exactly.
+============================================================ */
 
-.settings-section h3 {
-  font-family: var(--font-family-hud);
-  color: var(--hud-cyan);
-  margin-bottom: var(--space-3);
-}
-
-.setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--hud-cyan-faint);
-  border-radius: 8px;
-  margin-bottom: var(--space-3);
-}
-
-.setting-row select {
-  background: rgba(0, 20, 40, 0.55);
-  border: 1px solid var(--hud-cyan);
-  color: var(--hud-cyan);
-  padding: var(--space-2);
-  border-radius: 6px;
-}
-/* SEARCH PANEL */
-.search-input {
+/* ------------------------------------------------------------
+   SETTINGS SHELL
+------------------------------------------------------------ */
+#settings_container {
   width: 100%;
-  padding: var(--space-3);
-  margin-bottom: var(--space-4);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--hud-cyan-faint);
-  border-radius: 8px;
-  color: var(--hud-cyan);
+  height: 100%;
+  background: var(--theme-panel-bg);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  overflow-y: auto;
+  padding: var(--space-4);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--hud-panel-shadow);
+  position: relative;
 }
 
-.search-results {
+/* Slide animation preserved */
+#settings_container.slide-from-right {
+  transform: translateX(100%);
+}
+
+#settings_container.slide-from-right.active {
+  transform: translateX(0);
+}
+
+/* ------------------------------------------------------------
+   SETTINGS LEFT SIDEBAR
+------------------------------------------------------------ */
+.settings_left_ {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+
+.settings-title {
+  font-family: var(--font-family-hud);
+  font-size: var(--font-xl);
+  color: var(--theme-accent);
+  text-shadow: 0 0 10px var(--theme-accent-glow);
+  margin-bottom: var(--space-3);
+}
+
+/* ------------------------------------------------------------
+   SETTINGS CARD
+------------------------------------------------------------ */
+.settings-card {
+  background: rgba(0, 20, 40, 0.35);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 12px;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  box-shadow: 0 0 14px var(--theme-accent-glow);
+}
+
+.settings-card-title {
+  font-family: var(--font-family-hud);
+  font-size: var(--font-lg);
+  color: var(--theme-accent);
+  text-shadow: 0 0 8px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   SETTINGS ROWS
+------------------------------------------------------------ */
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settings-row label {
+  color: var(--theme-accent);
+  font-size: var(--font-sm);
+}
+
+.settings-row input,
+.settings-row select {
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  padding: var(--space-3);
+  border-radius: 8px;
+  color: var(--theme-accent);
+  transition: var(--motion-fast);
+}
+
+.settings-row input:focus,
+.settings-row select:focus {
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   TOGGLE SWITCHES
+------------------------------------------------------------ */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background: rgba(0, 20, 40, 0.35);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 8px;
+}
+
+.settings-toggle-row span {
+  color: var(--theme-accent);
+}
+
+.toggle {
+  position: relative;
+  width: 46px;
+  height: 24px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 20, 40, 0.55);
+  border-radius: 24px;
+  border: 1px solid var(--theme-panel-border);
+  transition: var(--motion-fast);
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 2px;
+  background: var(--theme-accent);
+  border-radius: 50%;
+  transition: var(--motion-fast);
+  box-shadow: 0 0 8px var(--theme-accent-glow);
+}
+
+.toggle input:checked + .toggle-slider {
+  background: rgba(0, 234, 255, 0.25);
+  border-color: var(--theme-panel-border-strong);
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+/* ------------------------------------------------------------
+   CAMERA PREVIEW
+------------------------------------------------------------ */
+.camera-preview-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+#camera_preview {
+  width: 100%;
+  height: 200px;
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: inset 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   AUDIO METER
+------------------------------------------------------------ */
+.mic-level-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 20, 40, 0.45);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--theme-panel-border);
+}
+
+.mic-level-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--theme-accent);
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+  transition: width 0.1s linear;
+}
+
+/* ------------------------------------------------------------
+   SETTINGS BUTTONS
+------------------------------------------------------------ */
+.settings-btn {
+  padding: var(--space-3);
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  color: var(--theme-accent);
+  cursor: pointer;
+  transition: var(--motion-fast);
+  text-align: center;
+}
+
+.settings-btn:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+.settings-btn.primary {
+  background: rgba(0, 234, 255, 0.18);
+  border-color: var(--theme-panel-border-strong);
+  box-shadow: 0 0 14px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   PROFILE SETTINGS PANEL (RIGHT SIDE)
+------------------------------------------------------------ */
+.profile-settings-panel {
+  position: absolute;
+  top: 0;
+  right: -100%;
+  width: 360px;
+  height: 100%;
+  background: rgba(0, 20, 40, 0.85);
+  border-left: 1px solid var(--theme-panel-border);
+  padding: var(--space-4);
+  transition: var(--motion-medium);
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.profile-settings-panel.active {
+  right: 0;
+}
+
+/* Close button */
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  color: var(--theme-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.close-btn:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+/* ------------------------------------------------------------
+   RESPONSIVE BEHAVIOR
+------------------------------------------------------------ */
+@media (max-width: 900px) {
+  #settings_container {
+    padding: var(--space-3);
+  }
+
+  .settings-card {
+    padding: var(--space-3);
+  }
 }
 
