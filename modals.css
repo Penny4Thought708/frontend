@@ -1,217 +1,275 @@
 /* ============================================================
-   MODALS + OVERLAYS
+   MODALS.CSS — TRON HUD MODALS + OVERLAYS
+   Matches your rewritten HTML exactly.
 ============================================================ */
 
-/* Voicemail modal */
-.voicemail-modal {
+/* ------------------------------------------------------------
+   GLOBAL MODAL OVERLAY
+------------------------------------------------------------ */
+.hud-modal-overlay {
   position: fixed;
   inset: 0;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  z-index: 10000;
-}
-.voicemail-modal.open {
-  display: flex;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--motion-medium);
+  z-index: 500;
 }
 
-.vm-card {
-  background: rgba(15, 23, 42, 0.96);
-  border-radius: 16px;
-  padding: 24px 30px;
-  text-align: center;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  box-shadow: var(--shadow-soft);
+.hud-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-#vmStatus,
-#vmTimer {
-  color: #e5e7eb;
-  margin-bottom: 8px;
-}
-
-.vm-wave {
-  width: 120px;
-  height: 40px;
-  margin: 16px auto;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  opacity: 0.4;
-}
-.vm-wave div {
-  width: 6px;
-  height: 10px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  animation: wave 1s infinite ease-in-out;
-}
-.vm-wave div:nth-child(2) { animation-delay: 0.1s; }
-.vm-wave div:nth-child(3) { animation-delay: 0.2s; }
-.vm-wave div:nth-child(4) { animation-delay: 0.3s; }
-.vm-wave div:nth-child(5) { animation-delay: 0.4s; }
-
-#vmControls button {
-  padding: 8px 14px;
-  margin: 4px;
-  border-radius: 999px;
-  border: none;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-#vmRecordBtn {
-  background: #ef4444;
-  color: #fff;
-}
-#vmStopBtn {
-  background: #f97316;
-  color: #111827;
-}
-#vmPlayBtn {
-  background: #3b82f6;
-  color: #fff;
-}
-#vmSendBtn {
-  background: #22c55e;
-  color: #022c22;
-}
-#vmDeleteBtn {
-  background: #4b5563;
-  color: #e5e7eb;
-}
-
-/* Image viewer overlay */
-#image-viewer-overlay {
+/* ------------------------------------------------------------
+   BASE MODAL WINDOW
+------------------------------------------------------------ */
+.hud-modal {
   position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.95);
-  z-index: 40;
-}
-#image-viewer-overlay[aria-hidden="false"] {
-  display: flex;
-}
-.image-nav-btn {
-  background: transparent;
-  color: #e5e7eb;
-  font-size: 2rem;
-  margin: 0 10px;
-}
-#image-viewer-img {
-  max-width: 80vw;
-  max-height: 80vh;
+  top: 50%;
+  left: 50%;
+  width: 420px;
+  background: rgba(0, 20, 40, 0.75);
+  border: 1px solid var(--theme-panel-border);
   border-radius: 12px;
+  padding: var(--space-5);
+  box-shadow: 0 0 22px var(--theme-accent-glow);
+  transform: translate(-50%, -50%) scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--motion-medium);
+  z-index: 600;
 }
 
-/* Hidden messages panel */
-.hidden-panel {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  width: 320px;
-  max-height: 60vh;
-  padding: 10px;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  box-shadow: var(--shadow-soft);
-  overflow-y: auto;
-  z-index: 35;
+.hud-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
 }
 
-/* Toast */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #111827;
-  border: 1px solid rgba(123, 92, 255, 0.7);
-  color: #e5e7eb;
-  box-shadow: var(--shadow-soft);
-  z-index: 50;
-}
-
-/* Logout modal */
-.modal-1 {
-  position: fixed;
-  inset: 0;
+/* ------------------------------------------------------------
+   MODAL HEADER
+------------------------------------------------------------ */
+.hud-modal-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.85);
-  z-index: 45;
-}
-.modal-1.hidden {
-  display: none;
-}
-.modal-content-1 {
-  background: rgba(15, 23, 42, 0.98);
-  border-radius: 16px;
-  padding: 18px 22px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  text-align: center;
-  color: #e5e7eb;
-}
-.modal-content-1 button {
-  margin: 6px 4px 0;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
-  background: rgba(15, 23, 42, 0.9);
-  color: #e5e7eb;
-  font-size: 0.85rem;
-}
-/* PROFILE PANEL */
-.profile-info {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-}
-
-.profile-avatar {
-  width: 82px;
-  height: 82px;
-  border-radius: 50%;
-  border: 2px solid var(--hud-cyan);
-  filter: drop-shadow(0 0 12px var(--hud-cyan-glow));
-}
-
-.field-row {
-  display: flex;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-.field-row label {
-  color: var(--hud-cyan);
-}
-/* VIDEO PANEL */
-.video-feed {
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--hud-cyan-faint);
-  border-radius: 8px;
-  height: 260px;
   margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--theme-panel-border);
 }
 
-.video-controls {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-4);
+.hud-modal-header h2 {
+  font-family: var(--font-family-hud);
+  font-size: var(--font-lg);
+  color: var(--theme-accent);
+  text-shadow: 0 0 8px var(--theme-accent-glow);
 }
 
-.hud-btn.small {
+.hud-modal-close {
   width: 42px;
   height: 42px;
+  border-radius: 8px;
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px solid var(--theme-panel-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--motion-fast);
 }
 
-.end-call {
-  border-color: #ff4d4d;
-  color: #ff4d4d;
+.hud-modal-close:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
 }
+
+/* ------------------------------------------------------------
+   MODAL BODY
+------------------------------------------------------------ */
+.hud-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--hud-cyan-soft);
+  font-size: var(--font-md);
+}
+
+/* ------------------------------------------------------------
+   MODAL BUTTONS
+------------------------------------------------------------ */
+.hud-modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.hud-btn-primary,
+.hud-btn-secondary,
+.hud-btn-danger {
+  flex: 1;
+  padding: var(--space-3);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--motion-fast);
+  border: 1px solid var(--theme-panel-border);
+  background: rgba(0, 20, 40, 0.45);
+  color: var(--theme-accent);
+}
+
+.hud-btn-primary:hover,
+.hud-btn-secondary:hover {
+  box-shadow: 0 0 12px var(--theme-accent-glow);
+}
+
+.hud-btn-danger {
+  border-color: rgba(255, 80, 80, 0.55);
+  color: rgba(255, 80, 80, 0.85);
+}
+
+.hud-btn-danger:hover {
+  box-shadow: 0 0 14px rgba(255, 80, 80, 0.75);
+}
+
+/* ------------------------------------------------------------
+   VOICEMAIL MODAL
+------------------------------------------------------------ */
+#voicemail_modal {
+  width: 480px;
+}
+
+.voicemail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.voicemail-header img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-panel-border);
+}
+
+.voicemail-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.voicemail-info span {
+  color: var(--theme-accent);
+  font-size: var(--font-md);
+}
+
+/* ------------------------------------------------------------
+   AUDIO WAVEFORM
+------------------------------------------------------------ */
+.waveform-bar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.waveform-bar div {
+  width: 4px;
+  height: 20px;
+  background: var(--theme-accent);
+  border-radius: 2px;
+  animation: wavePulse 1.2s infinite ease-in-out;
+  opacity: 0.85;
+}
+
+.waveform-bar div:nth-child(3n) { animation-delay: 0.2s; }
+.waveform-bar div:nth-child(4n) { animation-delay: 0.4s; }
+.waveform-bar div:nth-child(5n) { animation-delay: 0.6s; }
+
+@keyframes wavePulse {
+  0% { height: 12px; }
+  50% { height: 48px; }
+  100% { height: 12px; }
+}
+
+/* ------------------------------------------------------------
+   FULL PROFILE MODAL (SHARED WITH CONTACTS.CSS)
+------------------------------------------------------------ */
+.full-profile-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--motion-medium);
+}
+
+.full-profile-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.full-profile-content {
+  width: 420px;
+  background: rgba(0, 20, 40, 0.65);
+  border: 1px solid var(--theme-panel-border);
+  border-radius: 12px;
+  padding: var(--space-5);
+  box-shadow: 0 0 22px var(--theme-accent-glow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ------------------------------------------------------------
+   CONFIRMATION MODAL
+------------------------------------------------------------ */
+.confirm-modal {
+  width: 380px;
+}
+
+.confirm-text {
+  color: var(--hud-cyan-soft);
+  font-size: var(--font-md);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------
+   SLIDE-IN RIGHT PANEL MODAL
+------------------------------------------------------------ */
+.slide-panel {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 420px;
+  height: 100%;
+  background: rgba(0, 20, 40, 0.85);
+  border-left: 1px solid var(--theme-panel-border);
+  padding: var(--space-4);
+  transition: var(--motion-medium);
+  overflow-y: auto;
+  z-index: 600;
+}
+
+.slide-panel.active {
+  right: 0;
+}
+
+/* ------------------------------------------------------------
+   RESPONSIVE BEHAVIOR
+------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .hud-modal {
+    width: 90%;
+  }
+
+  .slide-panel {
+    width: 90%;
+  }
+}
+
