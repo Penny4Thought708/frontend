@@ -1,235 +1,80 @@
-/* ============================================================
-   SEARCH.CSS — TRON HUD CONTRACTOR SEARCH PANEL
-   Matches your rewritten HTML exactly.
-============================================================ */
+/* SEARCH.CSS — Contractor search panel */
 
-/* ------------------------------------------------------------
-   SEARCH PANEL BASE
------------------------------------------------------------- */
 #search_panel {
   width: 100%;
   height: 100%;
-  background: var(--theme-panel-bg);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
-  overflow: hidden;
-  backdrop-filter: blur(14px);
-  box-shadow: var(--hud-panel-shadow);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px);
   padding: var(--space-4);
-  position: relative;
-}
-
-/* Slide animation preserved */
-#search_panel.slide-from-right {
-  transform: translateX(100%);
-}
-
-#search_panel.slide-from-right.active {
-  transform: translateX(0);
-}
-
-/* ------------------------------------------------------------
-   SEARCH PANEL INNER LAYOUT
------------------------------------------------------------- */
-.search-panel-inner {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: var(--space-4);
-  height: 100%;
-}
-
-/* ------------------------------------------------------------
-   SEARCH HEADER
------------------------------------------------------------- */
-.search-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--theme-panel-border);
-}
-
-.search-header h2 {
-  font-family: var(--font-family-hud);
-  font-size: var(--font-lg);
-  color: var(--theme-accent);
-  text-shadow: 0 0 8px var(--theme-accent-glow);
-}
-
-#close_search {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--motion-fast);
-}
-
-#close_search:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   SEARCH INPUT
------------------------------------------------------------- */
-.search-input {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+
+.search-panel-inner {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 360px;
+  gap: var(--space-4);
+}
+
+/* Input */
+.search-input {
   position: relative;
 }
 
 #contractor_query_panel {
+  width: 100%;
   padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 8px;
-  color: var(--theme-accent);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
 #search_submit_panel {
   position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: rgba(0, 234, 255, 0.12);
-  border: 1px solid var(--theme-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--motion-fast);
-}
-
-#search_submit_panel:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   AUTOCOMPLETE LIST
------------------------------------------------------------- */
-#autocomplete_list_panel {
-  position: absolute;
-  top: 60px;
-  width: 100%;
-  background: rgba(0, 20, 40, 0.85);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
-  max-height: 240px;
-  overflow-y: auto;
-  z-index: 50;
-}
-
-#autocomplete_list_panel li {
-  padding: var(--space-3);
+  right: 8px;
+  top: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
   cursor: pointer;
-  transition: var(--motion-fast);
 }
 
-#autocomplete_list_panel li:hover {
-  background: rgba(0, 234, 255, 0.12);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   FILTER CHIPS
------------------------------------------------------------- */
-.search-filters {
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.filter-chip {
-  padding: var(--space-2) var(--space-3);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 20px;
-  color: var(--theme-accent);
-  cursor: pointer;
-  transition: var(--motion-fast);
-  font-size: var(--font-sm);
-}
-
-.filter-chip:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-.filter-chip.active {
-  background: rgba(0, 234, 255, 0.18);
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   SEARCH RESULTS
------------------------------------------------------------- */
+/* Results */
 #search_results {
-  flex: 1;
-  overflow-y: auto;
+  margin-top: var(--space-3);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding-right: var(--space-2);
+  gap: var(--space-2);
+  overflow-y: auto;
 }
 
 #search_results .result-card {
   padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
-  transition: var(--motion-medium);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
   cursor: pointer;
+  transition: var(--motion-fast);
 }
 
 #search_results .result-card:hover {
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-  transform: translateX(6px);
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-/* ------------------------------------------------------------
-   MAP CONTAINER
------------------------------------------------------------- */
+/* Map */
 .map-container {
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
-  border: 1px solid var(--theme-panel-border);
-  box-shadow: 0 0 14px var(--theme-accent-glow);
-}
-
-#contractor_map {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* ------------------------------------------------------------
-   RESPONSIVE BEHAVIOR
------------------------------------------------------------- */
-@media (max-width: 1200px) {
-  .search-panel-inner {
-    grid-template-columns: 1fr;
-  }
-
-  .map-container {
-    height: 300px;
-  }
-}
-
-@media (max-width: 900px) {
-  #search_panel {
-    padding: var(--space-3);
-  }
 }
 
 
