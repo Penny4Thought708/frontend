@@ -1,5 +1,5 @@
 /* ============================================================
-   CONTACTS PANEL — LAYOUT + POLISH
+   CONTACTS PANEL — LAYOUT + POLISH (NEON GLASS UPGRADE)
 ============================================================ */
 
 /* Main container */
@@ -13,14 +13,17 @@
   border: 1px solid rgba(255,255,255,0.06);
 }
 
-/* LEFT SIDEBAR */
+/* ============================================================
+   LEFT SIDEBAR
+============================================================ */
+
 .contacts-sidebar {
-  width: 250px;
+  width: 260px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.96);
   border-right: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: blur(20px);
 }
@@ -73,12 +76,106 @@
   padding-right: 4px;
 }
 
-/* RIGHT MAIN PANEL */
+/* Lookup card (match contact card style) */
+.lookup-card {
+  list-style: none;
+}
+
+.lookup-card {
+  padding: 0;
+}
+
+.lookup-card > .lookup-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.25),
+    0 0 12px rgba(var(--accent-rgb), 0.25);
+
+  transition: 0.25s ease;
+  cursor: pointer;
+}
+
+.lookup-card:hover > .lookup-inner {
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.35),
+    0 0 16px rgba(var(--accent-rgb), 0.35);
+}
+
+.lookup-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lookup-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lookup-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lookup-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.lookup-email {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.lookup-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.lookup-actions button {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s ease;
+}
+
+.lookup-actions button:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.08);
+}
+
+/* ============================================================
+   RIGHT MAIN PANEL
+============================================================ */
+
 .contacts-main {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  background: rgba(10,12,18,0.85);
+  background: rgba(10,12,18,0.88);
   backdrop-filter: blur(18px);
 }
 
@@ -116,7 +213,10 @@
   color: var(--text-primary);
 }
 
-/* Lists */
+/* ============================================================
+   LISTS (CONTACTS, BLOCKED, MESSAGING, VOICEMAIL, CALL LOG)
+============================================================ */
+
 #contacts,
 #blocked-contacts,
 #messaging_list,
@@ -127,29 +227,244 @@
   gap: 12px;
 }
 
+/* Base list item reset */
 #contacts li,
 #blocked-contacts li,
 #messaging_list li,
 #voiceMList li,
 #callLogList li {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  transition: var(--motion-medium);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-#contacts li:hover,
-#blocked-contacts li:hover,
-#messaging_list li:hover,
-#voiceMList li:hover,
-#callLogList li:hover {
+/* ============================================================
+   CONTACT CARD (NEON GLASS)
+============================================================ */
+
+.contact-card {
+  list-style: none;
+}
+
+.contact-card-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+
+  padding: 14px 18px;
+  border-radius: 16px;
+
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.25),
+    0 0 12px rgba(var(--accent-rgb), 0.25);
+
+  transition: 0.25s ease;
+  cursor: pointer;
+}
+
+.contact-card-inner:hover {
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-3px);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.35),
+    0 0 16px rgba(var(--accent-rgb), 0.35);
+}
+
+/* Avatar */
+.contact-avatar-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.contact-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 0 8px rgba(0,0,0,0.25);
+}
+
+/* Status Dot */
+.contact-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+
+  border: 2px solid rgba(0,0,0,0.4);
+  background: gray;
+}
+
+.contact-status.online {
+  background: #4caf50;
+  box-shadow: 0 0 8px rgba(76,175,80,0.8);
+}
+
+.contact-status.offline {
+  background: #777;
+}
+
+/* Info */
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contact-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contact-email {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.contact-last {
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+/* Unread Badge */
+.contact-unread {
+  background: rgba(var(--accent-rgb), 0.35);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.55);
+}
+
+/* Actions */
+.contact-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.contact-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+
   background: rgba(255,255,255,0.08);
-  transform: var(--hover-lift);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text-primary);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: 0.22s ease;
+}
+
+.contact-action-btn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.12);
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.45);
+}
+
+/* Selected state */
+.contact-card.selected .contact-card-inner {
+  border-color: var(--accent-primary);
+  box-shadow:
+    0 0 16px rgba(var(--accent-rgb), 0.6),
+    0 0 24px rgba(var(--accent-rgb), 0.35);
+}
+
+/* ============================================================
+   BLOCKED CONTACTS
+============================================================ */
+
+.blocked-card {
+  list-style: none;
+}
+
+.blocked-card-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+
+  padding: 12px 14px;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  transition: 0.22s ease;
+}
+
+.blocked-card-inner:hover {
+  background: rgba(255,255,255,0.08);
+  transform: translateY(-2px);
   box-shadow: 0 0 14px rgba(123,92,255,0.25);
 }
 
-/* Voicemail */
+.blocked-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.blocked-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.blocked-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.blocked-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.blocked-email {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.unblock-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  transition: 0.2s ease;
+}
+
+.unblock-btn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   VOICEMAIL
+============================================================ */
+
 .vm-badge {
   background: rgba(255, 80, 80, 0.9);
   padding: 4px 12px;
@@ -165,7 +480,10 @@
   padding-right: 4px;
 }
 
-/* Call log */
+/* ============================================================
+   CALL LOG
+============================================================ */
+
 .call-log-actions input {
   width: 100%;
   padding: 10px 14px;
@@ -182,12 +500,14 @@
   color: var(--text-secondary);
 }
 
-/* Messaging section */
+/* ============================================================
+   MESSAGING / BLOCKED SECTION HEADERS
+============================================================ */
+
 #messaging_box_container h3 {
   margin-bottom: 8px;
 }
 
-/* Blocked contacts */
 #bloc_box h3 {
   margin-bottom: 8px;
 }
