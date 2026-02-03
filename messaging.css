@@ -64,7 +64,7 @@
 ============================================================ */
 
 #messaging_box {
-  width: 420px;
+  width: 820px;
   max-height: calc(100vh - 96px);
   display: flex;
   flex-direction: column;
@@ -75,7 +75,7 @@
 .workspace-center #messaging_box {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 80%;
   transform: translate(-50%, -50%);
 }
 
