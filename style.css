@@ -143,3 +143,58 @@ body.dark-mode {
   0% { transform: translate3d(0,0,0); }
   100% { transform: translate3d(80px, 120px, 0); }
 }
+/* Smooth glow morphing */
+:root,
+.theme-tron,
+.theme-cyberpunk,
+.theme-tactical,
+.theme-quantum {
+  transition:
+    --theme-accent 0.45s ease,
+    --theme-accent-glow 0.45s ease,
+    --theme-panel-border 0.45s ease,
+    --theme-panel-border-strong 0.45s ease,
+    --theme-panel-bg 0.45s ease;
+}
+/* Grid pulse on theme switch */
+body.theme-switching .hex-grid {
+  animation: gridPulse 0.8s ease-out;
+}
+
+@keyframes gridPulse {
+  0% { opacity: 0.55; transform: scale(1); }
+  40% { opacity: 0.9; transform: scale(1.04); }
+  100% { opacity: 0.55; transform: scale(1); }
+}
+/* Panel border morph */
+body.theme-switching .hud-panel {
+  animation: panelMorph 0.6s ease-out;
+}
+
+@keyframes panelMorph {
+  0% { border-color: var(--theme-panel-border); }
+  50% { border-color: var(--theme-panel-border-strong); }
+  100% { border-color: var(--theme-panel-border); }
+}
+/* Flicker burst */
+body.theme-switching .hud-panel,
+body.theme-switching .hud-btn {
+  animation: flickerBurst 0.12s steps(2, end) 3;
+}
+
+@keyframes flickerBurst {
+  0% { opacity: 1; }
+  50% { opacity: 0.85; }
+  100% { opacity: 1; }
+}
+/* Quantum Glass fade-through */
+.theme-quantum.theme-switching {
+  animation: quantumFade 0.6s ease-out;
+}
+
+@keyframes quantumFade {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(2.8); }
+  100% { filter: brightness(1); }
+}
+
