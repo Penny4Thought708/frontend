@@ -338,7 +338,7 @@
 /* Mini Chat Bubble */
 .mini-chat-bubble {
   position: fixed;
-  bottom: 22px;
+  bottom: 42px;
   right: 22px;
   width: 56px;
   height: 56px;
