@@ -24,21 +24,28 @@
   box-shadow:
     0 12px 32px rgba(0,0,0,0.45),
     0 0 28px rgba(var(--accent-rgb), 0.25);
-animation: panelFadeIn 0.45s ease forwards;
+/* Panel fade + lift (no scale conflicts) */
+  animation: panelFadeIn 0.55s cubic-bezier(.22, .61, .36, 1) forwards;
 }
 
 @keyframes panelFadeIn {
-  0% { 
+  0% {
     opacity: 0;
-    transform: translateY(18px);
-    filter: blur(6px);
+    transform: translateY(22px);
+    filter: blur(10px);
   }
-  100% { 
+  60% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(4px);
+  }
+  100% {
     opacity: 1;
     transform: translateY(0);
     filter: blur(0);
   }
 }
+
 
 
 
