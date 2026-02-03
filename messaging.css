@@ -20,7 +20,7 @@
   overflow: visible;
 }
 
-/* Force floating panels to center when inside workspace-center */
+/* Center floating panels */
 .workspace-center > .floating-panel {
   position: absolute;
   top: 50%;
@@ -39,7 +39,7 @@
 }
 
 /* ============================================================
-   FLOATING PANEL BASE (NO POSITIONING)
+   FLOATING PANEL BASE
 ============================================================ */
 
 .floating-panel {
@@ -53,7 +53,6 @@
   transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
-/* Hidden state */
 .floating-panel.hidden {
   opacity: 0;
   pointer-events: none;
@@ -61,7 +60,7 @@
 }
 
 /* ============================================================
-   MESSAGING PANEL STRUCTURE (NO VISUALS)
+   MESSAGING PANEL STRUCTURE
 ============================================================ */
 
 #messaging_box {
@@ -73,7 +72,6 @@
   z-index: 10;
 }
 
-/* Center messaging panel */
 .workspace-center #messaging_box {
   position: absolute;
   top: 50%;
@@ -81,7 +79,6 @@
   transform: translate(-50%, -50%);
 }
 
-/* Remove slide-from-right conflicts */
 #messaging_box.slide-from-right {
   left: 50% !important;
   right: auto !important;
@@ -89,14 +86,12 @@
   width: 420px !important;
 }
 
-/* Hidden state */
 #messaging_box.hidden {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -40%) scale(0.96);
 }
 
-/* Internal layout */
 .messaging-panel {
   display: flex;
   flex-direction: column;
@@ -110,11 +105,13 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 16px;
   padding-right: 6px;
+  scroll-behavior: smooth;
 }
 
 /* ============================================================
-   VISUAL SKIN (NO LAYOUT PROPERTIES)
+   HEADER
 ============================================================ */
 
 .msg-header {
@@ -122,6 +119,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -144,14 +143,13 @@
 .msg-icon-btn:hover,
 .msg-debug-btn:hover {
   background: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
 }
 
-.message-window.drag-over {
-  outline: 2px dashed var(--accent-primary);
-  outline-offset: -6px;
-}
+/* ============================================================
+   TYPING INDICATOR
+============================================================ */
 
-/* Typing indicator */
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -181,9 +179,10 @@
 .typing-bubble span {
   width: 6px;
   height: 6px;
-  background: var(--text-secondary);
+  background: var(--accent-primary);
   border-radius: 50%;
   animation: typingDot 1.2s infinite ease-in-out;
+  opacity: 0.6;
 }
 
 .typing-bubble span:nth-child(2) { animation-delay: 0.15s; }
@@ -194,7 +193,10 @@
   50% { opacity: 1; transform: translateY(-3px); }
 }
 
-/* Recording indicator */
+/* ============================================================
+   RECORDING INDICATOR
+============================================================ */
+
 .recording-indicator {
   display: none;
   margin: 8px 16px;
@@ -229,24 +231,33 @@
   100% { transform: scale(1.25); opacity: 0; }
 }
 
-/* Attachment preview */
+/* ============================================================
+   ATTACHMENT PREVIEW
+============================================================ */
+
 .attachment-preview {
   display: flex;
   gap: 12px;
   padding: 8px 16px;
   overflow-x: auto;
+  background: rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .attachment-preview.hidden {
   display: none;
 }
 
-/* Composer */
+/* ============================================================
+   COMPOSER
+============================================================ */
+
 .composer {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px 14px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
   border-top: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -257,7 +268,7 @@
   overflow-y: auto;
   padding: 10px 14px;
   border-radius: 14px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
   color: var(--text-primary);
   outline: none;
@@ -277,14 +288,8 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* Bottom sheet, emoji, GIF */
-.bottom-sheet,
-.emoji-picker,
-.gif-picker {
-  z-index: 20;
-}
 /* ============================================================
-   BOTTOM SHEET (FIXED)
+   BOTTOM SHEET
 ============================================================ */
 
 .bottom-sheet {
@@ -293,15 +298,18 @@
   right: 0;
   bottom: 0;
 
-  background: var(--bg-panel);
+  background: rgba(20,20,20,0.85);
   border-radius: 18px 18px 0 0;
   padding: 14px 20px;
 
   transform: translateY(100%);
-  transition: transform 0.25s ease, opacity 0.25s ease;
-
   opacity: 0;
   pointer-events: none;
+
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.12);
+
+  transition: transform 0.25s ease, opacity 0.25s ease;
   z-index: 9999;
 }
 
@@ -335,6 +343,7 @@
   border-radius: 4px;
   margin: 0 auto 12px;
 }
+
 /* ============================================================
    MINI CHAT BUBBLE — PREMIUM GLASS / NEON STYLE
 ============================================================ */
@@ -374,7 +383,6 @@
   z-index: 99999;
 }
 
-/* Hover: subtle lift + stronger glow */
 .mini-chat-bubble:hover {
   transform: translateY(-4px) scale(1.08);
   box-shadow:
@@ -382,14 +390,12 @@
     0 0 18px rgba(var(--accent-rgb), 0.65);
 }
 
-/* Hidden state */
 .mini-chat-bubble.hidden {
   opacity: 0;
   pointer-events: none;
   transform: scale(0.85);
 }
 
-/* Optional: unread pulse */
 .mini-chat-bubble.unread {
   animation: bubblePulse 1.6s infinite ease-in-out;
 }
@@ -399,3 +405,4 @@
   50%  { transform: scale(1.08); box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.7); }
   100% { transform: scale(1); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4); }
 }
+
