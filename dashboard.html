@@ -1729,13 +1729,21 @@ document.addEventListener("mousemove", (e) => {
 });
 
 function setTheme(themeName) {
-  document.body.classList.remove(
-    "theme-tron",
-    "theme-cyberpunk",
-    "theme-tactical",
-    "theme-quantum"
-  );
-  document.body.classList.add(themeName);
+  document.body.classList.add("theme-switching");
+
+  setTimeout(() => {
+    document.body.classList.remove(
+      "theme-tron",
+      "theme-cyberpunk",
+      "theme-tactical",
+      "theme-quantum"
+    );
+    document.body.classList.add(themeName);
+  }, 120);
+
+  setTimeout(() => {
+    document.body.classList.remove("theme-switching");
+  }, 600);
 }
 
 
@@ -1744,6 +1752,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
