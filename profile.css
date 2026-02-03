@@ -1,311 +1,51 @@
-/* ============================================================
-   PROFILE.CSS — TRON HUD PROFILE PANEL
-   Matches your rewritten HTML exactly.
-============================================================ */
+/* PROFILE.CSS — Profile panel layout */
 
-/* ------------------------------------------------------------
-   PROFILE PANEL BASE
------------------------------------------------------------- */
 #contact_window {
   width: 100%;
   height: 100%;
-  background: var(--theme-panel-bg);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px);
+  padding: var(--space-4);
   overflow-y: auto;
-  padding: var(--space-4);
-  backdrop-filter: blur(14px);
-  box-shadow: var(--hud-panel-shadow);
-  position: relative;
 }
 
-/* Slide animation preserved */
-#contact_window.slide-from-left {
-  transform: translateX(-100%);
-}
-
-#contact_window.slide-from-left.active {
-  transform: translateX(0);
-}
-
-/* ------------------------------------------------------------
-   LEFT CONTENT WRAPPER
------------------------------------------------------------- */
 #leftcontent {
-  width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-/* ------------------------------------------------------------
-   CONTACT BOX
------------------------------------------------------------- */
-#contact_box {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-/* ------------------------------------------------------------
-   CONTACT MENU BUTTON
------------------------------------------------------------- */
-#menu_Btn_contact {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-#menu_Btn_contact:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   CONTACT MENU DROPDOWN
------------------------------------------------------------- */
-#contact_menu_box {
-  position: absolute;
-  top: 60px;
-  right: 20px;
-  background: rgba(0, 20, 40, 0.85);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 10px;
-  padding: var(--space-3);
-  display: none;
-  z-index: 200;
-}
-
-#contact_menu_box.active {
-  display: block;
-}
-
-#contact_menu_list li {
-  padding: var(--space-3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-#contact_menu_list li:hover {
-  background: rgba(0, 234, 255, 0.12);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   PROFILE CARD
------------------------------------------------------------- */
-.profile_card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 12px;
-  box-shadow: 0 0 18px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   AVATAR SECTION
------------------------------------------------------------- */
-.profile-avatar {
-  position: relative;
-  width: 120px;
-  margin: 0 auto;
-}
-
-.profile-avatar img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 1px solid var(--theme-panel-border);
-  object-fit: cover;
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* Status dot */
-.status-dot {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid #000;
-}
-
-.status-dot.online {
-  background: #00ff88;
-  box-shadow: 0 0 8px rgba(0, 255, 136, 0.75);
-}
-
-/* Avatar buttons */
-.profile_chgBtn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-}
-
-.profile_chgBtn .upload-btn,
-.profile_chgBtn .delete-account-btn {
-  padding: var(--space-2) var(--space-3);
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 6px;
-  color: var(--theme-accent);
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-.profile_chgBtn .upload-btn:hover,
-.profile_chgBtn .delete-account-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   PROFILE INFO
------------------------------------------------------------- */
-.profile-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.profile-info h2 {
-  font-family: var(--font-family-hud);
-  font-size: var(--font-lg);
-  color: var(--theme-accent);
-  text-align: center;
-  text-shadow: 0 0 8px var(--theme-accent-glow);
-}
-
-.profile-info p {
-  text-align: center;
-  color: var(--hud-cyan-soft);
-}
-
-/* ------------------------------------------------------------
-   PROFILE FIELDS
------------------------------------------------------------- */
+/* Fields */
 .profile-field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .profile-field label {
   font-size: var(--font-sm);
-  color: var(--theme-accent);
+  color: var(--text-muted);
 }
 
 .profile-field input,
 .profile-field textarea {
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
   padding: var(--space-3);
-  border-radius: 8px;
-  color: var(--theme-accent);
-  transition: var(--motion-fast);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
 
-.profile-field input:focus,
-.profile-field textarea:focus {
-  border-color: var(--theme-panel-border-strong);
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* ------------------------------------------------------------
-   SOCIAL LINKS
------------------------------------------------------------- */
-.profile-social {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.social-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-/* ------------------------------------------------------------
-   TOGGLES
------------------------------------------------------------- */
+/* Toggles */
 .toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3);
-  background: rgba(0, 20, 40, 0.35);
-  border: 1px solid var(--theme-panel-border);
-  border-radius: 8px;
-}
-
-.toggle-row span {
-  color: var(--theme-accent);
-}
-
-.toggle-row input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
-}
-
-/* ------------------------------------------------------------
-   PROFILE ACTIONS
------------------------------------------------------------- */
-.profile-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.save-profile-btn,
-.logout-btn,
-.delete-account-btn {
-  padding: var(--space-3);
-  border-radius: 8px;
-  background: rgba(0, 20, 40, 0.45);
-  border: 1px solid var(--theme-panel-border);
-  color: var(--theme-accent);
-  text-align: center;
-  cursor: pointer;
-  transition: var(--motion-fast);
-}
-
-.save-profile-btn:hover,
-.logout-btn:hover,
-.delete-account-btn:hover {
-  box-shadow: 0 0 12px var(--theme-accent-glow);
-}
-
-/* Danger button */
-.delete-account-btn {
-  border-color: rgba(255, 80, 80, 0.55);
-  color: rgba(255, 80, 80, 0.85);
-}
-
-.delete-account-btn:hover {
-  box-shadow: 0 0 14px rgba(255, 80, 80, 0.75);
-}
-
-/* ------------------------------------------------------------
-   RESPONSIVE BEHAVIOR
------------------------------------------------------------- */
-@media (max-width: 900px) {
-  #contact_window {
-    padding: var(--space-3);
-  }
-
-  .profile_card {
-    padding: var(--space-3);
-  }
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
 }
