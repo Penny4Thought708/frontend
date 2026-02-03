@@ -1,26 +1,35 @@
 /* ============================================================
-   LEFT RAIL
+   LEFT RAIL — PREMIUM GLASS / NEON STYLE
 ============================================================ */
 
 .app-rail {
-  background: #05070c;
-  border-right: 1px solid #181c24;
+  background: rgba(5, 7, 12, 0.75);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+
+  border-right: 1px solid rgba(255,255,255,0.06);
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0;
-  gap: 8px;
+
+  padding: 14px 0;
+  gap: 10px;
+
   position: relative;
   z-index: 15;
-  width: 72px;
-  transition: width 0.3s ease;
-  overflow: hidden;
+
+  width: 72px;          /* FIXED WIDTH */
+  overflow: visible;    /* allow tooltips to show */
+  transition: none;     /* no slide-out */
 }
 
+/* Remove slide-out behavior */
 .app-rail:hover {
-  width: 180px;
+  width: 72px;
 }
 
+/* Notification label */
 .rail-notifications {
   margin-bottom: 6px;
   color: #f97316;
@@ -28,6 +37,7 @@
   position: relative;
 }
 
+/* Notification badge */
 #notificationCount {
   position: absolute;
   top: -4px;
@@ -41,19 +51,25 @@
   animation: pulseBadge 1.4s infinite ease-in-out;
 }
 
+/* Rail button */
 .rail-btn {
   position: relative;
   width: 46px;
   height: 46px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+
   color: #e5e7eb;
-  transition: var(--motion-medium);
-  overflow: hidden;
+  cursor: pointer;
+
+  transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
 }
 
 .rail-btn img {
@@ -61,29 +77,33 @@
   max-height: 24px;
 }
 
+/* Hover glow */
 .rail-btn:hover {
-  transform: var(--hover-lift);
-  background: rgba(255,255,255,0.12);
-  box-shadow: 0 0 12px rgba(123,92,255,0.35);
+  background: rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.45);
 }
 
+/* Active state */
 .rail-btn.active {
-  background: rgba(123,92,255,0.25);
-  border-color: rgba(123,92,255,0.6);
-  box-shadow: 0 0 18px rgba(123,92,255,0.55);
+  background: rgba(var(--accent-rgb), 0.25);
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55);
   transform: translateY(-2px) scale(1.05);
 }
 
+/* Pressed */
 .rail-btn:active {
-  transform: var(--press-down);
+  transform: scale(0.95);
 }
 
+/* Ripple effect */
 .rail-btn::before {
   content: "";
   position: absolute;
   width: 8px;
   height: 8px;
-  background: rgba(123,92,255,0.5);
+  background: rgba(var(--accent-rgb), 0.5);
   border-radius: 50%;
   transform: scale(0);
   opacity: 0;
@@ -95,26 +115,32 @@
   opacity: 0.12;
 }
 
+/* Spacer */
 .rail-spacer {
   flex: 1;
 }
 
+/* Tooltip */
 .rail-btn[data-tip]::after {
   content: attr(data-tip);
   position: absolute;
-  left: 60px;
+  left: 80px;
   top: 50%;
   transform: translateY(-50%) translateX(-10px);
-  background: rgba(15,23,42,0.9);
+
+  background: rgba(15,23,42,0.92);
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(123,92,255,0.4);
+
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
   color: #e5e7eb;
   font-size: 12px;
+
   opacity: 0;
   pointer-events: none;
-  transition: var(--motion-medium);
   white-space: nowrap;
+
+  transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
 .rail-btn:hover::after {
