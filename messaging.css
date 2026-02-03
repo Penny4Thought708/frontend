@@ -335,38 +335,67 @@
   border-radius: 4px;
   margin: 0 auto 12px;
 }
-/* Mini Chat Bubble */
+/* ============================================================
+   MINI CHAT BUBBLE — PREMIUM GLASS / NEON STYLE
+============================================================ */
+
 .mini-chat-bubble {
   position: fixed;
-  bottom: 42px;
-  right: 22px;
-  width: 56px;
-  height: 56px;
+  bottom: 32px;
+  right: 28px;
+
+  width: 58px;
+  height: 58px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  background: var(--accent-primary);
-  color: white;
-  font-size: 26px;
+  font-size: 28px;
+  color: var(--text-primary);
 
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
   border-radius: 50%;
-  border: none;
-  cursor: pointer;
 
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.35),
+    0 0 12px rgba(var(--accent-rgb), 0.45);
+
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(.2, .8, .2, 1),
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
+
   z-index: 99999;
 }
 
+/* Hover: subtle lift + stronger glow */
 .mini-chat-bubble:hover {
-  transform: scale(1.08);
+  transform: translateY(-4px) scale(1.08);
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.45),
+    0 0 18px rgba(var(--accent-rgb), 0.65);
 }
 
+/* Hidden state */
 .mini-chat-bubble.hidden {
   opacity: 0;
   pointer-events: none;
   transform: scale(0.85);
 }
 
+/* Optional: unread pulse */
+.mini-chat-bubble.unread {
+  animation: bubblePulse 1.6s infinite ease-in-out;
+}
+
+@keyframes bubblePulse {
+  0%   { transform: scale(1); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4); }
+  50%  { transform: scale(1.08); box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4); }
+}
