@@ -1,8 +1,7 @@
-// public/js/contacts.js
 // -------------------------------------------------------
-// CONTACT SYSTEM — ULTRA DIAGNOSTIC VERSION (FIXED)
-// Rendering, presence, lookup, profile modal, messaging,
-// blocked list, local updates, and backend integration.
+// CONTACT SYSTEM — ULTRA DIAGNOSTIC + NEW UI VERSION
+// Full rewrite to match neon-glass layout, floating panels,
+// updated HTML structure, and unified contact rendering.
 // -------------------------------------------------------
 
 import { socket } from "../socket.js";
@@ -27,32 +26,23 @@ let openProfileUserId = null;
 window.UserCache = window.UserCache || {};
 window.pendingPresence = window.pendingPresence || new Map();
 
-/* -------------------------------------------------------
-   HELPERS WITH LOGGING
-------------------------------------------------------- */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $id = (id) => document.getElementById(id);
 
 const BACKEND_BASE = "https://letsee-backend.onrender.com";
 
+/* -------------------------------------------------------
+   FETCH HELPERS
+------------------------------------------------------- */
 async function getJson(url) {
   console.log("%c[contacts] GET → " + url, "color: #00bfff");
 
   try {
     const res = await fetch(url, { credentials: "include" });
-
-    console.log(
-      "%c[contacts] Response status: " + res.status,
-      "color: #00bfff"
-    );
+    console.log("%c[contacts] Status: " + res.status, "color: #00bfff");
 
     const json = await res.json();
-
-    console.log(
-      "%c[contacts] Response JSON:",
-      "color: #00bfff",
-      json
-    );
+    console.log("%c[contacts] JSON:", "color: #00bfff", json);
 
     return json;
   } catch (err) {
@@ -72,18 +62,10 @@ async function postJson(url, body = {}) {
       body: JSON.stringify(body)
     });
 
-    console.log(
-      "%c[contacts] POST status: " + res.status,
-      "color: #ff8800"
-    );
+    console.log("%c[contacts] Status: " + res.status, "color: #ff8800");
 
     const json = await res.json();
-
-    console.log(
-      "%c[contacts] POST JSON:",
-      "color: #ff8800",
-      json
-    );
+    console.log("%c[contacts] JSON:", "color: #ff8800", json);
 
     return json;
   } catch (err) {
@@ -93,47 +75,31 @@ async function postJson(url, body = {}) {
 }
 
 /* -------------------------------------------------------
-   NORMALIZE CONTACT (RAW FROM BACKEND ONLY)
+   NORMALIZE CONTACT
 ------------------------------------------------------- */
 export function normalizeContact(raw) {
-  console.log("%c[contacts] normalizeContact(raw):", "color: #9b59b6", raw);
+  console.log("%c[contacts] normalizeContact()", "color: #9b59b6", raw);
 
-  if (!raw) {
-    console.error("[contacts] normalizeContact received NULL raw contact");
-    return {};
-  }
+  if (!raw) return {};
 
   const safe = (v, fallback = "") =>
     v === null || v === undefined || v === "null" ? fallback : String(v);
 
-  // Avatar path: backend uploads or default (relative for GitHub Pages)
+  // Avatar
   let avatar;
   if (raw.avatar) {
-    if (raw.avatar.startsWith("http")) {
-      avatar = raw.avatar;
-    } else if (raw.avatar.startsWith("/uploads")) {
-      avatar = BACKEND_BASE + raw.avatar;
-    } else {
-      avatar = `${BACKEND_BASE}/uploads/avatars/${raw.avatar}`;
-    }
-  } else {
-    // no leading slash so it works on GitHub Pages
-    avatar = "img/defaultUser.png";
-  }
+    if (raw.avatar.startsWith("http")) avatar = raw.avatar;
+    else if (raw.avatar.startsWith("/uploads")) avatar = BACKEND_BASE + raw.avatar;
+    else avatar = `${BACKEND_BASE}/uploads/avatars/${raw.avatar}`;
+  } else avatar = "img/defaultUser.png";
 
-  // Banner path
+  // Banner
   let banner;
   if (raw.banner) {
-    if (raw.banner.startsWith("http")) {
-      banner = raw.banner;
-    } else if (raw.banner.startsWith("/uploads")) {
-      banner = BACKEND_BASE + raw.banner;
-    } else {
-      banner = `${BACKEND_BASE}/uploads/banners/${raw.banner}`;
-    }
-  } else {
-    banner = "img/profile-banner.jpg";
-  }
+    if (raw.banner.startsWith("http")) banner = raw.banner;
+    else if (raw.banner.startsWith("/uploads")) banner = BACKEND_BASE + raw.banner;
+    else banner = `${BACKEND_BASE}/uploads/banners/${raw.banner}`;
+  } else banner = "img/profile-banner.jpg";
 
   const last = raw.last_message || {};
   const lastMessage = {
@@ -172,8 +138,6 @@ export function normalizeContact(raw) {
     fromLookup: raw.fromLookup === true
   };
 
-  console.log("%c[contacts] normalized user:", "color: #9b59b6", user);
-
   window.UserCache[user.contact_id] = {
     ...(window.UserCache[user.contact_id] || {}),
     ...user
@@ -183,50 +147,32 @@ export function normalizeContact(raw) {
 }
 
 /* -------------------------------------------------------
-   UPDATE CONTACT STATUS
+   UPDATE CONTACT STATUS (ONLINE/OFFLINE)
 ------------------------------------------------------- */
 export function updateContactStatus(contactId, online) {
-  console.log(
-    "%c[contacts] updateContactStatus()",
-    "color: #e84393",
-    contactId,
-    online
-  );
-
   const id = String(contactId);
 
   if (window.UserCache[id]) {
     window.UserCache[id].online = online;
-  } else {
-    console.warn("[contacts] updateContactStatus: no UserCache entry for", id);
   }
 
   const card = document.querySelector(
     `.contact-card[data-contact-id="${id}"]`
   );
 
-  if (!card) {
-    console.warn("[contacts] updateContactStatus: no card found for", id);
-    return false;
-  }
+  if (!card) return;
 
   const status = card.querySelector(".contact-status");
   if (status) {
     status.classList.toggle("online", online);
     status.classList.toggle("offline", !online);
-  } else {
-    console.warn("[contacts] updateContactStatus: no .contact-status for", id);
   }
-
-  return true;
 }
 
 /* -------------------------------------------------------
-   RENDER CONTACT CARD (TAKES NORMALIZED USER)
+   RENDER CONTACT CARD
 ------------------------------------------------------- */
 export function renderContactCard(user) {
-  console.log("%c[contacts] renderContactCard()", "color: #2ecc71", user);
-
   const li = document.createElement("li");
   li.className = "contact-card";
   li.dataset.contactId = String(user.contact_id);
@@ -265,14 +211,12 @@ export function renderContactCard(user) {
   // Info
   li.querySelector(".info-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    console.log("[contacts] info-btn clicked for", user.contact_id);
     openFullProfile(user);
   });
 
   // Chat
   li.querySelector(".chat-btn")?.addEventListener("click", (e) => {
     e.stopPropagation();
-    console.log("[contacts] chat-btn clicked for", user.contact_id);
     openMessagesFor(user);
     selectCard(li);
   });
@@ -280,25 +224,18 @@ export function renderContactCard(user) {
   // Block
   li.querySelector(".block-btn")?.addEventListener("click", async (e) => {
     e.stopPropagation();
-    console.log("[contacts] block-btn clicked for", user.contact_id);
 
     const data = await postJson(
       `${BACKEND_BASE}/api/contacts/block`,
       { contact_id: user.contact_id }
     );
 
-    if (!data?.success) {
-      console.error("[contacts] Failed to block contact:", data?.error);
-      return;
-    }
-
-    loadContacts();
+    if (data?.success) loadContacts();
   });
 
   // Delete
   li.querySelector(".delete-btn")?.addEventListener("click", async (e) => {
     e.stopPropagation();
-    console.log("[contacts] delete-btn clicked for", user.contact_id);
 
     if (!confirm(`Delete ${user.contact_name}?`)) return;
 
@@ -307,12 +244,7 @@ export function renderContactCard(user) {
       { contact_id: user.contact_id }
     );
 
-    if (!data?.success) {
-      console.error("[contacts] Failed to delete contact:", data?.error);
-      return;
-    }
-
-    loadContacts();
+    if (data?.success) loadContacts();
   });
 
   return li;
@@ -322,95 +254,42 @@ export function renderContactCard(user) {
    RENDER CONTACT LIST
 ------------------------------------------------------- */
 export function renderContactList(users) {
-  console.log("%c[contacts] renderContactList()", "color: #3498db", users);
-
   const list = $id("contacts");
-  if (!list) {
-    console.error("[contacts] ERROR: #contacts element not found in DOM");
-    return;
-  }
+  if (!list) return;
 
   list.innerHTML = "";
   users.forEach((u) => list.appendChild(renderContactCard(u)));
 }
 
 /* -------------------------------------------------------
-   LOAD CONTACTS — MAXIMUM LOGGING
+   LOAD CONTACTS
 ------------------------------------------------------- */
 export async function loadContacts() {
-  console.log("%c[contacts] loadContacts() START", "color: #e67e22");
+  const url = `${BACKEND_BASE}/api/contacts`;
+  const data = await getJson(url);
 
-  try {
-    const url = `${BACKEND_BASE}/api/contacts`;
+  if (!data?.contacts) return;
 
-    console.log("%c[contacts] Fetching contacts…", "color: #e67e22");
+  const contacts = data.contacts.map((c) => normalizeContact(c));
+  renderContactList(contacts);
 
-    const data = await getJson(url);
-
-    console.log("%c[contacts] Backend returned:", "color: #e67e22", data);
-
-    if (!data) {
-      console.error("[contacts] ERROR: No response from backend");
-      return;
-    }
-
-    if (data.success === false) {
-      console.error("[contacts] BACKEND ERROR:", data.error);
-      return;
-    }
-
-    if (!Array.isArray(data.contacts)) {
-      console.error(
-        "[contacts] ERROR: data.contacts is not an array:",
-        data.contacts
-      );
-      return;
-    }
-
-    console.log(
-      "%c[contacts] Normalizing contacts…",
-      "color: #e67e22"
-    );
-
-    const contacts = data.contacts.map((c) => normalizeContact(c));
-
-    console.log(
-      "%c[contacts] Normalized contacts:",
-      "color: #e67e22",
-      contacts
-    );
-
-    renderContactList(contacts);
-
-    // Blocked list
-    const blockedList = $id("blocked-contacts");
-    if (!blockedList) {
-      console.warn("[contacts] WARNING: #blocked-contacts not found");
-    } else {
-      blockedList.innerHTML = "";
-      (data.blocked || [])
-        .map((c) => normalizeContact(c))
-        .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
-    }
-
-    console.log("%c[contacts] Setting lookup cache", "color: #e67e22");
-    setContactLookup(contacts);
-
-    console.log("%c[contacts] Requesting presence update", "color: #e67e22");
-    socket.emit("presence:get", { userId: getMyUserId() });
-
-    console.log("%c[contacts] loadContacts() COMPLETE", "color: #2ecc71");
-  } catch (err) {
-    console.error("[contacts] loadContacts() FAILED:", err);
+  // Blocked list
+  const blockedList = $id("blocked-contacts");
+  if (blockedList) {
+    blockedList.innerHTML = "";
+    (data.blocked || [])
+      .map((c) => normalizeContact(c))
+      .forEach((c) => blockedList.appendChild(renderBlockedCard(c)));
   }
+
+  setContactLookup(contacts);
+  socket.emit("presence:get", { userId: getMyUserId() });
 }
 
 /* -------------------------------------------------------
    BLOCKED CARD
 ------------------------------------------------------- */
 export function renderBlockedCard(user) {
-  console.log("%c[contacts] renderBlockedCard()", "color: #c0392b", user);
-
   const li = document.createElement("li");
   li.className = "blocked-card";
   li.dataset.userId = user.contact_id;
@@ -429,61 +308,40 @@ export function renderBlockedCard(user) {
   `;
 
   li.querySelector(".unblock-btn")?.addEventListener("click", async () => {
-    console.log("[contacts] unblock-btn clicked for", user.contact_id);
-
     const data = await postJson(
       `${BACKEND_BASE}/api/contacts/unblock`,
       { contact_id: user.contact_id }
     );
 
-    if (!data?.success) {
-      console.error("[contacts] Failed to unblock:", data?.error);
-      return;
-    }
-
-    loadContacts();
+    if (data?.success) loadContacts();
   });
 
   return li;
 }
 
 /* -------------------------------------------------------
-   OPEN MESSAGES (UPDATED FOR NEW UI)
+   OPEN MESSAGES (NEW FLOATING PANEL)
 ------------------------------------------------------- */
 export function openMessagesFor(user) {
-  console.log("%c[contacts] openMessagesFor()", "color: #1abc9c", user);
-
-  // Store name for lookup
   userNames[String(user.contact_id)] = user.contact_name;
 
   activeContact = user;
   window.currentChatUserId = user.contact_id;
 
-  // Set receiver for messaging.js
   setReceiver(user.contact_id);
 
-  // ⭐ NEW HEADER TARGET
-  const header = document.getElementById("msgHeaderName");
-  if (header) {
-    header.textContent = user.contact_name;
-  } else {
-    console.error("[contacts] ERROR: #msgHeaderName not found");
-  }
+  const header = $id("msgHeaderName");
+  if (header) header.textContent = user.contact_name;
 
-  // ⭐ OPEN THE NEW FLOATING MESSAGING PANEL
-  const panel = document.getElementById("messaging_box");
+  const panel = $id("messaging_box");
   if (panel) {
     panel.style.display = "flex";
     panel.classList.remove("hidden");
-  } else {
-    console.error("[contacts] ERROR: #messaging_box not found");
   }
 
-  // ⭐ HIDE MINI CHAT BUBBLE IF VISIBLE
-  const bubble = document.getElementById("miniChatBubble");
+  const bubble = $id("miniChatBubble");
   if (bubble) bubble.style.display = "none";
 
-  // Load messages once
   loadMessages();
 }
 
@@ -491,8 +349,6 @@ export function openMessagesFor(user) {
    SELECT CARD
 ------------------------------------------------------- */
 function selectCard(li) {
-  console.log("%c[contacts] selectCard()", "color: #8e44ad", li);
-
   document
     .querySelectorAll(".contact-card.selected")
     .forEach((c) => c.classList.remove("selected"));
@@ -501,9 +357,8 @@ function selectCard(li) {
 }
 
 /* -------------------------------------------------------
-   FULL PROFILE MODAL (ALL FIELDS, REAL-TIME READY)
+   FULL PROFILE MODAL
 ------------------------------------------------------- */
-
 function openFullProfile(userRaw) {
   const user = normalizeContact(userRaw);
   activeContact = user;
@@ -526,35 +381,35 @@ function openFullProfile(userRaw) {
   $id("fullProfileBio").textContent = user.contact_bio || "No bio";
 
   // Website
+  const w = $id("fullProfileWebsite");
   if (user.contact_website) {
-    const w = $id("fullProfileWebsite");
     w.textContent = user.contact_website;
     w.href = user.contact_website.startsWith("http")
       ? user.contact_website
       : "https://" + user.contact_website;
   } else {
-    $id("fullProfileWebsite").textContent = "None";
-    $id("fullProfileWebsite").removeAttribute("href");
+    w.textContent = "None";
+    w.removeAttribute("href");
   }
 
   // Twitter
+  const t = $id("fullProfileTwitter");
   if (user.contact_twitter) {
-    const t = $id("fullProfileTwitter");
     t.textContent = user.contact_twitter;
     t.href = "https://twitter.com/" + user.contact_twitter.replace("@", "");
   } else {
-    $id("fullProfileTwitter").textContent = "None";
-    $id("fullProfileTwitter").removeAttribute("href");
+    t.textContent = "None";
+    t.removeAttribute("href");
   }
 
   // Instagram
+  const i = $id("fullProfileInstagram");
   if (user.contact_instagram) {
-    const i = $id("fullProfileInstagram");
     i.textContent = user.contact_instagram;
     i.href = "https://instagram.com/" + user.contact_instagram.replace("@", "");
   } else {
-    $id("fullProfileInstagram").textContent = "None";
-    $id("fullProfileInstagram").removeAttribute("href");
+    i.textContent = "None";
+    i.removeAttribute("href");
   }
 
   // Permissions
@@ -577,54 +432,12 @@ function openFullProfile(userRaw) {
   $id("copyPhoneBtn").onclick = () =>
     navigator.clipboard.writeText(user.contact_phone || "");
 
-  // Buttons
-  const callBtn = $id("profileCallBtn");
-  const videoBtn = $id("profileVideoBtn");
-  const blockBtn = $id("profileBlockBtn");
+  // Save lookup contact
   const saveBtn = $id("saveLookupContact");
-
-  // Use safe checks in case elements are not present
-  callBtn?.addEventListener("click", () => {
-    if (typeof window.startCall === "function")
-      window.startCall(user.contact_id, false);
-    else console.warn("startCall is not available");
-  });
-  videoBtn?.addEventListener("click", () => {
-    if (typeof window.startCall === "function")
-      window.startCall(user.contact_id, true);
-    else console.warn("startCall is not available");
-  });
-
-  blockBtn?.addEventListener("click", async () => {
-    if (!confirm(`Block ${user.contact_name}?`)) return;
-
-    const data = await postJson(
-      `${BACKEND_BASE}/api/contacts/block`,
-      { contact_id: user.contact_id }
-    );
-
-    if (data?.success) {
-      alert("User blocked");
-      loadContacts();
-      if (modal) modal.classList.remove("open");
-      isProfileOpen = false;
-      openProfileUserId = null;
-    } else {
-      console.error("[contacts] Failed to block from profile:", data?.error);
-    }
-  });
-
-  // Only touch saveBtn if it exists and ensure the handler is safe
   if (saveBtn) {
     if (user.fromLookup) {
       saveBtn.style.display = "block";
-      saveBtn.onclick = () => {
-        if (typeof window.saveLookupContact === "function") {
-          window.saveLookupContact(user.contact_id);
-        } else {
-          console.error("saveLookupContact is not defined");
-        }
-      };
+      saveBtn.onclick = () => window.saveLookupContact(user.contact_id);
     } else {
       saveBtn.style.display = "none";
       saveBtn.onclick = null;
@@ -633,11 +446,11 @@ function openFullProfile(userRaw) {
 }
 
 /* -------------------------------------------------------
-   Lookup Search
+   LOOKUP SEARCH
 ------------------------------------------------------- */
-
 function runLookup(query) {
   if (!lookupResults) return;
+
   if (!query) {
     lookupResults.innerHTML = "";
     return;
@@ -678,9 +491,8 @@ lookupInput?.addEventListener("input", () => {
 });
 
 /* -------------------------------------------------------
-   Render Lookup Card
+   RENDER LOOKUP CARD
 ------------------------------------------------------- */
-
 export function renderLookupCard(user) {
   const li = document.createElement("li");
   li.className = "lookup-card";
@@ -718,86 +530,151 @@ export function renderLookupCard(user) {
 }
 
 /* -------------------------------------------------------
-   SAVE LOOKUP CONTACT (Node backend)
+   SAVE LOOKUP CONTACT
 ------------------------------------------------------- */
 window.saveLookupContact = async function (contactId) {
-  console.log("[contacts] saveLookupContact()", contactId);
-
   const data = await postJson(
     `${BACKEND_BASE}/api/contacts/add`,
     { contact_id: contactId }
   );
 
-  if (!data?.success) {
-    console.error("[contacts] Failed to add contact from lookup:", data?.error);
-    return;
-  }
-
-  console.log("[contacts] Contact added from lookup:", data);
-
-  if (typeof loadContacts === "function") {
+  if (data?.success) {
     loadContacts();
+    const modal = $id("fullProfileModal");
+    if (modal) modal.classList.remove("open");
   }
-
-  const modal = document.getElementById("fullProfileModal");
-  if (modal) modal.classList.remove("open");
 };
 
 /* -------------------------------------------------------
-   EXPOSE GLOBALS
-------------------------------------------------------- */
-window.openFullProfile = openFullProfile;
-window.openMessagesFor = openMessagesFor;
-window.loadContacts = loadContacts;
-window.updateContactStatus = updateContactStatus;
-
-/* -------------------------------------------------------
-   UPDATE LOCAL CONTACT (Required by profile panel)
+   UPDATE LOCAL CONTACT — FULL UI SYNC
 ------------------------------------------------------- */
 window.updateLocalContact = function (contactId, updates) {
   const id = String(contactId);
 
-  // Skip self-updates (your own user is NOT in UserCache)
-  if (id === String(getMyUserId())) {
-    console.log("[updateLocalContact] Skipping self update");
-    return;
-  }
-
-  // Ensure UserCache exists
-  if (!window.UserCache) {
-    console.warn("[updateLocalContact] No UserCache found");
-    return;
-  }
+  if (id === String(getMyUserId())) return;
 
   const contact = window.UserCache[id];
-  if (!contact) {
-    console.warn("[updateLocalContact] Contact not found:", id);
-    return;
-  }
+  if (!contact) return;
 
-  // Merge updates into cached contact
   Object.assign(contact, updates);
 
-  console.log("[updateLocalContact] Updated:", id, updates);
-
-  // Update UI if the contact is visible in the list
+  /* -------------------------------------------------------
+     1. CONTACT LIST
+  ------------------------------------------------------- */
   const card = document.querySelector(`.contact-card[data-contact-id="${id}"]`);
   if (card) {
     if (updates.contact_name) {
-      const nameEl = card.querySelector(".contact-name");
-      if (nameEl) nameEl.textContent = updates.contact_name;
+      const el = card.querySelector(".contact-name");
+      if (el) el.textContent = updates.contact_name;
     }
 
-    if (updates.avatar || updates.contact_avatar) {
-      const avatarEl = card.querySelector(".contact-avatar");
-      if (avatarEl) {
-        avatarEl.src = updates.avatar || updates.contact_avatar;
-      }
+    if (updates.contact_email) {
+      const el = card.querySelector(".contact-email");
+      if (el) el.textContent = updates.contact_email;
+    }
+
+    if (updates.contact_avatar || updates.avatar) {
+      const el = card.querySelector(".contact-avatar");
+      if (el) el.src = updates.contact_avatar || updates.avatar;
+    }
+
+    if (updates.contact_bio) {
+      const el = card.querySelector(".contact-last");
+      if (el) el.textContent = updates.contact_bio;
+    }
+  }
+
+  /* -------------------------------------------------------
+     2. LOOKUP CARDS
+  ------------------------------------------------------- */
+  document.querySelectorAll(`.lookup-card[data-id="${id}"]`).forEach((lc) => {
+    if (updates.contact_name) {
+      const el = lc.querySelector(".lookup-name");
+      if (el) el.textContent = updates.contact_name;
+    }
+
+    if (updates.contact_email) {
+      const el = lc.querySelector(".lookup-email");
+      if (el) el.textContent = updates.contact_email;
+    }
+
+    if (updates.contact_avatar || updates.avatar) {
+      const el = lc.querySelector(".lookup-avatar img");
+      if (el) el.src = updates.contact_avatar || updates.avatar;
+    }
+  });
+
+  /* -------------------------------------------------------
+     3. BLOCKED LIST CARDS
+  ------------------------------------------------------- */
+  document.querySelectorAll(`.blocked-card[data-user-id="${id}"]`).forEach((bc) => {
+    if (updates.contact_name) {
+      const el = bc.querySelector(".blocked-name");
+      if (el) el.textContent = updates.contact_name;
+    }
+
+    if (updates.contact_email) {
+      const el = bc.querySelector(".blocked-email");
+      if (el) el.textContent = updates.contact_email;
+    }
+
+    if (updates.contact_avatar || updates.avatar) {
+      const el = bc.querySelector(".blocked-avatar img");
+      if (el) el.src = updates.contact_avatar || updates.avatar;
+    }
+  });
+
+  /* -------------------------------------------------------
+     4. FULL PROFILE MODAL (if open)
+  ------------------------------------------------------- */
+  const modal = document.getElementById("fullProfileModal");
+  if (modal && modal.classList.contains("open") && openProfileUserId === id) {
+    if (updates.contact_name) {
+      const el = document.getElementById("fullProfileName");
+      if (el) el.textContent = updates.contact_name;
+    }
+
+    if (updates.contact_email) {
+      const el = document.getElementById("fullProfileEmail");
+      if (el) el.textContent = updates.contact_email;
+    }
+
+    if (updates.contact_phone) {
+      const el = document.getElementById("fullProfilePhone");
+      if (el) el.textContent = updates.contact_phone;
+    }
+
+    if (updates.contact_bio) {
+      const el = document.getElementById("fullProfileBio");
+      if (el) el.textContent = updates.contact_bio;
+    }
+
+    if (updates.contact_avatar || updates.avatar) {
+      const el = document.getElementById("fullProfileAvatar");
+      if (el) el.src = updates.contact_avatar || updates.avatar;
+    }
+
+    if (updates.contact_banner) {
+      const el = document.getElementById("fullProfileBanner");
+      if (el) el.src = updates.contact_banner;
+    }
+  }
+
+  /* -------------------------------------------------------
+     5. MESSAGING HEADER (if chatting with this user)
+  ------------------------------------------------------- */
+  if (window.currentChatUserId === id) {
+    if (updates.contact_name) {
+      const el = document.getElementById("msgHeaderName");
+      if (el) el.textContent = updates.contact_name;
+    }
+
+    if (updates.contact_avatar || updates.avatar) {
+      const el = document.getElementById("msgHeaderAvatar");
+      if (el) el.src = updates.contact_avatar || updates.avatar;
     }
   }
 };
-
-
 
 
 
