@@ -1,145 +1,101 @@
 /* ============================================================
-   APP SHELL + HEADER + WORKSPACE
+   TRON ARCADE HUD — GLOBAL ROOT SYSTEM
+   (Electric Cyan • Glow‑2 • Midnight Gradient • Cinematic Motion)
 ============================================================ */
 
-.site-header.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background: linear-gradient(90deg, #0b0f14, #111522);
-  border-bottom: 1px solid #1f2430;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  position: relative;
-  z-index: 20;
-}
+:root {
+  /* ------------------------------------------------------------
+     COLOR SYSTEM — ELECTRIC CYAN (Primary)
+  ------------------------------------------------------------ */
+  --hud-cyan: #00eaff;
+  --hud-cyan-soft: rgba(0, 234, 255, 0.65);
+  --hud-cyan-faint: rgba(0, 234, 255, 0.25);
+  --hud-cyan-glow: rgba(0, 234, 255, 0.55); /* Glow‑2 */
+  --hud-cyan-glow-strong: rgba(0, 234, 255, 0.75);
 
-.brand-logo .brand {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  background: linear-gradient(135deg, #7b5cff, #38bdf8);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow:
-    0 0 8px rgba(56, 189, 248, 0.45),
-    0 0 16px rgba(56, 189, 248, 0.25);
-}
+  /* ------------------------------------------------------------
+     BACKGROUND — MIDNIGHT BLUE GRADIENT (BG‑3)
+  ------------------------------------------------------------ */
+  --hud-bg-1: #000814;
+  --hud-bg-2: #001122;
+  --hud-bg-3: #001a33;
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
+  --hud-bg-gradient: linear-gradient(
+    180deg,
+    var(--hud-bg-1) 0%,
+    var(--hud-bg-2) 40%,
+    var(--hud-bg-3) 100%
+  );
 
-.nav-links a {
-  position: relative;
-  padding: 4px 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #cbd5f5;
-  opacity: 0.9;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-}
+  /* ------------------------------------------------------------
+     PANEL GLASS SYSTEM
+  ------------------------------------------------------------ */
+  --hud-panel-bg: rgba(0, 20, 40, 0.45);
+  --hud-panel-border: rgba(0, 234, 255, 0.35);
+  --hud-panel-border-strong: rgba(0, 234, 255, 0.55);
+  --hud-panel-shadow: 0 0 22px rgba(0, 234, 255, 0.25);
 
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -3px;
-  width: 0;
-  height: 2px;
-  background: var(--accent-primary);
-  border-radius: 999px;
-  transition: width var(--transition-med), left var(--transition-med);
-}
+  /* ------------------------------------------------------------
+     SPACING SCALE (P2 — Balanced HUD)
+  ------------------------------------------------------------ */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
 
-.nav-links a:hover {
-  opacity: 1;
-  transform: translateY(-1px);
-}
-.nav-links a:hover::after {
-  width: 100%;
-  left: 0;
-}
+  /* ------------------------------------------------------------
+     TYPOGRAPHY SCALE
+  ------------------------------------------------------------ */
+  --font-xs: 0.75rem;
+  --font-sm: 0.85rem;
+  --font-md: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.6rem;
+  --font-xxl: 2.2rem;
 
-.auth-section {
-  max-width: 360px;
-  padding: 10px 16px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-  text-align: right;
-}
+  --font-family-hud: 'Orbitron', 'Rajdhani', 'Segoe UI', sans-serif;
+  --font-family-body: 'Inter', 'Segoe UI', sans-serif;
 
-.auth-section .welcome h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #e5e7eb;
-}
-.auth-section .welcome p {
-  font-size: 0.8rem;
-  color: #9ca3af;
-}
+  /* ------------------------------------------------------------
+     ANIMATION SYSTEM — CINEMATIC TRON (B)
+  ------------------------------------------------------------ */
+  --motion-fast: 120ms cubic-bezier(.22, .61, .36, 1);
+  --motion-medium: 260ms cubic-bezier(.22, .61, .36, 1);
+  --motion-slow: 480ms cubic-bezier(.22, .61, .36, 1);
 
-.app-shell {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  min-height: calc(100vh - 60px);
-  position: relative;
-}
+  /* Flicker + Scanline Timing */
+  --hud-flicker-speed: 0.12s;
+  --hud-scanline-speed: 14s;
 
-.workspace {
-  position: relative;
-  overflow: hidden;
-  background: radial-gradient(circle at top left, #111827 0, #020617 60%);
-}
+  /* ------------------------------------------------------------
+     DEPTH SYSTEM — IMMERSIVE PARALLAX (D3)
+  ------------------------------------------------------------ */
+  --depth-1: translateZ(-60px) scale(1.1);
+  --depth-2: translateZ(-30px) scale(1.05);
+  --depth-3: translateZ(0px) scale(1);
+  --depth-4: translateZ(40px) scale(0.97);
+  --depth-5: translateZ(80px) scale(0.94);
 
-.workspace-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at top left, rgba(123, 92, 255, 0.18), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(0, 224, 255, 0.16), transparent 55%);
-  pointer-events: none;
-  z-index: 0;
-  transition: transform 0.25s ease-out;
-}
+  /* Panel tilt */
+  --hud-tilt-angle: 2deg;
 
-.workspace-center {
-  position: relative;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 24px;
-}
+  /* ------------------------------------------------------------
+     HEX GRID SYSTEM — HOLOGRAPHIC (G3 + H3)
+  ------------------------------------------------------------ */
+  --hex-size: 42px;
+  --hex-line: rgba(0, 234, 255, 0.18);
+  --hex-line-strong: rgba(0, 234, 255, 0.35);
+  --hex-pulse: rgba(0, 234, 255, 0.55);
 
-.site-footer {
-  padding: 10px 16px;
-  background: #020617;
-  border-top: 1px solid #111827;
-  color: #9ca3af;
-  font-size: 0.8rem;
-}
-.footer-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.footer-nav,
-.social-links {
-  display: flex;
-  gap: 8px;
-}
-
-@media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 56px minmax(0, 1fr);
-  }
+  /* ------------------------------------------------------------
+     THEME ENGINE (C1–C4)
+     These will be overridden by theme classes later.
+  ------------------------------------------------------------ */
+  --theme-accent: var(--hud-cyan);
+  --theme-accent-glow: var(--hud-cyan-glow);
+  --theme-panel-bg: var(--hud-panel-bg);
+  --theme-panel-border: var(--hud-panel-border);
+  --theme-panel-border-strong: var(--hud-panel-border-strong);
 }
