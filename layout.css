@@ -189,4 +189,122 @@ body {
   border-color: var(--accent);
   color: var(--accent-strong);
 }
+/* ============================================================
+   FLOATING PANEL BASE
+============================================================ */
+
+.floating-panel {
+  position: relative;
+  animation: fadeIn var(--motion-medium);
+}
+
+/* Smooth hide */
+.hidden {
+  display: none !important;
+}
+
+/* Body state when a floating panel is open */
+body.panel-open {
+  overflow: hidden;
+}
+
+/* ============================================================
+   SLIDE ANIMATIONS
+============================================================ */
+
+.slide-from-left {
+  animation: slideLeft var(--motion-medium);
+}
+
+.slide-from-right {
+  animation: slideRight var(--motion-medium);
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ============================================================
+   WORKSPACE BACKGROUND (PARALLAX TARGET)
+============================================================ */
+
+.workspace-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(79,140,255,0.08), transparent 60%);
+  opacity: 0.4;
+  pointer-events: none;
+  transition: transform 0.2s ease-out;
+  z-index: -1;
+}
+
+/* ============================================================
+   SEARCH PANEL SPECIAL BEHAVIOR
+============================================================ */
+
+.search_.active {
+  animation: slideLeft var(--motion-medium);
+}
+
+.map-container {
+  opacity: 0;
+  transition: opacity var(--motion-medium);
+}
+
+.map-container.visible {
+  opacity: 1;
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+============================================================ */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  opacity: 1;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 999;
+}
+
+/* ============================================================
+   FULL PROFILE MODAL (JS expects .hidden toggle)
+============================================================ */
+
+.full-profile-modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================================
+   BOTTOM SHEET (JS toggles .active)
+============================================================ */
+
+.bottom-sheet.hidden {
+  bottom: -300px;
+}
+
+/* ============================================================
+   VOICEMAIL MODAL (if present)
+============================================================ */
+
+#voicemailModal.hidden {
+  display: none;
+}
 
