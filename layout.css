@@ -17,6 +17,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 
 
 /* ============================================================
@@ -151,7 +155,8 @@ body::before {
 .app-shell {
   display: grid;
   grid-template-columns: 80px minmax(0, 1.4fr) minmax(0, 1fr);
-  height: calc(100vh - 72px);
+  min-height: calc(100vh - 72px); 
+   height: auto;
   gap: 24px;
   padding: 24px;
 }
@@ -230,6 +235,29 @@ body::before {
 .column-right {
   position: relative;
   min-width: 0;
+}
+.column-left,
+.column-center,
+.column-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#global-overlays {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+}
+
+#global-overlays > * {
+  pointer-events: auto;
 }
 
 /* ============================================================
