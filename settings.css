@@ -1,4 +1,6 @@
-/* SETTINGS.CSS — Settings panel */
+/* ============================================================
+   SETTINGS PANEL — RIGHT COLUMN
+============================================================ */
 
 #settings_container {
   width: 100%;
@@ -12,6 +14,12 @@
   overflow-y: auto;
 }
 
+.settings-title {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
 .settings-card {
   background: var(--bg-subtle);
   border-radius: var(--radius-lg);
@@ -22,11 +30,37 @@
   gap: var(--space-3);
 }
 
+.settings-card-title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.settings-row label {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.settings-row input,
+.settings-row select {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
 /* Toggles */
 .settings-toggle-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: var(--space-3);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.02);
@@ -72,4 +106,380 @@
   transform: translateX(18px);
 }
 
+/* Camera preview */
+#camera_preview {
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-md);
+  background: #000;
+  border: 1px solid var(--border-subtle);
+  object-fit: cover;
+}
+
+/* Mic level bar */
+.mic-level-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mic-level-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+/* Buttons */
+.settings-btn {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: center;
+  transition: var(--motion-fast);
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-btn.primary {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+/* ============================================================
+   PROFILE PANEL — RIGHT COLUMN FLOATING
+============================================================ */
+
+#contact_window {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(24px);
+  padding: var(--space-4);
+  overflow-y: auto;
+}
+
+.profile_card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.profile-avatar {
+  position: relative;
+  width: 120px;
+  margin: 0 auto;
+}
+
+.profile-avatar img {
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid var(--border-subtle);
+}
+
+.profile_chgBtn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.upload-btn {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: center;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.profile-field label {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+}
+
+.profile-field input,
+.profile-field textarea {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.save-profile-btn {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.logout-btn {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.delete-account-btn {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger-strong);
+}
+
+/* ============================================================
+   VIDEO CALL PANEL — FLOATING OVERLAY
+============================================================ */
+
+#video-container {
+  width: 720px;
+  max-width: 100%;
+  height: 460px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(26px);
+  padding: var(--space-4);
+  display: none;
+  flex-direction: column;
+  gap: var(--space-3);
+  z-index: 400;
+}
+
+#video-container.active {
+  display: flex;
+}
+
+/* Remote video */
+#remoteWrapper {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+}
+
+#remoteVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Local video */
+#localVideoWrapper {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  width: 160px;
+  height: 100px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: #000;
+}
+
+/* Call controls */
+.call-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.call-controls button {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--motion-fast);
+}
+
+.call-controls button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#end-call,
+#decline-call {
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+}
+
+/* ============================================================
+   FULL PROFILE MODAL — SHARED SPACE
+============================================================ */
+
+.full-profile-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 10, 0.7);
+  backdrop-filter: blur(18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--motion-medium);
+}
+
+.full-profile-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.full-profile-content {
+  width: 420px;
+  max-width: 90%;
+  background: var(--bg-elevated-soft);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.full-profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid var(--border-subtle);
+  margin: 0 auto;
+}
+
+/* ============================================================
+   BOTTOM SHEET
+============================================================ */
+
+.bottom-sheet {
+  position: fixed;
+  bottom: -300px;
+  left: 0;
+  width: 100%;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-soft);
+  padding: var(--space-4);
+  transition: var(--motion-medium);
+  z-index: 300;
+}
+
+.bottom-sheet.active {
+  bottom: 0;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--text-muted);
+  border-radius: 999px;
+  margin: 0 auto var(--space-3);
+}
+
+.sheet-item {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* ============================================================
+   EMOJI PICKER
+============================================================ */
+
+emoji-picker {
+  width: 100%;
+  height: 320px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-subtle);
+}
+
+/* ============================================================
+   GIF PICKER
+============================================================ */
+
+.gif-picker {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.gif-search {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.gif-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-2);
+}
+
+.gif-results img {
+  width: 100%;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  cursor: pointer;
+}
 
