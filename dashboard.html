@@ -124,12 +124,12 @@ window.currentUserAvatar = user.avatar;
   </header>
 
   <!-- ============================================================
-       MAIN APP GRID (OS‑STYLE LAYOUT)
+       MAIN APP GRID (ADAPTIVE OS LAYOUT)
   ============================================================ -->
   <main class="app-shell">
 
     <!-- ============================================================
-         LEFT RAIL
+         LEFT RAIL (PERSISTENT)
     ============================================================ -->
     <aside class="app-rail" aria-label="App navigation">
 
@@ -162,13 +162,12 @@ window.currentUserAvatar = user.avatar;
     </aside>
 
     <!-- ============================================================
-         LEFT COLUMN — CONTACTS + SEARCH
+         LEFT COLUMN — CONWRAP + SEARCH
     ============================================================ -->
     <section class="column-left">
 
-      <!-- CONTACTS PANEL -->
+      <!-- CONTACTS / HISTORY / MESSAGES (CONWRAP REDESIGNED) -->
       <div id="conwrap" class="panel hidden">
-
         <div class="contacts-main">
 
           <section class="con-section">
@@ -199,12 +198,10 @@ window.currentUserAvatar = user.avatar;
           </section>
 
         </div>
-
       </div>
 
       <!-- SEARCH PANEL -->
       <div id="search_panel" class="panel hidden">
-
         <div class="search-header">
           <h2>Search Contractors</h2>
           <button id="close_search" type="button">✕</button>
@@ -235,14 +232,13 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- ============================================================
-         CENTER COLUMN — MESSAGING
+         CENTER COLUMN — MESSAGING‑FIRST
     ============================================================ -->
     <section class="column-center">
 
       <div class="workspace-bg"></div>
 
       <div id="messaging_box" class="panel messaging-panel hidden">
-
         <header class="msg-header">
           <h2 id="msgHeaderName"></h2>
 
@@ -299,7 +295,6 @@ window.currentUserAvatar = user.avatar;
           <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
           <div id="gifResults" class="gif-results"></div>
         </div>
-
       </div>
 
       <button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
@@ -309,12 +304,16 @@ window.currentUserAvatar = user.avatar;
   </main>
 
   <!-- ============================================================
-       FLOATING WINDOWS (GLOBAL WINDOW MANAGER)
+       GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
   ============================================================ -->
   <div id="windowManager" data-window-manager>
 
     <!-- PROFILE EDITOR -->
-    <section id="profileWindow" class="floating-window hidden" data-floating data-draggable data-window-id="profile">
+    <section id="profileWindow"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="profile">
       <div class="floating-body">
         <h2>Profile</h2>
         <form id="profileForm">
@@ -327,7 +326,11 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- SETTINGS -->
-    <section id="settingsWindow" class="floating-window hidden" data-floating data-draggable data-window-id="settings">
+    <section id="settingsWindow"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="settings">
       <div class="floating-body">
         <h2>Settings</h2>
         <div id="settings_container"></div>
@@ -335,7 +338,11 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- VIDEO CALL -->
-    <section id="videoCallWindow" class="floating-window hidden" data-floating data-draggable data-window-id="video-call">
+    <section id="videoCallWindow"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="video-call">
       <div class="floating-body video-body">
 
         <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
@@ -372,7 +379,11 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- FULL PROFILE -->
-    <section id="fullProfileModal" class="floating-window hidden" data-floating data-draggable data-window-id="full-profile">
+    <section id="fullProfileModal"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="full-profile">
       <div class="floating-body full-profile-content">
 
         <button id="closeFullProfile" class="close-full-profile" type="button">✕</button>
@@ -393,18 +404,18 @@ window.currentUserAvatar = user.avatar;
         <div id="fullProfileBio" class="full-profile-bio"></div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/color/48/domain--v1.png" />
-          <a id="fullProfileWebsite" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/color/48/domain--v1.png" alt="" loading="lazy" />
+          <a id="fullProfileWebsite" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" />
-          <a id="fullProfileTwitter" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="" loading="lazy" />
+          <a id="fullProfileTwitter" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/fluency/48/instagram-new.png" />
-          <a id="fullProfileInstagram" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="" loading="lazy" />
+          <a id="fullProfileInstagram" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
@@ -427,7 +438,11 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- IMAGE VIEWER -->
-    <section id="image-viewer-overlay" class="floating-window hidden" data-floating data-draggable data-window-id="image-viewer">
+    <section id="image-viewer-overlay"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="image-viewer">
       <div class="floating-body image-viewer-body">
         <button id="image-prev" class="image-nav-btn" type="button">❮</button>
         <img id="image-viewer-img" src="" alt="Image viewer" loading="lazy" />
@@ -440,7 +455,6 @@ window.currentUserAvatar = user.avatar;
   <!-- ============================================================
        NON-FLOATING MODALS + TOASTS
   ============================================================ -->
-
   <div id="voicemailModal" class="voicemail-modal hidden" role="dialog" aria-modal="true">
     <div class="vm-header">Leave a Voicemail</div>
 
@@ -486,33 +500,30 @@ window.currentUserAvatar = user.avatar;
   <!-- ============================================================
        FOOTER
   ============================================================ -->
-<footer class="site-footer">
-  <div class="footer-content">
-    <p>&copy; 2025 DIY Connect. All rights reserved.</p>
+  <footer class="site-footer">
+    <div class="footer-content">
+      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
 
-    <nav class="footer-nav" aria-label="Footer navigation">
-      <a href="/about">About Us</a>
-      <a href="/services">Services</a>
-      <a href="/contact">Contact</a>
-      <a href="/privacy">Privacy Policy</a>
-    </nav>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="/about">About Us</a>
+        <a href="/services">Services</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+      </nav>
 
-    <div class="social-links">
-      <a href="https://facebook.com" target="_blank">
-        <i class="fab fa-facebook-f"></i> Facebook
-      </a>
-
-      <a href="https://twitter.com" target="_blank">
-        <i class="fab fa-twitter"></i> Twitter
-      </a>
-
-      <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
-        <i class="fab fa-instagram"></i> Instagram
-      </a>
+      <div class="social-links">
+        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-facebook-f"></i> Facebook
+        </a>
+        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-twitter"></i> Twitter
+        </a>
+        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-instagram"></i> Instagram
+        </a>
+      </div>
     </div>
-  </div>
-</footer>
-
+  </footer>
 
   <!-- ============================================================
        AUDIO ELEMENTS
@@ -522,6 +533,7 @@ window.currentUserAvatar = user.avatar;
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
 
 </body>
+
 
 <script type="module" src="public/js/app.js?v=3"></script>
 
@@ -1273,6 +1285,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
