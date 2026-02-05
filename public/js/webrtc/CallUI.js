@@ -476,17 +476,16 @@ rtc.onRecordingChanged = (active) => {
 rtc.onVoicemailPrompt = ({ peerId, message } = {}) => {
   logDebug(`Voicemail prompt: ${message}`);
 
-  showVoicemailPrompt(message);
+  // Hide the call container immediately
+  container.classList.add("hidden");
 
-  const toUserId =
-    peerId ||
-    window.currentReceiverId ||
-    window.user_id;
-
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(toUserId);
-  }
+  // Show the new toast instead of the old voicemail prompt
+  showUnavailableToast({
+    peerId,
+    message
+  });
 };
+
 
 
 
@@ -522,6 +521,7 @@ export function showUnavailableToast({ peerId }) {
     showMessageWindow(); // your existing function
   };
 }
+
 
 
 
