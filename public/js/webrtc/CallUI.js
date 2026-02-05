@@ -13,7 +13,7 @@ export function initCallUI(rtc) {
      DOM ELEMENTS
   ------------------------------------------------------- */
 
-  const container         = document.getElementById("video-container");
+  const container         = document.getElementById("videoCallWindow");
   const remoteWrapper     = document.getElementById("remoteWrapper");
   const localWrapper      = document.getElementById("localVideoWrapper");
 
@@ -534,6 +534,7 @@ export function showUnavailableToast({ peerId, message }) {
     }
   };
 }
+
 
 
 
