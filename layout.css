@@ -1967,4 +1967,211 @@ body.dark-mode::after {
     align-items: flex-start;
   }
 }
+/* ============================================================
+   AURORA LATTICE HYBRID — MOTION ENGINE
+   Adds: parallax aurora sheets, organic mesh pulses, neon refraction,
+         kinetic UI physics, and spectral glow responses.
+============================================================ */
+
+/* ------------------------------------------------------------
+   1. PARALLAX AURORA SHEETS (background motion)
+------------------------------------------------------------ */
+
+body.dark-mode::before,
+body.dark-mode::after {
+  animation: auroraDrift 38s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate3d(-40px, -60px, 0) scale(1.05);
+    opacity: 0.32;
+  }
+  100% {
+    transform: translate3d(20px, 40px, 0) scale(1.02);
+    opacity: 0.26;
+  }
+}
+
+/* ------------------------------------------------------------
+   2. ORGANIC MESH PULSE (living grid)
+------------------------------------------------------------ */
+
+body.dark-mode::after {
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  animation: meshPulse 12s ease-in-out infinite;
+}
+
+@keyframes meshPulse {
+  0%, 100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(40deg) brightness(1.25);
+  }
+}
+
+/* ------------------------------------------------------------
+   3. NEON‑GLASS REFRACTION (panels)
+------------------------------------------------------------ */
+
+.panel,
+.video-panel,
+.contacts-sidebar,
+.app-rail,
+.messaging-panel,
+.profile-panel,
+.settings-shell {
+  backdrop-filter: blur(22px) saturate(1.4);
+  background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.06),
+      rgba(255,255,255,0.02)
+    ),
+    rgba(8,10,18,0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 0 22px rgba(94,242,255,0.12),
+    inset 0 0 18px rgba(255,255,255,0.04);
+}
+
+/* ------------------------------------------------------------
+   4. KINETIC UI PHYSICS (buttons + interactions)
+------------------------------------------------------------ */
+
+button,
+.rail-btn,
+.sheet-item,
+.profile-action-btn,
+.save-profile-btn,
+.copy-btn,
+.ut-options button {
+  transition:
+    transform 140ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    box-shadow 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+button:active,
+.rail-btn:active,
+.sheet-item:active,
+.profile-action-btn:active,
+.save-profile-btn:active,
+.copy-btn:active,
+.ut-options button:active {
+  transform: scale(0.92) translateY(1px);
+  box-shadow: 0 0 18px rgba(94,242,255,0.4);
+}
+
+/* ------------------------------------------------------------
+   5. SPECTRAL GLOW RESPONSE (hover aura)
+------------------------------------------------------------ */
+
+button:hover,
+.rail-btn:hover,
+.sheet-item:hover,
+.profile-action-btn:hover,
+.save-profile-btn:hover,
+.copy-btn:hover,
+.ut-options button:hover {
+  box-shadow:
+    0 0 14px rgba(94,242,255,0.4),
+    0 0 28px rgba(255,123,255,0.25);
+}
+
+/* ------------------------------------------------------------
+   6. REMOTE SPEAKING — SPECTRAL RING
+------------------------------------------------------------ */
+
+.remote-speaking .mic-level-ring {
+  animation: spectralRing 1.8s ease-in-out infinite;
+}
+
+@keyframes spectralRing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.4;
+    border-color: rgba(94,242,255,0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    border-color: rgba(255,123,255,0.7);
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.4;
+    border-color: rgba(94,242,255,0.4);
+  }
+}
+
+/* ------------------------------------------------------------
+   7. SCREEN SHARE — GOLDEN AURA
+------------------------------------------------------------ */
+
+.screen-share .screen-share-indicator {
+  animation: shareGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes shareGlow {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(255,230,107,0.4);
+    color: var(--accent-3);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(255,230,107,0.8);
+    color: #fff6c2;
+  }
+}
+
+/* ------------------------------------------------------------
+   8. TOAST SPRING PHYSICS
+------------------------------------------------------------ */
+
+.unavailable-toast.open {
+  animation: toastSpring 420ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes toastSpring {
+  0% {
+    transform: translateX(-50%) translateY(40px) scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-50%) translateY(-6px) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* ------------------------------------------------------------
+   9. PROFILE MODAL — CINEMATIC ENTRANCE
+------------------------------------------------------------ */
+
+.full-profile-modal:not(.hidden) .full-profile-content {
+  animation: modalCinematic 480ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes modalCinematic {
+  0% {
+    transform: translateY(40px) scale(0.92);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-6px) scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
 
