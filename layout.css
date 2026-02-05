@@ -361,6 +361,7 @@ body::after {
   background: var(--ef-dark-surface);
   border-radius: var(--ef-radius-md);
   padding: 12px;
+ overflow: hidden;
   border: 1px solid var(--ef-border-subtle-dark);
   backdrop-filter: blur(22px);
   box-shadow: var(--ef-shadow-dark);
