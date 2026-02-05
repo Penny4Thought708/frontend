@@ -1102,51 +1102,93 @@ display: flex;
 }
 
 /* ============================================================
-   EMOJI PICKER + GIF PICKER
+   EMOJI PICKER — FLOATING PANEL (EchoFluid E3 Ultra)
 ============================================================ */
 
-/* Hidden by default */
-/* Base styling */
+/* Base styling (hidden by default) */
 emoji-picker#emojiPicker {
-  margin-top: 4px;
-  width: 100%;
-  border-radius: 16px;
-  background: rgba(6, 8, 20, 0.98);
+  position: absolute;
+  left: 50%;
+  bottom: 70px; /* floats above composer */
+  transform: translateX(-50%) translateY(12px);
+
+  width: 320px;
+  max-height: 360px;
+
+  border-radius: 18px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
+    rgba(6, 8, 20, 0.98);
+
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(94, 242, 255, 0.3);
+
+  z-index: 9999;
+
+  opacity: 0;
+  pointer-events: none;
+  display: block; /* JS controls visibility via .hidden */
+
+  transition:
+    opacity 200ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    transform 200ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
 
-/* Hidden by default */
-emoji-picker#emojiPicker {
-  display: none;
-}
-
-/* Your JS uses .hidden — so honor it */
+/* JS uses .hidden — so honor it */
 emoji-picker#emojiPicker.hidden {
-  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(12px) !important;
 }
 
 /* When JS removes .hidden, show it */
 emoji-picker#emojiPicker:not(.hidden) {
-  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Emoji picker internal scrollbars */
+emoji-picker#emojiPicker::part(scroller) {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(94, 242, 255, 0.4) transparent;
+}
+
+emoji-picker#emojiPicker::part(scroller)::-webkit-scrollbar {
+  width: 6px;
+}
+
+emoji-picker#emojiPicker::part(scroller)::-webkit-scrollbar-thumb {
+  background: rgba(94, 242, 255, 0.4);
+  border-radius: 10px;
 }
 
 
 
-/* GIF PICKER — FLOATING PANEL (fixed, not inline) */
+/* ============================================================
+   GIF PICKER — FLOATING PANEL (EchoFluid E3 Ultra)
+============================================================ */
+
 #gifPicker {
   position: absolute;
   left: 50%;
-  bottom: 70px; /* same height as bottom sheet */
+  bottom: 70px; /* same height as emoji + bottom sheet */
   transform: translateX(-50%) translateY(12px);
-  width: 300px;
-  max-height: 320px;
-  overflow: hidden;
-  border-radius: 18px;
 
-  background: rgba(6, 8, 20, 0.98);
+  width: 320px;
+  max-height: 360px;
+
+  border-radius: 18px;
+  overflow: hidden;
+
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
+    rgba(6, 8, 20, 0.98);
+
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.7),
@@ -1157,17 +1199,22 @@ emoji-picker#emojiPicker:not(.hidden) {
 
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
+  display: block; /* JS controls visibility via .hidden */
+
+  transition:
+    opacity 200ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    transform 200ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
 
-/* JS toggles .hidden — so honor it */
+/* JS uses .hidden — so honor it */
 #gifPicker.hidden {
-  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(12px) !important;
 }
 
 /* When JS removes .hidden, show it */
 #gifPicker:not(.hidden) {
-  display: block;
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
@@ -1176,33 +1223,63 @@ emoji-picker#emojiPicker:not(.hidden) {
 /* GIF search bar */
 #gifPicker .gif-search {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
+
   background: rgba(4, 5, 14, 0.96);
   color: #f8f8ff;
-  padding: 6px 8px;
-  margin-bottom: 8px;
+
+  padding: 8px 10px;
+  margin-bottom: 10px;
+
   font-size: 0.9rem;
+  outline: none;
+
+  transition: border-color 160ms ease;
+}
+
+#gifPicker .gif-search:focus {
+  border-color: rgba(94, 242, 255, 0.6);
 }
 
 /* GIF grid */
 #gifPicker .gif-results {
-  max-height: 240px;
+  max-height: 260px;
   overflow-y: auto;
+
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 6px;
+  gap: 8px;
+
+  padding-right: 4px;
 }
 
+/* GIF thumbnails */
 #gifPicker .gif-results img {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: transform 120ms ease;
+
+  transition:
+    transform 140ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    box-shadow 160ms ease;
 }
 
 #gifPicker .gif-results img:hover {
-  transform: scale(1.05);
+  transform: scale(1.06);
+  box-shadow:
+    0 0 14px rgba(94, 242, 255, 0.4),
+    0 0 24px rgba(255, 123, 255, 0.3);
+}
+
+/* Scrollbar styling */
+#gifPicker .gif-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+#gifPicker .gif-results::-webkit-scrollbar-thumb {
+  background: rgba(94, 242, 255, 0.4);
+  border-radius: 10px;
 }
 
 /* ============================================================
