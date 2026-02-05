@@ -136,13 +136,7 @@ window.currentUserAvatar = user.avatar;
        MAIN APP GRID (3‑COLUMN LAYOUT)
   ============================================================ -->
   <main class="app-shell">
-  <aside class="contacts-sidebar">
-          <div class="contact-lookup">
-            <input id="lookup-input" placeholder="Search contacts..." />
-            <button id="lookup-btn">🔍</button>
-          </div>
-          <ul id="contacts-lookup"></ul>
-        </aside>
+
     <!-- ============================================================
          LEFT RAIL
     ============================================================ -->
@@ -164,7 +158,13 @@ window.currentUserAvatar = user.avatar;
       <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout">⏻</button>
       <button id="btn_help" class="rail-btn" data-tip="Help">❓</button>
     </aside>
-
+  <aside class="contacts-sidebar">
+          <div class="contact-lookup">
+            <input id="lookup-input" placeholder="Search contacts..." />
+            <button id="lookup-btn">🔍</button>
+          </div>
+          <ul id="contacts-lookup"></ul>
+        </aside>
     <!-- ============================================================
          LEFT COLUMN — CONTACTS + SEARCH
     ============================================================ -->
@@ -1335,6 +1335,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
