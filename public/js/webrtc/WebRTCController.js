@@ -241,11 +241,26 @@ export class WebRTCController {
     this.remoteVideo = null;
     this.remoteAudio = null;
 
+    // Legacy callbacks
     this.onIncomingCall = null;
     this.onCallStarted = null;
     this.onCallEnded = null;
     this.onCallFailed = null;
     this.onQualityChange = null;
+
+    // New-style callbacks for CallUI.js
+    this.onOutgoingCall = null;
+    this.onCallConnected = null;
+    this.onNetworkQuality = null;
+    this.onRemoteMuted = null;
+    this.onRemoteUnmuted = null;
+    this.onRemoteCameraOff = null;
+    this.onRemoteCameraOn = null;
+    this.onRemoteSpeaking = null;
+    this.onScreenShareStarted = null;
+    this.onScreenShareStopped = null;
+    this.onNoiseSuppressionChanged = null;
+    this.onVoicemailPrompt = null;
 
     UI.apply("idle");
     this._bindSocketEvents();
@@ -320,6 +335,13 @@ export class WebRTCController {
     rtcState.usedRelayFallback = !!relayOnly;
 
     UI.apply("outgoing", { audioOnly });
+
+    // Notify UI layer (new CallUI)
+    this.onOutgoingCall?.({
+      targetName: rtcState.peerName || null,
+      video: !audioOnly,
+      voiceOnly: !!audioOnly,
+    });
 
     const pc = await this._createPC({ relayOnly });
 
@@ -474,7 +496,10 @@ export class WebRTCController {
     rtcState.incomingOffer = null;
 
     UI.apply("active", { audioOnly: rtcState.audioOnly });
+
+    // Legacy + new event
     this.onCallStarted?.();
+    this.onCallConnected?.();
   }
 
   /* ---------------------------------------------------
@@ -563,7 +588,10 @@ export class WebRTCController {
     await this._flushPendingRemoteCandidates();
 
     stopAudio(ringback);
+
+    // Legacy + new event
     this.onCallStarted?.();
+    this.onCallConnected?.();
     startTimer();
   }
 
@@ -763,12 +791,14 @@ export class WebRTCController {
     if (newEnabled) {
       showLocalVideo();
       fadeInVideo(this.localVideo);
+      this.onRemoteCameraOn?.(); // not really remote, but keeps API shape
     } else {
       showLocalAvatar();
       if (this.localVideo) {
         this.localVideo.style.display = "none";
         this.localVideo.style.opacity = "0";
       }
+      this.onRemoteCameraOff?.();
     }
   }
 
@@ -850,6 +880,7 @@ export class WebRTCController {
       else if (c.includes("host")) type = "Host";
 
       this.onQualityChange?.("good", `Candidate: ${type}`);
+      this.onNetworkQuality?.("good", `Candidate: ${type}`);
 
       if (rtcState.peerId && this.socket) {
         this.socket.emit("webrtc:signal", {
@@ -885,12 +916,17 @@ export class WebRTCController {
 
       event.track.onmute = () => {
         this.onQualityChange?.("fair", "Remote track muted");
+        this.onNetworkQuality?.("fair", "Remote track muted");
+        this.onRemoteMuted?.();
       };
       event.track.onunmute = () => {
         this.onQualityChange?.("good", "Remote track active");
+        this.onNetworkQuality?.("good", "Remote track active");
+        this.onRemoteUnmuted?.();
       };
       event.track.onended = () => {
         this.onQualityChange?.("poor", "Remote track ended");
+        this.onNetworkQuality?.("poor", "Remote track ended");
       };
     };
 
@@ -913,6 +949,7 @@ export class WebRTCController {
           : "unknown";
 
       this.onQualityChange?.(level, `ICE: ${state}`);
+      this.onNetworkQuality?.(level, `ICE: ${state}`);
 
       // 🔥 During the answer window, ignore ALL fallback logic
       if (rtcState.answering) {
@@ -1197,6 +1234,9 @@ export class WebRTCController {
 
       // Then play the voicemail beep after a short delay
       setTimeout(() => playBeepTone(), 1200);
+
+      // Notify UI layer (CallUI)
+      this.onVoicemailPrompt?.();
 
       // Open voicemail recorder
       if (window.openVoicemailRecorder) {
