@@ -1063,11 +1063,12 @@ display: flex;
     transform 200ms ease;
 }
 
-.bottom-sheet[aria-hidden="false"] {
+.bottom-sheet.visible {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
 }
+
 
 .sheet-handle {
   width: 40px;
@@ -1113,6 +1114,13 @@ emoji-picker#emojiPicker {
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(94, 242, 255, 0.3);
+}
+emoji-picker#emojiPicker {
+  display: none;
+}
+
+emoji-picker#emojiPicker.visible {
+  display: block;
 }
 
 .gif-picker {
