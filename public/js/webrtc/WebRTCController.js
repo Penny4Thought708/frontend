@@ -1130,9 +1130,13 @@ const triggerVoicemailFlow = (from, message) => {
   playUnreachableTone();
   setTimeout(() => playBeepTone(), 1200);
 
-  setTimeout(() => {
-    openVoicemailRecorder(from);
-  }, 1500);
+setTimeout(() => {
+  this.onVoicemailPrompt?.({
+    peerId: from,
+    message
+  });
+}, 1500);
+
 };
 
 
@@ -1182,6 +1186,7 @@ this.socket.on("disconnect", () => {
 
   }
 }
+
 
 
 
