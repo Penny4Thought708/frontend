@@ -15,6 +15,7 @@ import {
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
+import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
 /* -------------------------------------------------------
    Helpers
@@ -1121,23 +1122,19 @@ const playBeepTone = () => {
 const triggerVoicemailFlow = (from, message) => {
   stopAudio(ringback);
 
-  // Notify CallUI
   this.onVoicemailPrompt?.({
     peerId: from,
     message
   });
 
-  // Play tones
   playUnreachableTone();
   setTimeout(() => playBeepTone(), 1200);
 
-  // ⭐ FIX: Wait until tones finish before showing UI
   setTimeout(() => {
-    if (window.openVoicemailRecorder) {
-      window.openVoicemailRecorder(from);
-    }
+    openVoicemailRecorder(from);
   }, 1500);
 };
+
 
 /* -------------------------------------------------------
    SOCKET EVENTS
@@ -1185,6 +1182,7 @@ this.socket.on("disconnect", () => {
 
   }
 }
+
 
 
 
