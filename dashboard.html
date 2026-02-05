@@ -136,7 +136,13 @@ window.currentUserAvatar = user.avatar;
        MAIN APP GRID (3‑COLUMN LAYOUT)
   ============================================================ -->
   <main class="app-shell">
-
+  <aside class="contacts-sidebar">
+          <div class="contact-lookup">
+            <input id="lookup-input" placeholder="Search contacts..." />
+            <button id="lookup-btn">🔍</button>
+          </div>
+          <ul id="contacts-lookup"></ul>
+        </aside>
     <!-- ============================================================
          LEFT RAIL
     ============================================================ -->
@@ -1329,6 +1335,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
