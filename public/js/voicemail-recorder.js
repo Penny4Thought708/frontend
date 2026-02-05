@@ -1,5 +1,5 @@
 // -------------------------------------------------------
-// Voicemail Recorder UI + Upload (Upgraded for new call flow)
+// Voicemail Recorder UI + Upload (Updated for new call flow)
 // -------------------------------------------------------
 
 window.openVoicemailRecorder = function (toUserId) {
@@ -21,7 +21,7 @@ window.openVoicemailRecorder = function (toUserId) {
   let timer = null;
   let seconds = 0;
 
-  // Slide in
+  // Reset UI
   modal.style.display = "flex";
   modal.classList.add("open");
 
@@ -36,7 +36,7 @@ window.openVoicemailRecorder = function (toUserId) {
 
   wave.style.opacity = "0.3";
 
-  // Timer function
+  // Timer
   function startTimer() {
     seconds = 0;
     timer = setInterval(() => {
@@ -49,6 +49,7 @@ window.openVoicemailRecorder = function (toUserId) {
 
   function stopTimer() {
     clearInterval(timer);
+    timer = null;
   }
 
   // Start recording
@@ -56,7 +57,10 @@ window.openVoicemailRecorder = function (toUserId) {
     chunks = [];
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    window._vmRecorderStream = stream;
+
     mediaRecorder = new MediaRecorder(stream);
+    window._vmMediaRecorder = mediaRecorder;
 
     mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
 
@@ -139,8 +143,23 @@ window.openVoicemailRecorder = function (toUserId) {
   };
 };
 
+// -------------------------------------------------------
+// Close Voicemail Modal
+// -------------------------------------------------------
+
 function closeVoicemailModal() {
   const modal = document.getElementById("voicemailModal");
+
+  // Stop recorder if active
+  try {
+    if (window._vmRecorderStream) {
+      window._vmRecorderStream.getTracks().forEach(t => t.stop());
+      window._vmRecorderStream = null;
+    }
+    if (window._vmMediaRecorder && window._vmMediaRecorder.state !== "inactive") {
+      window._vmMediaRecorder.stop();
+    }
+  } catch {}
 
   modal.classList.remove("open");
   modal.classList.add("closing");
@@ -150,3 +169,5 @@ function closeVoicemailModal() {
     modal.style.display = "none";
   }, 450);
 }
+
+
