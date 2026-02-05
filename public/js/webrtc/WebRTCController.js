@@ -1120,24 +1120,22 @@ const playBeepTone = () => {
    FIXED: Proper voicemail trigger function
 ------------------------------------------------------- */
 const triggerVoicemailFlow = (from, message) => {
+  // Stop any ringing
   stopAudio(ringback);
 
-  this.onVoicemailPrompt?.({
-    peerId: from,
-    message
-  });
-
+  // Play unreachable tone + beep sequence
   playUnreachableTone();
   setTimeout(() => playBeepTone(), 1200);
 
-setTimeout(() => {
-  this.onVoicemailPrompt?.({
-    peerId: from,
-    message
-  });
-}, 1500);
-
+  // Trigger the UI toast once, slightly delayed so tones feel intentional
+  setTimeout(() => {
+    this.onVoicemailPrompt?.({
+      peerId: from,
+      message,
+    });
+  }, 1500);
 };
+
 
 
 /* -------------------------------------------------------
@@ -1186,6 +1184,7 @@ this.socket.on("disconnect", () => {
 
   }
 }
+
 
 
 
