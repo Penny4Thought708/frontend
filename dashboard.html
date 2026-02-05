@@ -116,7 +116,15 @@ window.currentUserAvatar = user.avatar;
       <a href="project.html">Projects</a>
       <a href="#">Contact</a>
     </nav>
-
+    <hr>
+  <aside class="contacts-sidebar" aria-label="Contact lookup">
+      <div class="contact-lookup">
+        <input id="lookup-input" placeholder="Search contacts..." autocomplete="off" />
+        <button id="lookup-btn" type="button">🔍</button>
+      </div>
+      <ul id="contacts-lookup"></ul>
+    </aside>
+    <hr>
     <div class="auth-section">
       <h3 id="welcomeName">Welcome!</h3>
       <p>You are now logged in to your Scrubbers Network.</p>
@@ -1282,6 +1290,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
