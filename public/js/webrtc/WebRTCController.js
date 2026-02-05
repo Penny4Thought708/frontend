@@ -1091,16 +1091,15 @@ endCall(local = true) {
       }
     });
 
-  /* -------------------------------------------------------
+/* -------------------------------------------------------
    VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
 ------------------------------------------------------- */
 
 const playUnreachableTone = () => {
   try {
     const tone = new Audio("uploads/audio/user_unreachable.mp3");
-    tone.play().catch(() => {});
-    // store reference for endCall cleanup
     this._unreachableTone = tone;
+    tone.play().catch(() => {});
   } catch (err) {
     console.warn("[WebRTC] Unreachable tone failed:", err);
   }
@@ -1109,8 +1108,8 @@ const playUnreachableTone = () => {
 const playBeepTone = () => {
   try {
     const beep = new Audio("/audio/beep.mp3");
-    beep.play().catch(() => {});
     this._beepTone = beep;
+    beep.play().catch(() => {});
   } catch (err) {
     console.warn("[WebRTC] Beep tone failed:", err);
   }
@@ -1122,7 +1121,7 @@ const playBeepTone = () => {
 const triggerVoicemailFlow = (from, message) => {
   stopAudio(ringback);
 
-  // Notify UI layer
+  // Notify CallUI
   this.onVoicemailPrompt?.({
     peerId: from,
     message
@@ -1132,10 +1131,12 @@ const triggerVoicemailFlow = (from, message) => {
   playUnreachableTone();
   setTimeout(() => playBeepTone(), 1200);
 
-  // Open voicemail recorder UI
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+  // ⭐ FIX: Wait until tones finish before showing UI
+  setTimeout(() => {
+    if (window.openVoicemailRecorder) {
+      window.openVoicemailRecorder(from);
+    }
+  }, 1500);
 };
 
 /* -------------------------------------------------------
@@ -1184,6 +1185,7 @@ this.socket.on("disconnect", () => {
 
   }
 }
+
 
 
 
