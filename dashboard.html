@@ -172,38 +172,46 @@ window.currentUserAvatar = user.avatar;
     <section class="column-left">
 
       <!-- CONTACTS PANEL -->
-      <div id="conwrap" class="panel hidden">
-        <div class="contacts-main">
+<div id="conwrap" class="panel hidden">
 
-          <section>
-            <h2>Voicemail</h2>
-            <ul id="voiceMList"></ul>
-          </section>
+  <div class="contacts-main">
 
-          <section>
-            <h2>Contacts</h2>
-            <ul id="contacts"></ul>
-          </section>
+    <!-- VOICEMAIL -->
+    <section class="con-section">
+      <h2>Voicemail</h2>
+      <ul id="voiceMList" class="con-list"></ul>
+    </section>
 
-          <section>
-            <h2>Call History</h2>
-            <input id="callLogSearch" placeholder="Search calls…" autocomplete="off" />
-            <div id="callStats"></div>
-            <ul id="callLogList"></ul>
-          </section>
+    <!-- CONTACTS -->
+    <section class="con-section">
+      <h2>Contacts</h2>
+      <ul id="contacts" class="con-list"></ul>
+    </section>
 
-          <section>
-            <h2>Messages</h2>
-            <ul id="messaging_list"></ul>
-          </section>
+    <!-- CALL HISTORY -->
+    <section class="con-section">
+      <h2>Call History</h2>
+      <input id="callLogSearch" class="con-input" placeholder="Search calls…" autocomplete="off" />
+      <div id="callStats" class="con-stats"></div>
+      <ul id="callLogList" class="con-list"></ul>
+    </section>
 
-          <section>
-            <h2>Blocked Contacts</h2>
-            <ul id="blocked-contacts"></ul>
-          </section>
+    <!-- MESSAGES -->
+    <section class="con-section">
+      <h2>Messages</h2>
+      <ul id="messaging_list" class="con-list"></ul>
+    </section>
 
-        </div>
-      </div>
+    <!-- BLOCKED -->
+    <section class="con-section">
+      <h2>Blocked Contacts</h2>
+      <ul id="blocked-contacts" class="con-list"></ul>
+    </section>
+
+  </div>
+
+</div>
+
 
       <!-- SEARCH PANEL -->
       <div id="search_panel" class="panel hidden">
@@ -244,66 +252,79 @@ window.currentUserAvatar = user.avatar;
 
       <div class="workspace-bg"></div>
 
-      <div id="messaging_box" class="panel messaging-panel hidden">
+     <div id="messaging_box" class="panel messaging-panel hidden">
 
-        <header class="msg-header">
-          <h2 id="msgHeaderName"></h2>
-          <div class="msg-actions">
-            <button id="voiceBtn" type="button">🎤</button>
-            <button id="videoBtn" type="button">📹</button>
-            <button id="call-debug-toggle" type="button">🐞</button>
-          </div>
-        </header>
+  <!-- HEADER -->
+  <header class="msg-header">
+    <h2 id="msgHeaderName"></h2>
 
-        <div id="messageWin" class="message-window"></div>
+    <div class="msg-actions">
+      <button id="voiceBtn" type="button">🎤</button>
+      <button id="videoBtn" type="button">📹</button>
+      <button id="call-debug-toggle" type="button">🐞</button>
+    </div>
+  </header>
 
-        <div class="typing-indicator">
-          <div class="typing-bubble"><span></span><span></span><span></span></div>
-        </div>
+  <!-- MESSAGE STREAM -->
+  <div id="messageWin" class="message-window"></div>
 
-        <div class="recording-indicator">
-          <div class="recording-bubble">
-            <span class="mic-icon">🎤</span>
-            <span class="recording-text">Recording audio…</span>
-            <div class="pulse-ring"></div>
-          </div>
-        </div>
+  <!-- TYPING INDICATOR -->
+  <div class="typing-indicator">
+    <div class="typing-bubble">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
 
-        <div id="img-viewer" class="img-viewer">
-          <img id="img-viewer-img" alt="Preview" />
-        </div>
+  <!-- RECORDING INDICATOR -->
+  <div class="recording-indicator">
+    <div class="recording-bubble">
+      <span class="mic-icon">🎤</span>
+      <span class="recording-text">Recording audio…</span>
+      <div class="pulse-ring"></div>
+    </div>
+  </div>
 
-        <div id="attachmentPreview" class="attachment-preview hidden"></div>
+  <!-- IMAGE VIEWER -->
+  <div id="img-viewer" class="img-viewer">
+    <img id="img-viewer-img" alt="Preview" />
+  </div>
 
-        <form id="text_box_reply" class="composer">
-          <button id="plusBtn" type="button">＋</button>
-          <div id="message_input" contenteditable="true" class="msg-input"></div>
-          <button id="micBtn" type="button">🎤</button>
-          <button type="submit">➡️</button>
-          <input id="attachment_input" type="file" multiple hidden />
-        </form>
+  <!-- ATTACHMENT PREVIEW -->
+  <div id="attachmentPreview" class="attachment-preview hidden"></div>
 
-        <!-- BOTTOM SHEET -->
-        <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
-          <div class="sheet-handle"></div>
-          <button class="sheet-item" id="sheetCamera" type="button">📷 Camera</button>
-          <button class="sheet-item" id="sheetGallery" type="button">🖼️ Gallery</button>
-          <button class="sheet-item" id="sheetFile" type="button">📎 File</button>
-          <button class="sheet-item" id="sheetAudio" type="button">🎤 Voice Message</button>
-          <button class="sheet-item" id="sheetEmoji" type="button">😀 Emoji</button>
-          <button class="sheet-item" id="sheetGif" type="button">🎬 GIF</button>
-        </div>
+  <!-- COMPOSER -->
+  <form id="text_box_reply" class="composer">
+    <button id="plusBtn" type="button">＋</button>
+    <div id="message_input" class="msg-input" contenteditable="true"></div>
+    <button id="micBtn" type="button">🎤</button>
+    <button type="submit">➡️</button>
+    <input id="attachment_input" type="file" multiple hidden />
+  </form>
 
-        <emoji-picker id="emojiPicker" class="emoji-picker"></emoji-picker>
+  <!-- BOTTOM SHEET -->
+  <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <button class="sheet-item" id="sheetCamera" type="button">📷 Camera</button>
+    <button class="sheet-item" id="sheetGallery" type="button">🖼️ Gallery</button>
+    <button class="sheet-item" id="sheetFile" type="button">📎 File</button>
+    <button class="sheet-item" id="sheetAudio" type="button">🎤 Voice Message</button>
+    <button class="sheet-item" id="sheetEmoji" type="button">😀 Emoji</button>
+    <button class="sheet-item" id="sheetGif" type="button">🎬 GIF</button>
+  </div>
 
-        <div id="gifPicker" class="gif-picker hidden">
-          <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
-          <div id="gifResults" class="gif-results"></div>
-        </div>
+  <!-- EMOJI PICKER -->
+  <emoji-picker id="emojiPicker" class="emoji-picker"></emoji-picker>
 
-      </div>
+  <!-- GIF PICKER -->
+  <div id="gifPicker" class="gif-picker hidden">
+    <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
+    <div id="gifResults" class="gif-results"></div>
+  </div>
 
-      <button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
+</div>
+
+<!-- MINI CHAT BUBBLE -->
+<button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
 
     </section>
 
@@ -1383,6 +1404,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
