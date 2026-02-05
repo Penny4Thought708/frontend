@@ -1091,78 +1091,100 @@ endCall(local = true) {
       }
     });
 
-    /* VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND */
+  /* -------------------------------------------------------
+   VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+------------------------------------------------------- */
 
-    const playUnreachableTone = () => {
-      try {
-        const tone = new Audio("uploads/audio/user_unreachable.mp3");
-        tone.play().catch(() => {});
-      } catch (err) {
-        console.warn("[WebRTC] Unreachable tone failed:", err);
-      }
-    };
+const playUnreachableTone = () => {
+  try {
+    const tone = new Audio("uploads/audio/user_unreachable.mp3");
+    tone.play().catch(() => {});
+    // store reference for endCall cleanup
+    this._unreachableTone = tone;
+  } catch (err) {
+    console.warn("[WebRTC] Unreachable tone failed:", err);
+  }
+};
 
-    const playBeepTone = () => {
-      try {
-        const beep = new Audio("/audio/beep.mp3");
-        beep.play().catch(() => {});
-      } catch (err) {
-        console.warn("[WebRTC] Beep tone failed:", err);
-      }
-    };
+const playBeepTone = () => {
+  try {
+    const beep = new Audio("/audio/beep.mp3");
+    beep.play().catch(() => {});
+    this._beepTone = beep;
+  } catch (err) {
+    console.warn("[WebRTC] Beep tone failed:", err);
+  }
+};
 
-    const triggerVoicemailFlow = (from, message) => {
-      stopAudio(ringback);
+/* -------------------------------------------------------
+   FIXED: Proper voicemail trigger function
+------------------------------------------------------- */
+const triggerVoicemailFlow = (from, message) => {
+  stopAudio(ringback);
 
-      this.onVoicemailPrompt?.({ message });
+  // Notify UI layer
+  this.onVoicemailPrompt?.({
+    peerId: from,
+    message
+  });
 
-      playUnreachableTone();
-      setTimeout(() => playBeepTone(), 1200);
+  // Play tones
+  playUnreachableTone();
+  setTimeout(() => playBeepTone(), 1200);
 
-      if (window.openVoicemailRecorder) {
-        window.openVoicemailRecorder(from);
-      }
-    };
+  // Open voicemail recorder UI
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+};
 
-    this.socket.on("call:timeout", ({ from }) => {
-      console.log("[WebRTC] call:timeout from", from);
-      triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
-    });
+/* -------------------------------------------------------
+   SOCKET EVENTS
+------------------------------------------------------- */
 
-    this.socket.on("call:declined", ({ from }) => {
-      console.log("[WebRTC] call:declined from", from);
-      triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
-    });
+this.socket.on("call:timeout", ({ from }) => {
+  console.log("[WebRTC] call:timeout from", from);
+  triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
+});
 
-    this.socket.on("call:missed", ({ from }) => {
-      console.log("[WebRTC] call:missed from", from);
-      triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
-    });
+this.socket.on("call:declined", ({ from }) => {
+  console.log("[WebRTC] call:declined from", from);
+  triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
+});
 
-    this.socket.on("call:dnd", ({ from }) => {
-      console.log("[WebRTC] call:dnd from", from);
-      triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
-    });
+this.socket.on("call:missed", ({ from }) => {
+  console.log("[WebRTC] call:missed from", from);
+  triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
+});
 
-    this.socket.on("call:voicemail", ({ from, reason }) => {
-      console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
+this.socket.on("call:dnd", ({ from }) => {
+  console.log("[WebRTC] call:dnd from", from);
+  triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
+});
 
-      const msg =
-        reason === "callee-dnd"
-          ? "User is in Do Not Disturb. Leave a voicemail…"
-          : "Leave a voicemail…";
+this.socket.on("call:voicemail", ({ from, reason }) => {
+  console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
 
-      triggerVoicemailFlow(from, msg);
-    });
+  const msg =
+    reason === "callee-dnd"
+      ? "User is in Do Not Disturb. Leave a voicemail…"
+      : "Leave a voicemail…";
 
-    /* DISCONNECT CLEANUP */
-    this.socket.on("disconnect", () => {
-      if (rtcState.inCall) {
-        this.endCall(false);
-      }
-    });
+  triggerVoicemailFlow(from, msg);
+});
+
+/* -------------------------------------------------------
+   DISCONNECT CLEANUP
+------------------------------------------------------- */
+this.socket.on("disconnect", () => {
+  if (rtcState.inCall) {
+    this.endCall(false);
+  }
+});
+
   }
 }
+
 
 
 
