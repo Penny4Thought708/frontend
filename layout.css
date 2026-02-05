@@ -1062,15 +1062,16 @@ emoji-picker {
 }
 
 /* ============================================================
-   VIDEO CALL WINDOW — PREMIUM ECHFLUID UI
+   VIDEO CALL WINDOW — ULTRA PREMIUM ECHFLUID DESIGN
 ============================================================ */
 
 #videoCallWindow {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 480px;
-  max-width: 92vw;
+  width: 620px;
+  max-width: 95vw;
+  height: 420px;
   max-height: 90vh;
   transform: translate(-50%, -50%) scale(0.92);
   opacity: 0;
@@ -1079,6 +1080,7 @@ emoji-picker {
     opacity 260ms ease,
     transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
   z-index: 200;
+  overflow: hidden; /* no scrollbars ever */
 }
 
 #videoCallWindow:not(.hidden) {
@@ -1090,30 +1092,39 @@ emoji-picker {
 #videoCallWindow .floating-body.video-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 20px;
+  justify-content: space-between;
+  height: 100%;
+  padding: 18px;
+  border-radius: 24px;
+
   background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
-    rgba(6, 8, 20, 0.96);
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
+    rgba(6, 8, 20, 0.92);
+
   border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(28px);
+  backdrop-filter: blur(32px);
+
   box-shadow:
     0 0 40px rgba(94, 242, 255, 0.25),
-    0 0 80px rgba(0, 0, 0, 0.9);
+    0 0 80px rgba(255, 123, 255, 0.15),
+    0 0 120px rgba(0, 0, 0, 0.9);
 }
 
 /* ============================================================
-   LOCAL VIDEO WRAPPER
+   VIDEO AREA — CENTERED AVATAR + VIDEO
 ============================================================ */
 
 .local-media-wrapper {
   position: relative;
   width: 100%;
-  border-radius: 16px;
+  flex: 1;
+  border-radius: 20px;
   overflow: hidden;
   background: #000;
-  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   box-shadow:
     0 0 20px rgba(94, 242, 255, 0.25),
     0 0 40px rgba(255, 123, 255, 0.15);
@@ -1125,22 +1136,24 @@ emoji-picker {
   object-fit: cover;
 }
 
-/* Avatar fallback when camera is off */
+/* Avatar centered when camera is off */
 .local-avatar {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 8, 20, 0.8);
-  backdrop-filter: blur(12px);
+
+  background: rgba(6, 8, 20, 0.75);
+  backdrop-filter: blur(14px);
 }
 
 .local-avatar img {
   width: 38%;
-  max-width: 140px;
+  max-width: 160px;
   border-radius: 50%;
   border: 3px solid rgba(94, 242, 255, 0.6);
+
   box-shadow:
     0 0 20px rgba(94, 242, 255, 0.4),
     0 0 40px rgba(255, 123, 255, 0.25);
@@ -1152,43 +1165,46 @@ emoji-picker {
 
 #call-status {
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: rgba(255, 255, 255, 0.75);
-  padding: 4px 0;
-  letter-spacing: 0.03em;
+  padding: 6px 0;
+  letter-spacing: 0.04em;
 }
 
 /* ============================================================
-   CALL CONTROLS
+   CALL CONTROLS — NEVER WRAP
 ============================================================ */
 
 .call-controls {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  padding-top: 6px;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  flex-wrap: nowrap; /* never wrap */
+  overflow: visible;
 }
 
 .call-timer {
-  width: 100%;
-  text-align: center;
   font-family: ui-monospace, monospace;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--ef-res-warm);
-  margin-bottom: 4px;
+  margin-right: 12px;
 }
 
 /* Base button style */
 .call-controls button {
-  width: 48px;
-  height: 48px;
+  width: 54px;
+  height: 54px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
+
   background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), rgba(6, 8, 24, 0.96));
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.22), rgba(6, 8, 24, 0.96));
+
   color: var(--ef-text-dark-main);
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1201,11 +1217,11 @@ emoji-picker {
 }
 
 .call-controls button:hover {
-  transform: translateY(-3px) scale(1.06);
+  transform: translateY(-4px) scale(1.08);
   border-color: var(--ef-res-low);
   box-shadow:
-    0 0 16px rgba(94, 242, 255, 0.5),
-    0 0 32px rgba(255, 123, 255, 0.35);
+    0 0 18px rgba(94, 242, 255, 0.5),
+    0 0 36px rgba(255, 123, 255, 0.35);
 }
 
 .call-controls button:active {
@@ -1213,7 +1229,7 @@ emoji-picker {
 }
 
 /* ============================================================
-   SPECIAL BUTTON STATES
+   SPECIAL BUTTONS
 ============================================================ */
 
 #decline-call {
@@ -1238,23 +1254,24 @@ emoji-picker {
 #record-call.active {
   border-color: var(--ef-res-low);
   box-shadow:
-    0 0 14px rgba(94, 242, 255, 0.6),
-    0 0 28px rgba(94, 242, 255, 0.3);
+    0 0 16px rgba(94, 242, 255, 0.6),
+    0 0 32px rgba(94, 242, 255, 0.3);
 }
 
 /* ============================================================
    RESPONSIVE
 ============================================================ */
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   #videoCallWindow {
     width: 96vw;
+    height: 420px;
   }
 
   .call-controls button {
-    width: 42px;
-    height: 42px;
-    font-size: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
   }
 }
 
