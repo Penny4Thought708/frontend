@@ -1601,6 +1601,63 @@ padding: 0 var(--space-3);
   transform: translateY(0);
   background: rgba(255, 255, 255, 0.25);
 }
+.unavailable-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 300px;
+  padding: 16px;
+  border-radius: 14px;
+
+  background: rgba(20,20,25,0.55);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 0 20px rgba(0,255,255,0.15),
+    0 0 40px rgba(120,0,255,0.15);
+
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity .35s ease, transform .35s ease;
+  z-index: 999999;
+}
+
+.unavailable-toast.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.unavailable-toast.hidden {
+  display: none;
+}
+
+.ut-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.ut-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ut-options button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  transition: background .2s ease, transform .15s ease;
+}
+
+.ut-options button:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateY(-2px);
+}
 
 /* ============================================================
    LOCAL VIDEO PREVIEW (DRAGGABLE)
