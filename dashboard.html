@@ -469,19 +469,37 @@ window.currentUserAvatar = user.avatar;
   <audio id="remoteAudio" autoplay playsinline></audio>
 
   <!-- CALL CONTROLS -->
+  <!-- CALL CONTROLS -->
   <div id="call-controls" class="call-controls">
     <div id="call-timer" class="call-timer">00:00</div>
 
-    <button id="decline-call">❌</button>
-    <button id="answer-call">✅</button>
+    <!-- Left: incoming actions -->
+    <button id="decline-call" title="Decline">❌</button>
+    <button id="answer-call"  title="Answer">✅</button>
 
-    <button id="mute-call">🔇</button>
-    <button id="camera-toggle">
+    <!-- Middle: in-call controls -->
+    <button id="mute-call" title="Mute / Unmute">🔇</button>
+
+    <button id="camera-toggle" title="Toggle Camera">
       <span class="material-symbols-outlined">flip_camera_android</span>
     </button>
 
-    <button id="end-call">📞</button>
+    <!-- Screen share -->
+    <button id="share-screen" title="Share Screen">🖥️</button>
+
+    <!-- AI noise suppression -->
+    <button id="ai-noise-toggle" title="AI Noise Suppression">🤖</button>
+
+    <!-- Recording -->
+    <button id="record-call" title="Record Call">⏺️</button>
+
+    <!-- Call history -->
+    <button id="call-history-toggle" title="Call History">📜</button>
+
+    <!-- End call -->
+    <button id="end-call" title="Hang Up">📞</button>
   </div>
+
 
 </div>
 
@@ -1374,6 +1392,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
