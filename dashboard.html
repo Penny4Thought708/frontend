@@ -409,45 +409,83 @@ window.currentUserAvatar = user.avatar;
         </div>
       </section>
 
-      <!-- VIDEO CALL PANEL -->
-      <div id="video-container" class="panel video-panel hidden">
-        <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
-          <video id="remoteVideo" autoplay playsinline></video>
+<!-- VIDEO CALL PANEL -->
+<div id="video-container" class="video-panel hidden">
 
-          <div class="avatar remote-avatar" id="remoteAvatar">
-            <img id="remoteAvatarImg" src="" alt="Remote Avatar" />
-            <div class="avatar-ring"></div>
-          </div>
+  <!-- SCREEN SHARE / GROUP GRID / REMOTE VIDEO AREA -->
+  <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
 
-          <div id="callerOverlay" class="call-overlay" style="display:none;"></div>
-        </div>
+    <!-- Remote Video -->
+    <video id="remoteVideo" autoplay playsinline></video>
 
-        <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
-          <video id="localVideo" autoplay playsinline muted></video>
+    <!-- Remote Avatar Fallback -->
+    <div class="remote-avatar" id="remoteAvatar">
+      <div class="mic-level-ring"></div>
+      <img id="remoteAvatarImg" src="" alt="Remote Avatar" />
+      <div class="avatar-ring"></div>
+    </div>
 
-          <div class="avatar local-avatar" id="localAvatar">
-            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
-          </div>
-        </div>
+    <!-- Camera Off Placeholder -->
+    <div class="camera-off-placeholder">
+      Camera Off
+    </div>
 
-        <div id="call-status" class="status"></div>
+    <!-- Voice Activity Glow -->
+    <div class="voice-glow"></div>
 
-        <audio id="remoteAudio" autoplay playsinline></audio>
+    <!-- Caller Overlay (ringing / voicemail / connecting) -->
+    <div id="callerOverlay" class="call-overlay"></div>
 
-        <div id="call-controls" class="call-controls">
-          <div id="call-timer" class="call-timer">00:00</div>
-          <button id="decline-call">❌ Decline</button>
-          <button id="answer-call">✅ Answer</button>
-          <button id="mute-call">🔇 Mute</button>
-          <button id="camera-toggle">
-            <span class="material-symbols-outlined">flip_camera_android</span>
-          </button>
-          <button id="end-call">📞 Hang Up</button>
-        </div>
-      </div>
+    <!-- Screen Share Indicator -->
+    <div class="screen-share-indicator">Screen Sharing</div>
 
-    </section>
+    <!-- AI Noise Suppression -->
+    <div class="ai-noise-indicator">AI Noise Suppression</div>
 
+    <!-- Network Quality -->
+    <div class="network-indicator network-good">Good Connection</div>
+
+    <!-- Mic / Camera Badges -->
+    <div class="badge badge-mic-muted">🎤 Muted</div>
+    <div class="badge badge-camera-off">📷 Off</div>
+
+  </div>
+
+  <!-- LOCAL VIDEO PREVIEW (DRAGGABLE) -->
+  <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
+    <video id="localVideo" autoplay playsinline muted></video>
+
+    <!-- Local Avatar Fallback -->
+    <div class="local-avatar" id="localAvatar">
+      <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
+    </div>
+  </div>
+
+  <!-- CALL STATUS TEXT -->
+  <div id="call-status" class="status"></div>
+
+  <!-- REMOTE AUDIO -->
+  <audio id="remoteAudio" autoplay playsinline></audio>
+
+  <!-- CALL CONTROLS -->
+  <div id="call-controls" class="call-controls">
+    <div id="call-timer" class="call-timer">00:00</div>
+
+    <button id="decline-call">❌</button>
+    <button id="answer-call">✅</button>
+
+    <button id="mute-call">🔇</button>
+    <button id="camera-toggle">
+      <span class="material-symbols-outlined">flip_camera_android</span>
+    </button>
+
+    <button id="end-call">📞</button>
+  </div>
+
+</div>
+
+
+    
   </main>
 
   <!-- ============================================================
@@ -1335,6 +1373,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
