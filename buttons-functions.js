@@ -154,10 +154,6 @@ function initUI() {
     fullProfile.classList.add("hidden");
     UIX.showMessaging();
   });
-sheetEmoji.addEventListener("click", () => {
-  bottomSheet.classList.remove("visible");
-  emojiPicker.classList.toggle("visible");
-});
 
   /* -----------------------------------------------------------
      ESC KEY CLOSES FLOATING PANELS
@@ -433,6 +429,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
