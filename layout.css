@@ -1,32 +1,22 @@
- 
 /* ============================================================
-   ECHFLUID E3 DUAL‑CORE UI — SECTION 1
-   GLOBAL + LAYOUT + RAIL + CONTACTS + SEARCH + MESSAGING
+   ROOT TOKENS
 ============================================================ */
-
-/* ------------------------------------------------------------
-   ROOT TOKENS — DUAL‑CORE RESONANCE
------------------------------------------------------------- */
 :root {
-  /* Dark‑core (deep fluid) */
   --ef-dark-bg: #02030a;
   --ef-dark-surface: rgba(6, 8, 20, 0.96);
   --ef-dark-surface-soft: rgba(8, 10, 26, 0.94);
   --ef-dark-input: rgba(4, 5, 14, 0.96);
 
-  /* Light‑core (shallow fluid) */
   --ef-light-bg: #f5f7ff;
   --ef-light-surface: rgba(255, 255, 255, 0.92);
   --ef-light-surface-soft: rgba(245, 247, 255, 0.96);
   --ef-light-input: rgba(240, 243, 255, 0.96);
 
-  /* Resonant harmonics */
-  --ef-res-low: #5ef2ff;   /* low‑freq cyan */
-  --ef-res-high: #ff7bff;  /* high‑freq magenta */
-  --ef-res-warm: #ffe66b;  /* warm overtone */
-  --ef-res-bio: #9dff7b;   /* bioluminescent lime */
+  --ef-res-low: #5ef2ff;
+  --ef-res-high: #ff7bff;
+  --ef-res-warm: #ffe66b;
+  --ef-res-bio: #9dff7b;
 
-  /* Text */
   --ef-text-dark-main: #f8f8ff;
   --ef-text-dark-soft: #c4c7ff;
   --ef-text-dark-muted: #8a8fb0;
@@ -37,25 +27,21 @@
 
   --ef-danger: #ff6b7b;
 
-  /* Borders */
   --ef-border-subtle-dark: rgba(255, 255, 255, 0.08);
   --ef-border-strong-dark: rgba(255, 255, 255, 0.18);
   --ef-border-subtle-light: rgba(0, 0, 0, 0.06);
   --ef-border-strong-light: rgba(0, 0, 0, 0.16);
 
-  /* Radii */
   --ef-radius-xs: 6px;
   --ef-radius-sm: 9px;
   --ef-radius-md: 14px;
   --ef-radius-lg: 20px;
   --ef-radius-pill: 999px;
 
-  /* Motion */
   --ef-fast: 140ms cubic-bezier(0.22, 1.4, 0.36, 1);
   --ef-med: 220ms ease;
   --ef-slow: 480ms cubic-bezier(0.16, 0.8, 0.24, 1);
 
-  /* Shadows (subsurface fluorescence) */
   --ef-shadow-dark: 0 22px 60px rgba(0, 0, 0, 0.9);
   --ef-shadow-fluid: 0 0 26px rgba(94, 242, 255, 0.35),
                      0 0 40px rgba(255, 123, 255, 0.25);
@@ -65,7 +51,7 @@
 }
 
 /* ============================================================
-   GLOBAL RESET + BODY
+   RESET
 ============================================================ */
 *,
 *::before,
@@ -83,13 +69,10 @@ body {
   font-family: var(--ef-font);
 }
 
-/* Contextual resonance:
-   - default: dark‑core
-   - messaging: light‑core
-   - video / voicemail / image viewer: dark‑core emphasis
-*/
-body[data-context="dark"],
-body:not([data-context]) {
+/* ============================================================
+   BODY BACKGROUND
+============================================================ */
+body.dark-mode {
   background:
     radial-gradient(circle at top left, #15163a 0, transparent 45%),
     radial-gradient(circle at bottom right, #050616 0, transparent 55%),
@@ -97,17 +80,6 @@ body:not([data-context]) {
   color: var(--ef-text-dark-main);
 }
 
-body[data-context="light"] {
-  background:
-    radial-gradient(circle at top left, #ffffff 0, transparent 45%),
-    radial-gradient(circle at bottom right, #dfe6ff 0, transparent 55%),
-    linear-gradient(135deg, #f5f7ff 0, #e6ebff 40%, #f5f7ff 100%);
-  color: var(--ef-text-light-main);
-}
-
-/* ============================================================
-   ECHOFLUID BACKGROUND — WAVES + INTERFERENCE
-============================================================ */
 body::before,
 body::after {
   content: "";
@@ -117,7 +89,6 @@ body::after {
   z-index: -2;
 }
 
-/* Deep acoustic waves */
 body::before {
   background:
     radial-gradient(circle at 10% 0, rgba(94, 242, 255, 0.3), transparent 55%),
@@ -128,7 +99,6 @@ body::before {
   animation: efAuroraDrift 40s ease-in-out infinite alternate;
 }
 
-/* Interference lattice */
 body::after {
   background-image:
     radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.06) 0, transparent 55%),
@@ -153,47 +123,80 @@ body::after {
 }
 
 /* ============================================================
-   UTILITY
+   UTILITIES
 ============================================================ */
 .hidden {
   display: none !important;
 }
 
-/* Generic glass membrane */
-.ef-membrane-dark {
-  background: radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
-              var(--ef-dark-surface);
-  border: 1px solid var(--ef-border-subtle-dark);
-  box-shadow: var(--ef-shadow-dark);
-  backdrop-filter: blur(24px);
+/* ============================================================
+   HEADER
+============================================================ */
+.site-header.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
+    rgba(6, 8, 20, 0.96);
+  border-bottom: 1px solid var(--ef-border-subtle-dark);
+  backdrop-filter: blur(18px);
 }
 
-.ef-membrane-light {
-  background: radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.08), transparent 60%),
-              var(--ef-light-surface);
-  border: 1px solid var(--ef-border-subtle-light);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(24px);
+.brand-logo {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.nav-links {
+  display: flex;
+  gap: 14px;
+}
+
+.nav-links a {
+  color: var(--ef-text-dark-soft);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover {
+  color: var(--ef-res-low);
+}
+
+.auth-section {
+  text-align: right;
+}
+
+.auth-section h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.auth-section p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--ef-text-dark-muted);
 }
 
 /* ============================================================
-   APP SHELL LAYOUT
+   APP SHELL GRID
 ============================================================ */
 .app-shell {
   display: grid;
-  grid-template-columns: 70px 270px minmax(0, 1fr);
+  grid-template-columns: 70px 280px minmax(0, 1fr);
   gap: 12px;
   padding: 12px;
   height: calc(100vh - 70px);
   overflow: hidden;
-  position: relative;
 }
 
 /* ============================================================
-   LEFT RAIL — ACOUSTIC MEMBRANE NAVIGATION
+   LEFT RAIL
 ============================================================ */
 .app-rail {
   grid-column: 1;
+  grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -286,12 +289,12 @@ body::after {
 .rail-spacer {
   flex: 1;
 }
-
 /* ============================================================
    CONTACTS SIDEBAR
 ============================================================ */
 .contacts-sidebar {
   grid-column: 2;
+  grid-row: 1 / 2;
   align-self: start;
   background: var(--ef-dark-surface);
   border-radius: var(--ef-radius-md);
@@ -345,10 +348,11 @@ body::after {
 }
 
 /* ============================================================
-   CONWRAP — CONTACTS / HISTORY / MESSAGES
+   COLUMN-LEFT (CONWRAP + SEARCH)
 ============================================================ */
 .column-left {
   grid-column: 2;
+  grid-row: 1 / -1;
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -361,11 +365,11 @@ body::after {
   background: var(--ef-dark-surface);
   border-radius: var(--ef-radius-md);
   padding: 12px;
- overflow: hidden;
   border: 1px solid var(--ef-border-subtle-dark);
   backdrop-filter: blur(22px);
   box-shadow: var(--ef-shadow-dark);
   position: relative;
+  overflow: hidden;
 }
 
 .contacts-main {
@@ -460,10 +464,6 @@ body::after {
   font-size: 0.9rem;
 }
 
-/* ============================================================
-   SEARCH PANEL (continued)
-============================================================ */
-
 .search-input input:focus {
   border-color: var(--ef-res-low);
   box-shadow: 0 0 0 1px rgba(94, 242, 255, 0.4);
@@ -536,13 +536,12 @@ body::after {
   height: 180px;
   border: none;
 }
-
 /* ============================================================
-   CENTER COLUMN — MESSAGING PANEL
+   COLUMN-CENTER
 ============================================================ */
-
 .column-center {
   grid-column: 3;
+  grid-row: 1 / -1;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -560,6 +559,9 @@ body::after {
   z-index: 0;
 }
 
+/* ============================================================
+   MESSAGING PANEL
+============================================================ */
 .messaging-panel {
   display: flex;
   flex-direction: column;
@@ -569,19 +571,6 @@ body::after {
   z-index: 1;
   border-radius: var(--ef-radius-lg);
   padding: 12px;
-}
-
-/* Light-core resonance when messaging is active */
-body[data-context="light"] #messaging_box {
-  background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
-    var(--ef-light-surface-soft);
-  border: 1px solid var(--ef-border-subtle-light);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
-}
-
-/* Dark-core fallback */
-body[data-context="dark"] #messaging_box {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
     var(--ef-dark-surface-soft);
@@ -589,20 +578,12 @@ body[data-context="dark"] #messaging_box {
   box-shadow: var(--ef-shadow-dark);
 }
 
-/* ============================================================
-   MESSAGE HEADER
-============================================================ */
-
 .msg-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--ef-border-subtle-light);
-}
-
-body[data-context="dark"] .msg-header {
-  border-bottom-color: var(--ef-border-subtle-dark);
+  border-bottom: 1px solid var(--ef-border-subtle-dark);
 }
 
 .msg-header h2 {
@@ -630,12 +611,6 @@ body[data-context="dark"] .msg-header {
     border-color var(--ef-med);
 }
 
-body[data-context="light"] .msg-actions button {
-  background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.12), var(--ef-light-input));
-  color: var(--ef-text-light-soft);
-}
-
 .msg-actions button:hover {
   border-color: var(--ef-res-low);
   box-shadow: 0 0 14px rgba(94, 242, 255, 0.4);
@@ -647,9 +622,8 @@ body[data-context="light"] .msg-actions button {
 }
 
 /* ============================================================
-   MESSAGE WINDOW
+   MESSAGE WINDOW + BUBBLES
 ============================================================ */
-
 .message-window {
   flex: 1;
   overflow-y: auto;
@@ -657,11 +631,8 @@ body[data-context="light"] .msg-actions button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-height: 0;
 }
-
-/* ============================================================
-   MESSAGE BUBBLES — ECHOFLUID DROPLET SYSTEM
-============================================================ */
 
 .msg {
   max-width: 72%;
@@ -675,7 +646,6 @@ body[data-context="light"] .msg-actions button {
   animation: efMsgSettle 260ms var(--ef-fast);
 }
 
-/* Sent (from me) — bright resonant droplet */
 .msg.from-me {
   align-self: flex-end;
   background:
@@ -688,26 +658,16 @@ body[data-context="light"] .msg-actions button {
     0 0 24px rgba(255, 123, 255, 0.3);
 }
 
-/* Received (from them) — ink diffusion bubble */
 .msg.from-them {
   align-self: flex-start;
-  background:
-    radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.18), transparent 60%),
-    var(--ef-light-surface-soft);
-  color: var(--ef-text-light-main);
-  border-bottom-left-radius: 4px;
-  border: 1px solid var(--ef-border-subtle-light);
-}
-
-body[data-context="dark"] .msg.from-them {
   background:
     radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.4), transparent 60%),
     var(--ef-dark-surface-soft);
   color: var(--ef-text-dark-main);
-  border-color: var(--ef-border-subtle-dark);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--ef-border-subtle-dark);
 }
 
-/* Timestamp */
 .msg-time {
   display: block;
   margin-top: 2px;
@@ -715,52 +675,7 @@ body[data-context="dark"] .msg.from-them {
   opacity: 0.7;
 }
 
-/* Avatar + name row */
-.msg-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-}
-
-.msg-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--ef-radius-pill);
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.msg-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.msg-bubble-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.msg-name {
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-/* Group spacing */
-.msg + .msg.from-me,
-.msg + .msg.from-them {
-  margin-top: 2px;
-}
-
-.msg-group-gap {
-  height: 8px;
-}
-
-/* ============================================================
-   TYPING INDICATOR — MICRO‑BUBBLE OSCILLATION
-============================================================ */
-
+/* Typing indicator */
 .typing-indicator {
   height: 18px;
   display: flex;
@@ -776,12 +691,8 @@ body[data-context="dark"] .msg.from-them {
   width: 6px;
   height: 6px;
   border-radius: var(--ef-radius-pill);
-  background: rgba(0, 0, 0, 0.4);
-  animation: efTypingDots 1.2s infinite ease-in-out;
-}
-
-body[data-context="dark"] .typing-bubble span {
   background: rgba(255, 255, 255, 0.5);
+  animation: efTypingDots 1.2s infinite ease-in-out;
 }
 
 .typing-bubble span:nth-child(2) { animation-delay: 0.15s; }
@@ -792,10 +703,7 @@ body[data-context="dark"] .typing-bubble span {
   50% { transform: translateY(-3px); opacity: 1; }
 }
 
-/* ============================================================
-   RECORDING INDICATOR — PRESSURE‑WAVE PULSE
-============================================================ */
-
+/* Recording indicator */
 .recording-indicator {
   height: 22px;
   display: flex;
@@ -813,10 +721,6 @@ body[data-context="dark"] .typing-bubble span {
   position: relative;
 }
 
-.recording-bubble .mic-icon {
-  font-size: 0.9rem;
-}
-
 .recording-bubble .pulse-ring {
   position: absolute;
   inset: -4px;
@@ -830,22 +734,15 @@ body[data-context="dark"] .typing-bubble span {
   100% { transform: scale(1.2); opacity: 0; }
 }
 
-/* ============================================================
-   IMAGE VIEWER (INLINE)
-============================================================ */
-
+/* Image viewer inline */
 .img-viewer {
   margin-top: 4px;
   border-radius: var(--ef-radius-md);
   overflow: hidden;
-  border: 1px solid var(--ef-border-subtle-light);
+  border: 1px solid var(--ef-border-subtle-dark);
   background: #000;
   max-height: 220px;
   display: none;
-}
-
-body[data-context="dark"] .img-viewer {
-  border-color: var(--ef-border-subtle-dark);
 }
 
 .img-viewer img {
@@ -853,25 +750,17 @@ body[data-context="dark"] .img-viewer {
   height: auto;
 }
 
-/* ============================================================
-   ATTACHMENT PREVIEW
-============================================================ */
-
+/* Attachment preview */
 .attachment-preview {
   margin-top: 4px;
   border-radius: var(--ef-radius-md);
-  border: 1px dashed var(--ef-border-subtle-light);
+  border: 1px dashed var(--ef-border-subtle-dark);
   padding: 6px;
 }
 
-body[data-context="dark"] .attachment-preview {
-  border-color: var(--ef-border-subtle-dark);
-}
-
 /* ============================================================
-   COMPOSER — INPUT + ACTIONS
+   COMPOSER
 ============================================================ */
-
 .composer {
   display: grid;
   grid-template-columns: auto 1fr auto auto;
@@ -879,13 +768,8 @@ body[data-context="dark"] .attachment-preview {
   align-items: center;
   padding: 6px;
   border-radius: var(--ef-radius-lg);
-  background: var(--ef-light-input);
-  border: 1px solid var(--ef-border-subtle-light);
-}
-
-body[data-context="dark"] .composer {
   background: var(--ef-dark-input);
-  border-color: var(--ef-border-subtle-dark);
+  border: 1px solid var(--ef-border-subtle-dark);
 }
 
 .composer button {
@@ -907,16 +791,6 @@ body[data-context="dark"] .composer {
     background var(--ef-med);
 }
 
-/* ============================================================
-   COMPOSER — CONTINUED
-============================================================ */
-
-body[data-context="light"] .composer button {
-  background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.12), var(--ef-light-input));
-  color: var(--ef-text-light-main);
-}
-
 .composer button:hover {
   border-color: var(--ef-res-low);
   box-shadow:
@@ -929,7 +803,6 @@ body[data-context="light"] .composer button {
   transform: scale(0.9);
 }
 
-/* Message input */
 .msg-input {
   min-height: 32px;
   max-height: 120px;
@@ -937,21 +810,13 @@ body[data-context="light"] .composer button {
   padding: 6px 8px;
   border-radius: var(--ef-radius-pill);
   border: 1px solid transparent;
-  background: var(--ef-light-input);
-  color: var(--ef-text-light-main);
+  background: var(--ef-dark-input);
+  color: var(--ef-text-dark-main);
   outline: none;
   font-size: 0.9rem;
 }
 
-body[data-context="dark"] .msg-input {
-  background: var(--ef-dark-input);
-  color: var(--ef-text-dark-main);
-}
-
-/* ============================================================
-   BOTTOM SHEET — ATTACHMENT MENU
-============================================================ */
-
+/* Bottom sheet */
 .bottom-sheet {
   position: absolute;
   left: 50%;
@@ -959,8 +824,8 @@ body[data-context="dark"] .msg-input {
   transform: translateX(-50%) translateY(20px);
   width: 260px;
   border-radius: var(--ef-radius-lg);
-  background: var(--ef-light-surface);
-  border: 1px solid var(--ef-border-subtle-light);
+  background: var(--ef-dark-surface);
+  border: 1px solid var(--ef-border-subtle-dark);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
   padding: 8px 10px;
   display: none;
@@ -969,11 +834,6 @@ body[data-context="dark"] .msg-input {
   transition:
     opacity var(--ef-med),
     transform var(--ef-med);
-}
-
-body[data-context="dark"] .bottom-sheet {
-  background: var(--ef-dark-surface);
-  border-color: var(--ef-border-subtle-dark);
 }
 
 .bottom-sheet[aria-hidden="false"] {
@@ -994,8 +854,8 @@ body[data-context="dark"] .bottom-sheet {
   width: 100%;
   border-radius: var(--ef-radius-pill);
   border: 1px solid transparent;
-  background: var(--ef-light-input);
-  color: var(--ef-text-light-main);
+  background: var(--ef-dark-input);
+  color: var(--ef-text-dark-main);
   padding: 6px 10px;
   text-align: left;
   margin-bottom: 4px;
@@ -1005,67 +865,40 @@ body[data-context="dark"] .bottom-sheet {
     transform var(--ef-fast);
 }
 
-body[data-context="dark"] .sheet-item {
-  background: var(--ef-dark-input);
-  color: var(--ef-text-dark-main);
-}
-
 .sheet-item:hover {
   background: var(--ef-res-low);
   color: #05060a;
   transform: translateY(-1px);
 }
 
-/* ============================================================
-   EMOJI PICKER
-============================================================ */
-
+/* Emoji picker */
 emoji-picker {
   margin-top: 4px;
   width: 100%;
   border-radius: var(--ef-radius-md);
-  background: var(--ef-light-surface);
-  border: 1px solid var(--ef-border-subtle-light);
+  background: var(--ef-dark-surface);
+  border: 1px solid var(--ef-border-subtle-dark);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
 
-body[data-context="dark"] emoji-picker {
-  background: var(--ef-dark-surface);
-  border-color: var(--ef-border-subtle-dark);
-}
-
-/* ============================================================
-   GIF PICKER
-============================================================ */
-
+/* GIF picker */
 .gif-picker {
   margin-top: 4px;
   border-radius: var(--ef-radius-md);
-  background: var(--ef-light-surface);
-  border: 1px solid var(--ef-border-subtle-light);
+  background: var(--ef-dark-surface);
+  border: 1px solid var(--ef-border-subtle-dark);
   padding: 6px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-}
-
-body[data-context="dark"] .gif-picker {
-  background: var(--ef-dark-surface);
-  border-color: var(--ef-border-subtle-dark);
 }
 
 .gif-search {
   width: 100%;
   border-radius: var(--ef-radius-sm);
-  border: 1px solid var(--ef-border-subtle-light);
-  background: var(--ef-light-input);
-  color: var(--ef-text-light-main);
+  border: 1px solid var(--ef-border-subtle-dark);
+  background: var(--ef-dark-input);
+  color: var(--ef-text-dark-main);
   padding: 6px 8px;
   margin-bottom: 6px;
-}
-
-body[data-context="dark"] .gif-search {
-  background: var(--ef-dark-input);
-  border-color: var(--ef-border-subtle-dark);
-  color: var(--ef-text-dark-main);
 }
 
 .gif-results {
@@ -1076,10 +909,7 @@ body[data-context="dark"] .gif-search {
   gap: 6px;
 }
 
-/* ============================================================
-   MINI CHAT BUBBLE
-============================================================ */
-
+/* Mini chat bubble */
 .mini-chat-bubble {
   position: fixed;
   right: 18px;
@@ -1110,10 +940,7 @@ body[data-context="dark"] .gif-search {
     0 0 40px rgba(255, 123, 255, 0.35);
 }
 
-/* ============================================================
-   MESSAGE ANIMATIONS
-============================================================ */
-
+/* Message animation */
 @keyframes efMsgSettle {
   0% {
     transform: scale(0.9) translateY(4px);
@@ -1127,31 +954,15 @@ body[data-context="dark"] .gif-search {
     transform: scale(1) translateY(0);
   }
 }
-
-@keyframes efTypingDots {
-  0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(-3px); opacity: 1; }
-}
-
-@keyframes efRecordPulse {
-  0% { transform: scale(0.9); opacity: 0.6; }
-  100% { transform: scale(1.2); opacity: 0; }
-}
-
 /* ============================================================
-   SECTION 2 — FLOATING WINDOWS + MODALS + TOASTS + FOOTER
+   WINDOW MANAGER
 ============================================================ */
-
-/* ============================================================
-   FLOATING WINDOW MANAGER
-============================================================ */
-
 #windowManager {
   position: relative;
   z-index: 20;
 }
 
-/* Base floating membrane */
+/* Base floating window */
 .floating-window {
   position: fixed;
   top: 18%;
@@ -1179,28 +990,12 @@ body[data-context="dark"] .gif-search {
     box-shadow 220ms ease-out;
 }
 
-/* Visible state */
 .floating-window:not(.hidden) {
   display: flex;
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* Active focus */
-.floating-window.fw-active {
-  box-shadow:
-    0 0 30px rgba(255, 123, 255, 0.4),
-    0 0 50px rgba(94, 242, 255, 0.35);
-}
-
-/* Dragging tension */
-.floating-window.dragging {
-  box-shadow:
-    0 0 30px rgba(94, 242, 255, 0.6),
-    0 0 50px rgba(0, 0, 0, 0.9);
-}
-
-/* Floating body */
 .floating-body {
   padding: 14px;
   overflow-y: auto;
@@ -1211,10 +1006,7 @@ body[data-context="dark"] .gif-search {
   font-size: 1rem;
 }
 
-/* ============================================================
-   PROFILE EDITOR WINDOW
-============================================================ */
-
+/* Profile editor */
 #profileWindow .floating-body {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
@@ -1227,10 +1019,6 @@ body[data-context="dark"] .gif-search {
   gap: 4px;
   margin-bottom: 8px;
   font-size: 0.9rem;
-}
-
-#profileForm span {
-  opacity: 0.8;
 }
 
 #profileForm input,
@@ -1249,12 +1037,6 @@ body[data-context="dark"] .gif-search {
   resize: vertical;
 }
 
-#profileForm input:focus,
-#profileForm textarea:focus {
-  border-color: var(--ef-res-low);
-  box-shadow: 0 0 0 1px rgba(94, 242, 255, 0.4);
-}
-
 #saveProfileBtn {
   border-radius: var(--ef-radius-pill);
   border: 1px solid var(--ef-border-subtle-dark);
@@ -1263,24 +1045,9 @@ body[data-context="dark"] .gif-search {
   color: var(--ef-text-dark-main);
   padding: 6px 12px;
   cursor: pointer;
-  transition:
-    transform var(--ef-fast),
-    box-shadow var(--ef-med),
-    border-color var(--ef-med);
 }
 
-#saveProfileBtn:hover {
-  border-color: var(--ef-res-low);
-  box-shadow:
-    0 0 14px rgba(94, 242, 255, 0.4),
-    0 0 28px rgba(255, 123, 255, 0.25);
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   SETTINGS WINDOW
-============================================================ */
-
+/* Settings window */
 #settingsWindow .floating-body {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.1), transparent 60%),
@@ -1294,10 +1061,7 @@ body[data-context="dark"] .gif-search {
   padding: 10px;
 }
 
-/* ============================================================
-   VIDEO CALL WINDOW
-============================================================ */
-
+/* Video call window */
 #videoCallWindow .floating-body {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
@@ -1368,26 +1132,8 @@ body[data-context="dark"] .gif-search {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition:
-    transform var(--ef-fast),
-    box-shadow var(--ef-med),
-    border-color var(--ef-med),
-    background var(--ef-med);
 }
 
-.call-controls button:hover {
-  transform: translateY(-1px);
-  border-color: var(--ef-res-low);
-  box-shadow: 0 0 14px rgba(94, 242, 255, 0.4);
-}
-
-.call-controls button:active {
-  transform: scale(0.9);
-}
-
-/* Call state buttons */
 #end-call {
   background: radial-gradient(circle at 30% 0, #ff9b9b, #ff4b4b);
   color: #fff;
@@ -1398,21 +1144,7 @@ body[data-context="dark"] .gif-search {
   color: #05060a;
 }
 
-#mute-call.active,
-#camera-toggle.active,
-#share-screen.active,
-#ai-noise-toggle.active,
-#record-call.active {
-  border-color: var(--ef-res-low);
-  box-shadow:
-    0 0 12px rgba(94, 242, 255, 0.5),
-    0 0 24px rgba(94, 242, 255, 0.3);
-}
-
-/* ============================================================
-   FULL PROFILE WINDOW
-============================================================ */
-
+/* Full profile */
 #fullProfileModal .floating-body {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
@@ -1425,7 +1157,7 @@ body[data-context="dark"] .gif-search {
   gap: 10px;
 }
 
-#closeFullProfile.close-full-profile {
+.close-full-profile {
   align-self: flex-end;
   border-radius: var(--ef-radius-pill);
   border: 1px solid var(--ef-border-subtle-dark);
@@ -1445,7 +1177,7 @@ body[data-context="dark"] .gif-search {
   border: 1px solid var(--ef-border-subtle-dark);
 }
 
-#fullProfileBannerWrapper.banner-wrapper img {
+.banner-wrapper img {
   width: 100%;
   height: auto;
   display: block;
@@ -1470,24 +1202,6 @@ body[data-context="dark"] .gif-search {
   object-fit: cover;
 }
 
-#fullProfileName {
-  text-align: center;
-  margin: 6px 0 0;
-}
-
-#fullProfileEmail,
-#fullProfilePhone {
-  text-align: center;
-  margin: 0;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-#fullProfileBio {
-  font-size: 0.9rem;
-  margin-top: 6px;
-}
-
 .profile-line {
   display: flex;
   align-items: center;
@@ -1504,25 +1218,13 @@ body[data-context="dark"] .gif-search {
   font-size: 0.9rem;
 }
 
-.copy-row {
-  display: flex;
-  gap: 8px;
-}
-
-.copy-row button {
-  flex: 1;
-  border-radius: var(--ef-radius-sm);
-  border: 1px solid var(--ef-border-subtle-dark);
-  background: rgba(4, 5, 14, 0.96);
-  color: var(--ef-text-dark-soft);
-  cursor: pointer;
-}
-
+.copy-row,
 .profile-actions {
   display: flex;
   gap: 8px;
 }
 
+.copy-row button,
 .profile-actions button {
   flex: 1;
   border-radius: var(--ef-radius-sm);
@@ -1537,10 +1239,7 @@ body[data-context="dark"] .gif-search {
   color: var(--ef-danger);
 }
 
-/* ============================================================
-   IMAGE VIEWER FLOATING WINDOW
-============================================================ */
-
+/* Image viewer floating */
 #image-viewer-overlay .floating-body {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
@@ -1572,12 +1271,10 @@ body[data-context="dark"] .gif-search {
   max-height: 70vh;
   border-radius: var(--ef-radius-md);
 }
-
 /* ============================================================
    VOICEMAIL MODAL
 ============================================================ */
-
-#voicemailModal.voicemail-modal {
+.voicemail-modal {
   position: fixed;
   inset: 0;
   display: none;
@@ -1587,11 +1284,11 @@ body[data-context="dark"] .gif-search {
   z-index: 60;
 }
 
-#voicemailModal:not(.hidden) {
+.voicemail-modal:not(.hidden) {
   display: flex;
 }
 
-#voicemailModal > div {
+.voicemail-modal > div {
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
     rgba(6, 8, 20, 0.98);
@@ -1634,16 +1331,12 @@ body[data-context="dark"] .gif-search {
   50% { transform: scaleY(1.4); opacity: 1; }
 }
 
-#vmStatus.vm-status {
+.vm-status {
   font-size: 0.9rem;
   opacity: 0.8;
 }
 
-/* ============================================================
-   VOICEMAIL MODAL — CONTINUED
-============================================================ */
-
-#vmTimer.vm-timer {
+.vm-timer {
   font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.9rem;
   color: var(--ef-res-warm);
@@ -1663,24 +1356,10 @@ body[data-context="dark"] .gif-search {
   color: var(--ef-text-dark-soft);
   padding: 4px 8px;
   cursor: pointer;
-  transition:
-    background var(--ef-med),
-    transform var(--ef-fast),
-    border-color var(--ef-med);
 }
 
-.vm-controls button:hover {
-  background: var(--ef-res-low);
-  color: #05060a;
-  border-color: var(--ef-res-low);
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   UNAVAILABLE TOAST
-============================================================ */
-
-#unavailableToast.unavailable-toast {
+/* Unavailable toast */
+.unavailable-toast {
   position: fixed;
   left: 50%;
   bottom: 18px;
@@ -1699,7 +1378,7 @@ body[data-context="dark"] .gif-search {
     transform var(--ef-med);
 }
 
-#unavailableToast:not(.hidden) {
+.unavailable-toast:not(.hidden) {
   pointer-events: auto;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
@@ -1729,22 +1408,10 @@ body[data-context="dark"] .gif-search {
   padding: 2px 8px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition:
-    background var(--ef-med),
-    transform var(--ef-fast);
 }
 
-.ut-options button:hover {
-  background: var(--ef-res-low);
-  color: #05060a;
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   HIDDEN MESSAGES PANEL
-============================================================ */
-
-#hiddenMessagesPanel.hidden-panel {
+/* Hidden messages panel */
+.hidden-panel {
   position: fixed;
   right: 18px;
   bottom: 80px;
@@ -1760,33 +1427,8 @@ body[data-context="dark"] .gif-search {
   box-shadow: var(--ef-shadow-dark);
 }
 
-#hiddenMessagesPanel h3 {
-  margin-top: 0;
-}
-
-#hiddenMessagesPanel button {
-  border-radius: var(--ef-radius-pill);
-  border: 1px solid var(--ef-border-subtle-dark);
-  background: rgba(4, 5, 14, 0.96);
-  color: var(--ef-text-dark-soft);
-  padding: 4px 10px;
-  cursor: pointer;
-  transition:
-    background var(--ef-med),
-    transform var(--ef-fast);
-}
-
-#hiddenMessagesPanel button:hover {
-  background: var(--ef-res-low);
-  color: #05060a;
-  transform: translateY(-1px);
-}
-
-/* ============================================================
-   GENERIC TOAST
-============================================================ */
-
-#toast.toast {
+/* Generic toast */
+.toast {
   position: fixed;
   left: 50%;
   bottom: 18px;
@@ -1807,17 +1449,14 @@ body[data-context="dark"] .gif-search {
     transform var(--ef-med);
 }
 
-#toast.toast.show {
+.toast.show {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(-50%) translateY(0);
 }
 
-/* ============================================================
-   LOGOUT MODAL
-============================================================ */
-
-#logoutModal.modal-1 {
+/* Logout modal */
+.modal-1 {
   position: fixed;
   inset: 0;
   display: none;
@@ -1827,27 +1466,11 @@ body[data-context="dark"] .gif-search {
   z-index: 60;
 }
 
-#logoutModal.modal-1:not(.hidden) {
+.modal-1:not(.hidden) {
   display: flex;
 }
 
-#logoutModal.modal-1::before {
-  content: "";
-  position: absolute;
-  width: 320px;
-  height: 180px;
-  border-radius: var(--ef-radius-md);
-  background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
-    rgba(6, 8, 20, 0.98);
-  border: 1px solid var(--ef-border-subtle-dark);
-  box-shadow: var(--ef-shadow-dark);
-}
-
-/* ============================================================
-   FOOTER
-============================================================ */
-
+/* Footer */
 .site-footer {
   padding: 20px;
   background:
@@ -1872,7 +1495,6 @@ body[data-context="dark"] .gif-search {
   color: var(--ef-text-dark-soft);
   text-decoration: none;
   font-size: 0.9rem;
-  transition: color var(--ef-med);
 }
 
 .footer-nav a:hover {
@@ -1884,17 +1506,13 @@ body[data-context="dark"] .gif-search {
   color: var(--ef-text-dark-soft);
   text-decoration: none;
   font-size: 0.9rem;
-  transition: color var(--ef-med);
 }
 
 .social-links a:hover {
   color: var(--ef-res-low);
 }
 
-/* ============================================================
-   RESPONSIVE BREAKPOINTS
-============================================================ */
-
+/* Responsive */
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 70px minmax(0, 1fr);
@@ -1926,8 +1544,78 @@ body[data-context="dark"] .gif-search {
     max-width: 90vw;
   }
 
-  .site-footer .footer-content {
+  .footer-content {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+/* ============================================================
+   RIGHT-SIDE PROFILE SLIDE PANEL
+============================================================ */
+.profile-slide {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 340px;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
+    var(--ef-dark-surface);
+  border-left: 1px solid var(--ef-border-subtle-dark);
+  box-shadow:
+    -6px 0 22px rgba(0, 0, 0, 0.6),
+    -12px 0 40px rgba(94, 242, 255, 0.25);
+  backdrop-filter: blur(26px);
+  transform: translateX(100%);
+  transition: transform 320ms cubic-bezier(0.22, 1.4, 0.36, 1);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.profile-slide.show {
+  transform: translateX(0);
+}
+
+.profile-slide-close {
+  align-self: flex-end;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ef-radius-pill);
+  border: 1px solid var(--ef-border-subtle-dark);
+  background: rgba(4, 5, 14, 0.96);
+  color: var(--ef-text-dark-soft);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.profile-slide-content {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.slide-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid var(--ef-res-low);
+  display: block;
+  margin: 0 auto 12px;
+}
+
+.slide-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.slide-actions button {
+  flex: 1;
+  border-radius: var(--ef-radius-pill);
+  border: 1px solid var(--ef-border-subtle-dark);
+  background: rgba(4, 5, 14, 0.96);
+  color: var(--ef-text-dark-soft);
+  padding: 6px 10px;
+  cursor: pointer;
 }
