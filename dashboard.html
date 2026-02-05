@@ -117,7 +117,7 @@ window.currentUserAvatar = user.avatar;
   <header class="site-header app-header">
     <div class="brand-logo">Scrubber's</div>
 
-    <nav class="nav-links">
+    <nav class="nav-links" aria-label="Main navigation">
       <a href="#">Home</a>
       <a href="services.html">Services</a>
       <a href="project.html">Projects</a>
@@ -138,31 +138,34 @@ window.currentUserAvatar = user.avatar;
     <!-- ============================================================
          LEFT RAIL
     ============================================================ -->
-    <aside class="app-rail">
+    <aside class="app-rail" aria-label="App navigation">
 
       <div id="notification_container" class="rail-notifications">
         <span id="notificationCount"></span>
       </div>
 
-      <button id="btn_search" class="rail-btn" data-tip="Search">🔍</button>
-      <button id="btn_chat_main" class="rail-btn" data-tip="Chat">💬</button>
-      <button id="contact_widget" class="rail-btn" data-tip="Contacts">👥</button>
-      <button id="btn_notifications" class="rail-btn" data-tip="Notifications">🔔</button>
-      <button id="btn_settings" class="rail-btn" data-tip="Settings">⚙️</button>
-      <button id="toggleBtn" class="rail-btn" data-tip="Theme">🌙</button>
+      <button id="btn_search" class="rail-btn" data-tip="Search" type="button">🔍</button>
+      <button id="btn_chat_main" class="rail-btn" data-tip="Chat" type="button">💬</button>
+      <button id="contact_widget" class="rail-btn" data-tip="Contacts" type="button">👥</button>
+      <button id="btn_notifications" class="rail-btn" data-tip="Notifications" type="button">🔔</button>
+      <button id="btn_settings" class="rail-btn" data-tip="Settings" type="button">⚙️</button>
+      <button id="toggleBtn" class="rail-btn" data-tip="Theme" type="button">🌙</button>
 
       <div class="rail-spacer"></div>
 
-      <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout">⏻</button>
-      <button id="btn_help" class="rail-btn" data-tip="Help">❓</button>
+      <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout" type="button">⏻</button>
+      <button id="btn_help" class="rail-btn" data-tip="Help" type="button">❓</button>
     </aside>
-  <aside class="contacts-sidebar">
-          <div class="contact-lookup">
-            <input id="lookup-input" placeholder="Search contacts..." />
-            <button id="lookup-btn">🔍</button>
-          </div>
-          <ul id="contacts-lookup"></ul>
-        </aside>
+
+    <!-- CONTACT LOOKUP SIDEBAR -->
+    <aside class="contacts-sidebar" aria-label="Contact lookup">
+      <div class="contact-lookup">
+        <input id="lookup-input" placeholder="Search contacts..." autocomplete="off" />
+        <button id="lookup-btn" type="button">🔍</button>
+      </div>
+      <ul id="contacts-lookup"></ul>
+    </aside>
+
     <!-- ============================================================
          LEFT COLUMN — CONTACTS + SEARCH
     ============================================================ -->
@@ -170,9 +173,6 @@ window.currentUserAvatar = user.avatar;
 
       <!-- CONTACTS PANEL -->
       <div id="conwrap" class="panel hidden">
-
-      
-
         <div class="contacts-main">
 
           <section>
@@ -187,7 +187,7 @@ window.currentUserAvatar = user.avatar;
 
           <section>
             <h2>Call History</h2>
-            <input id="callLogSearch" placeholder="Search calls…" />
+            <input id="callLogSearch" placeholder="Search calls…" autocomplete="off" />
             <div id="callStats"></div>
             <ul id="callLogList"></ul>
           </section>
@@ -210,22 +210,22 @@ window.currentUserAvatar = user.avatar;
 
         <div class="search-header">
           <h2>Search Contractors</h2>
-          <button id="close_search">✕</button>
+          <button id="close_search" type="button">✕</button>
         </div>
 
         <div class="search-input">
-          <input id="contractor_query_panel" placeholder="Search contractors..." />
-          <button id="search_submit_panel">🔍</button>
+          <input id="contractor_query_panel" placeholder="Search contractors..." autocomplete="off" />
+          <button id="search_submit_panel" type="button">🔍</button>
           <ul id="autocomplete_list_panel"></ul>
         </div>
 
         <div class="search-filters">
-          <button class="filter-chip active" data-category="all">All</button>
-          <button class="filter-chip" data-category="roofing">Roofing</button>
-          <button class="filter-chip" data-category="plumbing">Plumbing</button>
-          <button class="filter-chip" data-category="hvac">HVAC</button>
-          <button class="filter-chip" data-category="electrical">Electrical</button>
-          <button class="filter-chip" data-category="general">General</button>
+          <button class="filter-chip active" data-category="all" type="button">All</button>
+          <button class="filter-chip" data-category="roofing" type="button">Roofing</button>
+          <button class="filter-chip" data-category="plumbing" type="button">Plumbing</button>
+          <button class="filter-chip" data-category="hvac" type="button">HVAC</button>
+          <button class="filter-chip" data-category="electrical" type="button">Electrical</button>
+          <button class="filter-chip" data-category="general" type="button">General</button>
         </div>
 
         <div id="search_results"></div>
@@ -249,9 +249,9 @@ window.currentUserAvatar = user.avatar;
         <header class="msg-header">
           <h2 id="msgHeaderName"></h2>
           <div class="msg-actions">
-            <button id="voiceBtn">🎤</button>
-            <button id="videoBtn">📹</button>
-            <button id="call-debug-toggle">🐞</button>
+            <button id="voiceBtn" type="button">🎤</button>
+            <button id="videoBtn" type="button">📹</button>
+            <button id="call-debug-toggle" type="button">🐞</button>
           </div>
         </header>
 
@@ -270,7 +270,7 @@ window.currentUserAvatar = user.avatar;
         </div>
 
         <div id="img-viewer" class="img-viewer">
-          <img id="img-viewer-img" />
+          <img id="img-viewer-img" alt="Preview" />
         </div>
 
         <div id="attachmentPreview" class="attachment-preview hidden"></div>
@@ -284,26 +284,26 @@ window.currentUserAvatar = user.avatar;
         </form>
 
         <!-- BOTTOM SHEET -->
-        <div id="bottomSheet" class="bottom-sheet">
+        <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
           <div class="sheet-handle"></div>
-          <button class="sheet-item" id="sheetCamera">📷 Camera</button>
-          <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
-          <button class="sheet-item" id="sheetFile">📎 File</button>
-          <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
-          <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
-          <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+          <button class="sheet-item" id="sheetCamera" type="button">📷 Camera</button>
+          <button class="sheet-item" id="sheetGallery" type="button">🖼️ Gallery</button>
+          <button class="sheet-item" id="sheetFile" type="button">📎 File</button>
+          <button class="sheet-item" id="sheetAudio" type="button">🎤 Voice Message</button>
+          <button class="sheet-item" id="sheetEmoji" type="button">😀 Emoji</button>
+          <button class="sheet-item" id="sheetGif" type="button">🎬 GIF</button>
         </div>
 
         <emoji-picker id="emojiPicker" class="emoji-picker"></emoji-picker>
 
         <div id="gifPicker" class="gif-picker hidden">
-          <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+          <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
           <div id="gifResults" class="gif-results"></div>
         </div>
 
       </div>
 
-      <button id="miniChatBubble" class="mini-chat-bubble hidden">💬</button>
+      <button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
 
     </section>
 
@@ -314,28 +314,28 @@ window.currentUserAvatar = user.avatar;
 
       <!-- SETTINGS PANEL -->
       <div id="settings_container" class="panel settings-shell hidden">
-        <!-- Your settings HTML stays here -->
+        <!-- Settings content injected by JS -->
       </div>
 
       <!-- PROFILE EDITOR PANEL -->
-      <section id="contact_window" class="panel profile-panel hidden">
+      <section id="contact_window" class="panel profile-panel hidden" aria-label="Profile editor">
 
         <header class="profile-header">
           <h2>Edit Profile</h2>
-          <button id="closeProfile" class="close-btn">✕</button>
+          <button id="closeProfile" class="close-btn" type="button">✕</button>
         </header>
 
         <div class="profile_card">
 
           <div class="profile-avatar">
             <div class="status-dot online"><h3>Online</h3></div>
-            <img id="profilePreview" src="img/defaultUser.png" alt="Profile Picture" />
+            <img id="profilePreview" src="img/defaultUser.png" alt="Profile Picture" loading="lazy" />
 
             <div class="profile_chgBtn">
-              <button id="enhanceAvatar" class="upload-btn">Enhance Photo</button>
+              <button id="enhanceAvatar" class="upload-btn" type="button">Enhance Photo</button>
               <label for="profileImage" class="upload-btn">Change Photo</label>
               <input type="file" id="profileImage" accept="image/*" />
-              <button id="removeAvatar" class="delete-account-btn">Remove Avatar</button>
+              <button id="removeAvatar" class="delete-account-btn" type="button">Remove Avatar</button>
             </div>
           </div>
 
@@ -345,36 +345,36 @@ window.currentUserAvatar = user.avatar;
             <p class="profile-username"></p>
 
             <div class="profile-field">
-              <label>Bio</label>
+              <label for="bioInput">Bio</label>
               <textarea id="bioInput" placeholder="Write something about yourself..."></textarea>
             </div>
 
             <div class="profile-field">
-              <label>Display Name</label>
+              <label for="fullnameInput">Display Name</label>
               <input type="text" id="fullnameInput" />
             </div>
 
             <div class="profile-field">
-              <label>Email</label>
+              <label for="emailInput">Email</label>
               <input type="email" id="emailInput" />
             </div>
 
             <div class="profile-field">
-              <label>Current Password</label>
+              <label for="currentPasswordInput">Current Password</label>
               <input type="password" id="currentPasswordInput" placeholder="Enter current password" />
             </div>
 
             <div class="profile-field">
-              <label>New Password</label>
+              <label for="newPasswordInput">New Password</label>
               <input type="password" id="newPasswordInput" placeholder="Enter new password" />
             </div>
 
             <div class="profile-field">
-              <label>Confirm New Password</label>
+              <label for="confirmPasswordInput">Confirm New Password</label>
               <input type="password" id="confirmPasswordInput" placeholder="Confirm new password" />
             </div>
 
-            <button id="changePasswordBtn" class="save-profile-btn">Change Password</button>
+            <button id="changePasswordBtn" class="save-profile-btn" type="button">Change Password</button>
 
             <div class="profile-social">
               <label>Social Links</label>
@@ -398,129 +398,127 @@ window.currentUserAvatar = user.avatar;
             </label>
 
             <div class="profile-actions">
-              <button id="saveProfileBtn" class="save-profile-btn">Save Changes</button>
+              <button id="saveProfileBtn" class="save-profile-btn" type="button">Save Changes</button>
               <a href="#" class="logout-btn" onclick="logout()">Log Out</a>
-              <button id="deleteAccountBtn" class="delete-account-btn">Delete Account</button>
+              <button id="deleteAccountBtn" class="delete-account-btn" type="button">Delete Account</button>
             </div>
 
           </div>
         </div>
       </section>
 
-<!-- VIDEO CALL PANEL -->
-<div id="video-container" class="video-panel hidden">
+      <!-- VIDEO CALL PANEL -->
+      <div id="video-container" class="video-panel hidden" aria-label="Call window">
 
-  <!-- SCREEN SHARE / GROUP GRID / REMOTE VIDEO AREA -->
-  <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
+        <!-- SCREEN SHARE / REMOTE VIDEO AREA -->
+        <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
 
-    <!-- Remote Video -->
-    <video id="remoteVideo" autoplay playsinline></video>
+          <!-- Remote Video -->
+          <video id="remoteVideo" autoplay playsinline></video>
 
-    <!-- Remote Avatar Fallback -->
-    <div class="remote-avatar" id="remoteAvatar">
-      <div class="mic-level-ring"></div>
-      <img id="remoteAvatarImg" src="" alt="Remote Avatar" />
-      <div class="avatar-ring"></div>
-    </div>
+          <!-- Remote Avatar Fallback -->
+          <div class="remote-avatar" id="remoteAvatar">
+            <div class="mic-level-ring"></div>
+            <img id="remoteAvatarImg" src="" alt="Remote Avatar" loading="lazy" />
+            <div class="avatar-ring"></div>
+          </div>
 
-    <!-- Camera Off Placeholder -->
-    <div class="camera-off-placeholder">
-      Camera Off
-    </div>
+          <!-- Camera Off Placeholder -->
+          <div class="camera-off-placeholder">
+            Camera Off
+          </div>
 
-    <!-- Voice Activity Glow -->
-    <div class="voice-glow"></div>
+          <!-- Voice Activity Glow -->
+          <div class="voice-glow"></div>
 
-    <!-- Caller Overlay (ringing / voicemail / connecting) -->
-    <div id="callerOverlay" class="call-overlay"></div>
+          <!-- Caller Overlay -->
+          <div id="callerOverlay" class="call-overlay"></div>
 
-    <!-- Screen Share Indicator -->
-    <div class="screen-share-indicator">Screen Sharing</div>
+          <!-- Screen Share Indicator -->
+          <div class="screen-share-indicator">Screen Sharing</div>
 
-    <!-- AI Noise Suppression -->
-    <div class="ai-noise-indicator">AI Noise Suppression</div>
+          <!-- AI Noise Suppression -->
+          <div class="ai-noise-indicator">AI Noise Suppression</div>
 
-    <!-- Network Quality -->
-    <div class="network-indicator network-good">Good Connection</div>
+          <!-- Network Quality -->
+          <div class="network-indicator network-good">Good Connection</div>
 
-    <!-- Mic / Camera Badges -->
-    <div class="badge badge-mic-muted">🎤 Muted</div>
-    <div class="badge badge-camera-off">📷 Off</div>
+          <!-- Mic / Camera Badges -->
+          <div class="badge badge-mic-muted">🎤 Muted</div>
+          <div class="badge badge-camera-off">📷 Off</div>
 
-  </div>
+        </div>
 
-  <!-- LOCAL VIDEO PREVIEW (DRAGGABLE) -->
-  <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
-    <video id="localVideo" autoplay playsinline muted></video>
+        <!-- LOCAL VIDEO PREVIEW (DRAGGABLE) -->
+        <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
+          <video id="localVideo" autoplay playsinline muted></video>
 
-    <!-- Local Avatar Fallback -->
-    <div class="local-avatar" id="localAvatar">
-      <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
-    </div>
-  </div>
+          <!-- Local Avatar Fallback -->
+          <div class="local-avatar" id="localAvatar">
+            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" loading="lazy" />
+          </div>
+        </div>
 
-  <!-- CALL STATUS TEXT -->
-  <div id="call-status" class="status"></div>
+        <!-- CALL STATUS TEXT -->
+        <div id="call-status" class="status"></div>
 
-  <!-- REMOTE AUDIO -->
-  <audio id="remoteAudio" autoplay playsinline></audio>
+        <!-- REMOTE AUDIO -->
+        <audio id="remoteAudio" autoplay playsinline></audio>
 
-  <!-- CALL CONTROLS -->
-  <!-- CALL CONTROLS -->
-  <div id="call-controls" class="call-controls">
-    <div id="call-timer" class="call-timer">00:00</div>
+        <!-- CALL CONTROLS -->
+        <div id="call-controls" class="call-controls">
+          <div id="call-timer" class="call-timer">00:00</div>
 
-    <!-- Left: incoming actions -->
-    <button id="decline-call" title="Decline">❌</button>
-    <button id="answer-call"  title="Answer">✅</button>
+          <!-- Incoming actions -->
+          <button id="decline-call" title="Decline" type="button">❌</button>
+          <button id="answer-call" title="Answer" type="button">✅</button>
 
-    <!-- Middle: in-call controls -->
-    <button id="mute-call" title="Mute / Unmute">🔇</button>
+          <!-- In-call controls -->
+          <button id="mute-call" title="Mute / Unmute" type="button">🔇</button>
 
-    <button id="camera-toggle" title="Toggle Camera">
-      <span class="material-symbols-outlined">flip_camera_android</span>
-    </button>
+          <button id="camera-toggle" title="Toggle Camera" type="button">
+            <span class="material-symbols-outlined">flip_camera_android</span>
+          </button>
 
-    <!-- Screen share -->
-    <button id="share-screen" title="Share Screen">🖥️</button>
+          <!-- Screen share -->
+          <button id="share-screen" title="Share Screen" type="button">🖥️</button>
 
-    <!-- AI noise suppression -->
-    <button id="ai-noise-toggle" title="AI Noise Suppression">🤖</button>
+          <!-- AI noise suppression -->
+          <button id="ai-noise-toggle" title="AI Noise Suppression" type="button">🤖</button>
 
-    <!-- Recording -->
-    <button id="record-call" title="Record Call">⏺️</button>
+          <!-- Recording -->
+          <button id="record-call" title="Record Call" type="button">⏺️</button>
 
-    <!-- Call history -->
-    <button id="call-history-toggle" title="Call History">📜</button>
+          <!-- Call history -->
+          <button id="call-history-toggle" title="Call History" type="button">📜</button>
 
-    <!-- End call -->
-    <button id="end-call" title="Hang Up">📞</button>
-  </div>
+          <!-- End call -->
+          <button id="end-call" title="Hang Up" type="button">📞</button>
+        </div>
 
+      </div>
 
-</div>
+    </section>
 
-
-    
   </main>
 
   <!-- ============================================================
-       GLOBAL OVERLAYS (NOW ABOVE FOOTER)
+       GLOBAL OVERLAYS
   ============================================================ -->
   <div id="global-overlays">
 
     <!-- FULL PROFILE MODAL -->
-    <div id="fullProfileModal" class="full-profile-modal hidden">
-      <button id="closeFullProfile" class="close-full-profile">✕</button>
+    <div id="fullProfileModal" class="full-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="fullProfileName">
+      <button id="closeFullProfile" class="close-full-profile" type="button">✕</button>
       <div class="full-profile-content">
         <div class="full-profile-banner">
           <div id="fullProfileBannerWrapper" class="banner-wrapper">
-            <img id="fullProfileBanner" src="" alt="Banner" />
+            <img id="fullProfileBanner" src="" alt="Banner" loading="lazy" />
           </div>
         </div>
 
         <div class="avatar-frame avatar-glow avatar-pulse online">
-          <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar" />
+          <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar" loading="lazy" />
         </div>
 
         <h2 id="fullProfileName"></h2>
@@ -529,126 +527,122 @@ window.currentUserAvatar = user.avatar;
         <div id="fullProfileBio" class="full-profile-bio"></div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/color/48/domain--v1.png" alt="" />
-          <a id="fullProfileWebsite" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/color/48/domain--v1.png" alt="Website icon" loading="lazy" />
+          <a id="fullProfileWebsite" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="" />
-          <a id="fullProfileTwitter" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="Twitter icon" loading="lazy" />
+          <a id="fullProfileTwitter" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <div class="profile-line">
-          <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="" />
-          <a id="fullProfileInstagram" href="#" target="_blank"></a>
+          <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="Instagram icon" loading="lazy" />
+          <a id="fullProfileInstagram" href="#" target="_blank" rel="noopener noreferrer"></a>
         </div>
 
         <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
         <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
 
         <div class="copy-row">
-          <button id="copyEmailBtn" class="copy-btn">Copy Email</button>
-          <button id="copyPhoneBtn" class="copy-btn">Copy Phone</button>
+          <button id="copyEmailBtn" class="copy-btn" type="button">Copy Email</button>
+          <button id="copyPhoneBtn" class="copy-btn" type="button">Copy Phone</button>
         </div>
 
-        <button id="saveLookupContact" class="profile-save-btn">➕ Add To Contacts</button>
+        <button id="saveLookupContact" class="profile-save-btn" type="button">➕ Add To Contacts</button>
 
         <div class="profile-actions">
-          <button id="profileCallBtn" class="profile-action-btn">📞 Call</button>
-          <button id="profileVideoBtn" class="profile-action-btn">🎥 Video</button>
-          <button id="profileBlockBtn" class="profile-action-btn danger">🚫 Block</button>
+          <button id="profileCallBtn" class="profile-action-btn" type="button">📞 Call</button>
+          <button id="profileVideoBtn" class="profile-action-btn" type="button">🎥 Video</button>
+          <button id="profileBlockBtn" class="profile-action-btn danger" type="button">🚫 Block</button>
         </div>
       </div>
     </div>
 
     <!-- VOICEMAIL MODAL -->
-<div id="voicemailModal" class="voicemail-modal hidden">
-  <div class="vm-header">Leave a Voicemail</div>
+    <div id="voicemailModal" class="voicemail-modal hidden" role="dialog" aria-modal="true" aria-labelledby="vmStatus">
+      <div class="vm-header">Leave a Voicemail</div>
 
-  <div class="vm-body">
-    <!-- Waveform container (matches JS: .vm-wave) -->
-    <div class="vm-wave">
-      <div class="vm-bar"></div>
-      <div class="vm-bar"></div>
-      <div class="vm-bar"></div>
-      <div class="vm-bar"></div>
-      <div class="vm-bar"></div>
+      <div class="vm-body">
+        <div class="vm-wave">
+          <div class="vm-bar"></div>
+          <div class="vm-bar"></div>
+          <div class="vm-bar"></div>
+          <div class="vm-bar"></div>
+          <div class="vm-bar"></div>
+        </div>
+
+        <div id="vmStatus" class="vm-status">Ready to record</div>
+        <div id="vmTimer" class="vm-timer">00:00</div>
+      </div>
+
+      <div class="vm-controls">
+        <button id="vmRecordBtn" type="button">🎙️ Record</button>
+        <button id="vmStopBtn" class="hidden" type="button">⏹️ Stop</button>
+        <button id="vmPlayBtn" class="hidden" type="button">▶️ Play</button>
+        <button id="vmSendBtn" class="hidden" type="button">📨 Send</button>
+        <button id="vmDeleteBtn" class="hidden" type="button">🗑️ Delete</button>
+        <button id="vmCancelBtn" type="button">❌ Cancel</button>
+      </div>
     </div>
 
-    <!-- REQUIRED: JS expects this -->
-    <div id="vmStatus" class="vm-status">Ready to record</div>
-
-    <!-- REQUIRED: JS expects this -->
-    <div id="vmTimer" class="vm-timer">00:00</div>
-  </div>
-
-  <div class="vm-controls">
-    <button id="vmRecordBtn">🎙️ Record</button>
-    <button id="vmStopBtn" class="hidden">⏹️ Stop</button>
-    <button id="vmPlayBtn" class="hidden">▶️ Play</button>
-    <button id="vmSendBtn" class="hidden">📨 Send</button>
-
-    <!-- REQUIRED: JS expects this -->
-    <button id="vmDeleteBtn" class="hidden">🗑️ Delete</button>
-
-    <button id="vmCancelBtn">❌ Cancel</button>
-  </div>
-
-<div id="unavailableToast" class="unavailable-toast hidden">
-  <div class="ut-title">User is unavailable</div>
-  <div class="ut-options">
-    <button id="utVoiceBtn">🎙️ Voice Message</button>
-    <button id="utVideoBtn">📹 Video Message</button>
-    <button id="utTextBtn">💬 Message</button>
-  </div>
-</div>
-
-  
-</div>
-
-
+    <!-- UNAVAILABLE TOAST -->
+    <div id="unavailableToast" class="unavailable-toast hidden" role="status" aria-live="polite">
+      <div class="ut-title">User is unavailable</div>
+      <div class="ut-message"></div>
+      <div class="ut-options">
+        <button id="utVoiceBtn" type="button">🎙️ Voice Message</button>
+        <button id="utVideoBtn" type="button">📹 Video Message</button>
+        <button id="utTextBtn" type="button">💬 Message</button>
+      </div>
+    </div>
 
     <!-- IMAGE VIEWER -->
     <div id="image-viewer-overlay" aria-hidden="true">
-      <button id="image-prev" class="image-nav-btn">❮</button>
-      <img id="image-viewer-img" src="" alt="Image viewer" />
-      <button id="image-next" class="image-nav-btn">❯</button>
+      <button id="image-prev" class="image-nav-btn" type="button">❮</button>
+      <img id="image-viewer-img" src="" alt="Image viewer" loading="lazy" />
+      <button id="image-next" class="image-nav-btn" type="button">❯</button>
     </div>
 
     <!-- HIDDEN MESSAGES PANEL -->
     <div id="hiddenMessagesPanel" class="hidden-panel" aria-hidden="true">
       <h3>Hidden Messages</h3>
       <div id="hiddenList"></div>
-      <button onclick="closeHiddenPanel()">Close</button>
+      <button onclick="closeHiddenPanel()" type="button">Close</button>
     </div>
 
     <!-- TOAST -->
     <div id="toast" class="toast" style="display:none;"></div>
 
     <!-- LOGOUT MODAL -->
-    <div id="logoutModal" class="modal-1 hidden">
-      <!-- Your logout modal content -->
+    <div id="logoutModal" class="modal-1 hidden" role="dialog" aria-modal="true">
+      <!-- Logout modal content injected by JS -->
     </div>
 
   </div>
 
   <!-- ============================================================
-       FOOTER (NOW CORRECTLY PLACED)
+       FOOTER
   ============================================================ -->
-  <!-- FOOTER -->
   <footer class="site-footer">
     <div class="footer-content">
       <p>&copy; 2025 DIY Connect. All rights reserved.</p>
-      <nav class="footer-nav">
+      <nav class="footer-nav" aria-label="Footer navigation">
         <a href="/about">About Us</a>
         <a href="/services">Services</a>
         <a href="/contact">Contact</a>
         <a href="/privacy">Privacy Policy</a>
       </nav>
       <div class="social-links">
-        <a href="https://facebook.com" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i> Facebook</a>
-        <a href="https://twitter.com" target="_blank" rel="noopener"><i class="fab fa-twitter"></i> Twitter</a>
-        <a href="https://instagram.com" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
+        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-facebook-f"></i> Facebook
+        </a>
+        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-twitter"></i> Twitter
+        </a>
+        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+          <i class="fab fa-instagram"></i> Instagram
+        </a>
       </div>
     </div>
   </footer>
@@ -657,9 +651,8 @@ window.currentUserAvatar = user.avatar;
   <audio id="ringback" src="ringback.mp3" preload="auto"></audio>
   <audio id="notification" src="notification.mp3" preload="auto"></audio>
 
-
-
 </body>
+
 
 
 
@@ -1413,6 +1406,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
