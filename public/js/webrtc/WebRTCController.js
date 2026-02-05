@@ -142,6 +142,31 @@ export class WebRTCController {
   async startCall(peerId, audioOnly) {
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
+startScreenShare() {
+  console.warn("[WebRTC] startScreenShare() not implemented yet");
+  this.onScreenShareStarted?.();
+}
+
+stopScreenShare() {
+  console.warn("[WebRTC] stopScreenShare() not implemented yet");
+  this.onScreenShareStopped?.();
+}
+
+toggleNoiseSuppression() {
+  console.warn("[WebRTC] toggleNoiseSuppression() not implemented yet");
+  const enabled = !this._noiseSuppressionEnabled;
+  this._noiseSuppressionEnabled = enabled;
+  this.onNoiseSuppressionChanged?.(enabled);
+  return enabled;
+}
+
+toggleRecording() {
+  console.warn("[WebRTC] toggleRecording() not implemented yet");
+  const active = !this._recordingActive;
+  this._recordingActive = active;
+  this.onRecordingChanged?.(active);
+  return active;
+}
 
   /* ---------------------------------------------------
      Outgoing Call (with optional relay-only)
@@ -997,6 +1022,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
