@@ -492,6 +492,37 @@ rtc.onVoicemailPrompt = ({ peerId, message } = {}) => {
 
   logDebug("CallUI initialized");
 }
+export function showUnavailableToast({ peerId }) {
+  const toast = document.getElementById("unavailableToast");
+  const voiceBtn = document.getElementById("utVoiceBtn");
+  const videoBtn = document.getElementById("utVideoBtn");
+  const textBtn = document.getElementById("utTextBtn");
+
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("open"), 10);
+
+  // Voice message
+  voiceBtn.onclick = () => {
+    toast.classList.remove("open");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+    openVoicemailRecorder(peerId);
+  };
+
+  // Video message (you can wire this later)
+  videoBtn.onclick = () => {
+    toast.classList.remove("open");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+    // openVideoMessageRecorder(peerId);
+  };
+
+  // Text message
+  textBtn.onclick = () => {
+    toast.classList.remove("open");
+    setTimeout(() => toast.classList.add("hidden"), 300);
+    showMessageWindow(); // your existing function
+  };
+}
+
 
 
 
