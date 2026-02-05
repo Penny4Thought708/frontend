@@ -476,10 +476,13 @@ rtc.onRecordingChanged = (active) => {
 rtc.onVoicemailPrompt = () => {
   logDebug("Voicemail prompt");
   showVoicemailPrompt();
+  window.openVoicemailRecorder(rtcState.peerId);
 };
+
 
   logDebug("CallUI initialized");
 }
+
 
 
 
