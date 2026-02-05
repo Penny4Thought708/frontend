@@ -473,15 +473,26 @@ rtc.onRecordingChanged = (active) => {
   recordCallBtn.classList.toggle("active", !!active);
 };
 
-rtc.onVoicemailPrompt = () => {
-  logDebug("Voicemail prompt");
-  showVoicemailPrompt();
-  window.openVoicemailRecorder(rtcState.peerId);
+rtc.onVoicemailPrompt = ({ peerId, message } = {}) => {
+  logDebug(`Voicemail prompt: ${message}`);
+
+  showVoicemailPrompt(message);
+
+  const toUserId =
+    peerId ||
+    window.currentReceiverId ||
+    window.user_id;
+
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(toUserId);
+  }
 };
+
 
 
   logDebug("CallUI initialized");
 }
+
 
 
 
