@@ -565,22 +565,23 @@ window.currentUserAvatar = user.avatar;
     </div>
 
     <!-- VOICEMAIL MODAL -->
-    <div id="voicemailModal" class="voicemail-modal hidden">
-      <div class="vm-card">
-        <div id="vmStatus">Ready</div>
-        <div id="vmTimer">00:00</div>
-        <div class="vm-wave">
-          <div></div><div></div><div></div><div></div><div></div>
-        </div>
-        <div id="vmControls">
-          <button id="vmRecordBtn">Record</button>
-          <button id="vmStopBtn" style="display:none;">Stop</button>
-          <button id="vmPlayBtn" style="display:none;">Play</button>
-          <button id="vmSendBtn" style="display:none;">Send</button>
-          <button id="vmDeleteBtn" style="display:none;">Delete</button>
-        </div>
-      </div>
-    </div>
+<div id="voicemailModal" class="voicemail-modal hidden">
+  <div class="vm-header">Leave a Voicemail</div>
+
+  <div class="vm-body">
+    <div id="vmWaveform" class="vm-waveform"></div>
+    <div id="vmTimer" class="vm-timer">00:00</div>
+  </div>
+
+  <div class="vm-controls">
+    <button id="vmRecordBtn">🎙️ Record</button>
+    <button id="vmStopBtn" class="hidden">⏹️ Stop</button>
+    <button id="vmPlayBtn" class="hidden">▶️ Play</button>
+    <button id="vmSendBtn" class="hidden">📨 Send</button>
+    <button id="vmCancelBtn">❌ Cancel</button>
+  </div>
+</div>
+
 
     <!-- IMAGE VIEWER -->
     <div id="image-viewer-overlay" aria-hidden="true">
@@ -1385,6 +1386,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
