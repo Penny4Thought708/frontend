@@ -183,13 +183,16 @@ body::after {
 
 /* CONTACT SEARCH */
 .header-contact-search {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  background: rgba(4, 5, 14, 0.96);
-  padding: 6px 10px;
-  border-radius: var(--ef-radius-pill);
-  border: 1px solid var(--ef-border-subtle-dark);
+display: flex;
+    gap: 6px;
+    align-items: center;
+    background: rgba(4, 5, 14, 0.96);
+    padding: 6px 10px;
+    border-radius: var(--ef-radius-pill);
+    border: 1px solid var(--ef-border-subtle-dark);
+    position: relative;
+    right: 45%;
+    width: 280px;
 }
 
 .header-contact-search input {
@@ -198,7 +201,7 @@ body::after {
   outline: none;
   color: var(--ef-text-dark-main);
   font-size: 0.9rem;
-  width: 160px;
+  width: 100%;
 }
 
 .header-contact-search button {
