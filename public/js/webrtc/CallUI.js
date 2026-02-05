@@ -47,10 +47,6 @@ export function initCallUI(rtc) {
   const aiNoiseToggleBtn  = document.getElementById("ai-noise-toggle");
   const recordCallBtn     = document.getElementById("record-call");
   const callHistoryBtn    = document.getElementById("call-history-toggle");
-const shareScreenBtn    = document.getElementById("share-screen");
-const aiNoiseToggleBtn  = document.getElementById("ai-noise-toggle");
-const recordCallBtn     = document.getElementById("record-call");
-const callHistoryBtn    = document.getElementById("call-history-toggle");
 
   rtc.attachMediaElements?.({ localVideo, remoteVideo, remoteAudio });
 
@@ -484,6 +480,7 @@ rtc.onVoicemailPrompt = () => {
 
   logDebug("CallUI initialized");
 }
+
 
 
 
