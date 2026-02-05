@@ -504,114 +504,173 @@ toggleRecording() {
     }
   }
 
+/* ---------------------------------------------------
+   Remote End
+--------------------------------------------------- */
+handleRemoteEnd() {
+  if (rtcState.answering) {
+    console.warn("[WebRTC] handleRemoteEnd: ignoring remote end during answer window");
+    return;
+  }
+  this.endCall(false);
+}
+
+/* ---------------------------------------------------
+   End Call (FULL UPDATED VERSION)
+--------------------------------------------------- */
+endCall(local = true) {
+  // Stop call audio
+  stopAudio(ringback);
+  stopAudio(ringtone);
+  stopTimer();
+
   /* ---------------------------------------------------
-     Remote End
+     STOP VOICEMAIL CUES
   --------------------------------------------------- */
-  handleRemoteEnd() {
-    if (rtcState.answering) {
-      console.warn("[WebRTC] handleRemoteEnd: ignoring remote end during answer window");
-      return;
+  try {
+    this._unreachableTone?.pause();
+    this._unreachableTone = null;
+
+    this._beepTone?.pause();
+    this._beepTone = null;
+  } catch {}
+
+  /* ---------------------------------------------------
+     CLOSE VOICEMAIL UI
+  --------------------------------------------------- */
+  try {
+    const vmModal = document.getElementById("voicemailModal");
+    if (vmModal) vmModal.classList.add("hidden");
+  } catch {}
+
+  /* ---------------------------------------------------
+     STOP VOICEMAIL RECORDER (if active)
+  --------------------------------------------------- */
+  try {
+    if (window._vmRecorderStream) {
+      window._vmRecorderStream.getTracks().forEach(t => t.stop());
+      window._vmRecorderStream = null;
     }
-    this.endCall(false);
+    if (window._vmMediaRecorder && window._vmMediaRecorder.state !== "inactive") {
+      window._vmMediaRecorder.stop();
+    }
+  } catch {}
+
+  /* ---------------------------------------------------
+     STOP SCREEN SHARE (if active)
+  --------------------------------------------------- */
+  try {
+    if (this._screenShareStream) {
+      this._screenShareStream.getTracks().forEach(t => t.stop());
+      this._screenShareStream = null;
+    }
+    this._originalVideoTrack = null;
+  } catch {}
+
+  const peerId = rtcState.peerId;
+
+  /* ---------------------------------------------------
+     CLOSE PEER CONNECTION
+  --------------------------------------------------- */
+  if (this.pc) {
+    try {
+      this.pc.onicecandidate = null;
+      this.pc.ontrack = null;
+      this.pc.oniceconnectionstatechange = null;
+      this.pc.onconnectionstatechange = null;
+      this.pc.close();
+    } catch {}
+    this.pc = null;
   }
 
-  /* End Call */
-  endCall(local = true) {
-    stopAudio(ringback);
-    stopAudio(ringtone);
-    stopTimer();
-
-    const peerId = rtcState.peerId;
-
-    if (this.pc) {
-      try {
-        this.pc.onicecandidate = null;
-        this.pc.ontrack = null;
-        this.pc.oniceconnectionstatechange = null;
-        this.pc.onconnectionstatechange = null;
-        this.pc.close();
-      } catch {}
-      this.pc = null;
-    }
-
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      this.localStream = null;
-    }
-
-    if (rtcState.localStream) {
-      rtcState.localStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      rtcState.localStream = null;
-    }
-
-    if (rtcState.remoteStream) {
-      rtcState.remoteStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      rtcState.remoteStream = null;
-    }
-
-    const localVideo = document.getElementById("localVideo");
-    const remoteVideo = document.getElementById("remoteVideo");
-    const remoteAudioEl = document.getElementById("remoteAudio");
-
-    if (localVideo) {
-      localVideo.srcObject = null;
-    }
-    if (remoteVideo) {
-      remoteVideo.srcObject = null;
-    }
-    if (remoteAudioEl) {
-      remoteAudioEl.srcObject = null;
-    }
-
-    const direction = rtcState.isCaller ? "outgoing" : "incoming";
-
-    let status = "ended";
-    if (!rtcState.inCall && !local) status = "missed";
-    if (!rtcState.inCall && local && !rtcState.isCaller) status = "rejected";
-
-    const logEntry = {
-      logId: Date.now(),
-      caller_id: rtcState.isCaller ? getMyUserId() : peerId,
-      receiver_id: rtcState.isCaller ? peerId : getMyUserId(),
-      caller_name: rtcState.isCaller ? getMyFullname() : rtcState.peerName,
-      receiver_name: rtcState.isCaller ? rtcState.peerName : getMyFullname(),
-      call_type: rtcState.audioOnly ? "voice" : "video",
-      direction,
-      status,
-      duration: rtcState.callTimerSeconds || 0,
-      timestamp: new Date().toISOString(),
-    };
-
-    addCallLogEntry(logEntry);
-
-    rtcState.inCall = false;
-    rtcState.peerId = null;
-    rtcState.incomingOffer = null;
-    rtcState.answering = false;
-
-    if (local && peerId && this.socket) {
-      this.socket.emit("webrtc:signal", {
-        type: "end",
-        to: peerId,
-        from: getMyUserId(),
-        reason: "hangup",
-      });
-    }
-
-    this.onCallEnded?.();
+  /* ---------------------------------------------------
+     STOP LOCAL STREAM
+  --------------------------------------------------- */
+  if (this.localStream) {
+    this.localStream.getTracks().forEach((t) => {
+      try { t.stop(); } catch {}
+    });
+    this.localStream = null;
   }
+
+  if (rtcState.localStream) {
+    rtcState.localStream.getTracks().forEach((t) => {
+      try { t.stop(); } catch {}
+    });
+    rtcState.localStream = null;
+  }
+
+  /* ---------------------------------------------------
+     STOP REMOTE STREAM
+  --------------------------------------------------- */
+  if (rtcState.remoteStream) {
+    rtcState.remoteStream.getTracks().forEach((t) => {
+      try { t.stop(); } catch {}
+    });
+    rtcState.remoteStream = null;
+  }
+
+  /* ---------------------------------------------------
+     CLEAR MEDIA ELEMENTS
+  --------------------------------------------------- */
+  const localVideo = document.getElementById("localVideo");
+  const remoteVideo = document.getElementById("remoteVideo");
+  const remoteAudioEl = document.getElementById("remoteAudio");
+
+  if (localVideo) localVideo.srcObject = null;
+  if (remoteVideo) remoteVideo.srcObject = null;
+  if (remoteAudioEl) remoteAudioEl.srcObject = null;
+
+  /* ---------------------------------------------------
+     LOG CALL
+  --------------------------------------------------- */
+  const direction = rtcState.isCaller ? "outgoing" : "incoming";
+
+  let status = "ended";
+  if (!rtcState.inCall && !local) status = "missed";
+  if (!rtcState.inCall && local && !rtcState.isCaller) status = "rejected";
+
+  const logEntry = {
+    logId: Date.now(),
+    caller_id: rtcState.isCaller ? getMyUserId() : peerId,
+    receiver_id: rtcState.isCaller ? peerId : getMyUserId(),
+    caller_name: rtcState.isCaller ? getMyFullname() : rtcState.peerName,
+    receiver_name: rtcState.isCaller ? rtcState.peerName : getMyFullname(),
+    call_type: rtcState.audioOnly ? "voice" : "video",
+    direction,
+    status,
+    duration: rtcState.callTimerSeconds || 0,
+    timestamp: new Date().toISOString(),
+  };
+
+  addCallLogEntry(logEntry);
+
+  /* ---------------------------------------------------
+     RESET STATE
+  --------------------------------------------------- */
+  rtcState.inCall = false;
+  rtcState.peerId = null;
+  rtcState.incomingOffer = null;
+  rtcState.answering = false;
+
+  /* ---------------------------------------------------
+     SEND END SIGNAL
+  --------------------------------------------------- */
+  if (local && peerId && this.socket) {
+    this.socket.emit("webrtc:signal", {
+      type: "end",
+      to: peerId,
+      from: getMyUserId(),
+      reason: "hangup",
+    });
+  }
+
+  /* ---------------------------------------------------
+     UI CALLBACK
+  --------------------------------------------------- */
+  this.onCallEnded?.();
+}
+
 
   /* ---------------------------------------------------
      Mute toggle
@@ -1104,6 +1163,7 @@ toggleRecording() {
     });
   }
 }
+
 
 
 
