@@ -313,9 +313,7 @@ window.currentUserAvatar = user.avatar;
     <section class="column-right">
 
       <!-- SETTINGS PANEL -->
-      <div id="settings_container" class="panel settings-shell hidden">
-        <!-- Settings content injected by JS -->
-      </div>
+      <div id="settings_container" class="panel settings-shell hidden"></div>
 
       <!-- PROFILE EDITOR PANEL -->
       <section id="contact_window" class="panel profile-panel hidden" aria-label="Profile editor">
@@ -410,89 +408,65 @@ window.currentUserAvatar = user.avatar;
       <!-- VIDEO CALL PANEL -->
       <div id="video-container" class="video-panel hidden" aria-label="Call window">
 
-        <!-- SCREEN SHARE / REMOTE VIDEO AREA -->
         <div id="remoteWrapper" class="media-wrapper remote-media-wrapper">
 
-          <!-- Remote Video -->
           <video id="remoteVideo" autoplay playsinline></video>
 
-          <!-- Remote Avatar Fallback -->
           <div class="remote-avatar" id="remoteAvatar">
             <div class="mic-level-ring"></div>
             <img id="remoteAvatarImg" src="" alt="Remote Avatar" loading="lazy" />
             <div class="avatar-ring"></div>
           </div>
 
-          <!-- Camera Off Placeholder -->
-          <div class="camera-off-placeholder">
-            Camera Off
-          </div>
+          <div class="camera-off-placeholder">Camera Off</div>
 
-          <!-- Voice Activity Glow -->
           <div class="voice-glow"></div>
 
-          <!-- Caller Overlay -->
           <div id="callerOverlay" class="call-overlay"></div>
 
-          <!-- Screen Share Indicator -->
           <div class="screen-share-indicator">Screen Sharing</div>
 
-          <!-- AI Noise Suppression -->
           <div class="ai-noise-indicator">AI Noise Suppression</div>
 
-          <!-- Network Quality -->
           <div class="network-indicator network-good">Good Connection</div>
 
-          <!-- Mic / Camera Badges -->
           <div class="badge badge-mic-muted">🎤 Muted</div>
           <div class="badge badge-camera-off">📷 Off</div>
 
         </div>
 
-        <!-- LOCAL VIDEO PREVIEW (DRAGGABLE) -->
         <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
           <video id="localVideo" autoplay playsinline muted></video>
 
-          <!-- Local Avatar Fallback -->
           <div class="local-avatar" id="localAvatar">
             <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" loading="lazy" />
           </div>
         </div>
 
-        <!-- CALL STATUS TEXT -->
         <div id="call-status" class="status"></div>
 
-        <!-- REMOTE AUDIO -->
         <audio id="remoteAudio" autoplay playsinline></audio>
 
-        <!-- CALL CONTROLS -->
         <div id="call-controls" class="call-controls">
           <div id="call-timer" class="call-timer">00:00</div>
 
-          <!-- Incoming actions -->
           <button id="decline-call" title="Decline" type="button">❌</button>
           <button id="answer-call" title="Answer" type="button">✅</button>
 
-          <!-- In-call controls -->
           <button id="mute-call" title="Mute / Unmute" type="button">🔇</button>
 
           <button id="camera-toggle" title="Toggle Camera" type="button">
             <span class="material-symbols-outlined">flip_camera_android</span>
           </button>
 
-          <!-- Screen share -->
           <button id="share-screen" title="Share Screen" type="button">🖥️</button>
 
-          <!-- AI noise suppression -->
           <button id="ai-noise-toggle" title="AI Noise Suppression" type="button">🤖</button>
 
-          <!-- Recording -->
           <button id="record-call" title="Record Call" type="button">⏺️</button>
 
-          <!-- Call history -->
           <button id="call-history-toggle" title="Call History" type="button">📜</button>
 
-          <!-- End call -->
           <button id="end-call" title="Hang Up" type="button">📞</button>
         </div>
 
@@ -511,6 +485,7 @@ window.currentUserAvatar = user.avatar;
     <div id="fullProfileModal" class="full-profile-modal hidden" role="dialog" aria-modal="true" aria-labelledby="fullProfileName">
       <button id="closeFullProfile" class="close-full-profile" type="button">✕</button>
       <div class="full-profile-content">
+
         <div class="full-profile-banner">
           <div id="fullProfileBannerWrapper" class="banner-wrapper">
             <img id="fullProfileBanner" src="" alt="Banner" loading="lazy" />
@@ -556,10 +531,12 @@ window.currentUserAvatar = user.avatar;
           <button id="profileVideoBtn" class="profile-action-btn" type="button">🎥 Video</button>
           <button id="profileBlockBtn" class="profile-action-btn danger" type="button">🚫 Block</button>
         </div>
+
       </div>
     </div>
 
     <!-- VOICEMAIL MODAL -->
+        <!-- VOICEMAIL MODAL -->
     <div id="voicemailModal" class="voicemail-modal hidden" role="dialog" aria-modal="true" aria-labelledby="vmStatus">
       <div class="vm-header">Leave a Voicemail</div>
 
@@ -1406,6 +1383,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
