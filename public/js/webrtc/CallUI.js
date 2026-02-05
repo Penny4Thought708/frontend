@@ -1,5 +1,5 @@
 // public/js/webrtc/CallUI.js
-// Premium call UI wiring: buttons, status, overlays, quality, and advanced visual states.
+// Aurora‑Prime Call UI — full modern rewrite
 
 export function initCallUI(rtc) {
   if (!rtc) {
@@ -8,7 +8,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     Core elements
+     DOM ELEMENTS
   ------------------------------------------------------- */
 
   const container        = document.getElementById("video-container");
@@ -41,43 +41,42 @@ export function initCallUI(rtc) {
   const voiceGlow        = remoteWrapper?.querySelector(".voice-glow");
   const micLevelRing     = remoteWrapper?.querySelector(".mic-level-ring");
 
-  // Optional external quality indicator element
   const qualityEl        = document.getElementById("call-quality-indicator");
   const debugToggle      = document.getElementById("call-debug-toggle");
 
-  // Attach media to controller (safe even if some are null)
   rtc.attachMediaElements?.({ localVideo, remoteVideo, remoteAudio });
 
   /* -------------------------------------------------------
-     Call timer
+     TIMER
   ------------------------------------------------------- */
 
+  let timerId = null;
   let callStart = null;
-  let timerId   = null;
 
   function startTimer() {
     callStart = Date.now();
     if (timerId) clearInterval(timerId);
+
     timerId = setInterval(() => {
       const diff = Math.floor((Date.now() - callStart) / 1000);
       const m = String(Math.floor(diff / 60)).padStart(2, "0");
       const s = String(diff % 60).padStart(2, "0");
-      if (callTimerEl) callTimerEl.textContent = `${m}:${s}`;
+      callTimerEl.textContent = `${m}:${s}`;
     }, 1000);
   }
 
   function stopTimer() {
     if (timerId) clearInterval(timerId);
     timerId = null;
-    if (callTimerEl) callTimerEl.textContent = "00:00";
+    callTimerEl.textContent = "00:00";
   }
 
   /* -------------------------------------------------------
-     Status / quality helpers
+     STATUS + QUALITY
   ------------------------------------------------------- */
 
   function setStatus(text) {
-    if (callStatus) callStatus.textContent = text || "";
+    callStatus.textContent = text || "";
   }
 
   function setQuality(level, info) {
@@ -91,51 +90,44 @@ export function initCallUI(rtc) {
       unknown:   "Unknown",
     };
     qualityEl.textContent = labels[level] || "Unknown";
-    qualityEl.dataset.level = level || "unknown";
+    qualityEl.dataset.level = level;
     qualityEl.title = info || "";
   }
 
-  setStatus("Ready");
-  setQuality("unknown", "No active call");
-
   /* -------------------------------------------------------
-     Container mode helpers (CSS class toggles)
+     CSS MODE TOGGLES
   ------------------------------------------------------- */
 
-  function setContainerClass(flag, className) {
-    if (!container) return;
-    container.classList.toggle(className, !!flag);
+  function toggleClass(flag, cls) {
+    container.classList.toggle(cls, !!flag);
   }
 
   function setVoiceOnlyMode(on) {
-    setContainerClass(on, "voice-only");
+    toggleClass(on, "voice-only");
   }
 
   function setScreenShareMode(on) {
-    setContainerClass(on, "screen-share");
+    toggleClass(on, "screen-share");
     if (screenShareInd) screenShareInd.style.display = on ? "flex" : "none";
   }
 
-  function setBlurBgMode(on) {
-    setContainerClass(on, "blur-bg");
-  }
-
   function setCameraOff(on) {
-    setContainerClass(on, "camera-off");
-    if (camOffPlaceholder) camOffPlaceholder.style.display = on ? "flex" : "none";
-    if (camOffBadge) camOffBadge.style.display = on ? "flex" : "none";
-    if (remoteVideo) remoteVideo.style.display = on ? "none" : "block";
+    toggleClass(on, "camera-off");
+    camOffPlaceholder.style.display = on ? "flex" : "none";
+    camOffBadge.style.display = on ? "flex" : "none";
+    remoteVideo.style.display = on ? "none" : "block";
   }
 
   function setAINoiseSuppression(on) {
-    setContainerClass(on, "ai-noise");
-    if (aiNoiseInd) aiNoiseInd.style.display = on ? "flex" : "none";
+    toggleClass(on, "ai-noise");
+    aiNoiseInd.style.display = on ? "flex" : "none";
   }
 
   function setNetworkQuality(level, info) {
-    setQuality(level || "unknown", info);
-    if (!networkInd) return;
+    setQuality(level, info);
+
     networkInd.classList.remove("network-good", "network-medium", "network-poor");
+
     if (level === "excellent" || level === "good") {
       networkInd.classList.add("network-good");
       networkInd.textContent = "Good Connection";
@@ -148,54 +140,51 @@ export function initCallUI(rtc) {
     } else {
       networkInd.textContent = "Unknown";
     }
-    container?.classList.add("show-network");
+
+    container.classList.add("show-network");
   }
 
   function setRemoteMuted(on) {
-    if (micMutedBadge) micMutedBadge.style.display = on ? "flex" : "none";
+    micMutedBadge.style.display = on ? "flex" : "none";
   }
 
   function setRemoteSpeaking(on) {
-    if (voiceGlow) voiceGlow.style.opacity = on ? "1" : "0";
-    if (micLevelRing) micLevelRing.style.display = on ? "block" : "none";
+    voiceGlow.style.opacity = on ? "1" : "0";
+    micLevelRing.style.display = on ? "block" : "none";
   }
 
   /* -------------------------------------------------------
-     Incoming overlay helpers
+     OVERLAYS
   ------------------------------------------------------- */
 
-  function showIncoming(fromName) {
-    if (!callerOverlay) return;
+  function showIncoming(name) {
     callerOverlay.style.display = "flex";
-    callerOverlay.textContent = fromName
-      ? `Incoming call from ${fromName}…`
+    callerOverlay.textContent = name
+      ? `Incoming call from ${name}…`
       : "Incoming call…";
   }
 
-  function showConnecting(targetName) {
-    if (!callerOverlay) return;
+  function showConnecting(name) {
     callerOverlay.style.display = "flex";
-    callerOverlay.textContent = targetName
-      ? `Connecting to ${targetName}…`
+    callerOverlay.textContent = name
+      ? `Connecting to ${name}…`
       : "Connecting…";
-    setContainerClass(true, "connecting");
+    toggleClass(true, "connecting");
   }
 
   function showVoicemailPrompt() {
-    if (!callerOverlay) return;
     callerOverlay.style.display = "flex";
     callerOverlay.textContent = "Leave a voicemail…";
   }
 
   function hideOverlay() {
-    if (!callerOverlay) return;
     callerOverlay.style.display = "none";
     callerOverlay.textContent = "";
-    setContainerClass(false, "connecting");
+    toggleClass(false, "connecting");
   }
 
   /* -------------------------------------------------------
-     Debug overlay
+     DEBUG PANEL
   ------------------------------------------------------- */
 
   const debugPanel = (() => {
@@ -224,7 +213,6 @@ export function initCallUI(rtc) {
   })();
 
   function logDebug(msg) {
-    if (!debugPanel) return;
     const time = new Date().toLocaleTimeString();
     const line = document.createElement("div");
     line.textContent = `[${time}] ${msg}`;
@@ -233,21 +221,18 @@ export function initCallUI(rtc) {
   }
 
   debugToggle?.addEventListener("click", () => {
-    if (!debugPanel) return;
     debugPanel.style.display =
       debugPanel.style.display === "none" ? "block" : "none";
   });
 
   /* -------------------------------------------------------
-     Draggable local preview
+     DRAGGABLE LOCAL PREVIEW
   ------------------------------------------------------- */
 
   if (localWrapper) {
     let dragging = false;
     let startX = 0;
     let startY = 0;
-    let offsetX = 0;
-    let offsetY = 0;
 
     const onDown = (e) => {
       dragging = true;
@@ -257,8 +242,6 @@ export function initCallUI(rtc) {
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       startX = clientX - rect.left;
       startY = clientY - rect.top;
-      offsetX = rect.left;
-      offsetY = rect.top;
       e.preventDefault();
     };
 
@@ -275,7 +258,6 @@ export function initCallUI(rtc) {
     };
 
     const onUp = () => {
-      if (!dragging) return;
       dragging = false;
       localWrapper.classList.remove("dragging");
     };
@@ -289,13 +271,12 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     Auto-hide controls
+     AUTO-HIDE CONTROLS
   ------------------------------------------------------- */
 
   let controlsTimeout = null;
 
   function scheduleHideControls() {
-    if (!container) return;
     if (!container.classList.contains("auto-hide")) return;
     container.classList.add("active-controls");
     if (controlsTimeout) clearTimeout(controlsTimeout);
@@ -304,11 +285,11 @@ export function initCallUI(rtc) {
     }, 2500);
   }
 
-  container?.addEventListener("mousemove", scheduleHideControls);
-  container?.addEventListener("touchstart", scheduleHideControls);
+  container.addEventListener("mousemove", scheduleHideControls);
+  container.addEventListener("touchstart", scheduleHideControls);
 
   /* -------------------------------------------------------
-     Button bindings
+     BUTTON BINDINGS
   ------------------------------------------------------- */
 
   voiceBtn?.addEventListener("click", () => {
@@ -348,59 +329,49 @@ export function initCallUI(rtc) {
   });
 
   muteBtn?.addEventListener("click", () => {
-    if (typeof rtc.toggleMute !== "function") {
-      logDebug("toggleMute() not implemented on rtc");
-      return;
-    }
-    const muted = rtc.toggleMute();
+    const muted = rtc.toggleMute?.();
     muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
     muteBtn.dataset.muted = String(muted);
     logDebug(`Mute toggled: ${muted}`);
   });
 
   cameraToggle?.addEventListener("click", () => {
-    if (typeof rtc.switchCamera === "function") {
-      rtc.switchCamera();
-      logDebug("Camera toggle clicked");
-    } else {
-      logDebug("switchCamera() not implemented on rtc");
-    }
+    rtc.switchCamera?.();
+    logDebug("Camera toggle clicked");
   });
 
   /* -------------------------------------------------------
-     Hook into rtc events (optional, if provided)
+     RTC EVENT WIRING
   ------------------------------------------------------- */
 
-  // Incoming call
-  rtc.onIncomingCall?.(({ fromName, video, voiceOnly } = {}) => {
-    logDebug(`Incoming call from ${fromName || "Unknown"}`);
+  rtc.onIncomingCall = ({ fromName, audioOnly }) => {
+    logDebug(`Incoming call from ${fromName}`);
     setStatus("Incoming call…");
     showIncoming(fromName);
-    setVoiceOnlyMode(!!voiceOnly && !video);
+    setVoiceOnlyMode(audioOnly);
     setScreenShareMode(false);
-  });
+    container.classList.remove("hidden");
+  };
 
-  // Outgoing call
-  rtc.onOutgoingCall?.(({ targetName, video, voiceOnly } = {}) => {
-    logDebug(`Outgoing call to ${targetName || "Unknown"}`);
+  rtc.onOutgoingCall = ({ targetName, video, voiceOnly }) => {
+    logDebug(`Outgoing call to ${targetName}`);
     setStatus("Calling…");
     showConnecting(targetName);
-    setVoiceOnlyMode(!!voiceOnly && !video);
+    setVoiceOnlyMode(voiceOnly);
     setScreenShareMode(false);
-  });
+    container.classList.remove("hidden");
+  };
 
-  // Call connected
-  rtc.onCallConnected?.(() => {
+  rtc.onCallConnected = () => {
     logDebug("Call connected");
     hideOverlay();
     setStatus("In call");
     startTimer();
-    if (container) container.classList.remove("hidden");
-  });
+    container.classList.remove("hidden");
+  };
 
-  // Call ended
-  rtc.onCallEnded?.(() => {
-    logDebug("Call ended (event)");
+  rtc.onCallEnded = () => {
+    logDebug("Call ended");
     hideOverlay();
     setStatus("Call ended");
     stopTimer();
@@ -409,75 +380,68 @@ export function initCallUI(rtc) {
     setScreenShareMode(false);
     setCameraOff(false);
     setAINoiseSuppression(false);
-    if (container) container.classList.add("hidden");
-  });
+    container.classList.add("hidden");
+  };
 
-  // Call failed
-  rtc.onCallFailed?.((reason) => {
-    logDebug(`Call failed: ${reason || "Unknown"}`);
+  rtc.onCallFailed = (reason) => {
+    logDebug(`Call failed: ${reason}`);
     hideOverlay();
-    setStatus(`Call failed: ${reason || "Unknown"}`);
+    setStatus(`Call failed: ${reason}`);
     stopTimer();
-    if (container) container.classList.add("hidden");
-  });
+    container.classList.add("hidden");
+  };
 
-  // Remote mute/unmute
-  rtc.onRemoteMuted?.(() => {
+  rtc.onRemoteMuted = () => {
     logDebug("Remote muted");
     setRemoteMuted(true);
-  });
+  };
 
-  rtc.onRemoteUnmuted?.(() => {
+  rtc.onRemoteUnmuted = () => {
     logDebug("Remote unmuted");
     setRemoteMuted(false);
-  });
+  };
 
-  // Remote camera off/on
-  rtc.onRemoteCameraOff?.(() => {
+  rtc.onRemoteCameraOff = () => {
     logDebug("Remote camera off");
     setCameraOff(true);
-  });
+  };
 
-  rtc.onRemoteCameraOn?.(() => {
+  rtc.onRemoteCameraOn = () => {
     logDebug("Remote camera on");
     setCameraOff(false);
-  });
+  };
 
-  // Remote speaking
-  rtc.onRemoteSpeaking?.((active) => {
-    setRemoteSpeaking(!!active);
-  });
+  rtc.onRemoteSpeaking = (active) => {
+    setRemoteSpeaking(active);
+  };
 
-  // Network quality
-  rtc.onNetworkQuality?.((level, info) => {
-    logDebug(`Network quality: ${level} (${info || ""})`);
+  rtc.onNetworkQuality = (level, info) => {
+    logDebug(`Network quality: ${level} (${info})`);
     setNetworkQuality(level, info);
-  });
+  };
 
-  // Screen share
-  rtc.onScreenShareStarted?.(() => {
+  rtc.onScreenShareStarted = () => {
     logDebug("Screen share started");
     setScreenShareMode(true);
-  });
+  };
 
-  rtc.onScreenShareStopped?.(() => {
+  rtc.onScreenShareStopped = () => {
     logDebug("Screen share stopped");
     setScreenShareMode(false);
-  });
+  };
 
-  // AI noise suppression
-  rtc.onNoiseSuppressionChanged?.((enabled) => {
+  rtc.onNoiseSuppressionChanged = (enabled) => {
     logDebug(`AI noise suppression: ${enabled}`);
-    setAINoiseSuppression(!!enabled);
-  });
+    setAINoiseSuppression(enabled);
+  };
 
-  // Voicemail prompt (if you support it)
-  rtc.onVoicemailPrompt?.(() => {
+  rtc.onVoicemailPrompt = () => {
     logDebug("Voicemail prompt");
     showVoicemailPrompt();
-  });
+  };
 
   logDebug("CallUI initialized");
 }
+
 
 
