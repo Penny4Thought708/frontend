@@ -107,29 +107,40 @@ window.currentUserAvatar = user.avatar;
   <!-- ============================================================
        HEADER
   ============================================================ -->
-  <header class="site-header app-header">
-    <div class="brand-logo">Scrubber's</div>
+<header class="site-header app-header">
 
-    <nav class="nav-links" aria-label="Main navigation">
-      <a href="#">Home</a>
-      <a href="services.html">Services</a>
-      <a href="project.html">Projects</a>
-      <a href="#">Contact</a>
-    </nav>
-    <hr>
-  <aside class="contacts-sidebar" aria-label="Contact lookup">
-      <div class="contact-lookup">
-        <input id="lookup-input" placeholder="Search contacts..." autocomplete="off" />
-        <button id="lookup-btn" type="button">🔍</button>
-      </div>
-      <ul id="contacts-lookup"></ul>
-    </aside>
-    <hr>
+  <!-- LEFT: BRAND -->
+  <div class="header-left">
+    <div class="brand-logo">Scrubber's</div>
+  </div>
+
+  <!-- CENTER: NAVIGATION -->
+  <nav class="nav-links" aria-label="Main navigation">
+    <a href="#">Home</a>
+    <a href="services.html">Services</a>
+    <a href="project.html">Projects</a>
+    <a href="#">Contact</a>
+  </nav>
+
+  <!-- RIGHT: CONTACT SEARCH + USER INFO -->
+  <div class="header-right">
+
+    <!-- CONTACT SEARCH (INLINE, NOT SIDEBAR) -->
+    <div class="header-contact-search">
+      <input id="lookup-input" placeholder="Search contacts..." autocomplete="off" />
+      <button id="lookup-btn" type="button">🔍</button>
+    </div>
+
+    <!-- USER INFO -->
     <div class="auth-section">
       <h3 id="welcomeName">Welcome!</h3>
       <p>You are now logged in to your Scrubbers Network.</p>
     </div>
-  </header>
+
+  </div>
+
+</header>
+
 
   <!-- ============================================================
        MAIN APP GRID (ADAPTIVE OS LAYOUT)
@@ -158,16 +169,6 @@ window.currentUserAvatar = user.avatar;
       <button id="btn_help" class="rail-btn" data-tip="Help" type="button">❓</button>
     </aside>
 
-    <!-- ============================================================
-         CONTACT LOOKUP SIDEBAR
-    ============================================================ -->
-    <aside class="contacts-sidebar" aria-label="Contact lookup">
-      <div class="contact-lookup">
-        <input id="lookup-input" placeholder="Search contacts..." autocomplete="off" />
-        <button id="lookup-btn" type="button">🔍</button>
-      </div>
-      <ul id="contacts-lookup"></ul>
-    </aside>
 
     <!-- ============================================================
          LEFT COLUMN — CONWRAP + SEARCH
@@ -1290,6 +1291,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
