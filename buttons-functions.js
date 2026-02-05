@@ -4,6 +4,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   initUI();
+  FloatingWindows.init();
   Settings.init();
 });
 
@@ -17,9 +18,12 @@ document.addEventListener("mousemove", (e) => {
   if (bg) bg.style.transform = `translate(${x}px, ${y}px)`;
 });
 
+/* ============================================================
+   MAIN UI CONTROLLER
+============================================================ */
 function initUI() {
   /* -----------------------------------------------------------
-     CORE ELEMENTS (UPDATED TO MATCH YOUR HTML)
+     CORE ELEMENTS (MATCHED TO YOUR HTML)
   ----------------------------------------------------------- */
   const messaging = document.getElementById("messaging_box");
   const miniChat = document.getElementById("miniChatBubble");
@@ -27,17 +31,16 @@ function initUI() {
   const conwrap = document.getElementById("conwrap");
   const search = document.getElementById("search_panel");
 
-  const video = document.getElementById("videoCallWindow");   // FIXED
-  const settings = document.getElementById("settingsWindow");  // FIXED
+  const video = document.getElementById("videoCallWindow");
+  const settings = document.getElementById("settingsWindow");
   const fullProfile = document.getElementById("fullProfileModal");
-
   const voicemail = document.getElementById("voicemailModal");
 
   const toggleBtn = document.getElementById("toggleBtn");
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
 
   /* -----------------------------------------------------------
-     PANEL STATE MANAGEMENT — FINAL
+     PANEL STATE MANAGEMENT
   ----------------------------------------------------------- */
   const UIX = {
     hideAllPanelsExceptMessaging() {
@@ -67,6 +70,7 @@ function initUI() {
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
       panel.classList.remove("hidden");
+      FloatingWindows.focus(panel);
       document.body.classList.add("panel-open");
     },
 
@@ -89,7 +93,7 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     LEFT RAIL BUTTONS — FINAL LOGIC
+     LEFT RAIL BUTTONS
   ----------------------------------------------------------- */
   railButtons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -125,7 +129,7 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     VIDEO CALL OVERRIDE
+     VIDEO CALL
   ----------------------------------------------------------- */
   document.getElementById("videoBtn")?.addEventListener("click", () => {
     UIX.showFloating(video);
@@ -162,14 +166,61 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     DEFAULT STATE — SHOW MESSAGING ON LOAD
+     DEFAULT STATE
   ----------------------------------------------------------- */
   UIX.showMessaging();
 }
 
-/* -----------------------------------------------------------
+/* ============================================================
+   FLOATING WINDOW ENGINE — DRAGGING + Z‑INDEX + FOCUS
+============================================================ */
+const FloatingWindows = {
+  z: 50,
+
+  init() {
+    const windows = document.querySelectorAll("[data-floating]");
+    windows.forEach(win => {
+      this.makeDraggable(win);
+      win.addEventListener("mousedown", () => this.focus(win));
+    });
+  },
+
+  focus(win) {
+    this.z++;
+    win.style.zIndex = this.z;
+    win.classList.add("fw-active");
+  },
+
+  makeDraggable(win) {
+    let isDown = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    win.addEventListener("mousedown", (e) => {
+      if (!e.target.closest(".floating-body")) return;
+      isDown = true;
+      this.focus(win);
+      offsetX = e.clientX - win.offsetLeft;
+      offsetY = e.clientY - win.offsetTop;
+      win.style.transition = "none";
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDown = false;
+      win.style.transition = "";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+      win.style.left = `${e.clientX - offsetX}px`;
+      win.style.top = `${e.clientY - offsetY}px`;
+    });
+  }
+};
+
+/* ============================================================
    TOAST UTILITY
------------------------------------------------------------ */
+============================================================ */
 function showToast(msg) {
   const toast = document.createElement("div");
   toast.className = "toast";
@@ -378,6 +429,8 @@ const Settings = {
     location.reload();
   }
 };
+
+
 
 
 
