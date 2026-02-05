@@ -19,18 +19,19 @@ document.addEventListener("mousemove", (e) => {
 
 function initUI() {
   /* -----------------------------------------------------------
-     CORE ELEMENTS
+     CORE ELEMENTS (UPDATED TO MATCH YOUR HTML)
   ----------------------------------------------------------- */
   const messaging = document.getElementById("messaging_box");
   const miniChat = document.getElementById("miniChatBubble");
 
-  const conwrap = document.getElementById("conwrap"); 
-  const video = document.getElementById("video-container");
+  const conwrap = document.getElementById("conwrap");
   const search = document.getElementById("search_panel");
-  const settings = document.getElementById("settings_container");
-  const profile = document.getElementById("contact_window");
-  const voicemail = document.getElementById("voicemailModal");
+
+  const video = document.getElementById("videoCallWindow");   // FIXED
+  const settings = document.getElementById("settingsWindow");  // FIXED
   const fullProfile = document.getElementById("fullProfileModal");
+
+  const voicemail = document.getElementById("voicemailModal");
 
   const toggleBtn = document.getElementById("toggleBtn");
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
@@ -40,8 +41,14 @@ function initUI() {
   ----------------------------------------------------------- */
   const UIX = {
     hideAllPanelsExceptMessaging() {
-      [conwrap, video, search, settings, profile, voicemail, fullProfile]
-        .forEach(p => p?.classList.add("hidden"));
+      [
+        conwrap,
+        search,
+        video,
+        settings,
+        fullProfile,
+        voicemail
+      ].forEach(p => p?.classList.add("hidden"));
     },
 
     showMessaging() {
@@ -61,15 +68,6 @@ function initUI() {
       this.collapseMessaging();
       panel.classList.remove("hidden");
       document.body.classList.add("panel-open");
-
-      /* ⭐ SEARCH PANEL SPECIAL BEHAVIOR */
-      if (panel === search) {
-        const left = document.querySelector(".search_");
-        const map = document.querySelector(".map-container");
-
-        left?.classList.add("active");      // slide in
-        map?.classList.remove("visible");   // hide map until results
-      }
     },
 
     showLeftPanel() {
@@ -113,10 +111,6 @@ function initUI() {
 
         case "btn_settings":
           UIX.showFloating(settings);
-          break;
-
-        case "voicemail_Btn":
-          UIX.showFloating(voicemail);
           break;
 
         case "btn_notifications":
@@ -192,7 +186,7 @@ function showToast(msg) {
 }
 
 /* ============================================================
-   SETTINGS CONTROLLER (unchanged)
+   SETTINGS CONTROLLER (UNCHANGED)
 ============================================================ */
 
 const Settings = {
@@ -384,6 +378,8 @@ const Settings = {
     location.reload();
   }
 };
+
+
 
 
 
