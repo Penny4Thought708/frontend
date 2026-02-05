@@ -284,19 +284,27 @@ body::before {
 }
 
 .contacts-sidebar {
-  width: 260px;
-  padding: var(--space-4);
-  border-right: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  overflow-y: auto;
+     width: 460px;
+    height: fit-content;
+    padding: var(--space-4);
+    /* border-right: 1px solid var(--border-subtle); */
+    /* background: var(--bg-subtle); */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    overflow: hidden;
+    position: absolute;
+    margin-left: 40%;
+    z-index: 10;
 }
 
 .contact-lookup {
-  display: flex;
-  gap: var(--space-2);
+    display: flex;
+    position: absolute;
+    /* left: 37%; */
+    /* top: 90px; */
+    width: 420px;
+    gap: var(--space-2);
 }
 
 #lookup-input {
@@ -310,14 +318,18 @@ body::before {
 }
 
 #lookup-btn {
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  color: var(--accent-strong);
-  cursor: pointer;
-  font-size: var(--font-sm);
-  transition: background var(--motion-fast);
+padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent-strong);
+    cursor: pointer;
+    font-size: var(--font-sm);
+    transition: background var(--motion-fast);
+    position: relative;
+    left: -60px;
+    top: 5px;
+    height: 30px;
 }
 
 #lookup-btn:hover {
@@ -325,23 +337,29 @@ body::before {
 }
 
 #contacts-lookup {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+      list-style: none;
+    margin-top: 15%;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    width: 380px;
+    /* background-color: black; */
+    gap: var(--space-2);
 }
 
 #contacts-lookup li {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid transparent;
-  cursor: pointer;
-  font-size: var(--font-sm);
-  color: var(--text-secondary);
-  transition: background var(--motion-fast), border-color var(--motion-fast);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    transition: background var(--motion-fast), border-color var(--motion-fast);
+    width: 100%;
+    height: fit-content;
+   z-index:10;
 }
 
 #contacts-lookup li:hover {
