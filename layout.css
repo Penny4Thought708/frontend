@@ -1105,7 +1105,9 @@ display: flex;
    EMOJI PICKER + GIF PICKER
 ============================================================ */
 
+/* Hidden by default */
 emoji-picker#emojiPicker {
+  display: none;
   margin-top: 4px;
   width: 100%;
   border-radius: 16px;
@@ -1115,13 +1117,17 @@ emoji-picker#emojiPicker {
     0 18px 40px rgba(0, 0, 0, 0.7),
     0 0 30px rgba(94, 242, 255, 0.3);
 }
-emoji-picker#emojiPicker {
-  display: none;
+
+/* Your JS uses .hidden — so we honor that */
+emoji-picker#emojiPicker.hidden {
+  display: none !important;
 }
 
-emoji-picker#emojiPicker.visible {
+/* When JS removes .hidden, it becomes visible */
+emoji-picker#emojiPicker:not(.hidden) {
   display: block;
 }
+
 
 .gif-picker {
   margin-top: 4px;
