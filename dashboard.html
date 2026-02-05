@@ -566,7 +566,19 @@ window.currentUserAvatar = user.avatar;
   <div class="vm-header">Leave a Voicemail</div>
 
   <div class="vm-body">
-    <div id="vmWaveform" class="vm-waveform"></div>
+    <!-- Waveform container (matches JS: .vm-wave) -->
+    <div class="vm-wave">
+      <div class="vm-bar"></div>
+      <div class="vm-bar"></div>
+      <div class="vm-bar"></div>
+      <div class="vm-bar"></div>
+      <div class="vm-bar"></div>
+    </div>
+
+    <!-- REQUIRED: JS expects this -->
+    <div id="vmStatus" class="vm-status">Ready to record</div>
+
+    <!-- REQUIRED: JS expects this -->
     <div id="vmTimer" class="vm-timer">00:00</div>
   </div>
 
@@ -575,9 +587,14 @@ window.currentUserAvatar = user.avatar;
     <button id="vmStopBtn" class="hidden">⏹️ Stop</button>
     <button id="vmPlayBtn" class="hidden">▶️ Play</button>
     <button id="vmSendBtn" class="hidden">📨 Send</button>
+
+    <!-- REQUIRED: JS expects this -->
+    <button id="vmDeleteBtn" class="hidden">🗑️ Delete</button>
+
     <button id="vmCancelBtn">❌ Cancel</button>
   </div>
 </div>
+
 
 
     <!-- IMAGE VIEWER -->
@@ -1385,6 +1402,7 @@ function setTheme(themeName) {
 
 </script>
 </html>
+
 
 
 
