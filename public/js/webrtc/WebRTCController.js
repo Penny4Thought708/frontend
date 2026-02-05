@@ -96,6 +96,8 @@ export class WebRTCController {
     this.onVoicemailPrompt = null;
 
     this._bindSocketEvents();
+    this._screenShareStream = null;
+    this._originalVideoTrack = null;
 
     // Network change → ICE restart on current PC
     window.addEventListener("online", () => {
@@ -117,56 +119,136 @@ export class WebRTCController {
     this.remoteAudio = remoteAudio;
   }
 
-  /* ---------------------------------------------------
-     Entry points: voice / video
-  --------------------------------------------------- */
-  startVoiceCall() {
-    const peerId = getReceiver();
-    if (!peerId) {
-      console.warn("[WebRTC] startVoiceCall: no receiver selected");
-      return;
-    }
-    this._startCallInternal(peerId, true, { relayOnly: false });
-  }
+ /* ---------------------------------------------------
+   Entry points: voice / video / screen share / extras
+--------------------------------------------------- */
 
-  startVideoCall() {
-    const peerId = getReceiver();
-    if (!peerId) {
-      console.warn("[WebRTC] startVideoCall: no receiver selected");
-      return;
-    }
-    this._startCallInternal(peerId, false, { relayOnly: false });
+startVoiceCall() {
+  const peerId = getReceiver();
+  if (!peerId) {
+    console.warn("[WebRTC] startVoiceCall: no receiver selected");
+    return;
   }
-
-  // Legacy API
-  async startCall(peerId, audioOnly) {
-    return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
-  }
-startScreenShare() {
-  console.warn("[WebRTC] startScreenShare() not implemented yet");
-  this.onScreenShareStarted?.();
+  this._startCallInternal(peerId, true, { relayOnly: false });
 }
 
-stopScreenShare() {
-  console.warn("[WebRTC] stopScreenShare() not implemented yet");
+startVideoCall() {
+  const peerId = getReceiver();
+  if (!peerId) {
+    console.warn("[WebRTC] startVideoCall: no receiver selected");
+    return;
+  }
+  this._startCallInternal(peerId, false, { relayOnly: false });
+}
+
+// Legacy API
+async startCall(peerId, audioOnly) {
+  return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
+}
+
+/* ---------------------------------------------------
+   REAL SCREEN SHARE IMPLEMENTATION
+--------------------------------------------------- */
+
+async startScreenShare() {
+  if (!this.pc) {
+    console.warn("[WebRTC] Cannot start screen share: no PeerConnection");
+    return;
+  }
+
+  try {
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false
+    });
+
+    const screenTrack = displayStream.getVideoTracks()[0];
+    if (!screenTrack) {
+      console.warn("[WebRTC] No screen track found");
+      return;
+    }
+
+    // Save original camera track so we can restore it later
+    const camTrack = (this.localStream?.getVideoTracks() || [])[0];
+    this._originalVideoTrack = camTrack || null;
+
+    // Replace outgoing track
+    const sender = this.pc.getSenders().find(s => s.track?.kind === "video");
+    if (sender) {
+      await sender.replaceTrack(screenTrack);
+    }
+
+    // Update local preview
+    if (this.localVideo) {
+      this.localVideo.srcObject = displayStream;
+      this.localVideo.play().catch(() => {});
+    }
+
+    this._screenShareStream = displayStream;
+
+    // When user clicks "Stop Sharing" in browser UI
+    screenTrack.onended = () => {
+      this.stopScreenShare();
+    };
+
+    this.onScreenShareStarted?.();
+
+  } catch (err) {
+    console.error("[WebRTC] Screen share failed:", err);
+  }
+}
+
+async stopScreenShare() {
+  if (!this.pc) return;
+
+  // Stop screen stream
+  if (this._screenShareStream) {
+    this._screenShareStream.getTracks().forEach(t => t.stop());
+    this._screenShareStream = null;
+  }
+
+  // Restore original camera track
+  const camTrack = this._originalVideoTrack;
+  if (camTrack) {
+    const sender = this.pc.getSenders().find(s => s.track?.kind === "video");
+    if (sender) {
+      await sender.replaceTrack(camTrack);
+    }
+
+    // Restore local preview
+    if (this.localVideo && this.localStream) {
+      this.localVideo.srcObject = this.localStream;
+      this.localVideo.play().catch(() => {});
+    }
+  }
+
+  this._originalVideoTrack = null;
+
   this.onScreenShareStopped?.();
 }
 
+/* ---------------------------------------------------
+   Noise suppression (stub for now)
+--------------------------------------------------- */
+
 toggleNoiseSuppression() {
-  console.warn("[WebRTC] toggleNoiseSuppression() not implemented yet");
   const enabled = !this._noiseSuppressionEnabled;
   this._noiseSuppressionEnabled = enabled;
   this.onNoiseSuppressionChanged?.(enabled);
   return enabled;
 }
 
+/* ---------------------------------------------------
+   Recording (stub for now)
+--------------------------------------------------- */
+
 toggleRecording() {
-  console.warn("[WebRTC] toggleRecording() not implemented yet");
   const active = !this._recordingActive;
   this._recordingActive = active;
   this.onRecordingChanged?.(active);
   return active;
 }
+
 
   /* ---------------------------------------------------
      Outgoing Call (with optional relay-only)
@@ -1022,6 +1104,7 @@ toggleRecording() {
     });
   }
 }
+
 
 
 
