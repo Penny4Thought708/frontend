@@ -2,8 +2,6 @@
 // Aurora‑Prime Call UI — full modern rewrite
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
-import { showMessageWindow } from "../messaging.js";
-
 export function initCallUI(rtc) {
   if (!rtc) {
     console.warn("[CallUI] No RTC controller provided");
@@ -515,6 +513,7 @@ export function showUnavailableToast({ peerId }) {
     showMessageWindow();
   };
 }
+
 
 
 
