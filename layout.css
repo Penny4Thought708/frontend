@@ -130,40 +130,95 @@ body::after {
 }
 
 /* ============================================================
-   HEADER
+   PREMIUM HEADER LAYOUT
 ============================================================ */
+
 .site-header.app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: 14px 22px;
+
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
     rgba(6, 8, 20, 0.96);
+
   border-bottom: 1px solid var(--ef-border-subtle-dark);
   backdrop-filter: blur(18px);
+  position: relative;
+  z-index: 50;
 }
 
-.brand-logo {
+/* LEFT */
+.header-left .brand-logo {
+  font-size: 1.4rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  color: var(--ef-text-dark-main);
 }
 
+/* CENTER NAV */
 .nav-links {
   display: flex;
-  gap: 14px;
+  gap: 22px;
 }
 
 .nav-links a {
   color: var(--ef-text-dark-soft);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  transition: color 180ms ease;
 }
 
 .nav-links a:hover {
   color: var(--ef-res-low);
 }
 
+/* RIGHT SIDE */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* CONTACT SEARCH */
+.header-contact-search {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: rgba(4, 5, 14, 0.96);
+  padding: 6px 10px;
+  border-radius: var(--ef-radius-pill);
+  border: 1px solid var(--ef-border-subtle-dark);
+}
+
+.header-contact-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ef-text-dark-main);
+  font-size: 0.9rem;
+  width: 160px;
+}
+
+.header-contact-search button {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ef-radius-pill);
+  border: 1px solid transparent;
+  background:
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), rgba(6, 8, 24, 0.96));
+  color: var(--ef-text-dark-soft);
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 180ms ease;
+}
+
+.header-contact-search button:hover {
+  transform: translateY(-2px);
+  border-color: var(--ef-res-low);
+}
+
+/* USER INFO */
 .auth-section {
   text-align: right;
 }
@@ -171,10 +226,11 @@ body::after {
 .auth-section h3 {
   margin: 0;
   font-size: 0.95rem;
+  color: var(--ef-text-dark-main);
 }
 
 .auth-section p {
-  margin: 2px 0 0;
+  margin: 0;
   font-size: 0.8rem;
   color: var(--ef-text-dark-muted);
 }
