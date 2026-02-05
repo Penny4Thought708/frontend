@@ -2,7 +2,8 @@
 // Voicemail Recorder UI + Upload (Updated for new call flow)
 // -------------------------------------------------------
 
-window.openVoicemailRecorder = function (toUserId) {
+export function openVoicemailRecorder(toUserId) {
+
   const modal = document.getElementById("voicemailModal");
   const recordBtn = document.getElementById("vmRecordBtn");
   const stopBtn = document.getElementById("vmStopBtn");
@@ -22,6 +23,8 @@ window.openVoicemailRecorder = function (toUserId) {
   let seconds = 0;
 
   // Reset UI
+  modal.classList.remove("hidden");
+
   modal.style.display = "flex";
   modal.classList.add("open");
 
@@ -169,5 +172,6 @@ function closeVoicemailModal() {
     modal.style.display = "none";
   }, 450);
 }
+
 
 
