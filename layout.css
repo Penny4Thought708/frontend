@@ -1,5 +1,5 @@
 /* ============================================================
-   ROOT VARIABLES — COLORS, RADII, EFFECTS
+   ROOT VARIABLES — BASE THEME
 ============================================================ */
 :root {
   --bg-main: #05060a;
@@ -26,7 +26,7 @@
 }
 
 /* ============================================================
-   GLOBAL RESET
+   GLOBAL RESET + BODY
 ============================================================ */
 *,
 *::before,
@@ -43,6 +43,61 @@ body.dark-mode {
   background: radial-gradient(circle at top left, #111322 0, #05060a 55%, #020308 100%);
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+/* ============================================================
+   AURORA + LATTICE BACKGROUND
+============================================================ */
+body.dark-mode::before,
+body.dark-mode::after {
+  content: "";
+  position: fixed;
+  inset: -40%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Aurora sheets */
+body.dark-mode::before {
+  background:
+    radial-gradient(circle at 10% 0, rgba(94, 242, 255, 0.25), transparent 55%),
+    radial-gradient(circle at 90% 100%, rgba(255, 123, 255, 0.25), transparent 55%);
+  opacity: 0.22;
+  animation: auroraDrift 38s ease-in-out infinite alternate;
+}
+
+/* Lattice mesh */
+body.dark-mode::after {
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.18;
+  animation: meshPulse 12s ease-in-out infinite;
+}
+
+@keyframes auroraDrift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: translate3d(-40px, -60px, 0) scale(1.05);
+    opacity: 0.32;
+  }
+  100% {
+    transform: translate3d(20px, 40px, 0) scale(1.02);
+    opacity: 0.26;
+  }
+}
+
+@keyframes meshPulse {
+  0%, 100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(40deg) brightness(1.25);
+  }
 }
 
 /* ============================================================
@@ -96,7 +151,7 @@ body.dark-mode {
 }
 
 /* ============================================================
-   APP SHELL — 4 ITEMS, 3 COLUMNS
+   APP SHELL — ADAPTIVE OS LAYOUT
 ============================================================ */
 .app-shell {
   display: grid;
@@ -108,7 +163,7 @@ body.dark-mode {
 }
 
 /* ============================================================
-   LEFT RAIL
+   LEFT RAIL — PERSISTENT
 ============================================================ */
 .app-rail {
   grid-column: 1;
@@ -167,6 +222,13 @@ body.dark-mode {
 
 .rail-btn:active {
   transform: scale(0.92);
+}
+
+.rail-btn.active {
+  border-color: var(--accent-2);
+  box-shadow:
+    0 0 16px rgba(255, 123, 255, 0.5),
+    0 0 32px rgba(94, 242, 255, 0.35);
 }
 
 .logoutBtn {
@@ -229,7 +291,7 @@ body.dark-mode {
 }
 
 /* ============================================================
-   LEFT COLUMN — CONTACTS + SEARCH
+   LEFT COLUMN — CONWRAP + SEARCH
 ============================================================ */
 .column-left {
   grid-column: 2;
@@ -252,7 +314,7 @@ body.dark-mode {
   display: none !important;
 }
 
-/* Contacts panel */
+/* Conwrap */
 .contacts-main {
   display: flex;
   flex-direction: column;
@@ -385,7 +447,7 @@ body.dark-mode {
 }
 
 /* ============================================================
-   CENTER COLUMN — MESSAGING
+   CENTER COLUMN — MESSAGING‑FIRST
 ============================================================ */
 .column-center {
   grid-column: 3;
@@ -395,6 +457,7 @@ body.dark-mode {
   flex-direction: column;
 }
 
+/* Parallax workspace sheet */
 .workspace-bg {
   position: absolute;
   inset: 0;
@@ -402,6 +465,7 @@ body.dark-mode {
   pointer-events: none;
 }
 
+/* Messaging panel */
 .messaging-panel {
   display: flex;
   flex-direction: column;
@@ -411,6 +475,7 @@ body.dark-mode {
   z-index: 1;
 }
 
+/* Message header */
 .msg-header {
   display: flex;
   justify-content: space-between;
@@ -452,6 +517,7 @@ body.dark-mode {
   transform: scale(0.92);
 }
 
+/* Message window */
 .message-window {
   flex: 1;
   overflow-y: auto;
@@ -696,7 +762,7 @@ body.dark-mode {
 }
 
 /* ============================================================
-   FLOATING WINDOWS (GLOBAL WINDOW MANAGER)
+   FLOATING WINDOW ENGINE — NEON GLASS
 ============================================================ */
 #windowManager {
   position: relative;
@@ -722,10 +788,23 @@ body.dark-mode {
   flex-direction: column;
   overflow: hidden;
   z-index: 40;
+  opacity: 0;
+  transform-origin: center;
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
 }
 
 .floating-window:not(.hidden) {
   display: flex;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.floating-window.fw-active {
+  box-shadow:
+    0 0 30px rgba(255, 123, 255, 0.4),
+    0 0 50px rgba(94, 242, 255, 0.35);
 }
 
 .floating-body {
@@ -786,7 +865,7 @@ body.dark-mode {
 }
 
 .call-timer {
-  font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.9rem;
   color: var(--accent-3);
   margin-right: 6px;
@@ -991,7 +1070,7 @@ body.dark-mode {
 }
 
 .vm-timer {
-  font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.9rem;
   color: var(--accent-3);
 }
@@ -1012,6 +1091,7 @@ body.dark-mode {
   cursor: pointer;
 }
 
+/* Unavailable toast */
 .unavailable-toast {
   position: fixed;
   left: 50%;
@@ -1142,58 +1222,6 @@ body.dark-mode {
 }
 
 /* ============================================================
-   AURORA BACKGROUND + MESH GRID
-============================================================ */
-body.dark-mode::before,
-body.dark-mode::after {
-  content: "";
-  position: fixed;
-  inset: -40%;
-  pointer-events: none;
-  z-index: -1;
-}
-
-body.dark-mode::before {
-  background: radial-gradient(circle at 10% 0, rgba(94, 242, 255, 0.25), transparent 55%),
-    radial-gradient(circle at 90% 100%, rgba(255, 123, 255, 0.25), transparent 55%);
-  opacity: 0.22;
-  animation: auroraDrift 38s ease-in-out infinite alternate;
-}
-
-body.dark-mode::after {
-  background-image:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 80px 80px;
-  opacity: 0.18;
-  animation: meshPulse 12s ease-in-out infinite;
-}
-
-@keyframes auroraDrift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.22;
-  }
-  50% {
-    transform: translate3d(-40px, -60px, 0) scale(1.05);
-    opacity: 0.32;
-  }
-  100% {
-    transform: translate3d(20px, 40px, 0) scale(1.02);
-    opacity: 0.26;
-  }
-}
-
-@keyframes meshPulse {
-  0%, 100% {
-    filter: hue-rotate(0deg) brightness(1);
-  }
-  50% {
-    filter: hue-rotate(40deg) brightness(1.25);
-  }
-}
-
-/* ============================================================
    RESPONSIVE BREAKPOINTS
 ============================================================ */
 @media (max-width: 1100px) {
@@ -1238,5 +1266,6 @@ body.dark-mode::after {
     align-items: flex-start;
   }
 }
+
 
 
