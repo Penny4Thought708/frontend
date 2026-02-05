@@ -1,6 +1,9 @@
 // public/js/webrtc/CallUI.js
 // Aurora‑Prime Call UI — full modern rewrite
 
+import { openVoicemailRecorder } from "../voicemail-recorder.js";
+import { showMessageWindow } from "../messaging.js";
+
 export function initCallUI(rtc) {
   if (!rtc) {
     console.warn("[CallUI] No RTC controller provided");
@@ -176,11 +179,6 @@ export function initCallUI(rtc) {
     toggleClass(true, "connecting");
   }
 
-  function showVoicemailPrompt() {
-    callerOverlay.style.display = "flex";
-    callerOverlay.textContent = "Leave a voicemail…";
-  }
-
   function hideOverlay() {
     callerOverlay.style.display = "none";
     callerOverlay.textContent = "";
@@ -291,206 +289,202 @@ export function initCallUI(rtc) {
 
   container.addEventListener("mousemove", scheduleHideControls);
   container.addEventListener("touchstart", scheduleHideControls);
-  
 
-/* -------------------------------------------------------
-   BUTTON BINDINGS
-------------------------------------------------------- */
+  /* -------------------------------------------------------
+     BUTTON BINDINGS
+  ------------------------------------------------------- */
 
-voiceBtn?.addEventListener("click", () => {
-  setStatus("Starting voice call…");
-  logDebug("Voice call clicked");
-  setVoiceOnlyMode(true);
-  setScreenShareMode(false);
-  rtc.startVoiceCall?.();
-});
-
-videoBtn?.addEventListener("click", () => {
-  setStatus("Starting video call…");
-  logDebug("Video call clicked");
-  setVoiceOnlyMode(false);
-  rtc.startVideoCall?.();
-});
-
-answerBtn?.addEventListener("click", () => {
-  setStatus("Answering call…");
-  logDebug("Answer clicked");
-  hideOverlay();
-  rtc.answerIncomingCall?.();
-});
-
-declineBtn?.addEventListener("click", () => {
-  setStatus("Declining call…");
-  logDebug("Decline clicked");
-  hideOverlay();
-  rtc.declineIncomingCall?.();
-});
-
-endCallBtn?.addEventListener("click", () => {
-  setStatus("Call ended");
-  logDebug("End call clicked");
-  stopTimer();
-  rtc.endCall?.(true);
-});
-
-muteBtn?.addEventListener("click", () => {
-  const muted = rtc.toggleMute?.();
-  muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
-  muteBtn.dataset.muted = String(muted);
-  logDebug(`Mute toggled: ${muted}`);
-});
-
-cameraToggle?.addEventListener("click", () => {
-  rtc.switchCamera?.();
-  logDebug("Camera toggle clicked");
-});
-
-// Share screen
-shareScreenBtn?.addEventListener("click", () => {
-  logDebug("Share screen clicked");
-  rtc.startScreenShare?.();
-});
-
-// AI noise suppression
-aiNoiseToggleBtn?.addEventListener("click", () => {
-  logDebug("AI noise toggle clicked");
-  rtc.toggleNoiseSuppression?.();
-});
-
-// Recording
-recordCallBtn?.addEventListener("click", () => {
-  logDebug("Record call clicked");
-  const active = rtc.toggleRecording?.();
-  recordCallBtn.classList.toggle("active", !!active);
-});
-
-// Call history
-callHistoryBtn?.addEventListener("click", () => {
-  logDebug("Call history toggle clicked");
-  if (window.toggleCallHistoryPanel) {
-    window.toggleCallHistoryPanel();
-  }
-});
-
-
-/* -------------------------------------------------------
-   RTC EVENT WIRING
-------------------------------------------------------- */
-
-rtc.onIncomingCall = ({ fromName, audioOnly }) => {
-  logDebug(`Incoming call from ${fromName}`);
-  setStatus("Incoming call…");
-  showIncoming(fromName);
-  setVoiceOnlyMode(audioOnly);
-  setScreenShareMode(false);
-  container.classList.remove("hidden");
-};
-
-rtc.onOutgoingCall = ({ targetName, video, voiceOnly }) => {
-  logDebug(`Outgoing call to ${targetName}`);
-  setStatus("Calling…");
-  showConnecting(targetName);
-  setVoiceOnlyMode(voiceOnly);
-  setScreenShareMode(false);
-  container.classList.remove("hidden");
-};
-
-rtc.onCallConnected = () => {
-  logDebug("Call connected");
-  hideOverlay();
-  setStatus("In call");
-  startTimer();
-  container.classList.remove("hidden");
-};
-
-rtc.onCallEnded = () => {
-  logDebug("Call ended");
-  hideOverlay();
-  setStatus("Call ended");
-  stopTimer();
-  setRemoteMuted(false);
-  setRemoteSpeaking(false);
-  setScreenShareMode(false);
-  setCameraOff(false);
-  setAINoiseSuppression(false);
-  container.classList.add("hidden");
-};
-
-rtc.onCallFailed = (reason) => {
-  logDebug(`Call failed: ${reason}`);
-  hideOverlay();
-  setStatus(`Call failed: ${reason}`);
-  stopTimer();
-  container.classList.add("hidden");
-};
-
-rtc.onRemoteMuted = () => {
-  logDebug("Remote muted");
-  setRemoteMuted(true);
-};
-
-rtc.onRemoteUnmuted = () => {
-  logDebug("Remote unmuted");
-  setRemoteMuted(false);
-};
-
-rtc.onRemoteCameraOff = () => {
-  logDebug("Remote camera off");
-  setCameraOff(true);
-};
-
-rtc.onRemoteCameraOn = () => {
-  logDebug("Remote camera on");
-  setCameraOff(false);
-};
-
-rtc.onRemoteSpeaking = (active) => {
-  setRemoteSpeaking(active);
-};
-
-rtc.onNetworkQuality = (level, info) => {
-  logDebug(`Network quality: ${level} (${info || ""})`);
-  setNetworkQuality(level, info);
-};
-
-rtc.onScreenShareStarted = () => {
-  logDebug("Screen share started");
-  setScreenShareMode(true);
-};
-
-rtc.onScreenShareStopped = () => {
-  logDebug("Screen share stopped");
-  setScreenShareMode(false);
-};
-
-rtc.onNoiseSuppressionChanged = (enabled) => {
-  logDebug(`AI noise suppression: ${enabled}`);
-  setAINoiseSuppression(enabled);
-};
-
-rtc.onRecordingChanged = (active) => {
-  logDebug(`Recording state changed: ${active}`);
-  recordCallBtn.classList.toggle("active", !!active);
-};
-
-rtc.onVoicemailPrompt = ({ peerId, message } = {}) => {
-  logDebug(`Voicemail prompt: ${message}`);
-
-  // Hide the call container immediately
-  container.classList.add("hidden");
-
-  // Show the new toast instead of the old voicemail prompt
-  showUnavailableToast({
-    peerId,
-    message
+  voiceBtn?.addEventListener("click", () => {
+    setStatus("Starting voice call…");
+    logDebug("Voice call clicked");
+    setVoiceOnlyMode(true);
+    setScreenShareMode(false);
+    rtc.startVoiceCall?.();
   });
-};
 
+  videoBtn?.addEventListener("click", () => {
+    setStatus("Starting video call…");
+    logDebug("Video call clicked");
+    setVoiceOnlyMode(false);
+    rtc.startVideoCall?.();
+  });
 
+  answerBtn?.addEventListener("click", () => {
+    setStatus("Answering call…");
+    logDebug("Answer clicked");
+    hideOverlay();
+    rtc.answerIncomingCall?.();
+  });
 
+  declineBtn?.addEventListener("click", () => {
+    setStatus("Declining call…");
+    logDebug("Decline clicked");
+    hideOverlay();
+    rtc.declineIncomingCall?.();
+  });
+
+  endCallBtn?.addEventListener("click", () => {
+    setStatus("Call ended");
+    logDebug("End call clicked");
+    stopTimer();
+    rtc.endCall?.(true);
+  });
+
+  muteBtn?.addEventListener("click", () => {
+    const muted = rtc.toggleMute?.();
+    muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
+    muteBtn.dataset.muted = String(muted);
+    logDebug(`Mute toggled: ${muted}`);
+  });
+
+  cameraToggle?.addEventListener("click", () => {
+    rtc.switchCamera?.();
+    logDebug("Camera toggle clicked");
+  });
+
+  shareScreenBtn?.addEventListener("click", () => {
+    logDebug("Share screen clicked");
+    rtc.startScreenShare?.();
+  });
+
+  aiNoiseToggleBtn?.addEventListener("click", () => {
+    logDebug("AI noise toggle clicked");
+    rtc.toggleNoiseSuppression?.();
+  });
+
+  recordCallBtn?.addEventListener("click", () => {
+    logDebug("Record call clicked");
+    const active = rtc.toggleRecording?.();
+    recordCallBtn.classList.toggle("active", !!active);
+  });
+
+  callHistoryBtn?.addEventListener("click", () => {
+    logDebug("Call history toggle clicked");
+    if (window.toggleCallHistoryPanel) {
+      window.toggleCallHistoryPanel();
+    }
+  });
+
+  /* -------------------------------------------------------
+     RTC EVENT WIRING
+  ------------------------------------------------------- */
+
+  rtc.onIncomingCall = ({ fromName, audioOnly }) => {
+    logDebug(`Incoming call from ${fromName}`);
+    setStatus("Incoming call…");
+    showIncoming(fromName);
+    setVoiceOnlyMode(audioOnly);
+    setScreenShareMode(false);
+    container.classList.remove("hidden");
+  };
+
+  rtc.onOutgoingCall = ({ targetName, video, voiceOnly }) => {
+    logDebug(`Outgoing call to ${targetName}`);
+    setStatus("Calling…");
+    showConnecting(targetName);
+    setVoiceOnlyMode(voiceOnly);
+    setScreenShareMode(false);
+    container.classList.remove("hidden");
+  };
+
+  rtc.onCallConnected = () => {
+    logDebug("Call connected");
+    hideOverlay();
+    setStatus("In call");
+    startTimer();
+    container.classList.remove("hidden");
+  };
+
+  rtc.onCallEnded = () => {
+    logDebug("Call ended");
+    hideOverlay();
+    setStatus("Call ended");
+    stopTimer();
+    setRemoteMuted(false);
+    setRemoteSpeaking(false);
+    setScreenShareMode(false);
+    setCameraOff(false);
+    setAINoiseSuppression(false);
+    container.classList.add("hidden");
+  };
+
+  rtc.onCallFailed = (reason) => {
+    logDebug(`Call failed: ${reason}`);
+    hideOverlay();
+    setStatus(`Call failed: ${reason}`);
+    stopTimer();
+    container.classList.add("hidden");
+  };
+
+  rtc.onRemoteMuted = () => {
+    logDebug("Remote muted");
+    setRemoteMuted(true);
+  };
+
+  rtc.onRemoteUnmuted = () => {
+    logDebug("Remote unmuted");
+    setRemoteMuted(false);
+  };
+
+  rtc.onRemoteCameraOff = () => {
+    logDebug("Remote camera off");
+    setCameraOff(true);
+  };
+
+  rtc.onRemoteCameraOn = () => {
+    logDebug("Remote camera on");
+    setCameraOff(false);
+  };
+
+  rtc.onRemoteSpeaking = (active) => {
+    setRemoteSpeaking(active);
+  };
+
+  rtc.onNetworkQuality = (level, info) => {
+    logDebug(`Network quality: ${level} (${info || ""})`);
+    setNetworkQuality(level, info);
+  };
+
+  rtc.onScreenShareStarted = () => {
+    logDebug("Screen share started");
+    setScreenShareMode(true);
+  };
+
+  rtc.onScreenShareStopped = () => {
+    logDebug("Screen share stopped");
+    setScreenShareMode(false);
+  };
+
+  rtc.onNoiseSuppressionChanged = (enabled) => {
+    logDebug(`AI noise suppression: ${enabled}`);
+    setAINoiseSuppression(enabled);
+  };
+
+  rtc.onRecordingChanged = (active) => {
+    logDebug(`Recording state changed: ${active}`);
+    recordCallBtn.classList.toggle("active", !!active);
+  };
+
+  rtc.onVoicemailPrompt = ({ peerId, message } = {}) => {
+    logDebug(`Voicemail prompt: ${message}`);
+
+    // Hide the call container immediately
+    container.classList.add("hidden");
+
+    // Show the new toast instead of the old voicemail prompt
+    showUnavailableToast({
+      peerId,
+      message
+    });
+  };
 
   logDebug("CallUI initialized");
 }
+
+/* -------------------------------------------------------
+   UNAVAILABLE TOAST (INLINE VERSION)
+------------------------------------------------------- */
+
 export function showUnavailableToast({ peerId }) {
   const toast = document.getElementById("unavailableToast");
   const voiceBtn = document.getElementById("utVoiceBtn");
@@ -507,7 +501,7 @@ export function showUnavailableToast({ peerId }) {
     openVoicemailRecorder(peerId);
   };
 
-  // Video message (you can wire this later)
+  // Video message (future)
   videoBtn.onclick = () => {
     toast.classList.remove("open");
     setTimeout(() => toast.classList.add("hidden"), 300);
@@ -518,9 +512,10 @@ export function showUnavailableToast({ peerId }) {
   textBtn.onclick = () => {
     toast.classList.remove("open");
     setTimeout(() => toast.classList.add("hidden"), 300);
-    showMessageWindow(); // your existing function
+    showMessageWindow();
   };
 }
+
 
 
 
