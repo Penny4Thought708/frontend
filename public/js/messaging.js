@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (Node backend, new floating layout, NO UI LOGIC)
+// Messaging System (Node backend, new floating layout, UI-lean, production-ready)
 // -------------------------------------------------------
 
 import {
@@ -18,39 +18,37 @@ import { socket } from "./socket.js";
 import { userNames, userAvatars } from "./shared/user-cache.js";
 
 const MESSAGES_API_BASE = "https://letsee-backend.onrender.com/api/messages";
-console.log("[messaging] Loaded messaging.js (UI-clean rewrite)");
+console.log("[messaging] Loaded messaging.js (UI-clean, production-ready)");
 
 let receiver_id = null;
 let lastSeenMessageId = 0;
 let lastLoadedMessages = [];
 let readObserver = null;
+let activeDataChannel = null;
 
 // New layout: dedicated preview strip
 const previewEl = document.getElementById("attachmentPreview");
 
-// ===== RTC ACCESSORS =====
-function getDataChannel() {
-  return window?.dataChannel;
+// -------------------------------------------------------
+// Helpers
+// -------------------------------------------------------
+
+function sanitizeHTML(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
 }
+
+function getDataChannel() {
+  return activeDataChannel;
+}
+
 function getPeerId() {
   return window?.peerId;
 }
+
 function isChannelOpen(dc) {
   return !!dc && dc.readyState === "open";
-}
-
-// -------------------------------------------------------
-// RECEIVER
-// -------------------------------------------------------
-export function setReceiver(id) {
-  receiver_id = id;
-  window.receiver_id = id;
-  window.currentReceiverId = id;
-  console.log("[messaging] Receiver set:", id);
-}
-
-export function getReceiver() {
-  return receiver_id;
 }
 
 function showError(msg) {
@@ -72,8 +70,9 @@ function smartScroll() {
 }
 
 // -------------------------------------------------------
-// NETWORK HELPERS
+// Network helpers
 // -------------------------------------------------------
+
 async function apiGet(path) {
   const url = `${MESSAGES_API_BASE}${path}`;
   console.log("[messaging] GET:", url);
@@ -108,9 +107,36 @@ async function apiPost(path, body) {
   }
 }
 
+// simple retry wrapper for transient failures
+async function safeSendMessage(payload) {
+  try {
+    return await apiPost("/send", payload);
+  } catch (err) {
+    console.warn("[messaging] Send failed, retrying in 1s…", err);
+    await new Promise((res) => setTimeout(res, 1000));
+    return apiPost("/send", payload);
+  }
+}
+
 // -------------------------------------------------------
-// FILE RENDERING
+// Receiver
 // -------------------------------------------------------
+
+export function setReceiver(id) {
+  receiver_id = id;
+  window.receiver_id = id;
+  window.currentReceiverId = id;
+  console.log("[messaging] Receiver set:", id);
+}
+
+export function getReceiver() {
+  return receiver_id;
+}
+
+// -------------------------------------------------------
+// File rendering
+// -------------------------------------------------------
+
 function appendFileContentToParagraph(p, options) {
   const { name, url, comment = "" } = options;
 
@@ -120,6 +146,7 @@ function appendFileContentToParagraph(p, options) {
     const img = document.createElement("img");
     img.src = url;
     img.alt = name;
+    img.loading = "lazy";
     img.style.maxWidth = "200px";
     img.style.display = "block";
     p.appendChild(img);
@@ -155,8 +182,9 @@ document.getElementById("img-viewer")?.addEventListener("click", () => {
 });
 
 // -------------------------------------------------------
-// DELETE MESSAGE
+// Delete message
 // -------------------------------------------------------
+
 async function deleteMessage(messageId) {
   if (!messageId) return;
 
@@ -171,8 +199,9 @@ async function deleteMessage(messageId) {
 }
 
 // -------------------------------------------------------
-// REACTIONS
+// Reactions
 // -------------------------------------------------------
+
 function addReactionToMessage(id, emoji) {
   const container = document.querySelector(
     `[data-msg-id="${id}"] .reaction-display`
@@ -198,10 +227,16 @@ function addReactionToMessage(id, emoji) {
 }
 
 // -------------------------------------------------------
-// RENDER MESSAGE (NEW LAYOUT)
+// Render message (new layout)
 // -------------------------------------------------------
+
 function renderMessage(msg) {
   if (!messageWin) return;
+
+  // ensure every message has an id for DOM anchoring
+  if (!msg.id) {
+    msg.id = msg.id || `rtc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
 
   const isFileMessage =
     msg.type === "file" ||
@@ -240,7 +275,7 @@ function renderMessage(msg) {
       comment: msg.comment,
     });
   } else {
-    bubble.textContent = msg.message ?? "";
+    bubble.textContent = sanitizeHTML(msg.message ?? "");
   }
 
   // Reaction display
@@ -298,8 +333,9 @@ function renderMessage(msg) {
 }
 
 // -------------------------------------------------------
-// FILE PREVIEW STRIP (NO UI LOGIC, JUST RENDER)
+// File preview strip
 // -------------------------------------------------------
+
 function renderPreviews(files) {
   if (!previewEl) return;
 
@@ -320,6 +356,7 @@ function renderPreviews(files) {
       const img = document.createElement("img");
       img.src = URL.createObjectURL(file);
       img.onload = () => URL.revokeObjectURL(img.src);
+      img.loading = "lazy";
       wrap.appendChild(img);
     } else {
       const link = document.createElement("span");
@@ -349,8 +386,9 @@ attachmentInput?.addEventListener("change", () => {
 });
 
 // -------------------------------------------------------
-// SEND MESSAGES (contenteditable input)
+// Send messages (contenteditable input)
 // -------------------------------------------------------
+
 msgForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -366,10 +404,22 @@ msgForm?.addEventListener("submit", async (e) => {
     return;
   }
 
+  const MAX_SIZE = 25 * 1024 * 1024;
+  const ALLOWED_PREFIXES = ["image/", "audio/", "video/", "application/pdf"];
+
   // FILES
   for (const file of files) {
+    if (
+      !ALLOWED_PREFIXES.some((p) => file.type.startsWith(p)) ||
+      file.size > MAX_SIZE
+    ) {
+      showError("Unsupported or too large file");
+      continue;
+    }
+
     if (isChannelOpen(dc)) {
       const reader = new FileReader();
+
       reader.onload = async () => {
         const payload = {
           type: "file",
@@ -379,62 +429,76 @@ msgForm?.addEventListener("submit", async (e) => {
           data: reader.result,
           sender_name: "You",
         };
-        dc.send(JSON.stringify(payload));
+        try {
+          dc.send(JSON.stringify(payload));
 
-        await apiPost("/send", {
-          receiver_id: targetId,
-          message: `File: ${file.name}`,
-          transport: "webrtc",
-          file: 1,
-          filename: file.name,
-        });
+          await safeSendMessage({
+            receiver_id: targetId,
+            message: `File: ${file.name}`,
+            transport: "webrtc",
+            file: 1,
+            filename: file.name,
+          });
 
-        renderMessage({
-          is_me: true,
-          type: "file",
-          name: file.name,
-          data: reader.result,
-          created_at: new Date(),
-          sender_id: myUserId,
-          sender_name: "You",
-          file: 1,
-        });
+          renderMessage({
+            is_me: true,
+            type: "file",
+            name: file.name,
+            data: reader.result,
+            created_at: new Date(),
+            sender_id: myUserId,
+            sender_name: "You",
+            file: 1,
+          });
+        } catch (err) {
+          showError("Failed to send file");
+        }
       };
+
+      reader.onerror = () => {
+        showError("Failed to read file");
+      };
+
       reader.readAsDataURL(file);
     } else {
-      const fd = new FormData();
-      fd.append("audio", file);
+      try {
+        const fd = new FormData();
+        fd.append("audio", file);
 
-      const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
-        method: "POST",
-        body: fd,
-        credentials: "include",
-      });
-
-      const uploadData = await uploadRes.json();
-
-      if (uploadData?.success && uploadData.url) {
-        const msgRes = await apiPost("/send", {
-          receiver_id: targetId,
-          message: `File: ${file.name}`,
-          transport: "http",
-          file: 1,
-          filename: file.name,
-          file_url: uploadData.url,
+        const uploadRes = await fetch(`${MESSAGES_API_BASE}/audio`, {
+          method: "POST",
+          body: fd,
+          credentials: "include",
         });
 
-        renderMessage({
-          id: msgRes.id,
-          is_me: true,
-          type: "file",
-          filename: msgRes.filename || file.name,
-          url: msgRes.url || uploadData.url,
-          created_at: msgRes.created_at,
-          sender_id: myUserId,
-          sender_name: "You",
-          file: 1,
-        });
-      } else {
+        const uploadData = await uploadRes.json();
+
+        if (uploadData?.success && uploadData.url) {
+          const msgRes = await safeSendMessage({
+            receiver_id: targetId,
+            message: `File: ${file.name}`,
+            transport: "http",
+            file: 1,
+            filename: file.name,
+            file_url: uploadData.url,
+          });
+
+          renderMessage({
+            id: msgRes.id,
+            is_me: true,
+            type: "file",
+            filename: msgRes.filename || file.name,
+            url: msgRes.url || uploadData.url,
+            created_at: msgRes.created_at,
+            sender_id: myUserId,
+            sender_name: "You",
+            file: 1,
+          });
+        } else {
+          showError("Upload failed");
+        }
+      } catch (err) {
+        console.error("[messaging] upload failed:", err);
         showError("Upload failed");
       }
     }
@@ -446,37 +510,45 @@ msgForm?.addEventListener("submit", async (e) => {
   // TEXT
   if (text && targetId) {
     if (isChannelOpen(dc)) {
-      dc.send(text);
+      try {
+        dc.send(text);
 
-      renderMessage({
-        is_me: true,
-        message: text,
-        created_at: new Date(),
-        sender_id: myUserId,
-        sender_name: "You",
-      });
-
-      apiPost("/send", {
-        receiver_id: targetId,
-        message: text,
-        transport: "webrtc",
-      });
-    } else {
-      const data = await apiPost("/send", {
-        receiver_id: targetId,
-        message: text,
-      });
-
-      if (data?.success) {
         renderMessage({
-          id: data.id,
           is_me: true,
-          message: data.message,
-          created_at: data.created_at,
+          message: text,
+          created_at: new Date(),
           sender_id: myUserId,
           sender_name: "You",
         });
-      } else {
+
+        safeSendMessage({
+          receiver_id: targetId,
+          message: text,
+          transport: "webrtc",
+        });
+      } catch (err) {
+        showError("Failed to send message");
+      }
+    } else {
+      try {
+        const data = await safeSendMessage({
+          receiver_id: targetId,
+          message: text,
+        });
+
+        if (data?.success) {
+          renderMessage({
+            id: data.id,
+            is_me: true,
+            message: data.message,
+            created_at: data.created_at,
+            sender_id: myUserId,
+            sender_name: "You",
+          });
+        } else {
+          showError("Failed to send message");
+        }
+      } catch (err) {
         showError("Failed to send message");
       }
     }
@@ -486,11 +558,12 @@ msgForm?.addEventListener("submit", async (e) => {
 });
 
 // -------------------------------------------------------
-// RECEIVE VIA DATACHANNEL
+// Receive via datachannel
 // -------------------------------------------------------
+
 export function setupDataChannel(channel) {
   if (!channel) return;
-  window.dataChannel = channel;
+  activeDataChannel = channel;
 
   channel.onmessage = async (e) => {
     let payload = e.data;
@@ -521,7 +594,7 @@ export function setupDataChannel(channel) {
         file: 1,
       });
 
-      apiPost("/send", {
+      safeSendMessage({
         sender_id: getPeerId(),
         receiver_id: myUserId,
         message: `File: ${payload.name}`,
@@ -535,7 +608,9 @@ export function setupDataChannel(channel) {
 
     // TEXT
     const text =
-      typeof payload === "string" ? payload : safeJSON(payload);
+      typeof payload === "string"
+        ? sanitizeHTML(payload)
+        : sanitizeHTML(safeJSON(payload));
 
     renderMessage({
       is_me: false,
@@ -549,8 +624,9 @@ export function setupDataChannel(channel) {
 }
 
 // -------------------------------------------------------
-// NORMALIZATION
+// Normalization
 // -------------------------------------------------------
+
 function normalizeMessage(msg) {
   const myUserId = getMyUserId();
 
@@ -565,8 +641,9 @@ function normalizeMessage(msg) {
 }
 
 // -------------------------------------------------------
-// LOAD MESSAGES
+// Load messages
 // -------------------------------------------------------
+
 export async function loadMessages() {
   if (!receiver_id) return [];
 
@@ -632,8 +709,9 @@ export async function loadMessages() {
 }
 
 // -------------------------------------------------------
-// TYPING INDICATOR (NEW BUBBLE STYLE)
+// Typing indicator (new bubble style)
 // -------------------------------------------------------
+
 const typingIndicator = document.querySelector(".typing-indicator");
 let typingStopTimer = null;
 
@@ -647,7 +725,7 @@ msgInput?.addEventListener("input", () => {
   clearTimeout(typingStopTimer);
   typingStopTimer = setTimeout(() => {
     socket.emit("typing:stop", { from: myUserId, to: targetId });
-  }, 800);
+  }, 600);
 });
 
 socket.on("typing:start", ({ from, fullname }) => {
@@ -677,8 +755,9 @@ socket.on("typing:stop", ({ from }) => {
 });
 
 // -------------------------------------------------------
-// READ RECEIPTS
+// Read receipts
 // -------------------------------------------------------
+
 socket.on("message:delivered", ({ messageId }) => {
   if (!messageId) return;
 
@@ -698,12 +777,14 @@ socket.on("message:read", ({ messageId }) => {
   );
   if (el && !el.textContent.includes("✓ read")) {
     el.textContent += " ✓ read";
+    el.classList.add("seen");
   }
 });
 
 // -------------------------------------------------------
-// PRESENCE UPDATES
+// Presence updates
 // -------------------------------------------------------
+
 socket.on("statusUpdate", ({ contact_id, online, away }) => {
   const statusText = away ? "Away" : online ? "Online" : "Offline";
   console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
@@ -718,8 +799,9 @@ socket.on("statusUpdate", ({ contact_id, online, away }) => {
 });
 
 // -------------------------------------------------------
-// READ OBSERVER
+// Read observer
 // -------------------------------------------------------
+
 function createReadObserver() {
   if (!messageWin) return null;
 
@@ -769,8 +851,9 @@ function observeMessagesForRead() {
 }
 
 // -------------------------------------------------------
-// ACTIVITY TRACKING
+// Activity tracking
 // -------------------------------------------------------
+
 let activityTimeout;
 ["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
   document.addEventListener(evt, () => {
@@ -786,15 +869,19 @@ let activityTimeout;
 });
 
 // -------------------------------------------------------
-// POLLING
+// Polling (throttled when tab hidden)
 // -------------------------------------------------------
+
 setInterval(() => {
+  if (document.hidden) return;
   if (receiver_id) {
     loadMessages().catch((err) =>
       console.error("[messaging] Poll failed:", err)
     );
   }
 }, 8000);
+
+
 
 
 
