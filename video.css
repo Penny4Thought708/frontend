@@ -1,6 +1,18 @@
 /* ============================================================
    VIDEO CALL WINDOW — CORE LAYOUT
 ============================================================ */
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 48;
+  font-size: 26px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 #videoCallWindow {
   position: fixed;
