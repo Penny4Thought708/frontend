@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500&display=swap" rel="stylesheet">
 
   <!-- Styles -->
  <!-- FOUNDATION -->
@@ -371,45 +372,103 @@ window.currentUserAvatar = user.avatar;
     </section>
 
     <!-- VIDEO CALL -->
-    <section id="videoCallWindow"
-             class="floating-window hidden"
-             data-floating
-             data-draggable
-             data-window-id="video-call">
-      <div class="floating-body video-body">
+<section id="videoCallWindow"
+         class="floating-window hidden"
+         data-floating
+         data-draggable
+         data-window-id="video-call">
 
-        <div id="localVideoWrapper" class="media-wrapper local-media-wrapper">
+  <div class="floating-body video-body">
+
+    <!-- GROUP GRID (auto-switches between 1:1 and group) -->
+    <div id="callGrid" class="call-grid">
+
+      <!-- LOCAL PARTICIPANT -->
+      <div class="participant local" id="localParticipant">
+        <div class="media-wrapper">
           <video id="localVideo" autoplay playsinline muted></video>
 
-          <div class="local-avatar" id="localAvatar">
-            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" loading="lazy" />
+          <div class="avatar-wrapper">
+            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
+            <div class="voice-pulse"></div>
           </div>
         </div>
-
-        <div id="call-status" class="status"></div>
-
-        <audio id="remoteAudio" autoplay playsinline></audio>
-
-        <div id="call-controls" class="call-controls">
-          <div id="call-timer" class="call-timer">00:00</div>
-
-          <button id="decline-call" type="button">❌</button>
-          <button id="answer-call" type="button">✅</button>
-          <button id="mute-call" type="button">🔇</button>
-
-          <button id="camera-toggle" type="button">
-            <span class="material-symbols-outlined">flip_camera_android</span>
-          </button>
-
-          <button id="share-screen" type="button">🖥️</button>
-          <button id="ai-noise-toggle" type="button">🤖</button>
-          <button id="record-call" type="button">⏺️</button>
-          <button id="call-history-toggle" type="button">📜</button>
-          <button id="end-call" type="button">📞</button>
-        </div>
-
+        <div class="name-tag">You</div>
       </div>
-    </section>
+
+      <!-- REMOTE PARTICIPANTS (JS will clone this template) -->
+      <template id="remoteParticipantTemplate">
+        <div class="participant remote">
+          <div class="media-wrapper">
+            <video autoplay playsinline></video>
+
+            <div class="avatar-wrapper">
+              <img class="avatar-img" src="" alt="Avatar">
+              <div class="voice-pulse"></div>
+            </div>
+          </div>
+          <div class="name-tag"></div>
+        </div>
+      </template>
+
+    </div>
+
+    <!-- STATUS + TIMER -->
+    <div class="call-top-info">
+      <div id="call-status">Calling…</div>
+      <div id="call-timer">00:00</div>
+    </div>
+
+    <!-- FLOATING CONTROLS -->
+    <div id="call-controls" class="call-controls">
+
+  <div id="call-timer" class="call-timer">00:00</div>
+
+  <!-- INBOUND -->
+  <button id="decline-call" type="button">
+    <span class="material-symbols-outlined">call_end</span>
+  </button>
+
+  <button id="answer-call" type="button">
+    <span class="material-symbols-outlined">call</span>
+  </button>
+
+  <!-- ACTIVE CALL CONTROLS -->
+  <button id="mute-call" type="button">
+    <span class="material-symbols-outlined">mic_off</span>
+  </button>
+
+  <button id="camera-toggle" type="button">
+    <span class="material-symbols-outlined">videocam</span>
+  </button>
+
+  <button id="share-screen" type="button">
+    <span class="material-symbols-outlined">screen_share</span>
+  </button>
+
+  <button id="ai-noise-toggle" type="button">
+    <span class="material-symbols-outlined">graphic_eq</span>
+  </button>
+
+  <button id="record-call" type="button">
+    <span class="material-symbols-outlined">fiber_manual_record</span>
+  </button>
+
+  <button id="call-history-toggle" type="button">
+    <span class="material-symbols-outlined">history</span>
+  </button>
+
+  <!-- UNIVERSAL END CALL -->
+  <button id="end-call" type="button">
+    <span class="material-symbols-outlined">call_end</span>
+  </button>
+
+</div>
+
+
+  </div>
+</section>
+
 
     <!-- FULL PROFILE -->
     <section id="fullProfileModal"
@@ -1314,6 +1373,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
