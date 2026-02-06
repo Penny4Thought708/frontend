@@ -461,9 +461,9 @@ html[data-theme="light"] .column-left {
   display: grid;
   grid-template-columns: 120px 1fr;
   height: 100%;
-  overflow: hidden;
+  position: relative;
 }
-
+.directory-sections-wrapper { position: relative; overflow: hidden; }
 /* LEFT NAV */
 .directory-nav {
   display: flex;
@@ -507,6 +507,7 @@ html[data-theme="light"] .directory-nav button {
    width:240px;
   padding: 12px;
   background: var(--ef-dark-surface);
+   position: absolute; inset: 0; transition: transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1), opacity 200ms ease;
 }
 
 html[data-theme="light"] .directory-sections {
@@ -517,8 +518,9 @@ html[data-theme="light"] .directory-sections {
   display: flex;
   flex-direction: column;
   gap: 10px;
+   opacity: 0; transform: translateX(40px); transition: opacity 200ms ease, transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
-
+.dir-section.dir-active { opacity: 1; transform: translateX(0); }
 .dir-section.hidden {
   display: none;
 }
