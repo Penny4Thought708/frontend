@@ -503,7 +503,7 @@ html[data-theme="light"] #directoryPanel.directory-card {
    DIRECTORY PANEL (static layout inside sliding card)
 ============================================================ */
 
-.directory-panel {
+.directory-inner {
   display: grid;
   grid-template-columns: 120px 1fr;
   height: 100%;
