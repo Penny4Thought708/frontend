@@ -177,13 +177,13 @@ window.currentUserAvatar = user.avatar;
   ============================================================ -->
   <section class="column-left">
 
-    <!-- DIRECTORY PANEL (LEFT + MIDDLE) -->
-  <!-- DIRECTORY PANEL (LEFT + MIDDLE) -->
+<!-- DIRECTORY PANEL (SLIDING CARD) -->
 <div id="directoryPanel" class="directory-card">
 
-  <div class="directory-panel">
+  <!-- INNER PANEL (STATIC GRID) -->
+  <div class="directory-inner">
 
-    <!-- LEFT: Directory Navigation -->
+    <!-- LEFT: Directory Navigation (NEVER SLIDES) -->
     <aside class="directory-nav">
       <button data-section="contacts">Contacts</button>
       <button data-section="history">Call History</button>
@@ -224,6 +224,7 @@ window.currentUserAvatar = user.avatar;
   </div>
 
 </div>
+
 
 
 
@@ -1313,6 +1314,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
