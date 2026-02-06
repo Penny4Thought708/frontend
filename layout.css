@@ -504,6 +504,7 @@ html[data-theme="light"] .directory-nav button {
 /* RIGHT SIDE CONTENT */
 .directory-sections {
   overflow-y: auto;
+   width:240px;
   padding: 12px;
   background: var(--ef-dark-surface);
 }
