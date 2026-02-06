@@ -453,10 +453,6 @@ html[data-theme="light"] .column-left {
   border-right: 1px solid var(--ef-border-subtle-light);
 }
 
-/* ============================================================
-   DIRECTORY CARD (slides)
-============================================================ */
-
 #directoryPanel.directory-card {
   position: absolute;
   inset: 0;
@@ -498,19 +494,12 @@ html[data-theme="light"] #directoryPanel.directory-card {
   transform: translateX(-40px);
   opacity: 0;
 }
-
-/* ============================================================
-   DIRECTORY PANEL (static layout inside sliding card)
-============================================================ */
-
 .directory-inner {
   display: grid;
   grid-template-columns: 120px 1fr;
   height: 100%;
   position: relative;
 }
-
-/* NAV STAYS FIXED */
 .directory-nav {
   display: flex;
   flex-direction: column;
@@ -525,9 +514,39 @@ html[data-theme="light"] .directory-nav {
   border-right: 1px solid var(--ef-border-subtle-light);
 }
 
-/* ============================================================
-   SECTIONS SLIDE INDEPENDENTLY
-============================================================ */
+.directory-nav button {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--ef-border-subtle-dark);
+  color: var(--ef-text-dark-main);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    transform 140ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+html[data-theme="light"] .directory-nav button {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-main);
+}
+
+.directory-nav button:hover {
+  background: rgba(94,242,255,0.25);
+  border-color: var(--ef-res-low);
+  color: var(--ef-res-low);
+  transform: translateX(4px);
+}
+
+.directory-nav button.active {
+  background: rgba(94,242,255,0.22);
+  border-color: var(--ef-res-low);
+  color: var(--ef-res-low);
+}
 
 .directory-sections-wrapper {
   position: relative;
@@ -562,11 +581,12 @@ html[data-theme="light"] .directory-sections {
 .dir-section.hidden {
   display: none;
 }
-.directory-inner {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  height: 100%;
-  position: relative;
+.con-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 160px);
 }
 
 /* ============================================================
