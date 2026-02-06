@@ -178,45 +178,53 @@ window.currentUserAvatar = user.avatar;
   <section class="column-left">
 
     <!-- DIRECTORY PANEL (LEFT + MIDDLE) -->
-   <div id="directoryPanel" class="directory-panel">
+  <!-- DIRECTORY PANEL (LEFT + MIDDLE) -->
+<div id="directoryPanel" class="directory-card">
 
-  <aside class="directory-nav">
-    <button data-section="contacts">Contacts</button>
-    <button data-section="history">Call History</button>
-    <button data-section="messages">Messages</button>
-    <button data-section="voicemail">Voicemail</button>
-    <button data-section="blocked">Blocked</button>
-  </aside>
+  <div class="directory-panel">
 
-  <div class="directory-sections-wrapper">
-    <div class="directory-sections">
+    <!-- LEFT: Directory Navigation -->
+    <aside class="directory-nav">
+      <button data-section="contacts">Contacts</button>
+      <button data-section="history">Call History</button>
+      <button data-section="messages">Messages</button>
+      <button data-section="voicemail">Voicemail</button>
+      <button data-section="blocked">Blocked</button>
+    </aside>
 
-      <section id="dir-contacts" class="dir-section">
-        <ul id="contacts" class="con-list"></ul>
-      </section>
+    <!-- RIGHT: Sliding Sections Wrapper -->
+    <div class="directory-sections-wrapper">
+      <div class="directory-sections">
 
-      <section id="dir-history" class="dir-section hidden">
-        <input id="callLogSearch" class="con-input" placeholder="Search calls…" autocomplete="off" />
-        <div id="callStats" class="con-stats"></div>
-        <ul id="callLogList" class="con-list"></ul>
-      </section>
+        <section id="dir-contacts" class="dir-section">
+          <ul id="contacts" class="con-list"></ul>
+        </section>
 
-      <section id="dir-messages" class="dir-section hidden">
-        <ul id="messaging_list" class="con-list"></ul>
-      </section>
+        <section id="dir-history" class="dir-section hidden">
+          <input id="callLogSearch" class="con-input" placeholder="Search calls…" autocomplete="off" />
+          <div id="callStats" class="con-stats"></div>
+          <ul id="callLogList" class="con-list"></ul>
+        </section>
 
-      <section id="dir-voicemail" class="dir-section hidden">
-        <ul id="voiceMList" class="con-list"></ul>
-      </section>
+        <section id="dir-messages" class="dir-section hidden">
+          <ul id="messaging_list" class="con-list"></ul>
+        </section>
 
-      <section id="dir-blocked" class="dir-section hidden">
-        <ul id="blocked-contacts" class="con-list"></ul>
-      </section>
+        <section id="dir-voicemail" class="dir-section hidden">
+          <ul id="voiceMList" class="con-list"></ul>
+        </section>
 
+        <section id="dir-blocked" class="dir-section hidden">
+          <ul id="blocked-contacts" class="con-list"></ul>
+        </section>
+
+      </div>
     </div>
+
   </div>
 
 </div>
+
 
 
 
@@ -1305,6 +1313,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
