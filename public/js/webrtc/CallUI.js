@@ -14,6 +14,8 @@ export function initCallUI(rtc) {
   ------------------------------------------------------- */
 
   const container         = document.getElementById("videoCallWindow");
+
+  // legacy wrappers (safe if missing in new layout)
   const remoteWrapper     = document.getElementById("remoteWrapper");
   const localWrapper      = document.getElementById("localVideoWrapper");
 
@@ -27,9 +29,9 @@ export function initCallUI(rtc) {
   const endCallBtn        = document.getElementById("end-call");
 
   const callStatus        = document.getElementById("call-status");
-  const callerOverlay     = document.getElementById("callerOverlay");
   const callTimerEl       = document.getElementById("call-timer");
 
+  // media elements are now handled by WebRTCMedia; keep optional
   const localVideo        = document.getElementById("localVideo");
   const remoteVideo       = document.getElementById("remoteVideo");
   const remoteAudio       = document.getElementById("remoteAudio");
@@ -50,11 +52,15 @@ export function initCallUI(rtc) {
   const recordCallBtn     = document.getElementById("record-call");
   const callHistoryBtn    = document.getElementById("call-history-toggle");
 
+  const moreBtn           = document.getElementById("more-controls-btn");
+  const moreMenu          = document.getElementById("more-controls-menu");
+
   if (!container) {
-    console.warn("[CallUI] video-container not found; aborting init");
+    console.warn("[CallUI] videoCallWindow not found; aborting init");
     return;
   }
 
+  // Optional: legacy attachMediaElements, safe if rtc ignores or elements are null
   rtc.attachMediaElements?.({ localVideo, remoteVideo, remoteAudio });
 
   /* -------------------------------------------------------
@@ -107,11 +113,17 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     CSS MODE TOGGLES
+     CSS MODE TOGGLES (aligned with new layout)
   ------------------------------------------------------- */
 
   function toggleClass(flag, cls) {
     container.classList.toggle(cls, !!flag);
+  }
+
+  function setCallMode(mode) {
+    container.classList.remove("inbound-mode", "active-mode");
+    if (mode === "inbound") container.classList.add("inbound-mode");
+    if (mode === "active")  container.classList.add("active-mode");
   }
 
   function setVoiceOnlyMode(on) {
@@ -167,31 +179,19 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     OVERLAYS
+     SIMPLE OVERLAY (new layout has status bar; no big overlay)
   ------------------------------------------------------- */
 
   function showIncoming(name) {
-    if (!callerOverlay) return;
-    callerOverlay.style.display = "flex";
-    callerOverlay.textContent = name
-      ? `Incoming call from ${name}…`
-      : "Incoming call…";
+    setStatus(name ? `Incoming call from ${name}…` : "Incoming call…");
   }
 
   function showConnecting(name) {
-    if (!callerOverlay) return;
-    callerOverlay.style.display = "flex";
-    callerOverlay.textContent = name
-      ? `Connecting to ${name}…`
-      : "Connecting…";
-    toggleClass(true, "connecting");
+    setStatus(name ? `Connecting to ${name}…` : "Connecting…");
   }
 
   function hideOverlay() {
-    if (!callerOverlay) return;
-    callerOverlay.style.display = "none";
-    callerOverlay.textContent = "";
-    toggleClass(false, "connecting");
+    // in new layout, just keep status minimal
   }
 
   /* -------------------------------------------------------
@@ -237,7 +237,7 @@ export function initCallUI(rtc) {
   });
 
   /* -------------------------------------------------------
-     DRAGGABLE LOCAL PREVIEW
+     DRAGGABLE LOCAL PREVIEW (safe no-op if wrapper missing)
   ------------------------------------------------------- */
 
   if (localWrapper) {
@@ -282,7 +282,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     AUTO-HIDE CONTROLS
+     AUTO-HIDE CONTROLS (uses .auto-hide on container)
   ------------------------------------------------------- */
 
   let controlsTimeout = null;
@@ -298,6 +298,23 @@ export function initCallUI(rtc) {
 
   container.addEventListener("mousemove", scheduleHideControls);
   container.addEventListener("touchstart", scheduleHideControls);
+
+  /* -------------------------------------------------------
+     DROPDOWN MENU (more controls)
+  ------------------------------------------------------- */
+
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      moreMenu.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
+        moreMenu.classList.add("hidden");
+      }
+    });
+  }
 
   /* -------------------------------------------------------
      BUTTON BINDINGS
@@ -323,6 +340,7 @@ export function initCallUI(rtc) {
     setStatus("Answering call…");
     logDebug("Answer clicked");
     hideOverlay();
+    setCallMode("active");
     rtc.answerIncomingCall?.();
   });
 
@@ -330,6 +348,7 @@ export function initCallUI(rtc) {
     setStatus("Declining call…");
     logDebug("Decline clicked");
     hideOverlay();
+    setCallMode(null);
     rtc.declineIncomingCall?.();
   });
 
@@ -337,20 +356,29 @@ export function initCallUI(rtc) {
     setStatus("Call ended");
     logDebug("End call clicked");
     stopTimer();
+    setCallMode(null);
     rtc.endCall?.(true);
   });
 
   muteBtn?.addEventListener("click", () => {
     const muted = rtc.toggleMute?.();
     if (muteBtn && typeof muted === "boolean") {
-      muteBtn.textContent = muted ? "🔈 Unmute" : "🔇 Mute";
+      muteBtn.innerHTML = muted
+        ? `<span class="material-symbols-outlined">mic_off</span>`
+        : `<span class="material-symbols-outlined">mic</span>`;
       muteBtn.dataset.muted = String(muted);
     }
     logDebug(`Mute toggled: ${muted}`);
   });
 
   cameraToggle?.addEventListener("click", () => {
-    rtc.switchCamera?.();
+    const on = rtc.toggleCamera?.();
+    if (typeof on === "boolean") {
+      cameraToggle.classList.toggle("flipped", !!on);
+      cameraToggle.innerHTML = on
+        ? `<span class="material-symbols-outlined">videocam</span>`
+        : `<span class="material-symbols-outlined">videocam_off</span>`;
+    }
     logDebug("Camera toggle clicked");
   });
 
@@ -387,6 +415,7 @@ export function initCallUI(rtc) {
     showIncoming(fromName);
     setVoiceOnlyMode(!!audioOnly);
     setScreenShareMode(false);
+    setCallMode("inbound");
     container.classList.remove("hidden");
   };
 
@@ -396,6 +425,7 @@ export function initCallUI(rtc) {
     showConnecting(targetName);
     setVoiceOnlyMode(!!voiceOnly);
     setScreenShareMode(false);
+    setCallMode("active");
     container.classList.remove("hidden");
   };
 
@@ -404,6 +434,7 @@ export function initCallUI(rtc) {
     hideOverlay();
     setStatus("In call");
     startTimer();
+    setCallMode("active");
     container.classList.remove("hidden");
   };
 
@@ -417,6 +448,7 @@ export function initCallUI(rtc) {
     setScreenShareMode(false);
     setCameraOff(false);
     setAINoiseSuppression(false);
+    setCallMode(null);
     container.classList.add("hidden");
   };
 
@@ -425,6 +457,7 @@ export function initCallUI(rtc) {
     hideOverlay();
     setStatus(`Call failed: ${reason}`);
     stopTimer();
+    setCallMode(null);
     container.classList.add("hidden");
   };
 
@@ -491,7 +524,7 @@ export function initCallUI(rtc) {
 ------------------------------------------------------- */
 
 export function showUnavailableToast({ peerId, message }) {
-  const toast   = document.getElementById("unavailableToast");
+  const toast    = document.getElementById("unavailableToast");
   const voiceBtn = document.getElementById("utVoiceBtn");
   const videoBtn = document.getElementById("utVideoBtn");
   const textBtn  = document.getElementById("utTextBtn");
@@ -507,7 +540,6 @@ export function showUnavailableToast({ peerId, message }) {
   }
 
   toast.classList.remove("hidden");
-  // allow CSS transition
   setTimeout(() => toast.classList.add("open"), 10);
 
   const closeToast = () => {
@@ -534,6 +566,7 @@ export function showUnavailableToast({ peerId, message }) {
     }
   };
 }
+
 
 
 
