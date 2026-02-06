@@ -51,22 +51,27 @@ function initUI() {
         settings,
         fullProfile,
         voicemail
-      ].forEach(p => p?.classList.add("hidden"));
+      ].forEach(p => {
+        if (!p) return;
+        p.classList.remove("panel-open");
+        p.classList.add("hidden");
+      });
     },
 
     showMessaging() {
       this.hideAllPanelsExceptMessaging();
-      messaging.classList.remove("hidden");
-      miniChat.classList.add("hidden");
+      messaging?.classList.remove("hidden");
+      miniChat?.classList.add("hidden");
       document.body.classList.remove("panel-open");
     },
 
     collapseMessaging() {
-      messaging.classList.add("hidden");
-      miniChat.classList.remove("hidden");
+      messaging?.classList.add("hidden");
+      miniChat?.classList.remove("hidden");
     },
 
     showFloating(panel) {
+      if (!panel) return;
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
       panel.classList.remove("hidden");
@@ -75,16 +80,24 @@ function initUI() {
     },
 
     showDirectory() {
+      if (!directoryPanel) return;
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
+
       directoryPanel.classList.remove("hidden");
+
+      // Trigger slide‑in animation on next frame
+      requestAnimationFrame(() => {
+        directoryPanel.classList.add("panel-open");
+      });
+
       document.body.classList.add("panel-open");
     }
   };
 
   /* ============================================================
-     DIRECTORY SECTION SWITCHER
-============================================================ */
+     DIRECTORY SECTION SWITCHER — CONTACTS / HISTORY / MESSAGES / VOICEMAIL / BLOCKED
+  ============================================================ */
   function initDirectorySwitcher() {
     const navButtons = document.querySelectorAll(".directory-nav button");
     const sections = document.querySelectorAll(".dir-section");
@@ -107,17 +120,18 @@ function initUI() {
       btn.addEventListener("click", () => {
         const section = btn.dataset.section;
 
+        // Highlight active button
         navButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
+        // Switch section
         showSection(section);
       });
     });
 
+    // Default section
     showSection("contacts");
   }
-
-  initDirectorySwitcher();
 
   /* -----------------------------------------------------------
      THEME TOGGLE
@@ -173,6 +187,7 @@ function initUI() {
   });
 
   document.getElementById("end-call")?.addEventListener("click", () => {
+    if (!video) return;
     video.classList.add("hidden");
     UIX.showMessaging();
   });
@@ -188,7 +203,7 @@ function initUI() {
      FULL PROFILE MODAL
   ----------------------------------------------------------- */
   document.getElementById("closeFullProfile")?.addEventListener("click", () => {
-    fullProfile.classList.add("hidden");
+    fullProfile?.classList.add("hidden");
     UIX.showMessaging();
   });
 
@@ -203,8 +218,9 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     DEFAULT STATE
+     INITIALIZE DIRECTORY + DEFAULT STATE
   ----------------------------------------------------------- */
+  initDirectorySwitcher();
   UIX.showMessaging();
 }
 
@@ -466,6 +482,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
