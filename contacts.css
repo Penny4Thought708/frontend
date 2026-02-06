@@ -1,113 +1,329 @@
-/* CONTACTS.CSS — Contact rows, profile preview */
+/* ============================================================
+   CONTACT LIST ITEM — PREMIUM GLASS STYLE
+============================================================ */
 
-.contact-row,
-#contacts li,
-#contacts-lookup li,
-#messaging_list li {
-  display: flex;
+#contacts li {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid transparent;
+  gap: 12px;
+
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  background:
+    radial-gradient(circle at 0 0, rgba(94,242,255,0.12), transparent 60%),
+    rgba(6,8,20,0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+
   cursor: pointer;
-  transition: var(--motion-fast);
+  transition:
+    transform 140ms cubic-bezier(0.22,1.4,0.36,1),
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
-.contact-row:hover,
-#contacts li:hover,
-#contacts-lookup li:hover,
-#messaging_list li:hover {
-  border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.04);
+html[data-theme="light"] #contacts li {
+  background:
+    radial-gradient(circle at 0 0, rgba(94,242,255,0.10), transparent 60%),
+    rgba(255,255,255,0.65);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+#contacts li:hover {
+  transform: translateY(-2px);
+  border-color: var(--ef-res-low);
+  box-shadow:
+    0 0 14px rgba(94,242,255,0.4),
+    0 0 24px rgba(255,123,255,0.25);
 }
 
 /* Avatar */
-.contact-avatar,
-.profile-avatar img,
-#remoteAvatarImg,
-#localAvatarImg {
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
+.avatar-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.contact-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   object-fit: cover;
+
+  border: 2px solid rgba(255,255,255,0.12);
+  box-shadow:
+    0 0 10px rgba(94,242,255,0.25);
 }
 
 /* Status dot */
-.status-dot {
+.contact-status {
   position: absolute;
   bottom: 2px;
   right: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: 2px solid #05060a;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(6,8,20,0.9);
 }
 
-.status-dot.online {
-  background: #3ddc84;
+.contact-status.online {
+  background: #7dffb0;
 }
 
-.status-dot.offline {
-  background: #6b6c75;
+.contact-status.offline {
+  background: #ff6b6b;
 }
 
-/* Profile card */
-.profile_card {
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--bg-elevated-soft);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-subtle);
+/* Contact info */
+.contact-info {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 2px;
 }
 
-.profile-avatar {
-  position: relative;
-  width: 120px;
-  margin: 0 auto;
+.contact-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ef-text-dark-main);
 }
 
-.profile-avatar img {
-  width: 120px;
-  height: 120px;
+html[data-theme="light"] .contact-name {
+  color: var(--ef-text-light-main);
+}
+
+.contact-email {
+  font-size: 0.78rem;
+  opacity: 0.7;
+  color: var(--ef-text-dark-soft);
+}
+
+html[data-theme="light"] .contact-email {
+  color: var(--ef-text-light-soft);
+}
+
+.contact-last {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  color: var(--ef-text-dark-muted);
+}
+
+html[data-theme="light"] .contact-last {
+  color: var(--ef-text-light-muted);
+}
+
+/* Unread badge */
+.unread-badge {
+  background: var(--ef-res-low);
+  color: #05060a;
+  padding: 2px 8px;
   border-radius: 999px;
-  object-fit: cover;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-/* Profile actions */
-.profile-actions {
+/* Action buttons */
+.contact-actions {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
 }
 
-.save-profile-btn,
-.logout-btn,
-.delete-account-btn {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
+.contact-actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+
+  background:
+    radial-gradient(circle at 30% 0, rgba(94,242,255,0.18), rgba(6,8,24,0.96));
+  color: #d5d8ff;
+
   cursor: pointer;
-  text-align: center;
-  transition: var(--motion-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    transform 140ms cubic-bezier(0.22,1.4,0.36,1),
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.save-profile-btn:hover,
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+.contact-actions button:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: var(--ef-res-low);
+  box-shadow:
+    0 0 12px rgba(94,242,255,0.4),
+    0 0 20px rgba(255,123,255,0.25);
 }
 
-.delete-account-btn {
-  border-color: rgba(255, 91, 106, 0.4);
-  color: var(--danger-strong);
+/* ============================================================
+   CALL LOG ITEM — GLASS + SWIPE SUPPORT
+============================================================ */
+
+.call-swipe-wrapper {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
 }
 
-.delete-account-btn:hover {
-  background: var(--danger-soft);
+.call-log-main {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 12px;
+
+  padding: 10px 12px;
+
+  background:
+    radial-gradient(circle at 0 0, rgba(94,242,255,0.12), transparent 60%),
+    rgba(6,8,20,0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+
+  transition: transform 200ms ease;
 }
 
+html[data-theme="light"] .call-log-main {
+  background:
+    radial-gradient(circle at 0 0, rgba(94,242,255,0.10), transparent 60%),
+    rgba(255,255,255,0.65);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.call-log-main:hover {
+  transform: translateY(-2px);
+  border-color: var(--ef-res-low);
+  box-shadow:
+    0 0 14px rgba(94,242,255,0.4),
+    0 0 24px rgba(255,123,255,0.25);
+}
+
+/* Avatar */
+.call-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+
+  border: 2px solid rgba(255,255,255,0.12);
+  box-shadow:
+    0 0 10px rgba(94,242,255,0.25);
+}
+
+/* Info */
+.call-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.call-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ef-text-dark-main);
+}
+
+html[data-theme="light"] .call-name {
+  color: var(--ef-text-light-main);
+}
+
+.call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+/* Status badges */
+.call-status {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.12);
+}
+
+.call-status.completed {
+  color: #7dffb0;
+}
+
+.call-status.failed {
+  color: #ff6b6b;
+}
+
+.missed-badge {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #ff6b6b;
+  color: #fff;
+}
+
+/* Actions */
+.call-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.call-actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+
+  background:
+    radial-gradient(circle at 30% 0, rgba(94,242,255,0.18), rgba(6,8,24,0.96));
+  color: #d5d8ff;
+
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    transform 140ms cubic-bezier(0.22,1.4,0.36,1),
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.call-actions button:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: var(--ef-res-low);
+  box-shadow:
+    0 0 12px rgba(94,242,255,0.4),
+    0 0 20px rgba(255,123,255,0.25);
+}
+
+/* Swipe delete button */
+.call-delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 80px;
+
+  background: #ff4d4d;
+  color: #fff;
+  border: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  transform: translateX(100%);
+  transition: transform 200ms ease;
+}
+
+.call-swipe-wrapper.swiped .call-log-main {
+  transform: translateX(-80px);
+}
+
+.call-swipe-wrapper.swiped .call-delete-btn {
+  transform: translateX(0);
+}
