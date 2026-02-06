@@ -53,7 +53,6 @@ function initUI() {
         voicemail
       ].forEach(p => {
         if (!p) return;
-        p.classList.remove("panel-open");
         p.classList.add("hidden");
       });
     },
@@ -81,15 +80,15 @@ function initUI() {
 
     showDirectory() {
       if (!directoryPanel) return;
+
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
 
-      directoryPanel.classList.remove("hidden");
-
-      // Trigger slide‑in animation on next frame
-      requestAnimationFrame(() => {
-        directoryPanel.classList.add("panel-open");
-      });
+      if (!directoryOpen) {
+        openDirectory();
+      } else {
+        closeDirectory(() => openDirectory());
+      }
 
       document.body.classList.add("panel-open");
     }
@@ -120,66 +119,61 @@ function initUI() {
       btn.addEventListener("click", () => {
         const section = btn.dataset.section;
 
-        // Highlight active button
         navButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
-        // Switch section
         showSection(section);
       });
     });
 
-    // Default section
     showSection("contacts");
   }
-/* ============================================================
-   DIRECTORY SLIDE CONTROLLER
-============================================================ */
 
-let directoryOpen = false;
-let directoryAnimating = false;
+  /* ============================================================
+     DIRECTORY SLIDE CONTROLLER — FINAL VERSION
+  ============================================================ */
+  let directoryOpen = false;
+  let directoryAnimating = false;
 
-function openDirectory() {
-  if (directoryAnimating) return;
-  directoryAnimating = true;
+  function openDirectory() {
+    if (directoryAnimating || !directoryPanel) return;
+    directoryAnimating = true;
 
-  const panel = document.getElementById("directoryPanel");
+    directoryPanel.classList.remove("dir-hiding", "hidden");
+    void directoryPanel.offsetWidth; // force reflow
 
-  panel.classList.remove("dir-hiding");
-  panel.classList.add("dir-visible");
+    directoryPanel.classList.add("dir-visible");
 
-  setTimeout(() => {
-    directoryOpen = true;
-    directoryAnimating = false;
-  }, 260);
-}
+    setTimeout(() => {
+      directoryOpen = true;
+      directoryAnimating = false;
+    }, 260);
+  }
 
-function closeDirectory(callback) {
-  if (directoryAnimating) return;
-  directoryAnimating = true;
+  function closeDirectory(callback) {
+    if (directoryAnimating || !directoryPanel) return;
+    directoryAnimating = true;
 
-  const panel = document.getElementById("directoryPanel");
+    directoryPanel.classList.remove("dir-visible");
+    directoryPanel.classList.add("dir-hiding");
 
-  panel.classList.add("dir-hiding");
-  panel.classList.remove("dir-visible");
+    setTimeout(() => {
+      directoryPanel.classList.add("hidden");
+      directoryOpen = false;
+      directoryAnimating = false;
+      if (callback) callback();
+    }, 260);
+  }
 
-  setTimeout(() => {
-    directoryOpen = false;
-    directoryAnimating = false;
-    if (callback) callback();
-  }, 260);
-}
-
-/* When a directory button is clicked */
-document.querySelectorAll(".directory-nav button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (!directoryOpen) {
-      openDirectory();
-    } else {
-      closeDirectory(() => openDirectory());
-    }
+  document.querySelectorAll(".directory-nav button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!directoryOpen) {
+        openDirectory();
+      } else {
+        closeDirectory(() => openDirectory());
+      }
+    });
   });
-});
 
   /* -----------------------------------------------------------
      THEME TOGGLE
@@ -187,8 +181,9 @@ document.querySelectorAll(".directory-nav button").forEach(btn => {
   toggleBtn?.addEventListener("click", () => {
     const html = document.documentElement;
     const theme = html.getAttribute("data-theme");
-    html.setAttribute("data-theme", theme === "dark" ? "light" : "dark");
-    toggleBtn.textContent = theme === "dark" ? "☀️" : "🌙";
+    const next = theme === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    toggleBtn.textContent = next === "dark" ? "🌙" : "☀️";
   });
 
   /* -----------------------------------------------------------
@@ -530,6 +525,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
