@@ -146,172 +146,186 @@ window.currentUserAvatar = user.avatar;
   <!-- ============================================================
        MAIN APP GRID (ADAPTIVE OS LAYOUT)
   ============================================================ -->
-  <main class="app-shell">
+ <main class="app-shell">
 
-    <!-- ============================================================
-         LEFT RAIL (PERSISTENT)
-    ============================================================ -->
-    <aside class="app-rail" aria-label="App navigation">
+  <!-- ============================================================
+       LEFT RAIL (PERSISTENT)
+  ============================================================ -->
+  <aside class="app-rail" aria-label="App navigation">
 
-      <div id="notification_container" class="rail-notifications">
-        <span id="notificationCount"></span>
+    <div id="notification_container" class="rail-notifications">
+      <span id="notificationCount"></span>
+    </div>
+
+    <button id="btn_search" class="rail-btn" data-tip="Search" type="button">🔍</button>
+    <button id="btn_chat_main" class="rail-btn" data-tip="Chat" type="button">💬</button>
+    <button id="contact_widget" class="rail-btn" data-tip="Contacts" type="button">👥</button>
+    <button id="btn_notifications" class="rail-btn" data-tip="Notifications" type="button">🔔</button>
+    <button id="btn_settings" class="rail-btn" data-tip="Settings" type="button">⚙️</button>
+    <button id="toggleBtn" class="rail-btn" data-tip="Theme" type="button">🌙</button>
+
+    <div class="rail-spacer"></div>
+
+    <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout" type="button">⏻</button>
+    <button id="btn_help" class="rail-btn" data-tip="Help" type="button">❓</button>
+  </aside>
+
+
+
+  <!-- ============================================================
+       LEFT COLUMN — DIRECTORY PANEL + SEARCH
+  ============================================================ -->
+  <section class="column-left">
+
+    <!-- DIRECTORY PANEL (LEFT + MIDDLE) -->
+    <div id="directoryPanel" class="directory-panel">
+
+      <!-- LEFT: Directory Navigation -->
+      <aside class="directory-nav">
+        <button data-section="contacts">Contacts</button>
+        <button data-section="history">Call History</button>
+        <button data-section="messages">Messages</button>
+        <button data-section="voicemail">Voicemail</button>
+        <button data-section="blocked">Blocked</button>
+      </aside>
+
+      <!-- MIDDLE: Directory Sections -->
+      <div class="directory-sections">
+
+        <section id="dir-contacts" class="dir-section">
+          <ul id="contacts" class="con-list"></ul>
+        </section>
+
+        <section id="dir-history" class="dir-section hidden">
+          <input id="callLogSearch" class="con-input" placeholder="Search calls…" autocomplete="off" />
+          <div id="callStats" class="con-stats"></div>
+          <ul id="callLogList" class="con-list"></ul>
+        </section>
+
+        <section id="dir-messages" class="dir-section hidden">
+          <ul id="messaging_list" class="con-list"></ul>
+        </section>
+
+        <section id="dir-voicemail" class="dir-section hidden">
+          <ul id="voiceMList" class="con-list"></ul>
+        </section>
+
+        <section id="dir-blocked" class="dir-section hidden">
+          <ul id="blocked-contacts" class="con-list"></ul>
+        </section>
+
+      </div> <!-- end directory-sections -->
+
+    </div> <!-- end directoryPanel -->
+
+
+
+    <!-- SEARCH PANEL (FLOATING OVER DIRECTORY) -->
+    <div id="search_panel" class="panel hidden">
+      <div class="search-header">
+        <h2>Search Contractors</h2>
+        <button id="close_search" type="button">✕</button>
       </div>
 
-      <button id="btn_search" class="rail-btn" data-tip="Search" type="button">🔍</button>
-      <button id="btn_chat_main" class="rail-btn" data-tip="Chat" type="button">💬</button>
-      <button id="contact_widget" class="rail-btn" data-tip="Contacts" type="button">👥</button>
-      <button id="btn_notifications" class="rail-btn" data-tip="Notifications" type="button">🔔</button>
-      <button id="btn_settings" class="rail-btn" data-tip="Settings" type="button">⚙️</button>
-      <button id="toggleBtn" class="rail-btn" data-tip="Theme" type="button">🌙</button>
-
-      <div class="rail-spacer"></div>
-
-      <button onclick="showLogoutModal()" class="rail-btn logoutBtn" data-tip="Logout" type="button">⏻</button>
-      <button id="btn_help" class="rail-btn" data-tip="Help" type="button">❓</button>
-    </aside>
-
-
-    <!-- ============================================================
-         LEFT COLUMN — CONWRAP + SEARCH
-    ============================================================ -->
-    <section class="column-left">
-
-      <!-- CONTACTS / HISTORY / MESSAGES (CONWRAP REDESIGNED) -->
-      <div id="conwrap" class="panel hidden">
-        <div class="contacts-main">
-
-          <section class="con-section">
-            <h2>Voicemail</h2>
-            <ul id="voiceMList" class="con-list"></ul>
-          </section>
-
-          <section class="con-section">
-            <h2>Contacts</h2>
-            <ul id="contacts" class="con-list"></ul>
-          </section>
-
-          <section class="con-section">
-            <h2>Call History</h2>
-            <input id="callLogSearch" class="con-input" placeholder="Search calls…" autocomplete="off" />
-            <div id="callStats" class="con-stats"></div>
-            <ul id="callLogList" class="con-list"></ul>
-          </section>
-
-          <section class="con-section">
-            <h2>Messages</h2>
-            <ul id="messaging_list" class="con-list"></ul>
-          </section>
-
-          <section class="con-section">
-            <h2>Blocked Contacts</h2>
-            <ul id="blocked-contacts" class="con-list"></ul>
-          </section>
-
-        </div>
+      <div class="search-input">
+        <input id="contractor_query_panel" placeholder="Search contractors..." autocomplete="off" />
+        <button id="search_submit_panel" type="button">🔍</button>
+        <ul id="autocomplete_list_panel"></ul>
       </div>
 
-      <!-- SEARCH PANEL -->
-      <div id="search_panel" class="panel hidden">
-        <div class="search-header">
-          <h2>Search Contractors</h2>
-          <button id="close_search" type="button">✕</button>
-        </div>
-
-        <div class="search-input">
-          <input id="contractor_query_panel" placeholder="Search contractors..." autocomplete="off" />
-          <button id="search_submit_panel" type="button">🔍</button>
-          <ul id="autocomplete_list_panel"></ul>
-        </div>
-
-        <div class="search-filters">
-          <button class="filter-chip active" data-category="all" type="button">All</button>
-          <button class="filter-chip" data-category="roofing" type="button">Roofing</button>
-          <button class="filter-chip" data-category="plumbing" type="button">Plumbing</button>
-          <button class="filter-chip" data-category="hvac" type="button">HVAC</button>
-          <button class="filter-chip" data-category="electrical" type="button">Electrical</button>
-          <button class="filter-chip" data-category="general" type="button">General</button>
-        </div>
-
-        <div id="search_results"></div>
-
-        <div class="map-container">
-          <iframe id="contractor_map" loading="lazy"></iframe>
-        </div>
+      <div class="search-filters">
+        <button class="filter-chip active" data-category="all" type="button">All</button>
+        <button class="filter-chip" data-category="roofing" type="button">Roofing</button>
+        <button class="filter-chip" data-category="plumbing" type="button">Plumbing</button>
+        <button class="filter-chip" data-category="hvac" type="button">HVAC</button>
+        <button class="filter-chip" data-category="electrical" type="button">Electrical</button>
+        <button class="filter-chip" data-category="general" type="button">General</button>
       </div>
 
-    </section>
+      <div id="search_results"></div>
 
-    <!-- ============================================================
-         CENTER COLUMN — MESSAGING‑FIRST
-    ============================================================ -->
-    <section class="column-center">
+      <div class="map-container">
+        <iframe id="contractor_map" loading="lazy"></iframe>
+      </div>
+    </div>
 
-      <div class="workspace-bg"></div>
+  </section> <!-- end column-left -->
 
-      <div id="messaging_box" class="panel messaging-panel hidden">
-        <header class="msg-header">
-          <h2 id="msgHeaderName"></h2>
 
-          <div class="msg-actions">
-            <button id="voiceBtn" type="button">🎤</button>
-            <button id="videoBtn" type="button" data-window-open="video-call">📹</button>
-            <button id="call-debug-toggle" type="button">🐞</button>
-          </div>
-        </header>
 
-        <div id="messageWin" class="message-window"></div>
+  <!-- ============================================================
+       CENTER COLUMN — MESSAGING PANEL
+  ============================================================ -->
+  <section class="column-center">
 
-        <div class="typing-indicator">
-          <div class="typing-bubble">
-            <span></span><span></span><span></span>
-          </div>
+    <div class="workspace-bg"></div>
+
+    <div id="messaging_box" class="panel messaging-panel hidden">
+
+      <header class="msg-header">
+        <h2 id="msgHeaderName"></h2>
+
+        <div class="msg-actions">
+          <button id="voiceBtn" type="button">🎤</button>
+          <button id="videoBtn" type="button" data-window-open="video-call">📹</button>
+          <button id="call-debug-toggle" type="button">🐞</button>
         </div>
+      </header>
 
-        <div class="recording-indicator">
-          <div class="recording-bubble">
-            <span class="mic-icon">🎤</span>
-            <span class="recording-text">Recording audio…</span>
-            <div class="pulse-ring"></div>
-          </div>
-        </div>
+      <div id="messageWin" class="message-window"></div>
 
-        <div id="img-viewer" class="img-viewer">
-          <img id="img-viewer-img" alt="Preview" />
-        </div>
-
-        <div id="attachmentPreview" class="attachment-preview hidden"></div>
-
-        <form id="text_box_reply" class="composer">
-          <button id="plusBtn" type="button">＋</button>
-          <div id="message_input" class="msg-input" contenteditable="true"></div>
-          <button id="micBtn" type="button">🎤</button>
-          <button type="submit">➡️</button>
-          <input id="attachment_input" type="file" multiple hidden />
-        </form>
-
-        <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
-          <div class="sheet-handle"></div>
-          <button class="sheet-item" id="sheetCamera" type="button">📷 Camera</button>
-          <button class="sheet-item" id="sheetGallery" type="button">🖼️ Gallery</button>
-          <button class="sheet-item" id="sheetFile" type="button">📎 File</button>
-          <button class="sheet-item" id="sheetAudio" type="button">🎤 Voice Message</button>
-          <button class="sheet-item" id="sheetEmoji" type="button">😀 Emoji</button>
-          <button class="sheet-item" id="sheetGif" type="button">🎬 GIF</button>
-        </div>
-
-        <emoji-picker id="emojiPicker" class="emoji-picker"></emoji-picker>
-
-        <div id="gifPicker" class="gif-picker hidden">
-          <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
-          <div id="gifResults" class="gif-results"></div>
+      <div class="typing-indicator">
+        <div class="typing-bubble">
+          <span></span><span></span><span></span>
         </div>
       </div>
 
-      <button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
+      <div class="recording-indicator">
+        <div class="recording-bubble">
+          <span class="mic-icon">🎤</span>
+          <span class="recording-text">Recording audio…</span>
+          <div class="pulse-ring"></div>
+        </div>
+      </div>
 
-    </section>
+      <div id="img-viewer" class="img-viewer">
+        <img id="img-viewer-img" alt="Preview" />
+      </div>
 
-  </main>
+      <div id="attachmentPreview" class="attachment-preview hidden"></div>
+
+      <form id="text_box_reply" class="composer">
+        <button id="plusBtn" type="button">＋</button>
+        <div id="message_input" class="msg-input" contenteditable="true"></div>
+        <button id="micBtn" type="button">🎤</button>
+        <button type="submit">➡️</button>
+        <input id="attachment_input" type="file" multiple hidden />
+      </form>
+
+      <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
+        <div class="sheet-handle"></div>
+        <button class="sheet-item" id="sheetCamera" type="button">📷 Camera</button>
+        <button class="sheet-item" id="sheetGallery" type="button">🖼️ Gallery</button>
+        <button class="sheet-item" id="sheetFile" type="button">📎 File</button>
+        <button class="sheet-item" id="sheetAudio" type="button">🎤 Voice Message</button>
+        <button class="sheet-item" id="sheetEmoji" type="button">😀 Emoji</button>
+        <button class="sheet-item" id="sheetGif" type="button">🎬 GIF</button>
+      </div>
+
+      <emoji-picker id="emojiPicker" class="emoji-picker hidden"></emoji-picker>
+
+      <div id="gifPicker" class="gif-picker hidden">
+        <input id="gifSearch" class="gif-search" placeholder="Search GIFs..." autocomplete="off" />
+        <div id="gifResults" class="gif-results"></div>
+      </div>
+
+    </div> <!-- end messaging_box -->
+
+    <button id="miniChatBubble" class="mini-chat-bubble hidden" type="button">💬</button>
+
+  </section> <!-- end column-center -->
+
+</main>
 
   <!-- ============================================================
        GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
@@ -1291,6 +1305,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
