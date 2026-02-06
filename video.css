@@ -133,6 +133,138 @@ html[data-theme="light"] #videoCallWindow .floating-body.video-body {
     0 0 18px rgba(0, 0, 0, 0.8),
     0 0 32px rgba(94, 242, 255, 0.35);
 }
+/* ============================================================
+   FULLSCREEN CALL WINDOW (ONLY RAIL VISIBLE)
+============================================================ */
+
+#videoCallWindow.call-window {
+  position: fixed;
+  top: 0;
+  left: 70px; /* rail width */
+  width: calc(100vw - 70px);
+  height: 100vh;
+  background: transparent;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+#videoCallWindow.call-window:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Remove floating-window constraints */
+#videoCallWindow.call-window .video-body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 0 0, rgba(94,242,255,0.22), transparent 60%),
+    rgba(6,8,20,0.96);
+}
+
+/* ============================================================
+   CENTERED STATUS + TIMER
+============================================================ */
+
+.call-top-info {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 20;
+}
+
+.call-status {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.call-timer {
+  font-family: ui-monospace, monospace;
+  font-size: 1rem;
+  color: #ffe66b;
+}
+
+/* ============================================================
+   FIXED GRID POSITIONING
+============================================================ */
+
+.call-grid {
+  position: absolute;
+  inset: 0;
+  padding: 80px 20px 120px; /* space for status + controls */
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+/* ============================================================
+   DROPDOWN MENU FIX
+============================================================ */
+
+.more-controls {
+  position: relative;
+}
+
+#more-controls-menu {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 200px;
+  background: rgba(6,8,20,0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 6px 0;
+  backdrop-filter: blur(12px);
+  z-index: 50;
+}
+
+#more-controls-menu button {
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+}
+
+#more-controls-menu.hidden {
+  display: none;
+}
+
+/* ============================================================
+   BUTTON VISIBILITY LOGIC
+============================================================ */
+
+.inbound-only { display: none; }
+.active-only { display: none; }
+
+#videoCallWindow.inbound-mode .inbound-only {
+  display: flex;
+}
+
+#videoCallWindow.inbound-mode .active-only {
+  display: none;
+}
+
+#videoCallWindow.active-mode .active-only {
+  display: flex;
+}
+
+#videoCallWindow.active-mode .inbound-only {
+  display: none;
+}
 
 /* ============================================================
    VIDEO ELEMENTS
