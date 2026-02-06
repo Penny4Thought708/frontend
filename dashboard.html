@@ -336,42 +336,7 @@ window.currentUserAvatar = user.avatar;
   </section> <!-- end column-center -->
 
 </main>
-
-  <!-- ============================================================
-       GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
-  ============================================================ -->
-  <div id="windowManager" data-window-manager>
-
-    <!-- PROFILE EDITOR -->
-    <section id="profileWindow"
-             class="floating-window hidden"
-             data-floating
-             data-draggable
-             data-window-id="profile">
-      <div class="floating-body">
-        <h2>Profile</h2>
-        <form id="profileForm">
-          <label><span>Display Name</span><input id="profileDisplayName" type="text" /></label>
-          <label><span>Status</span><input id="profileStatus" type="text" /></label>
-          <label><span>About</span><textarea id="profileAbout"></textarea></label>
-          <button id="saveProfileBtn" type="button">Save</button>
-        </form>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="settingsWindow"
-             class="floating-window hidden"
-             data-floating
-             data-draggable
-             data-window-id="settings">
-      <div class="floating-body">
-        <h2>Settings</h2>
-        <div id="settings_container"></div>
-      </div>
-    </section>
-
-    <!-- VIDEO CALL -->
+ <!-- VIDEO CALL -->
 <section id="videoCallWindow"
          class="call-window hidden"
          data-window-id="video-call">
@@ -481,6 +446,41 @@ window.currentUserAvatar = user.avatar;
 
   </div>
 </section>
+  <!-- ============================================================
+       GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
+  ============================================================ -->
+  <div id="windowManager" data-window-manager>
+
+    <!-- PROFILE EDITOR -->
+    <section id="profileWindow"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="profile">
+      <div class="floating-body">
+        <h2>Profile</h2>
+        <form id="profileForm">
+          <label><span>Display Name</span><input id="profileDisplayName" type="text" /></label>
+          <label><span>Status</span><input id="profileStatus" type="text" /></label>
+          <label><span>About</span><textarea id="profileAbout"></textarea></label>
+          <button id="saveProfileBtn" type="button">Save</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settingsWindow"
+             class="floating-window hidden"
+             data-floating
+             data-draggable
+             data-window-id="settings">
+      <div class="floating-body">
+        <h2>Settings</h2>
+        <div id="settings_container"></div>
+      </div>
+    </section>
+
+   
 
 
 
@@ -1387,6 +1387,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
