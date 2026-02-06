@@ -82,6 +82,43 @@ function initUI() {
     }
   };
 
+  /* ============================================================
+     DIRECTORY SECTION SWITCHER
+============================================================ */
+  function initDirectorySwitcher() {
+    const navButtons = document.querySelectorAll(".directory-nav button");
+    const sections = document.querySelectorAll(".dir-section");
+
+    if (!navButtons.length || !sections.length) return;
+
+    function showSection(sectionName) {
+      sections.forEach(sec => {
+        if (sec.id === `dir-${sectionName}`) {
+          sec.classList.remove("hidden");
+          sec.classList.add("dir-active");
+        } else {
+          sec.classList.add("hidden");
+          sec.classList.remove("dir-active");
+        }
+      });
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const section = btn.dataset.section;
+
+        navButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        showSection(section);
+      });
+    });
+
+    showSection("contacts");
+  }
+
+  initDirectorySwitcher();
+
   /* -----------------------------------------------------------
      THEME TOGGLE
   ----------------------------------------------------------- */
@@ -429,6 +466,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
