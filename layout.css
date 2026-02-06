@@ -417,6 +417,26 @@ body::after {
   overflow-y: auto;
   max-height: calc(100vh - 160px);
 }
+/* ============================================================
+   DIRECTORY PANEL — SLIDE-IN ANIMATION
+============================================================ */
+
+#directoryPanel {
+  transform: translateX(-12px);
+  opacity: 0;
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+#directoryPanel.panel-open {
+  transform: translateX(0);
+  opacity: 1;
+}
+#directoryPanel {
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
 
 /* ============================================================
    SEARCH PANEL — FLOATING OVER DIRECTORY
