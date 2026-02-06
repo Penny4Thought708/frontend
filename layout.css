@@ -1106,6 +1106,10 @@ display: flex;
 ============================================================ */
 
 /* Base styling (hidden by default) */
+/* ============================================================
+   EMOJI PICKER — FLOATING PANEL (EchoFluid E3 Ultra)
+============================================================ */
+
 emoji-picker#emojiPicker {
   position: absolute;
   left: 50%;
@@ -1129,9 +1133,10 @@ emoji-picker#emojiPicker {
 
   z-index: 9999;
 
-  opacity: 0;
-  pointer-events: none;
-  display: block; /* JS controls visibility via .hidden */
+  /* Hidden by default */
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
 
   transition:
     opacity 200ms cubic-bezier(0.22, 1.4, 0.36, 1),
@@ -1142,14 +1147,16 @@ emoji-picker#emojiPicker {
 emoji-picker#emojiPicker.hidden {
   opacity: 0 !important;
   pointer-events: none !important;
+  display: none !important;
   transform: translateX(-50%) translateY(12px) !important;
 }
 
 /* When JS removes .hidden, show it */
 emoji-picker#emojiPicker:not(.hidden) {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) translateY(0) !important;
 }
 
 /* Emoji picker internal scrollbars */
