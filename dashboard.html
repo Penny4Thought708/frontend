@@ -373,12 +373,10 @@ window.currentUserAvatar = user.avatar;
 
     <!-- VIDEO CALL -->
 <section id="videoCallWindow"
-         class="floating-window hidden"
-         data-floating
-         data-draggable
+         class="call-window hidden"
          data-window-id="video-call">
 
-  <div class="floating-body video-body">
+  <div class="video-body">
 
     <!-- ============================================================
          GROUP GRID (AUTO LAYOUT FOR 1:1 OR MULTI-PARTY)
@@ -416,11 +414,11 @@ window.currentUserAvatar = user.avatar;
     </div>
 
     <!-- ============================================================
-         STATUS + TIMER
+         STATUS + TIMER (CENTERED)
     ============================================================ -->
     <div class="call-top-info">
-      <div id="call-status">Calling…</div>
-      <div id="call-timer">00:00</div>
+      <div id="call-status" class="call-status">Calling…</div>
+      <div id="call-timer" class="call-timer">00:00</div>
     </div>
 
     <!-- ============================================================
@@ -428,52 +426,51 @@ window.currentUserAvatar = user.avatar;
     ============================================================ -->
     <div id="call-controls" class="call-controls">
 
-      <!-- INBOUND -->
-      <button id="decline-call" type="button" class="control-btn inbound-only">
+      <!-- INBOUND ONLY -->
+      <button id="decline-call" class="control-btn inbound-only">
         <span class="material-symbols-outlined">call_end</span>
       </button>
 
-      <button id="answer-call" type="button" class="control-btn inbound-only">
+      <button id="answer-call" class="control-btn inbound-only">
         <span class="material-symbols-outlined">call</span>
       </button>
 
       <!-- ACTIVE CALL PRIMARY CONTROLS -->
-      <button id="mute-call" type="button" class="control-btn active-only">
+      <button id="mute-call" class="control-btn active-only">
         <span class="material-symbols-outlined">mic_off</span>
       </button>
 
-      <button id="camera-toggle" type="button" class="control-btn active-only">
+      <button id="camera-toggle" class="control-btn active-only">
         <span class="material-symbols-outlined">videocam</span>
       </button>
 
-      <!-- END CALL -->
-      <button id="end-call" type="button" class="control-btn active-only">
+      <button id="end-call" class="control-btn active-only">
         <span class="material-symbols-outlined">call_end</span>
       </button>
 
       <!-- MORE CONTROLS DROPDOWN -->
       <div class="more-controls">
-        <button id="more-controls-btn" type="button" class="control-btn">
+        <button id="more-controls-btn" class="control-btn">
           <span class="material-symbols-outlined">more_vert</span>
         </button>
 
         <div id="more-controls-menu" class="more-controls-menu hidden">
-          <button id="share-screen" type="button">
+          <button id="share-screen">
             <span class="material-symbols-outlined">screen_share</span>
             Share Screen
           </button>
 
-          <button id="ai-noise-toggle" type="button">
+          <button id="ai-noise-toggle">
             <span class="material-symbols-outlined">graphic_eq</span>
             Noise Suppression
           </button>
 
-          <button id="record-call" type="button">
+          <button id="record-call">
             <span class="material-symbols-outlined">fiber_manual_record</span>
             Record Call
           </button>
 
-          <button id="call-history-toggle" type="button">
+          <button id="call-history-toggle">
             <span class="material-symbols-outlined">history</span>
             Call History
           </button>
@@ -1390,6 +1387,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
