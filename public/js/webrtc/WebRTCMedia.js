@@ -23,24 +23,75 @@ function getAudioCtx() {
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
 /* -------------------------------------------------------
-   Local Avatar Visibility
+   DOM Helpers for Group Layout
+------------------------------------------------------- */
+function getCallGrid() {
+  return document.getElementById("callGrid");
+}
+
+function getRemoteTemplate() {
+  return document.getElementById("remoteParticipantTemplate");
+}
+
+function ensureRemoteMap() {
+  if (!rtcState.remoteParticipants) {
+    rtcState.remoteParticipants = {};
+  }
+  return rtcState.remoteParticipants;
+}
+
+function createRemoteParticipant(peerId = "default") {
+  const grid = getCallGrid();
+  const tpl = getRemoteTemplate();
+  if (!grid || !tpl) return null;
+
+  const map = ensureRemoteMap();
+  if (map[peerId]) return map[peerId];
+
+  const clone = tpl.content.firstElementChild.cloneNode(true);
+  clone.dataset.peerId = peerId;
+
+  const videoEl = clone.querySelector("video");
+  const avatarImg = clone.querySelector(".avatar-img");
+  const nameTag = clone.querySelector(".name-tag");
+
+  if (nameTag) nameTag.textContent = peerId || "Guest";
+  if (avatarImg && !avatarImg.src) {
+    avatarImg.src = "img/defaultUser.png";
+  }
+
+  grid.appendChild(clone);
+  map[peerId] = clone;
+  return clone;
+}
+
+function getRemoteParticipant(peerId = "default") {
+  const map = ensureRemoteMap();
+  return map[peerId] || createRemoteParticipant(peerId);
+}
+
+/* -------------------------------------------------------
+   Local Avatar Visibility (new grid layout)
 ------------------------------------------------------- */
 function updateLocalAvatarVisibility() {
-  const avatar = document.getElementById("localAvatar");
-  if (!avatar) return;
+  const localTile = document.getElementById("localParticipant");
+  if (!localTile) return;
+
+  const avatarWrapper = localTile.querySelector(".avatar-wrapper");
+  if (!avatarWrapper) return;
 
   const stream = rtcState.localStream;
   if (!stream) {
-    avatar.style.display = "flex";
+    avatarWrapper.style.display = "flex";
     return;
   }
 
   const hasVideo = stream.getVideoTracks().some((t) => t.enabled);
-  avatar.style.display = hasVideo ? "none" : "flex";
+  avatarWrapper.style.display = hasVideo ? "none" : "flex";
 }
 
 /* -------------------------------------------------------
-   Audio Visualizer (CSS variable)
+   Audio Visualizer (CSS variable --audio-level)
 ------------------------------------------------------- */
 function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
   if (!stream || !target) return;
@@ -79,13 +130,12 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection (with cleanup)
+   Remote Speaking Detection (per participant)
 ------------------------------------------------------- */
-let speakingLoopId = null;
+const speakingLoops = new Map();
 
-function startRemoteSpeakingDetection(stream, wrapper) {
-  const ring = wrapper?.querySelector(".avatar-ring");
-  if (!ring) return;
+function startRemoteSpeakingDetection(stream, participantEl) {
+  if (!participantEl) return;
 
   const ctx = getAudioCtx();
   if (!ctx) return log("AudioContext not supported");
@@ -104,23 +154,27 @@ function startRemoteSpeakingDetection(stream, wrapper) {
     const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
     smoothed = smoothed * 0.8 + avg * 0.2;
-    ring.classList.toggle("speaking", smoothed > 0.06);
+    const speaking = smoothed > 0.06;
 
-    speakingLoopId = requestAnimationFrame(loop);
+    participantEl.classList.toggle("speaking", speaking);
+
+    const id = requestAnimationFrame(loop);
+    speakingLoops.set(participantEl, id);
   };
 
   loop();
 }
 
 export function stopSpeakingDetection() {
-  if (speakingLoopId) {
-    cancelAnimationFrame(speakingLoopId);
-    speakingLoopId = null;
+  for (const [el, id] of speakingLoops.entries()) {
+    cancelAnimationFrame(id);
+    el.classList.remove("speaking");
   }
+  speakingLoops.clear();
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition
+   Local Media Acquisition (grid-aware)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -145,10 +199,10 @@ export async function getLocalMedia(audio = true, video = true) {
 
     updateLocalAvatarVisibility();
 
-    const wrapper =
-      localVideo?.closest(".local-media-wrapper") ||
-      document.getElementById("localVideoWrapper");
-    if (wrapper) attachAudioVisualizer(stream, wrapper);
+    const localTile =
+      localVideo?.closest(".participant.local") ||
+      document.getElementById("localParticipant");
+    if (localTile) attachAudioVisualizer(stream, localTile);
 
     return stream;
   } catch (err) {
@@ -164,6 +218,10 @@ export async function getLocalMedia(audio = true, video = true) {
         });
         rtcState.localStream = audioOnlyStream;
         updateLocalAvatarVisibility();
+
+        const localTile = document.getElementById("localParticipant");
+        if (localTile) attachAudioVisualizer(audioOnlyStream, localTile);
+
         return audioOnlyStream;
       } catch (err2) {
         log("Audio-only also failed:", err2.name, err2.message);
@@ -172,38 +230,61 @@ export async function getLocalMedia(audio = true, video = true) {
 
     rtcState.localStream = null;
 
-    const avatar = document.getElementById("localAvatar");
-    if (avatar) avatar.style.display = "flex";
+    const localTile = document.getElementById("localParticipant");
+    const avatarWrapper = localTile?.querySelector(".avatar-wrapper");
+    if (avatarWrapper) avatarWrapper.style.display = "flex";
 
     return null;
   }
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (UPDATED — FIXED VIDEO)
+   Remote Track Handling (GROUP-AWARE)
+   Usage:
+     attachRemoteTrack(peerId, evt)
+   Backwards compatible:
+     attachRemoteTrack(evt)  // peerId = "default"
 ------------------------------------------------------- */
-export function attachRemoteTrack(evt) {
-  let remoteStream = rtcState.remoteStream;
-  if (!remoteStream) {
-    remoteStream = new MediaStream();
-    rtcState.remoteStream = remoteStream;
+export function attachRemoteTrack(peerOrEvt, maybeEvt) {
+  let peerId;
+  let evt;
+
+  if (maybeEvt) {
+    peerId = peerOrEvt || "default";
+    evt = maybeEvt;
+  } else {
+    peerId = "default";
+    evt = peerOrEvt;
   }
 
+  if (!evt || !evt.track) {
+    log("attachRemoteTrack called without track");
+    return;
+  }
+
+  // Per-peer remote stream
+  if (!rtcState.remoteStreams) {
+    rtcState.remoteStreams = {};
+  }
+  let remoteStream = rtcState.remoteStreams[peerId];
+  if (!remoteStream) {
+    remoteStream = new MediaStream();
+    rtcState.remoteStreams[peerId] = remoteStream;
+  }
   remoteStream.addTrack(evt.track);
 
-  const remoteVideo = document.getElementById("remoteVideo");
-  const remoteAudioEl = document.getElementById("remoteAudio");
+  const participantEl = getRemoteParticipant(peerId);
+  if (!participantEl) {
+    log("No participant element for peer:", peerId);
+    return;
+  }
 
-  const wrapper =
-    remoteVideo?.closest(".remote-media-wrapper") ||
-    remoteAudioEl?.closest(".remote-media-wrapper") ||
-    document.getElementById("remoteWrapper");
-
-  const remoteAvatar = document.getElementById("remoteAvatar");
+  const videoEl = participantEl.querySelector("video");
+  const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
 
   const showAvatar = (show) => {
-    if (remoteAvatar) remoteAvatar.style.display = show ? "flex" : "none";
-    if (remoteVideo) remoteVideo.style.display = show ? "none" : "block";
+    if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
+    if (videoEl) videoEl.style.display = show ? "none" : "block";
   };
 
   // Track events
@@ -212,20 +293,20 @@ export function attachRemoteTrack(evt) {
   evt.track.onended = () => showAvatar(true);
 
   /* -----------------------------
-     Remote Video (FIXED)
+     Remote Video
   ----------------------------- */
-  if (evt.track.kind === "video" && remoteVideo) {
-    remoteVideo.srcObject = remoteStream;
-    remoteVideo.playsInline = true;
-    remoteVideo.style.display = "block";
-    remoteVideo.style.opacity = "1";
+  if (evt.track.kind === "video" && videoEl) {
+    videoEl.srcObject = remoteStream;
+    videoEl.playsInline = true;
+    videoEl.style.display = "block";
+    videoEl.style.opacity = "1";
 
-    // FIX: Play immediately — do NOT rely on onloadedmetadata
-    remoteVideo
+    videoEl
       .play()
       .then(() => {
         showAvatar(false);
-        log("Remote VIDEO playing");
+        participantEl.classList.add("video-active");
+        log("Remote VIDEO playing for peer:", peerId);
       })
       .catch((err) => {
         log("Remote video play blocked or failed:", err?.name || err);
@@ -233,8 +314,9 @@ export function attachRemoteTrack(evt) {
   }
 
   /* -----------------------------
-     Remote Audio
+     Remote Audio (single shared element)
   ----------------------------- */
+  const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
     remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.playsInline = true;
@@ -244,14 +326,8 @@ export function attachRemoteTrack(evt) {
       log("Remote audio autoplay blocked");
     });
 
-    if (wrapper) startRemoteSpeakingDetection(remoteStream, wrapper);
-  }
-
-  /* -----------------------------
-     Visualizer (only once)
-  ----------------------------- */
-  if (wrapper && evt.track.kind === "audio") {
-    attachAudioVisualizer(remoteStream, wrapper);
+    startRemoteSpeakingDetection(remoteStream, participantEl);
+    attachAudioVisualizer(remoteStream, participantEl);
   }
 }
 
@@ -261,14 +337,16 @@ export function attachRemoteTrack(evt) {
 export function cleanupMedia() {
   stopSpeakingDetection();
 
-  // Stop remote tracks
-  if (rtcState.remoteStream) {
-    rtcState.remoteStream.getTracks().forEach((t) => {
-      try {
-        t.stop();
-      } catch {}
+  // Stop per-peer remote streams
+  if (rtcState.remoteStreams) {
+    Object.values(rtcState.remoteStreams).forEach((stream) => {
+      stream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
     });
-    rtcState.remoteStream = null;
+    rtcState.remoteStreams = {};
   }
 
   // Stop local tracks
@@ -281,21 +359,30 @@ export function cleanupMedia() {
     rtcState.localStream = null;
   }
 
-  // Clear media elements
+  // Clear local video
   const localVideo = document.getElementById("localVideo");
-  const remoteVideo = document.getElementById("remoteVideo");
-  const remoteAudioEl = document.getElementById("remoteAudio");
-
   if (localVideo) {
     localVideo.srcObject = null;
     localVideo.style.display = "none";
     localVideo.style.opacity = "0";
   }
-  if (remoteVideo) {
-    remoteVideo.srcObject = null;
-    remoteVideo.style.display = "none";
-    remoteVideo.style.opacity = "0";
-  }
+
+  // Clear remote videos (all participants)
+  const map = rtcState.remoteParticipants || {};
+  Object.values(map).forEach((participantEl) => {
+    const videoEl = participantEl.querySelector("video");
+    if (videoEl) {
+      videoEl.srcObject = null;
+      videoEl.style.display = "none";
+      videoEl.style.opacity = "0";
+    }
+    const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
+    if (avatarWrapper) avatarWrapper.style.display = "flex";
+    participantEl.classList.remove("video-active", "speaking");
+  });
+
+  // Clear shared remote audio element
+  const remoteAudioEl = document.getElementById("remoteAudio");
   if (remoteAudioEl) {
     remoteAudioEl.srcObject = null;
   }
