@@ -14,18 +14,22 @@
   justify-content: center;
 }
 
+/* ============================================================
+   VIDEO CALL WINDOW — FULLSCREEN NEXT TO RAIL
+============================================================ */
+
 #videoCallWindow {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  width: 640px;
-  max-width: 96vw;
-  height: 460px;
-  max-height: 92vh;
-  transform: translate(-50%, -50%) scale(0.92);
+  top: 0;
+  left: 70px; /* width of your rail */
+  width: calc(100vw - 70px);
+  height: 100vh;
+  max-width: calc(100vw - 70px);
+  max-height: 100vh;
+  transform: none;
   opacity: 0;
   pointer-events: none;
-  z-index: 200;
+  z-index: 999;
   transition:
     opacity 260ms ease,
     transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
@@ -34,297 +38,310 @@
 #videoCallWindow:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(-50%, -50%) scale(1);
 }
 
-#videoCallWindow .video-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border-radius: 24px;
-  padding: 14px;
-  background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
-    rgba(6, 8, 20, 0.92);
-  border: 1px solid rgba(255,255,255,0.12);
-  backdrop-filter: blur(26px);
-  box-shadow:
-    0 0 40px rgba(94,242,255,0.25),
-    0 0 80px rgba(255,123,255,0.18),
-    0 0 120px rgba(0,0,0,0.9);
-}
-
-html[data-theme="light"] #videoCallWindow .video-body {
-  background:
-    radial-gradient(circle at 0 0, rgba(94,242,255,0.18), transparent 60%),
-    rgba(245,248,255,0.98);
-  border: 1px solid rgba(0,0,0,0.08);
-}
-
-/* ============================================================
-   CALL GRID — LOCAL + REMOTE + GROUP
-============================================================ */
-
-.call-grid {
-  flex: 1;
-  display: grid;
-  gap: 12px;
+/* Floating window body becomes full-bleed call surface */
+#videoCallWindow .floating-body.video-body {
+  position: relative;
   width: 100%;
   height: 100%;
-  grid-auto-rows: 1fr;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  padding: 6px;
-  position: relative;
-}
-
-/* ============================================================
-   PARTICIPANT TILE
-============================================================ */
-
-.participant {
-  position: relative;
-  border-radius: 16px;
-  overflow: hidden;
-  background: #000;
-  border: 1px solid rgba(255,255,255,0.12);
+  padding: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
+    rgba(6, 8, 20, 0.96);
+  border: none;
+  backdrop-filter: blur(26px);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  transition: transform 260ms cubic-bezier(0.22,1.4,0.36,1);
 }
 
-.participant.swapping {
-  transform: scale(0.92);
+html[data-theme="light"] #videoCallWindow .floating-body.video-body {
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
+    rgba(245, 248, 255, 0.98);
 }
 
 /* ============================================================
-   MEDIA WRAPPER (VIDEO + AVATAR)
+   STAGE LAYOUT — REMOTE MAIN, LOCAL PIP
 ============================================================ */
 
-.participant .media-wrapper {
+#videoCallWindow .video-stage {
   position: relative;
   flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Remote wrapper (main stage) */
+.remote-media-wrapper,
+#remoteWrapper {
+  position: absolute;
+  inset: 0;
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
-.participant video {
+/* Local wrapper (PiP by default) */
+.local-media-wrapper,
+#localVideoWrapper {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 260px;
+  max-width: 35%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.8),
+    0 0 32px rgba(94, 242, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1.4, 0.36, 1),
+    box-shadow 220ms ease;
+}
+
+/* Local blown up (swap) */
+#videoCallWindow.local-maximized #localVideoWrapper {
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#videoCallWindow.local-maximized #remoteWrapper {
+  bottom: 20px;
+  right: 20px;
+  width: 260px;
+  max-width: 35%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.8),
+    0 0 32px rgba(94, 242, 255, 0.35);
+}
+
+/* ============================================================
+   VIDEO ELEMENTS
+============================================================ */
+
+#localVideo,
+#remoteVideo {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: none;
+  opacity: 0;
+  transition: opacity 220ms ease;
 }
 
-.participant.video-active video {
+#localVideo[srcObject],
+#remoteVideo[srcObject] {
   display: block;
 }
 
-.participant.video-active .avatar-wrapper {
-  opacity: 0;
-  pointer-events: none;
+/* JS will set style.display and opacity; this just smooths it */
+#localVideo.show,
+#remoteVideo.show {
+  opacity: 1;
 }
 
 /* ============================================================
-   AVATAR + VOICE PULSE
+   AVATARS (LOCAL + REMOTE)
 ============================================================ */
 
-.avatar-wrapper {
+#localAvatar,
+#remoteAvatar {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(6, 8, 20, 0.75);
-  backdrop-filter: blur(14px);
-  transition: opacity 200ms ease;
+  background: rgba(6, 8, 20, 0.8);
+  backdrop-filter: blur(18px);
+  transition: opacity 200ms ease, transform 200ms ease;
 }
 
-.avatar-wrapper img {
+#localAvatar img,
+#remoteAvatar img {
   width: 40%;
   max-width: 160px;
   border-radius: 50%;
-  border: 3px solid rgba(94,242,255,0.6);
-  z-index: 2;
+  border: 3px solid rgba(94, 242, 255, 0.7);
+  box-shadow:
+    0 0 24px rgba(94, 242, 255, 0.6),
+    0 0 40px rgba(255, 123, 255, 0.35);
 }
 
-/* Voice activity pulse */
-.voice-pulse {
+/* JS updateLocalAvatarVisibility() toggles display; this handles smoothness */
+#localAvatar.hidden,
+#remoteAvatar.hidden {
+  opacity: 0;
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+/* ============================================================
+   AUDIO VISUALIZER / VOICE LEVEL (CSS VAR --audio-level)
+============================================================ */
+
+.local-media-wrapper,
+.remote-media-wrapper,
+#localVideoWrapper,
+#remoteWrapper {
+  --audio-level: 0;
+}
+
+/* Use audio level to drive a subtle glow */
+.local-media-wrapper::after,
+.remote-media-wrapper::after,
+#localVideoWrapper::after,
+#remoteWrapper::after {
+  content: "";
   position: absolute;
-  width: 42%;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    0 0 calc(40px * var(--audio-level)) rgba(94, 242, 255, 0.6),
+    0 0 calc(80px * var(--audio-level)) rgba(255, 123, 255, 0.4);
+  opacity: calc(0.4 * var(--audio-level));
+  transition: opacity 120ms ease;
+}
+
+/* ============================================================
+   REMOTE SPEAKING RING (.avatar-ring from JS)
+============================================================ */
+
+.avatar-ring {
+  position: absolute;
+  width: 46%;
   max-width: 180px;
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 3px solid rgba(94,242,255,0.4);
-  animation: voicePulse 1.8s ease-out infinite;
-  z-index: 1;
+  border: 3px solid rgba(94, 242, 255, 0.4);
+  box-shadow:
+    0 0 18px rgba(94, 242, 255, 0.6),
+    0 0 32px rgba(255, 123, 255, 0.4);
   opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 160ms ease, transform 160ms ease;
 }
 
-.participant.speaking .voice-pulse {
+.avatar-ring.speaking {
   opacity: 1;
-}
-
-@keyframes voicePulse {
-  0% { transform: scale(0.9); opacity: 0.6; }
-  100% { transform: scale(1.3); opacity: 0; }
+  transform: scale(1.1);
 }
 
 /* ============================================================
-   VIDEO MODE — ANIMATED GRADIENT
+   CALL STATUS
 ============================================================ */
 
-.participant.video-active .media-wrapper::before {
-  content: "";
+#call-status.status {
   position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(circle at 0 0, rgba(94,242,255,0.35), transparent 60%),
-    radial-gradient(circle at 100% 100%, rgba(255,123,255,0.35), transparent 60%);
-  mix-blend-mode: soft-light;
-  opacity: 0.55;
-  pointer-events: none;
-  animation: videoGradientDrift 18s ease-in-out infinite alternate;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(6, 8, 20, 0.7);
+  backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
 }
 
-@keyframes videoGradientDrift {
-  0% { transform: translate(0,0) scale(1); opacity: 0.4; }
-  50% { transform: translate(-30px,-20px) scale(1.08); opacity: 0.7; }
-  100% { transform: translate(20px,30px) scale(1.02); opacity: 0.5; }
+html[data-theme="light"] #call-status.status {
+  background: rgba(245, 248, 255, 0.9);
+  color: rgba(0, 0, 0, 0.7);
 }
 
 /* ============================================================
-   NAME TAG
+   CALL CONTROLS (FLOATING PILL)
 ============================================================ */
 
-.name-tag {
+#call-controls.call-controls {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background: rgba(6, 8, 20, 0.55);
-  backdrop-filter: blur(8px);
-  color: #fff;
-  font-size: 0.8rem;
-  z-index: 3;
-}
-
-html[data-theme="light"] .name-tag {
-  background: rgba(255,255,255,0.55);
-  color: #05060a;
-}
-
-/* ============================================================
-   LOCAL VIDEO BLOW-UP MODE
-============================================================ */
-
-.participant.local.enlarged {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  border-radius: 0;
-  animation: blowUp 260ms cubic-bezier(0.22,1.4,0.36,1);
-}
-
-@keyframes blowUp {
-  0% { transform: scale(0.92); opacity: 0.4; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-/* ============================================================
-   CALL STATUS + TIMER
-============================================================ */
-
-.call-top-info {
-  text-align: center;
-  margin: 6px 0;
-}
-
-#call-status {
-  font-size: 0.95rem;
-  color: rgba(255,255,255,0.8);
-}
-
-html[data-theme="light"] #call-status {
-  color: rgba(0,0,0,0.7);
-}
-
-#call-timer {
-  font-family: ui-monospace, monospace;
-  font-size: 1rem;
-  color: #ffe66b;
-  margin-top: 2px;
-}
-
-/* ============================================================
-   FACETIME-STYLE FLOATING CONTROLS
-============================================================ */
-
-.call-controls {
-  position: absolute;
-  bottom: 18px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 14px;
-  z-index: 50;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
 }
 
-.call-controls::before {
+#call-controls.call-controls::before {
   content: "";
   position: absolute;
   inset: -12px -18px;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 0 0, rgba(94,242,255,0.22), transparent 60%),
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
     rgba(6, 8, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,0.12);
   z-index: -1;
 }
 
-html[data-theme="light"] .call-controls::before {
+html[data-theme="light"] #call-controls.call-controls::before {
   background:
-    radial-gradient(circle at 0 0, rgba(94,242,255,0.18), transparent 60%),
-    rgba(245,248,255,0.96);
-  border: 1px solid rgba(0,0,0,0.08);
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
+    rgba(245, 248, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* ============================================================
-   CONTROL BUTTONS (Material Symbols)
-============================================================ */
+/* Timer */
+#call-timer.call-timer {
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1rem;
+  color: #ffe66b;
+  margin-right: 6px;
+}
 
-.call-controls button {
-  width: 54px;
-  height: 54px;
+/* Buttons */
+#call-controls button {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.16);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   background:
-    radial-gradient(circle at 30% 0, rgba(94,242,255,0.22), rgba(6,8,24,0.96));
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.22), rgba(6, 8, 24, 0.96));
   color: #f8f8ff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition:
-    transform 140ms cubic-bezier(0.22,1.4,0.36,1),
+    transform 140ms cubic-bezier(0.22, 1.4, 0.36, 1),
     box-shadow 200ms ease,
     border-color 200ms ease,
     background 200ms ease;
 }
 
-.call-controls button:hover {
-  transform: translateY(-4px) scale(1.08);
+#call-controls button:hover {
+  transform: translateY(-3px) scale(1.06);
   border-color: #5ef2ff;
   box-shadow:
-    0 0 18px rgba(94,242,255,0.6),
-    0 0 36px rgba(255,123,255,0.4);
+    0 0 18px rgba(94, 242, 255, 0.6),
+    0 0 32px rgba(255, 123, 255, 0.4);
 }
 
-.call-controls button:active {
-  transform: scale(0.88);
+#call-controls button:active {
+  transform: scale(0.9);
 }
 
 /* Special buttons */
@@ -339,12 +356,23 @@ html[data-theme="light"] .call-controls::before {
   color: #05060a;
 }
 
+/* Material icons inside buttons */
+#call-controls .material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 48;
+  font-size: 26px;
+  line-height: 1;
+}
+
 /* ============================================================
-   CAMERA FLIP ANIMATION
+   CAMERA TOGGLE FLIP
 ============================================================ */
 
 #camera-toggle .material-symbols-outlined {
-  transition: transform 260ms cubic-bezier(0.22,1.4,0.36,1);
+  transition: transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
 
 #camera-toggle.flipped .material-symbols-outlined {
@@ -352,18 +380,18 @@ html[data-theme="light"] .call-controls::before {
 }
 
 /* ============================================================
-   AI NOISE SUPPRESSION GLOW
+   AI NOISE ACTIVE GLOW
 ============================================================ */
 
 #ai-noise-toggle.active {
   border-color: #5ef2ff;
   box-shadow:
-    0 0 18px rgba(94,242,255,0.8),
-    0 0 36px rgba(94,242,255,0.5);
+    0 0 18px rgba(94, 242, 255, 0.8),
+    0 0 36px rgba(94, 242, 255, 0.5);
 }
 
 /* ============================================================
-   INBOUND / OUTBOUND CONTROL VISIBILITY
+   INBOUND / OUTBOUND VISIBILITY
 ============================================================ */
 
 #videoCallWindow.inbound-mode #decline-call,
@@ -376,7 +404,8 @@ html[data-theme="light"] .call-controls::before {
 #videoCallWindow.inbound-mode #camera-toggle,
 #videoCallWindow.inbound-mode #share-screen,
 #videoCallWindow.inbound-mode #ai-noise-toggle,
-#videoCallWindow.inbound-mode #record-call {
+#videoCallWindow.inbound-mode #record-call,
+#videoCallWindow.inbound-mode #call-history-toggle {
   display: none;
 }
 
@@ -393,16 +422,15 @@ html[data-theme="light"] .call-controls::before {
    RESPONSIVE
 ============================================================ */
 
-@media (max-width: 600px) {
-  #videoCallWindow {
-    width: 96vw;
-    height: 420px;
+@media (max-width: 800px) {
+  #localVideoWrapper,
+  #videoCallWindow.local-maximized #remoteWrapper {
+    width: 200px;
   }
 
-  .call-controls button {
+  #call-controls button {
     width: 46px;
     height: 46px;
-    font-size: 1.1rem;
   }
 }
 
