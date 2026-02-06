@@ -23,12 +23,12 @@ document.addEventListener("mousemove", (e) => {
 ============================================================ */
 function initUI() {
   /* -----------------------------------------------------------
-     CORE ELEMENTS (MATCHED TO YOUR HTML)
+     CORE ELEMENTS (MATCHED TO NEW HTML)
   ----------------------------------------------------------- */
   const messaging = document.getElementById("messaging_box");
   const miniChat = document.getElementById("miniChatBubble");
 
-  const conwrap = document.getElementById("conwrap");
+  const directoryPanel = document.getElementById("directoryPanel");
   const search = document.getElementById("search_panel");
 
   const video = document.getElementById("videoCallWindow");
@@ -45,7 +45,7 @@ function initUI() {
   const UIX = {
     hideAllPanelsExceptMessaging() {
       [
-        conwrap,
+        directoryPanel,
         search,
         video,
         settings,
@@ -74,10 +74,10 @@ function initUI() {
       document.body.classList.add("panel-open");
     },
 
-    showLeftPanel() {
+    showDirectory() {
       this.hideAllPanelsExceptMessaging();
       this.collapseMessaging();
-      conwrap.classList.remove("hidden");
+      directoryPanel.classList.remove("hidden");
       document.body.classList.add("panel-open");
     }
   };
@@ -106,7 +106,7 @@ function initUI() {
           break;
 
         case "contact_widget":
-          UIX.showLeftPanel();
+          UIX.showDirectory();
           break;
 
         case "btn_search":
@@ -429,6 +429,8 @@ const Settings = {
     location.reload();
   }
 };
+
+
 
 
 
