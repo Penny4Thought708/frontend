@@ -448,6 +448,11 @@ html[data-theme="light"] .rail-btn {
   border-right: 1px solid var(--ef-border-subtle-dark);
 }
 
+html[data-theme="light"] .column-left {
+  background: var(--ef-light-surface);
+  border-right: 1px solid var(--ef-border-subtle-light);
+}
+
 /* ============================================================
    DIRECTORY PANEL (LEFT NAV + MIDDLE CONTENT)
 ============================================================ */
@@ -459,24 +464,36 @@ html[data-theme="light"] .rail-btn {
   overflow: hidden;
 }
 
+/* LEFT NAV */
 .directory-nav {
   display: flex;
   flex-direction: column;
   padding: 12px;
   gap: 8px;
-  background: rgba(4,5,14,0.96);
-  border-right: 1px solid rgba(255,255,255,0.08);
+  background: var(--ef-dark-surface-soft);
+  border-right: 1px solid var(--ef-border-subtle-dark);
+}
+
+html[data-theme="light"] .directory-nav {
+  background: var(--ef-light-surface-soft);
+  border-right: 1px solid var(--ef-border-subtle-light);
 }
 
 .directory-nav button {
   padding: 10px 12px;
   border-radius: 10px;
   background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #f8f8ff;
+  border: 1px solid var(--ef-border-subtle-dark);
+  color: var(--ef-text-dark-main);
   text-align: left;
   cursor: pointer;
   transition: background 160ms ease, transform 140ms ease;
+}
+
+html[data-theme="light"] .directory-nav button {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-main);
 }
 
 .directory-nav button:hover {
@@ -484,10 +501,15 @@ html[data-theme="light"] .rail-btn {
   transform: translateX(4px);
 }
 
+/* RIGHT SIDE CONTENT */
 .directory-sections {
   overflow-y: auto;
   padding: 12px;
-  background: rgba(6,8,20,0.92);
+  background: var(--ef-dark-surface);
+}
+
+html[data-theme="light"] .directory-sections {
+  background: var(--ef-light-surface);
 }
 
 .dir-section {
@@ -507,6 +529,7 @@ html[data-theme="light"] .rail-btn {
   overflow-y: auto;
   max-height: calc(100vh - 160px);
 }
+
 /* ============================================================
    DIRECTORY PANEL — SLIDE-IN ANIMATION
 ============================================================ */
@@ -517,15 +540,13 @@ html[data-theme="light"] .rail-btn {
   transition:
     opacity 260ms cubic-bezier(0.22, 1.4, 0.36, 1),
     transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
 }
 
 #directoryPanel.panel-open {
   transform: translateX(0);
   opacity: 1;
-}
-#directoryPanel {
-  backdrop-filter: blur(22px) saturate(1.2);
-  -webkit-backdrop-filter: blur(22px) saturate(1.2);
 }
 
 /* ============================================================
@@ -535,11 +556,15 @@ html[data-theme="light"] .rail-btn {
 #search_panel {
   position: absolute;
   inset: 0;
-  background: rgba(6,8,20,0.96);
+  background: var(--ef-dark-surface);
   backdrop-filter: blur(20px);
   z-index: 50;
   padding: 16px;
   overflow-y: auto;
+}
+
+html[data-theme="light"] #search_panel {
+  background: var(--ef-light-surface);
 }
 
 #search_panel.hidden {
@@ -555,6 +580,11 @@ html[data-theme="light"] .rail-btn {
 .search-header h2 {
   margin: 0;
   font-size: 1rem;
+  color: var(--ef-text-dark-main);
+}
+
+html[data-theme="light"] .search-header h2 {
+  color: var(--ef-text-light-main);
 }
 
 .search-header button {
@@ -565,6 +595,12 @@ html[data-theme="light"] .rail-btn {
   width: 28px;
   height: 28px;
   cursor: pointer;
+}
+
+html[data-theme="light"] .search-header button {
+  background: var(--ef-light-input);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-soft);
 }
 
 .search-input {
@@ -581,6 +617,12 @@ html[data-theme="light"] .rail-btn {
   color: var(--ef-text-dark-main);
   outline: none;
   font-size: 0.9rem;
+}
+
+html[data-theme="light"] .search-input input {
+  background: var(--ef-light-input);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-main);
 }
 
 .search-input input:focus {
@@ -601,6 +643,12 @@ html[data-theme="light"] .rail-btn {
     transform var(--ef-fast);
 }
 
+html[data-theme="light"] .search-input button {
+  background: var(--ef-light-input);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-soft);
+}
+
 .search-input button:hover {
   border-color: var(--ef-res-low);
   box-shadow: 0 0 12px rgba(94, 242, 255, 0.4);
@@ -619,7 +667,6 @@ html[data-theme="light"] .rail-btn {
   gap: 6px;
 }
 
-
 /* ============================================================
    MESSAGING PANEL — LAYOUT
 ============================================================ */
@@ -631,16 +678,30 @@ html[data-theme="light"] .rail-btn {
   height: 100%;
   border-radius: 20px;
   padding: 12px;
+
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
-    rgba(6, 8, 20, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+    var(--ef-dark-surface);
+
+  border: 1px solid var(--ef-border-subtle-dark);
   backdrop-filter: blur(24px);
   box-shadow:
     0 0 30px rgba(0, 0, 0, 0.9),
     0 0 40px rgba(94, 242, 255, 0.25);
+
   position: relative;
   overflow: hidden;
+}
+
+html[data-theme="light"] #messaging_box.messaging-panel {
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
+    var(--ef-light-surface);
+
+  border: 1px solid var(--ef-border-subtle-light);
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.15),
+    0 0 40px rgba(94, 242, 255, 0.18);
 }
 
 /* ============================================================
@@ -652,13 +713,21 @@ html[data-theme="light"] .rail-btn {
   align-items: center;
   justify-content: space-between;
   padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--ef-border-subtle-dark);
+}
+
+html[data-theme="light"] .msg-header {
+  border-bottom: 1px solid var(--ef-border-subtle-light);
 }
 
 .msg-header h2 {
   margin: 0;
   font-size: 1rem;
-  color: #f8f8ff;
+  color: var(--ef-text-dark-main);
+}
+
+html[data-theme="light"] .msg-header h2 {
+  color: var(--ef-text-light-main);
 }
 
 .msg-actions {
@@ -671,22 +740,31 @@ html[data-theme="light"] .rail-btn {
   height: 34px;
   border-radius: 999px;
   border: 1px solid transparent;
+
   background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), rgba(6, 8, 24, 0.96));
-  color: #d5d8ff;
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-dark-surface));
+
+  color: var(--ef-text-dark-soft);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   transition:
     transform 140ms cubic-bezier(0.22, 1.4, 0.36, 1),
     box-shadow 200ms ease,
     border-color 200ms ease;
 }
 
+html[data-theme="light"] .msg-actions button {
+  background:
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-light-surface));
+  color: var(--ef-text-light-soft);
+}
+
 .msg-actions button:hover {
   transform: translateY(-2px) scale(1.04);
-  border-color: #5ef2ff;
+  border-color: var(--ef-res-low);
   box-shadow:
     0 0 14px rgba(94, 242, 255, 0.5),
     0 0 28px rgba(255, 123, 255, 0.35);
@@ -706,7 +784,6 @@ html[data-theme="light"] .rail-btn {
   min-height: 0;
 }
 
-/* wrapper = Slack/Discord style alignment */
 .msg-wrapper {
   display: flex;
   flex-direction: column;
@@ -723,14 +800,15 @@ html[data-theme="light"] .rail-btn {
   text-align: left;
 }
 
-/* sender name (for receiver) */
 .msg-sender-name {
   font-size: 0.75rem;
-  color: rgba(197, 201, 255, 0.8);
-  margin-bottom: 2px;
+  color: var(--ef-text-dark-soft);
 }
 
-/* bubble */
+html[data-theme="light"] .msg-sender-name {
+  color: var(--ef-text-light-soft);
+}
+
 .msg-bubble-text {
   margin: 0;
   padding: 8px 10px;
@@ -742,6 +820,7 @@ html[data-theme="light"] .rail-btn {
   animation: efMsgIn 220ms ease-out;
 }
 
+/* SENDER BUBBLE */
 .sender_msg .msg-bubble-text {
   background:
     radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.4), transparent 60%),
@@ -753,16 +832,25 @@ html[data-theme="light"] .rail-btn {
     0 0 24px rgba(255, 123, 255, 0.3);
 }
 
+/* RECEIVER BUBBLE */
 .receiver_msg .msg-bubble-text {
   background:
     radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.4), transparent 60%),
-    rgba(8, 10, 26, 0.96);
-  color: #f8f8ff;
+    var(--ef-dark-surface-soft);
+  color: var(--ef-text-dark-main);
   border-bottom-left-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--ef-border-subtle-dark);
 }
 
-/* reactions */
+html[data-theme="light"] .receiver_msg .msg-bubble-text {
+  background:
+    radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.08), transparent 60%),
+    var(--ef-light-surface-soft);
+  color: var(--ef-text-light-main);
+  border: 1px solid var(--ef-border-subtle-light);
+}
+
+/* REACTIONS */
 .reaction-display {
   display: flex;
   gap: 4px;
@@ -775,10 +863,16 @@ html[data-theme="light"] .rail-btn {
   gap: 2px;
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(6, 8, 20, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--ef-dark-surface);
+  border: 1px solid var(--ef-border-subtle-dark);
   font-size: 0.75rem;
-  color: #f8f8ff;
+  color: var(--ef-text-dark-main);
+}
+
+html[data-theme="light"] .reaction-bubble {
+  background: var(--ef-light-surface);
+  border: 1px solid var(--ef-border-subtle-light);
+  color: var(--ef-text-light-main);
 }
 
 .reaction-bubble.pop {
@@ -789,7 +883,7 @@ html[data-theme="light"] .rail-btn {
   opacity: 0.8;
 }
 
-/* reaction bar (hoverable row like Discord) */
+/* REACTION BAR */
 .reaction-bar {
   display: flex;
   gap: 4px;
@@ -809,22 +903,31 @@ html[data-theme="light"] .rail-btn {
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(6, 8, 20, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--ef-dark-surface);
+  border: 1px solid var(--ef-border-subtle-dark);
 }
 
-/* meta (timestamp + delete) */
+html[data-theme="light"] .react-emoji {
+  background: var(--ef-light-surface);
+  border: 1px solid var(--ef-border-subtle-light);
+}
+
+/* META */
 .meta {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-top: 2px;
   font-size: 0.7rem;
-  color: rgba(197, 201, 255, 0.7);
+  color: var(--ef-text-dark-soft);
+}
+
+html[data-theme="light"] .meta {
+  color: var(--ef-text-light-soft);
 }
 
 .meta small.seen {
-  color: #5ef2ff;
+  color: var(--ef-res-low);
 }
 
 .delete-msg {
@@ -835,7 +938,7 @@ html[data-theme="light"] .rail-btn {
   opacity: 0.7;
 }
 
-/* animations */
+/* ANIMATIONS */
 @keyframes efMsgIn {
   0% { transform: translateY(4px) scale(0.96); opacity: 0; }
   60% { transform: translateY(-1px) scale(1.02); opacity: 1; }
