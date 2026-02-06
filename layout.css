@@ -562,6 +562,12 @@ html[data-theme="light"] .directory-sections {
 .dir-section.hidden {
   display: none;
 }
+.directory-inner {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  height: 100%;
+  position: relative;
+}
 
 /* ============================================================
    SEARCH PANEL — FLOATING OVER DIRECTORY
