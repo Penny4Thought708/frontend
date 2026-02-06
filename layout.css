@@ -130,11 +130,12 @@ html[data-theme="dark"] body::after {
 }
 html[data-theme="light"] body {
   background:
-    radial-gradient(circle at top left, rgba(245, 247, 255, 1) 0%, transparent 45%),
-    radial-gradient(circle at bottom right, rgba(230, 235, 255, 1) 0%, transparent 55%),
-    linear-gradient(135deg, var(--ef-light-bg) 0%, #ffffff 40%, var(--ef-light-bg) 100%);
+    radial-gradient(circle at top left, #ffffff 0%, transparent 50%),
+    radial-gradient(circle at bottom right, #eef2ff 0%, transparent 55%),
+    linear-gradient(135deg, #ffffff 0%, #f0f4ff 40%, #ffffff 100%);
   color: var(--ef-text-light-main);
 }
+
 html[data-theme="light"] body::before {
   content: "";
   position: fixed;
@@ -143,20 +144,21 @@ html[data-theme="light"] body::before {
   z-index: -2;
 
   background:
-    radial-gradient(circle at 10% 0, rgba(94, 242, 255, 0.25), transparent 55%),
-    radial-gradient(circle at 90% 100%, rgba(255, 123, 255, 0.22), transparent 55%),
+    radial-gradient(circle at 10% 0, rgba(94, 242, 255, 0.45), transparent 55%),
+    radial-gradient(circle at 90% 100%, rgba(255, 123, 255, 0.38), transparent 55%),
     conic-gradient(
       from 220deg at 50% 50%,
-      rgba(255, 230, 107, 0.20),
+      rgba(255, 230, 107, 0.32),
       transparent 40%,
-      rgba(157, 255, 123, 0.20),
+      rgba(157, 255, 123, 0.32),
       transparent 80%
     );
 
-  opacity: 0.35;
-  filter: blur(6px);
+  opacity: 0.55;
+  filter: blur(10px);
   animation: efAuroraDrift 40s ease-in-out infinite alternate;
 }
+
 html[data-theme="light"] body::after {
   content: "";
   position: fixed;
@@ -165,14 +167,14 @@ html[data-theme="light"] body::after {
   z-index: -2;
 
   background-image:
-    radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.04) 0, transparent 55%),
-    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.04) 0, transparent 55%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    radial-gradient(circle at 0 0, rgba(0, 0, 0, 0.12) 0, transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(0, 0, 0, 0.12) 0, transparent 55%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 1px, transparent 1px);
 
   background-size: 220px 220px, 220px 220px, 80px 80px, 80px 80px;
   mix-blend-mode: multiply;
-  opacity: 0.14;
+  opacity: 0.22;
   animation: efMeshPulse 16s ease-in-out infinite;
 }
 
