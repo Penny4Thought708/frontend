@@ -380,7 +380,9 @@ window.currentUserAvatar = user.avatar;
 
   <div class="floating-body video-body">
 
-    <!-- GROUP GRID (auto-switches between 1:1 and group) -->
+    <!-- ============================================================
+         GROUP GRID (AUTO LAYOUT FOR 1:1 OR MULTI-PARTY)
+    ============================================================ -->
     <div id="callGrid" class="call-grid">
 
       <!-- LOCAL PARTICIPANT -->
@@ -396,7 +398,7 @@ window.currentUserAvatar = user.avatar;
         <div class="name-tag">You</div>
       </div>
 
-      <!-- REMOTE PARTICIPANTS (JS will clone this template) -->
+      <!-- REMOTE PARTICIPANTS TEMPLATE -->
       <template id="remoteParticipantTemplate">
         <div class="participant remote">
           <div class="media-wrapper">
@@ -413,61 +415,76 @@ window.currentUserAvatar = user.avatar;
 
     </div>
 
-    <!-- STATUS + TIMER -->
+    <!-- ============================================================
+         STATUS + TIMER
+    ============================================================ -->
     <div class="call-top-info">
       <div id="call-status">Calling…</div>
       <div id="call-timer">00:00</div>
     </div>
 
-    <!-- FLOATING CONTROLS -->
+    <!-- ============================================================
+         FLOATING CONTROLS (PRIMARY ONLY)
+    ============================================================ -->
     <div id="call-controls" class="call-controls">
 
-  <div id="call-timer" class="call-timer">00:00</div>
+      <!-- INBOUND -->
+      <button id="decline-call" type="button" class="control-btn inbound-only">
+        <span class="material-symbols-outlined">call_end</span>
+      </button>
 
-  <!-- INBOUND -->
-  <button id="decline-call" type="button">
-    <span class="material-symbols-outlined">call_end</span>
-  </button>
+      <button id="answer-call" type="button" class="control-btn inbound-only">
+        <span class="material-symbols-outlined">call</span>
+      </button>
 
-  <button id="answer-call" type="button">
-    <span class="material-symbols-outlined">call</span>
-  </button>
+      <!-- ACTIVE CALL PRIMARY CONTROLS -->
+      <button id="mute-call" type="button" class="control-btn active-only">
+        <span class="material-symbols-outlined">mic_off</span>
+      </button>
 
-  <!-- ACTIVE CALL CONTROLS -->
-  <button id="mute-call" type="button">
-    <span class="material-symbols-outlined">mic_off</span>
-  </button>
+      <button id="camera-toggle" type="button" class="control-btn active-only">
+        <span class="material-symbols-outlined">videocam</span>
+      </button>
 
-  <button id="camera-toggle" type="button">
-    <span class="material-symbols-outlined">videocam</span>
-  </button>
+      <!-- END CALL -->
+      <button id="end-call" type="button" class="control-btn active-only">
+        <span class="material-symbols-outlined">call_end</span>
+      </button>
 
-  <button id="share-screen" type="button">
-    <span class="material-symbols-outlined">screen_share</span>
-  </button>
+      <!-- MORE CONTROLS DROPDOWN -->
+      <div class="more-controls">
+        <button id="more-controls-btn" type="button" class="control-btn">
+          <span class="material-symbols-outlined">more_vert</span>
+        </button>
 
-  <button id="ai-noise-toggle" type="button">
-    <span class="material-symbols-outlined">graphic_eq</span>
-  </button>
+        <div id="more-controls-menu" class="more-controls-menu hidden">
+          <button id="share-screen" type="button">
+            <span class="material-symbols-outlined">screen_share</span>
+            Share Screen
+          </button>
 
-  <button id="record-call" type="button">
-    <span class="material-symbols-outlined">fiber_manual_record</span>
-  </button>
+          <button id="ai-noise-toggle" type="button">
+            <span class="material-symbols-outlined">graphic_eq</span>
+            Noise Suppression
+          </button>
 
-  <button id="call-history-toggle" type="button">
-    <span class="material-symbols-outlined">history</span>
-  </button>
+          <button id="record-call" type="button">
+            <span class="material-symbols-outlined">fiber_manual_record</span>
+            Record Call
+          </button>
 
-  <!-- UNIVERSAL END CALL -->
-  <button id="end-call" type="button">
-    <span class="material-symbols-outlined">call_end</span>
-  </button>
+          <button id="call-history-toggle" type="button">
+            <span class="material-symbols-outlined">history</span>
+            Call History
+          </button>
+        </div>
+      </div>
 
-</div>
-
+    </div>
 
   </div>
 </section>
+
 
 
     <!-- FULL PROFILE -->
@@ -1373,6 +1390,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
