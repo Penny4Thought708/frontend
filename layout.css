@@ -195,7 +195,7 @@ html[data-theme="light"] body::after {
 }
 
 /* ============================================================
-   PREMIUM HEADER LAYOUT
+   PREMIUM HEADER LAYOUT — THEME AWARE
 ============================================================ */
 
 .site-header.app-header {
@@ -203,13 +203,22 @@ html[data-theme="light"] body::after {
   align-items: center;
   justify-content: space-between;
   padding: 14px 22px;
+
   background:
     radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.16), transparent 60%),
-    rgba(6, 8, 20, 0.96);
+    var(--ef-dark-surface);
   border-bottom: 1px solid var(--ef-border-subtle-dark);
   backdrop-filter: blur(18px);
   position: relative;
   z-index: 50;
+}
+
+/* LIGHT MODE OVERRIDE */
+html[data-theme="light"] .site-header.app-header {
+  background:
+    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.12), transparent 60%),
+    var(--ef-light-surface);
+  border-bottom: 1px solid var(--ef-border-subtle-light);
 }
 
 .header-left .brand-logo {
@@ -219,9 +228,8 @@ html[data-theme="light"] body::after {
   color: var(--ef-text-dark-main);
 }
 
-.nav-links {
-  display: flex;
-  gap: 22px;
+html[data-theme="light"] .header-left .brand-logo {
+  color: var(--ef-text-light-main);
 }
 
 .nav-links a {
@@ -229,6 +237,10 @@ html[data-theme="light"] body::after {
   text-decoration: none;
   font-size: 0.95rem;
   transition: color 180ms ease;
+}
+
+html[data-theme="light"] .nav-links a {
+  color: var(--ef-text-light-soft);
 }
 
 .nav-links a:hover {
@@ -241,17 +253,23 @@ html[data-theme="light"] body::after {
   gap: 20px;
 }
 
+/* SEARCH BAR */
 .header-contact-search {
   display: flex;
   gap: 6px;
   align-items: center;
-  background: rgba(4, 5, 14, 0.96);
+  background: var(--ef-dark-input);
   padding: 6px 10px;
   border-radius: var(--ef-radius-pill);
   border: 1px solid var(--ef-border-subtle-dark);
   position: relative;
   right: 45%;
   width: 280px;
+}
+
+html[data-theme="light"] .header-contact-search {
+  background: var(--ef-light-input);
+  border: 1px solid var(--ef-border-subtle-light);
 }
 
 .header-contact-search input {
@@ -263,16 +281,26 @@ html[data-theme="light"] body::after {
   width: 100%;
 }
 
+html[data-theme="light"] .header-contact-search input {
+  color: var(--ef-text-light-main);
+}
+
 .header-contact-search button {
   width: 32px;
   height: 32px;
   border-radius: var(--ef-radius-pill);
   border: 1px solid transparent;
   background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), rgba(6, 8, 24, 0.96));
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-dark-surface));
   color: var(--ef-text-dark-soft);
   cursor: pointer;
   transition: transform 140ms ease, border-color 180ms ease;
+}
+
+html[data-theme="light"] .header-contact-search button {
+  background:
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-light-surface));
+  color: var(--ef-text-light-soft);
 }
 
 .header-contact-search button:hover {
@@ -280,14 +308,15 @@ html[data-theme="light"] body::after {
   border-color: var(--ef-res-low);
 }
 
-.auth-section {
-  text-align: right;
-}
-
+/* AUTH SECTION */
 .auth-section h3 {
   margin: 0;
   font-size: 0.95rem;
   color: var(--ef-text-dark-main);
+}
+
+html[data-theme="light"] .auth-section h3 {
+  color: var(--ef-text-light-main);
 }
 
 .auth-section p {
@@ -296,8 +325,12 @@ html[data-theme="light"] body::after {
   color: var(--ef-text-dark-muted);
 }
 
+html[data-theme="light"] .auth-section p {
+  color: var(--ef-text-light-muted);
+}
+
 /* ============================================================
-   APP SHELL — 3‑PANEL OS LAYOUT
+   APP SHELL — THEME AWARE
 ============================================================ */
 
 .app-shell {
@@ -305,11 +338,15 @@ html[data-theme="light"] body::after {
   grid-template-columns: 70px 340px 1fr;
   height: 100vh;
   overflow: hidden;
-  background: rgba(4, 5, 14, 0.96);
+  background: var(--ef-dark-surface);
+}
+
+html[data-theme="light"] .app-shell {
+  background: var(--ef-light-surface);
 }
 
 /* ============================================================
-   LEFT RAIL
+   LEFT RAIL — THEME AWARE
 ============================================================ */
 
 .app-rail {
@@ -320,57 +357,42 @@ html[data-theme="light"] body::after {
   align-items: center;
   padding: 10px 8px;
   border-radius: var(--ef-radius-md);
+
   background:
     radial-gradient(circle at top, rgba(94, 242, 255, 0.12), transparent 60%),
     var(--ef-dark-surface);
+
   backdrop-filter: blur(24px);
   border: 1px solid var(--ef-border-subtle-dark);
   box-shadow:
     0 0 22px rgba(94, 242, 255, 0.18),
     0 0 40px rgba(0, 0, 0, 0.9);
+
   position: relative;
   overflow: hidden;
 }
 
-.app-rail::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
+html[data-theme="light"] .app-rail {
   background:
-    conic-gradient(from 180deg, rgba(94, 242, 255, 0.18), transparent 40%, rgba(255, 123, 255, 0.18), transparent 80%);
-  opacity: 0.25;
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: efRailSweep 18s linear infinite;
-}
+    radial-gradient(circle at top, rgba(94, 242, 255, 0.10), transparent 60%),
+    var(--ef-light-surface);
 
-@keyframes efRailSweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.rail-notifications {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--ef-radius-pill);
-  background: radial-gradient(circle at 30% 0, rgba(255, 230, 107, 0.4), rgba(10, 12, 32, 0.9));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 10px;
-  color: var(--ef-res-warm);
-  font-size: 0.8rem;
+  border: 1px solid var(--ef-border-subtle-light);
   box-shadow:
-    0 0 12px rgba(255, 230, 107, 0.6),
-    0 0 24px rgba(0, 0, 0, 0.8);
+    0 0 22px rgba(94, 242, 255, 0.12),
+    0 0 40px rgba(0, 0, 0, 0.15);
 }
 
+/* RAIL BUTTONS */
 .rail-btn {
   width: 44px;
   height: 44px;
   border-radius: var(--ef-radius-pill);
   border: 1px solid transparent;
-  background: radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), rgba(6, 8, 24, 0.96));
+
+  background:
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-dark-surface));
+
   color: var(--ef-text-dark-soft);
   display: flex;
   align-items: center;
@@ -379,12 +401,19 @@ html[data-theme="light"] body::after {
   margin-bottom: 10px;
   position: relative;
   overflow: hidden;
+
   transition:
     transform var(--ef-fast),
     box-shadow var(--ef-med),
     border-color var(--ef-med),
     background var(--ef-med),
     color var(--ef-med);
+}
+
+html[data-theme="light"] .rail-btn {
+  background:
+    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.18), var(--ef-light-surface));
+  color: var(--ef-text-light-soft);
 }
 
 .rail-btn:hover {
@@ -394,10 +423,6 @@ html[data-theme="light"] body::after {
     0 0 32px rgba(255, 123, 255, 0.35);
   transform: translateY(-1px) scale(1.02);
   color: var(--ef-res-low);
-}
-
-.rail-btn:active {
-  transform: scale(0.9);
 }
 
 .logoutBtn {
