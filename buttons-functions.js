@@ -103,17 +103,24 @@ function initUI() {
 
     if (!navButtons.length || !sections.length) return;
 
-    function showSection(sectionName) {
-      sections.forEach(sec => {
-        if (sec.id === `dir-${sectionName}`) {
-          sec.classList.remove("hidden");
-          sec.classList.add("dir-active");
-        } else {
-          sec.classList.add("hidden");
-          sec.classList.remove("dir-active");
-        }
-      });
-    }
+ function showSection(sectionName) {
+  const newSection = document.getElementById(`dir-${sectionName}`);
+  const active = document.querySelector(".dir-section.dir-active");
+
+  if (active === newSection) return;
+
+  if (active) {
+    active.classList.remove("dir-active");
+    active.classList.add("hidden");
+  }
+
+  newSection.classList.remove("hidden");
+
+  requestAnimationFrame(() => {
+    newSection.classList.add("dir-active");
+  });
+}
+
 
     navButtons.forEach(btn => {
       btn.addEventListener("click", () => {
@@ -525,6 +532,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
