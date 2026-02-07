@@ -1,14 +1,16 @@
 /* ============================================================
-   VIDEO CALL WINDOW — DISCORD‑STYLE CENTERED STAGE
+   AURORA ORBIT CALL WINDOW — ORIGINAL CONSTELLATION LAYOUT
+   (multi‑party grid, stage mode, soft orbital motion)
 ============================================================ */
 
+/* Base icon styling */
 .material-symbols-outlined {
   font-variation-settings:
     "FILL" 0,
     "wght" 400,
     "GRAD" 0,
     "opsz" 48;
-  font-size: 26px;
+  font-size: 24px;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -16,121 +18,182 @@
 }
 
 /* ============================================================
-   ROOT CONTAINER — FULLSCREEN NEXT TO RAIL
+   ROOT CONTAINER — EDGE‑PINNED CANVAS NEXT TO RAIL
 ============================================================ */
 
-#videoCallWindow {
+#videoCallWindow.call-window {
   position: fixed;
-  top: 0;
-  left: 70px; /* rail width */
+  inset: 0 0 0 70px; /* respect left rail */
   width: calc(100vw - 70px);
   height: 100vh;
   max-width: calc(100vw - 70px);
   max-height: 100vh;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 999;
-  transition: opacity 260ms ease;
   display: flex;
   align-items: stretch;
   justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 900;
+  transition: opacity 260ms ease;
 }
 
-#videoCallWindow:not(.hidden) {
+#videoCallWindow.call-window:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* Main call surface (Discord‑style stage) */
+/* ============================================================
+   BACKDROP — ORBITAL GRADIENT + STARFIELD
+============================================================ */
+
 #videoCallWindow .video-body {
   position: relative;
-  width: 100%;
-  height: 100%;
-  padding: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
-    rgba(6, 8, 20, 0.96);
+    radial-gradient(circle at 10% 0, rgba(120, 255, 214, 0.18), transparent 60%),
+    radial-gradient(circle at 90% 100%, rgba(255, 163, 253, 0.16), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(10, 15, 40, 0.96), rgba(3, 5, 18, 1));
   backdrop-filter: blur(26px);
 }
 
-html[data-theme="light"] #videoCallWindow .video-body {
-  background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
-    rgba(245, 248, 255, 0.98);
-}
-
-/* subtle overlay */
+/* subtle starfield */
 #videoCallWindow .video-body::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -40%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.16) 0, transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.12) 0, transparent 40%),
+    radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0, transparent 40%);
+  opacity: 0.18;
+  mix-blend-mode: screen;
   pointer-events: none;
 }
 
+/* orbital vignette */
+#videoCallWindow .video-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 120%, rgba(0, 0, 0, 0.7), transparent 60%);
+  pointer-events: none;
+}
+
+/* Light theme variant */
+html[data-theme="light"] #videoCallWindow .video-body {
+  background:
+    radial-gradient(circle at 10% 0, rgba(120, 255, 214, 0.16), transparent 60%),
+    radial-gradient(circle at 90% 100%, rgba(255, 163, 253, 0.14), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(245, 248, 255, 0.98), rgba(225, 232, 255, 1));
+}
+
 /* ============================================================
-   CENTERED STAGE GRID
+   CONSTELLATION GRID — MULTI‑PARTY LAYOUT
 ============================================================ */
 
 .call-grid {
   position: relative;
   width: 100%;
-  max-width: 1120px;
-  max-height: 640px;
+  max-width: 1180px;
+  max-height: 680px;
   margin: 0 auto;
-  padding: 80px 20px 120px; /* space for status + controls */
+  padding: 88px 24px 132px; /* top: status, bottom: controls */
   display: grid;
-  gap: 12px;
+  gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
   justify-items: center;
 }
 
+/* Stage mode: one primary tile spans full width */
+.call-grid.stage-mode .participant.stage-primary {
+  grid-column: 1 / -1;
+  min-height: 380px;
+}
+
+.call-grid.stage-mode .participant:not(.stage-primary) {
+  opacity: 0.9;
+  transform: translateY(4px) scale(0.96);
+}
+
 /* ============================================================
-   PARTICIPANT TILES
+   PARTICIPANT TILES — ORBITAL CARDS
 ============================================================ */
 
 .participant {
   position: relative;
   width: 100%;
-  height: 100%;
   min-height: 220px;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
-  background: radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.04), rgba(6, 8, 20, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.06), transparent 60%),
+    linear-gradient(145deg, rgba(10, 12, 30, 0.96), rgba(7, 9, 24, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
   --audio-level: 0;
 }
 
+/* local tile subtle highlight */
+.participant.local {
+  border-color: rgba(120, 255, 214, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(120, 255, 214, 0.25),
+    0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* media area */
 .participant .media-wrapper {
   position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.06), #02030a);
 }
 
+/* name bar */
 .participant .name-tag {
-  padding: 6px 10px;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.9);
-  background: linear-gradient(to right, rgba(6, 8, 20, 0.96), rgba(6, 8, 20, 0.7));
+  padding: 7px 12px;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  background:
+    linear-gradient(90deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.8));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* Join / leave animations */
+/* small indicator dot */
+.participant .name-tag::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #78ffd6, #00c9ff);
+  box-shadow: 0 0 10px rgba(120, 255, 214, 0.9);
+}
+
+/* join / leave micro‑motion */
 .participant.joining {
   opacity: 0;
-  transform: scale(0.9);
+  transform: translateY(10px) scale(0.94);
 }
 
 .participant.joined {
   opacity: 1;
-  transform: scale(1);
+  transform: translateY(0) scale(1);
   transition:
     opacity 180ms ease-out,
     transform 220ms cubic-bezier(0.22, 1.4, 0.36, 1);
@@ -138,39 +201,14 @@ html[data-theme="light"] #videoCallWindow .video-body {
 
 .participant.leaving {
   opacity: 0;
-  transform: scale(0.9);
+  transform: translateY(10px) scale(0.9);
   transition:
     opacity 160ms ease-in,
     transform 160ms ease-in;
 }
 
-/* Stage mode (screen share / active speaker) */
-.call-grid.stage-mode .participant.stage-primary {
-  grid-column: 1 / -1;
-  min-height: 360px;
-}
-
-.call-grid.stage-mode .participant:not(.stage-primary) {
-  opacity: 0.8;
-  transform: scale(0.96);
-}
-
-/* Active speaker glow via --audio-level */
-.participant::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  box-shadow:
-    0 0 calc(40px * var(--audio-level)) rgba(94, 242, 255, 0.6),
-    0 0 calc(80px * var(--audio-level)) rgba(255, 123, 255, 0.4);
-  opacity: calc(0.4 * var(--audio-level));
-  transition: opacity 120ms ease;
-}
-
 /* ============================================================
-   VIDEO ELEMENTS
+   VIDEO ELEMENTS — EDGELESS VIEWPORTS
 ============================================================ */
 
 #localVideo,
@@ -181,7 +219,8 @@ html[data-theme="light"] #videoCallWindow .video-body {
   object-fit: cover;
   display: none;
   opacity: 0;
-  transition: opacity 220ms ease;
+  filter: saturate(1.05) contrast(1.02);
+  transition: opacity 220ms ease, filter 220ms ease;
 }
 
 /* JS toggles .show for fade‑in */
@@ -192,8 +231,13 @@ html[data-theme="light"] #videoCallWindow .video-body {
   opacity: 1;
 }
 
+/* subtle hover lift for active video tiles */
+.participant.video-active .media-wrapper:hover video {
+  filter: saturate(1.12) contrast(1.06);
+}
+
 /* ============================================================
-   AVATARS (LOCAL + REMOTE)
+   AVATARS — ORBITAL PORTRAITS
 ============================================================ */
 
 .avatar-wrapper {
@@ -202,19 +246,25 @@ html[data-theme="light"] #videoCallWindow .video-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 0, rgba(94, 242, 255, 0.16), rgba(6, 8, 20, 0.96));
+  background:
+    radial-gradient(circle at 50% 0, rgba(120, 255, 214, 0.18), rgba(3, 5, 18, 0.98));
   backdrop-filter: blur(18px);
   transition: opacity 200ms ease, transform 200ms ease;
 }
 
 .avatar-wrapper img {
-  width: 40%;
-  max-width: 160px;
+  width: 42%;
+  max-width: 170px;
   border-radius: 50%;
-  border: 3px solid rgba(94, 242, 255, 0.7);
+  border: 3px solid rgba(120, 255, 214, 0.8);
   box-shadow:
-    0 0 24px rgba(94, 242, 255, 0.6),
-    0 0 40px rgba(255, 123, 255, 0.35);
+    0 0 24px rgba(120, 255, 214, 0.7),
+    0 0 40px rgba(255, 163, 253, 0.4);
+}
+
+/* local avatar id still supported */
+#localAvatarImg {
+  object-fit: cover;
 }
 
 .avatar-wrapper.hidden {
@@ -223,17 +273,20 @@ html[data-theme="light"] #videoCallWindow .video-body {
   pointer-events: none;
 }
 
-/* Voice pulse ring */
+/* ============================================================
+   VOICE PULSE — ORBITAL RING
+============================================================ */
+
 .voice-pulse {
   position: absolute;
-  width: 52%;
+  width: 54%;
   max-width: 190px;
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 2px solid rgba(94, 242, 255, 0.5);
+  border: 2px solid rgba(120, 255, 214, 0.6);
   box-shadow:
-    0 0 18px rgba(94, 242, 255, 0.7),
-    0 0 32px rgba(255, 123, 255, 0.5);
+    0 0 18px rgba(120, 255, 214, 0.8),
+    0 0 32px rgba(255, 163, 253, 0.5);
   opacity: 0;
   transform: scale(0.9);
   transition: opacity 160ms ease, transform 160ms ease;
@@ -245,97 +298,100 @@ html[data-theme="light"] #videoCallWindow .video-body {
 }
 
 /* ============================================================
-   CALL STATUS + TIMER (TOP CENTER)
+   AUDIO VISUALIZER — CONSTELLATION GLOW
+============================================================ */
+
+.participant {
+  --audio-level: 0;
+}
+
+.participant::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    0 0 calc(36px * var(--audio-level)) rgba(120, 255, 214, 0.7),
+    0 0 calc(72px * var(--audio-level)) rgba(255, 163, 253, 0.5);
+  opacity: calc(0.38 * var(--audio-level));
+  transition: opacity 120ms ease;
+}
+
+/* ============================================================
+   STATUS + TIMER — FLOATING ORBIT LABEL
 ============================================================ */
 
 .call-top-info {
   position: absolute;
-  top: 20px;
+  top: 18px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .call-status {
-  font-size: 1.05rem;
-  color: #fff;
-  margin-bottom: 4px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background:
+    linear-gradient(120deg, rgba(10, 12, 30, 0.96), rgba(10, 12, 30, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .call-timer {
-  font-family: ui-monospace, monospace;
-  font-size: 1rem;
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.98rem;
   color: #ffe66b;
 }
 
-/* Optional pill style for status */
-#call-status.status {
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(6, 8, 20, 0.7);
-  backdrop-filter: blur(12px);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-}
-
-html[data-theme="light"] #call-status.status {
-  background: rgba(245, 248, 255, 0.9);
-  color: rgba(0, 0, 0, 0.7);
-}
-
 /* ============================================================
-   CALL CONTROLS (CENTERED PILL AT BOTTOM)
+   FLOATING CONTROLS — ORBITAL PILL
 ============================================================ */
 
-#call-controls.call-controls {
+.call-controls {
   position: absolute;
-  bottom: 28px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 30;
 }
 
-#call-controls.call-controls::before {
+/* pill background */
+.call-controls::before {
   content: "";
   position: absolute;
-  inset: -12px -18px;
+  inset: -12px -20px;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.22), transparent 60%),
-    rgba(6, 8, 20, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+    radial-gradient(circle at 0 0, rgba(120, 255, 214, 0.22), transparent 60%),
+    linear-gradient(120deg, rgba(10, 12, 30, 0.96), rgba(10, 12, 30, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(18px);
   z-index: -1;
 }
 
-html[data-theme="light"] #call-controls.call-controls::before {
-  background:
-    radial-gradient(circle at 0 0, rgba(94, 242, 255, 0.18), transparent 60%),
-    rgba(245, 248, 255, 0.96);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-/* Timer inside controls (if used) */
-#call-timer.call-timer {
-  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 1rem;
-  color: #ffe66b;
-  margin-right: 6px;
-}
-
-/* Buttons */
-#call-controls button {
+/* control buttons */
+.control-btn {
   width: 52px;
   height: 52px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background:
-    radial-gradient(circle at 30% 0, rgba(94, 242, 255, 0.22), rgba(6, 8, 24, 0.96));
+    radial-gradient(circle at 30% 0, rgba(120, 255, 214, 0.22), rgba(6, 8, 24, 0.96));
   color: #f8f8ff;
   display: flex;
   align-items: center;
@@ -345,22 +401,36 @@ html[data-theme="light"] #call-controls.call-controls::before {
     transform 140ms cubic-bezier(0.22, 1.4, 0.36, 1),
     box-shadow 200ms ease,
     border-color 200ms ease,
-    background 200ms ease;
+    background 200ms ease,
+    opacity 160ms ease;
 }
 
-#call-controls button:hover {
+/* inbound / active visibility */
+.inbound-only { display: none; }
+.active-only  { display: none; }
+
+#videoCallWindow.inbound-mode .inbound-only {
+  display: flex;
+}
+
+#videoCallWindow.active-mode .active-only {
+  display: flex;
+}
+
+/* hover / active micro‑motion */
+.control-btn:hover {
   transform: translateY(-3px) scale(1.06);
-  border-color: #5ef2ff;
+  border-color: #78ffd6;
   box-shadow:
-    0 0 18px rgba(94, 242, 255, 0.6),
-    0 0 32px rgba(255, 123, 255, 0.4);
+    0 0 18px rgba(120, 255, 214, 0.7),
+    0 0 32px rgba(255, 163, 253, 0.5);
 }
 
-#call-controls button:active {
+.control-btn:active {
   transform: scale(0.9);
 }
 
-/* Special buttons */
+/* destructive / confirm */
 #decline-call,
 #end-call {
   background: radial-gradient(circle at 30% 0, #ff6b6b, #d90429);
@@ -372,63 +442,7 @@ html[data-theme="light"] #call-controls.call-controls::before {
   color: #05060a;
 }
 
-/* Material icons inside buttons */
-#call-controls .material-symbols-outlined {
-  font-variation-settings:
-    "FILL" 0,
-    "wght" 400,
-    "GRAD" 0,
-    "opsz" 48;
-  font-size: 26px;
-  line-height: 1;
-}
-
-/* ============================================================
-   DROPDOWN MENU (MORE CONTROLS)
-============================================================ */
-
-.more-controls {
-  position: relative;
-}
-
-#more-controls-menu {
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  width: 220px;
-  background: rgba(6, 8, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 6px 0;
-  backdrop-filter: blur(12px);
-  z-index: 50;
-}
-
-#more-controls-menu button {
-  width: 100%;
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
-  color: #fff;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-#more-controls-menu button:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-#more-controls-menu.hidden {
-  display: none;
-}
-
-/* ============================================================
-   CAMERA TOGGLE FLIP
-============================================================ */
-
+/* camera flip */
 #camera-toggle .material-symbols-outlined {
   transition: transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
@@ -437,38 +451,138 @@ html[data-theme="light"] #call-controls.call-controls::before {
   transform: rotateY(180deg);
 }
 
-/* ============================================================
-   AI NOISE ACTIVE GLOW
-============================================================ */
-
+/* AI noise glow */
 #ai-noise-toggle.active {
-  border-color: #5ef2ff;
+  border-color: #78ffd6;
   box-shadow:
-    0 0 18px rgba(94, 242, 255, 0.8),
-    0 0 36px rgba(94, 242, 255, 0.5);
+    0 0 18px rgba(120, 255, 214, 0.9),
+    0 0 36px rgba(120, 255, 214, 0.6);
 }
 
 /* ============================================================
-   INBOUND / OUTBOUND VISIBILITY
+   MORE CONTROLS DROPDOWN — FLOATING PANEL
 ============================================================ */
 
-.inbound-only { display: none; }
-.active-only  { display: none; }
-
-#videoCallWindow.inbound-mode .inbound-only {
-  display: flex;
+.more-controls {
+  position: relative;
 }
 
-#videoCallWindow.inbound-mode .active-only {
+.more-controls-menu {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 230px;
+  background:
+    linear-gradient(145deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.9));
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  padding: 6px 0;
+  backdrop-filter: blur(18px);
+  z-index: 50;
+}
+
+.more-controls-menu.hidden {
   display: none;
 }
 
-#videoCallWindow.active-mode .active-only {
+.more-controls-menu button {
+  width: 100%;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  color: #f8f8ff;
   display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
 }
 
-#videoCallWindow.active-mode .inbound-only {
-  display: none;
+.more-controls-menu button .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.more-controls-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================================
+   CALL QUALITY + DEBUG BAR
+============================================================ */
+
+.call-info-bar {
+  position: absolute;
+  bottom: 30px;
+  right: 26px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 25;
+}
+
+.quality-indicator {
+  min-width: 90px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-align: center;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(10, 12, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* quality color states */
+.quality-indicator[data-level="excellent"] {
+  border-color: #78ffd6;
+  color: #78ffd6;
+}
+
+.quality-indicator[data-level="good"] {
+  border-color: #a4ff9f;
+  color: #a4ff9f;
+}
+
+.quality-indicator[data-level="fair"] {
+  border-color: #ffe66b;
+  color: #ffe66b;
+}
+
+.quality-indicator[data-level="poor"],
+.quality-indicator[data-level="bad"] {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.debug-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(10, 12, 30, 0.9);
+  color: #f8f8ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.debug-toggle:hover {
+  transform: translateY(-2px);
+  border-color: #78ffd6;
+  box-shadow:
+    0 0 14px rgba(120, 255, 214, 0.6),
+    0 0 24px rgba(255, 163, 253, 0.4);
 }
 
 /* ============================================================
@@ -478,16 +592,17 @@ html[data-theme="light"] #call-controls.call-controls::before {
 .toast {
   position: fixed;
   bottom: 20px;
-  width: 260px;
+  width: 270px;
   padding: 14px 18px;
-  background: var(--bg-main);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
+  background:
+    linear-gradient(145deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.9));
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(18px);
-  color: #fff;
+  color: #f8f8ff;
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity var(--transition-med), transform var(--transition-med);
+  transition: opacity 200ms ease, transform 200ms ease;
   z-index: 99999;
 }
 
@@ -496,18 +611,18 @@ html[data-theme="light"] #call-controls.call-controls::before {
   transform: translateY(0);
 }
 
-/* keep element in DOM for animation */
+/* keep in DOM for animation */
 .toast.hidden {
   opacity: 0;
   pointer-events: none;
 }
 
 #secondaryIncomingToast {
-  left: 20px;
+  left: 24px;
 }
 
 #unavailableToast {
-  right: 20px;
+  right: 24px;
 }
 
 .toast .sit-actions,
@@ -515,22 +630,36 @@ html[data-theme="light"] #call-controls.call-controls::before {
   display: flex;
   justify-content: space-between;
   margin-top: 12px;
+  gap: 6px;
 }
 
 .toast button {
   flex: 1;
-  margin: 0 4px;
   padding: 8px 10px;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   border: none;
   cursor: pointer;
-  background: var(--bg-glass);
-  color: #fff;
-  transition: background var(--transition-fast);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8f8ff;
+  font-size: 0.85rem;
+  transition: background 140ms ease, transform 120ms ease;
 }
 
 .toast button:hover {
-  background: var(--bg-glass-heavy);
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   REMOTE AUDIO ELEMENT
+============================================================ */
+
+#remoteAudio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ============================================================
@@ -538,8 +667,8 @@ html[data-theme="light"] #call-controls.call-controls::before {
 ============================================================ */
 
 @media (max-width: 900px) {
-  #videoCallWindow {
-    left: 0;
+  #videoCallWindow.call-window {
+    inset: 0;
     width: 100vw;
     max-width: 100vw;
   }
@@ -547,20 +676,35 @@ html[data-theme="light"] #call-controls.call-controls::before {
   .call-grid {
     max-width: 100%;
     max-height: none;
-    padding: 70px 10px 110px;
+    padding: 76px 12px 120px;
   }
 
-  #call-controls button {
+  .control-btn {
     width: 46px;
     height: 46px;
   }
+
+  .call-info-bar {
+    right: 16px;
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .call-grid {
     grid-template-columns: 1fr;
   }
+
+  .call-controls::before {
+    inset: -10px -14px;
+  }
+
+  .toast {
+    width: calc(100vw - 40px);
+    left: 20px !important;
+    right: 20px !important;
+  }
 }
+
 
 
 
