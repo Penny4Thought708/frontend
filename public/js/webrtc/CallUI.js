@@ -1,5 +1,5 @@
 // public/js/webrtc/CallUI.js
-// Aurora‑Prime Call UI — full modern rewrite, production‑ready
+// Aurora‑Prime Call UI — rewritten for updated WebRTCController + WebRTCMedia
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
@@ -15,7 +15,6 @@ export function initCallUI(rtc) {
 
   const container         = document.getElementById("videoCallWindow");
 
-  // legacy wrappers (safe if missing in new layout)
   const remoteWrapper     = document.getElementById("remoteWrapper");
   const localWrapper      = document.getElementById("localVideoWrapper");
 
@@ -31,9 +30,7 @@ export function initCallUI(rtc) {
   const callStatus        = document.getElementById("call-status");
   const callTimerEl       = document.getElementById("call-timer");
 
-  // media elements are now handled by WebRTCMedia; keep optional
   const localVideo        = document.getElementById("localVideo");
-  const remoteVideo       = document.getElementById("remoteVideo");
   const remoteAudio       = document.getElementById("remoteAudio");
 
   const screenShareInd    = remoteWrapper?.querySelector(".screen-share-indicator");
@@ -60,8 +57,7 @@ export function initCallUI(rtc) {
     return;
   }
 
-  // Optional: legacy attachMediaElements, safe if rtc ignores or elements are null
-  rtc.attachMediaElements?.({ localVideo, remoteVideo, remoteAudio });
+  rtc.attachMediaElements?.({ localVideo, remoteVideo: null, remoteAudio });
 
   /* -------------------------------------------------------
      TIMER
@@ -93,8 +89,7 @@ export function initCallUI(rtc) {
   ------------------------------------------------------- */
 
   function setStatus(text) {
-    if (!callStatus) return;
-    callStatus.textContent = text || "";
+    if (callStatus) callStatus.textContent = text || "";
   }
 
   function setQuality(level, info) {
@@ -113,7 +108,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     CSS MODE TOGGLES (aligned with new layout)
+     CSS MODE TOGGLES
   ------------------------------------------------------- */
 
   function toggleClass(flag, cls) {
@@ -139,7 +134,6 @@ export function initCallUI(rtc) {
     toggleClass(on, "camera-off");
     if (camOffPlaceholder) camOffPlaceholder.style.display = on ? "flex" : "none";
     if (camOffBadge) camOffBadge.style.display = on ? "flex" : "none";
-    if (remoteVideo) remoteVideo.style.display = on ? "none" : "block";
   }
 
   function setAINoiseSuppression(on) {
@@ -179,7 +173,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     SIMPLE OVERLAY (new layout has status bar; no big overlay)
+     SIMPLE OVERLAY
   ------------------------------------------------------- */
 
   function showIncoming(name) {
@@ -190,18 +184,11 @@ export function initCallUI(rtc) {
     setStatus(name ? `Connecting to ${name}…` : "Connecting…");
   }
 
-  function hideOverlay() {
-    // in new layout, just keep status minimal
-  }
-
   /* -------------------------------------------------------
      DEBUG PANEL
   ------------------------------------------------------- */
 
   const debugPanel = (() => {
-    const existing = document.getElementById("call-debug-overlay");
-    if (existing) return existing;
-
     const el = document.createElement("div");
     el.id = "call-debug-overlay";
     el.style.position = "fixed";
@@ -217,7 +204,6 @@ export function initCallUI(rtc) {
     el.style.borderRadius = "6px";
     el.style.zIndex = "9999";
     el.style.display = "none";
-    el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
     el.innerHTML = "<strong>Call Debug</strong><br/>";
     document.body.appendChild(el);
     return el;
@@ -237,7 +223,7 @@ export function initCallUI(rtc) {
   });
 
   /* -------------------------------------------------------
-     DRAGGABLE LOCAL PREVIEW (safe no-op if wrapper missing)
+     DRAGGABLE LOCAL PREVIEW
   ------------------------------------------------------- */
 
   if (localWrapper) {
@@ -282,7 +268,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     AUTO-HIDE CONTROLS (uses .auto-hide on container)
+     AUTO-HIDE CONTROLS
   ------------------------------------------------------- */
 
   let controlsTimeout = null;
@@ -300,7 +286,7 @@ export function initCallUI(rtc) {
   container.addEventListener("touchstart", scheduleHideControls);
 
   /* -------------------------------------------------------
-     DROPDOWN MENU (more controls)
+     DROPDOWN MENU
   ------------------------------------------------------- */
 
   if (moreBtn && moreMenu) {
@@ -339,7 +325,6 @@ export function initCallUI(rtc) {
   answerBtn?.addEventListener("click", () => {
     setStatus("Answering call…");
     logDebug("Answer clicked");
-    hideOverlay();
     setCallMode("active");
     rtc.answerIncomingCall?.();
   });
@@ -347,7 +332,6 @@ export function initCallUI(rtc) {
   declineBtn?.addEventListener("click", () => {
     setStatus("Declining call…");
     logDebug("Decline clicked");
-    hideOverlay();
     setCallMode(null);
     rtc.declineIncomingCall?.();
   });
@@ -372,12 +356,13 @@ export function initCallUI(rtc) {
   });
 
   cameraToggle?.addEventListener("click", () => {
-    const on = rtc.toggleCamera?.();
-    if (typeof on === "boolean") {
-      cameraToggle.classList.toggle("flipped", !!on);
-      cameraToggle.innerHTML = on
-        ? `<span class="material-symbols-outlined">videocam</span>`
-        : `<span class="material-symbols-outlined">videocam_off</span>`;
+    const off = rtc.toggleCamera?.();
+    if (typeof off === "boolean") {
+      cameraToggle.classList.toggle("flipped", !!off);
+      cameraToggle.innerHTML = off
+        ? `<span class="material-symbols-outlined">videocam_off</span>`
+        : `<span class="material-symbols-outlined">videocam</span>`;
+      setCameraOff(off);
     }
     logDebug("Camera toggle clicked");
   });
@@ -389,7 +374,8 @@ export function initCallUI(rtc) {
 
   aiNoiseToggleBtn?.addEventListener("click", () => {
     logDebug("AI noise toggle clicked");
-    rtc.toggleNoiseSuppression?.();
+    const enabled = rtc.toggleNoiseSuppression?.();
+    setAINoiseSuppression(enabled);
   });
 
   recordCallBtn?.addEventListener("click", () => {
@@ -400,9 +386,7 @@ export function initCallUI(rtc) {
 
   callHistoryBtn?.addEventListener("click", () => {
     logDebug("Call history toggle clicked");
-    if (window.toggleCallHistoryPanel) {
-      window.toggleCallHistoryPanel();
-    }
+    window.toggleCallHistoryPanel?.();
   });
 
   /* -------------------------------------------------------
@@ -431,7 +415,6 @@ export function initCallUI(rtc) {
 
   rtc.onCallConnected = () => {
     logDebug("Call connected");
-    hideOverlay();
     setStatus("In call");
     startTimer();
     setCallMode("active");
@@ -440,7 +423,6 @@ export function initCallUI(rtc) {
 
   rtc.onCallEnded = () => {
     logDebug("Call ended");
-    hideOverlay();
     setStatus("Call ended");
     stopTimer();
     setRemoteMuted(false);
@@ -454,7 +436,6 @@ export function initCallUI(rtc) {
 
   rtc.onCallFailed = (reason) => {
     logDebug(`Call failed: ${reason}`);
-    hideOverlay();
     setStatus(`Call failed: ${reason}`);
     stopTimer();
     setCallMode(null);
@@ -505,7 +486,7 @@ export function initCallUI(rtc) {
     setAINoiseSuppression(!!enabled);
   };
 
-  rtc.onRecordingChanged = (active) => {
+  rtc.onRecordingChanged = ({ active }) => {
     logDebug(`Recording state changed: ${active}`);
     recordCallBtn?.classList.toggle("active", !!active);
   };
@@ -514,6 +495,11 @@ export function initCallUI(rtc) {
     logDebug(`Voicemail prompt: ${message || ""}`);
     container.classList.add("hidden");
     showUnavailableToast({ peerId, message });
+  };
+
+  rtc.onSecondaryIncomingCall = ({ fromName, audioOnly }) => {
+    logDebug(`Secondary incoming call from ${fromName}`);
+    showSecondaryIncomingToast(fromName, audioOnly);
   };
 
   logDebug("CallUI initialized");
@@ -628,6 +614,7 @@ export function showUnavailableToast({ peerId, message }) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
