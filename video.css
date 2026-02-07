@@ -1,9 +1,15 @@
 /* ============================================================
-   AURORA ORBIT CALL WINDOW — ORIGINAL CONSTELLATION LAYOUT
-   (multi‑party grid, stage mode, soft orbital motion)
+   AURORA-ORBIT CALL STUDIO
+   A completely new visual language for your call window
+   - Orbital layers
+   - Soft volumetric light
+   - Voice Mode as its own "studio"
 ============================================================ */
 
-/* Base icon styling */
+/* ------------------------------------------------------------
+   MATERIAL ICONS BASELINE
+------------------------------------------------------------ */
+
 .material-symbols-outlined {
   font-variation-settings:
     "FILL" 0,
@@ -17,183 +23,203 @@
   justify-content: center;
 }
 
-/* ============================================================
-   ROOT CONTAINER — EDGE‑PINNED CANVAS NEXT TO RAIL
-============================================================ */
+/* ------------------------------------------------------------
+   ROOT: CALL WINDOW SHELL
+------------------------------------------------------------ */
 
-#videoCallWindow.call-window {
+#videoCallWindow {
   position: fixed;
-  inset: 0 0 0 70px; /* respect left rail */
+  inset: 0;
+  left: 70px; /* rail */
   width: calc(100vw - 70px);
   height: 100vh;
   max-width: calc(100vw - 70px);
   max-height: 100vh;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+  transform: translateY(8px) scale(0.995);
   display: flex;
   align-items: stretch;
   justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 900;
-  transition: opacity 260ms ease;
 }
 
-#videoCallWindow.call-window:not(.hidden) {
+#videoCallWindow:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
-/* ============================================================
-   BACKDROP — ORBITAL GRADIENT + STARFIELD
-============================================================ */
+/* Voice-only mode: slightly smaller, more "studio" */
+#videoCallWindow.voice-only {
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------
+   BACKDROP: ORBITAL STUDIO
+------------------------------------------------------------ */
 
 #videoCallWindow .video-body {
   position: relative;
-  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
   background:
-    radial-gradient(circle at 10% 0, rgba(120, 255, 214, 0.18), transparent 60%),
-    radial-gradient(circle at 90% 100%, rgba(255, 163, 253, 0.16), transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(10, 15, 40, 0.96), rgba(3, 5, 18, 1));
+    radial-gradient(circle at 10% 0%, rgba(120, 255, 210, 0.22), transparent 60%),
+    radial-gradient(circle at 90% 100%, rgba(120, 180, 255, 0.22), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(10, 12, 30, 0.96), rgba(3, 4, 12, 1));
   backdrop-filter: blur(26px);
+  overflow: hidden;
 }
 
-/* subtle starfield */
-#videoCallWindow .video-body::before {
-  content: "";
-  position: absolute;
-  inset: -40%;
-  background-image:
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.16) 0, transparent 40%),
-    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.12) 0, transparent 40%),
-    radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0, transparent 40%);
-  opacity: 0.18;
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-
-/* orbital vignette */
+/* Subtle orbital rings */
+#videoCallWindow .video-body::before,
 #videoCallWindow .video-body::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 120%, rgba(0, 0, 0, 0.7), transparent 60%);
+  inset: 10%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+#videoCallWindow .video-body::after {
+  inset: 18%;
+  border-color: rgba(120, 255, 210, 0.12);
 }
 
 /* Light theme variant */
 html[data-theme="light"] #videoCallWindow .video-body {
   background:
-    radial-gradient(circle at 10% 0, rgba(120, 255, 214, 0.16), transparent 60%),
-    radial-gradient(circle at 90% 100%, rgba(255, 163, 253, 0.14), transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(245, 248, 255, 0.98), rgba(225, 232, 255, 1));
+    radial-gradient(circle at 10% 0%, rgba(120, 255, 210, 0.18), transparent 60%),
+    radial-gradient(circle at 90% 100%, rgba(120, 180, 255, 0.18), transparent 60%),
+    linear-gradient(135deg, #f7fbff, #e9f0ff);
 }
 
-/* ============================================================
-   CONSTELLATION GRID — MULTI‑PARTY LAYOUT
-============================================================ */
+/* ------------------------------------------------------------
+   GRID: ORBITAL STAGE
+------------------------------------------------------------ */
 
 .call-grid {
   position: relative;
   width: 100%;
-  max-width: 1180px;
-  max-height: 680px;
+  max-width: 1120px;
+  max-height: 640px;
   margin: 0 auto;
-  padding: 88px 24px 132px; /* top: status, bottom: controls */
+  padding: 84px 24px 132px; /* top: status, bottom: controls */
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
   justify-items: center;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
-/* Stage mode: one primary tile spans full width */
+/* Stage mode: one primary tile, others orbiting */
 .call-grid.stage-mode .participant.stage-primary {
   grid-column: 1 / -1;
-  min-height: 380px;
+  min-height: 360px;
+  transform: translateY(-4px);
 }
 
 .call-grid.stage-mode .participant:not(.stage-primary) {
-  opacity: 0.9;
-  transform: translateY(4px) scale(0.96);
+  opacity: 0.85;
+  transform: scale(0.96);
 }
 
-/* ============================================================
-   PARTICIPANT TILES — ORBITAL CARDS
-============================================================ */
+/* Voice-only mode: grid collapses into a single "studio" */
+#videoCallWindow.voice-only .call-grid {
+  max-width: 520px;
+  max-height: 520px;
+  grid-template-columns: 1fr;
+  padding: 96px 24px 140px;
+}
+
+/* ------------------------------------------------------------
+   PARTICIPANT TILE: ORBITAL CARD
+------------------------------------------------------------ */
 
 .participant {
   position: relative;
   width: 100%;
+  height: 100%;
   min-height: 220px;
-  border-radius: 20px;
+  border-radius: 22px;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.04), rgba(6, 8, 20, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at 0 0, rgba(255, 255, 255, 0.06), transparent 60%),
-    linear-gradient(145deg, rgba(10, 12, 30, 0.96), rgba(7, 9, 24, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(255, 255, 255, 0.02);
-  --audio-level: 0;
+  transform-origin: center;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
-/* local tile subtle highlight */
+/* Local tile slightly elevated */
 .participant.local {
-  border-color: rgba(120, 255, 214, 0.5);
   box-shadow:
-    0 0 0 1px rgba(120, 255, 214, 0.25),
-    0 18px 40px rgba(0, 0, 0, 0.6);
+    0 20px 46px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(120, 255, 210, 0.16);
 }
 
-/* media area */
+/* Hover micro-lift */
+.participant:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 24px 52px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(120, 180, 255, 0.18);
+}
+
+/* Media wrapper */
 .participant .media-wrapper {
   position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 0, rgba(255, 255, 255, 0.06), #02030a);
+  background: radial-gradient(circle at 50% 0, #05060c, #02030a);
+  overflow: hidden;
 }
 
-/* name bar */
+/* Name tag */
 .participant .name-tag {
   padding: 7px 12px;
   font-size: 0.86rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.9);
   background:
-    linear-gradient(90deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.8));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+    linear-gradient(
+      to right,
+      rgba(6, 8, 20, 0.96),
+      rgba(6, 8, 20, 0.7)
+    );
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* small indicator dot */
-.participant .name-tag::after {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: radial-gradient(circle, #78ffd6, #00c9ff);
-  box-shadow: 0 0 10px rgba(120, 255, 214, 0.9);
-}
-
-/* join / leave micro‑motion */
+/* Join / leave animations */
 .participant.joining {
   opacity: 0;
-  transform: translateY(10px) scale(0.94);
+  transform: scale(0.9);
 }
 
 .participant.joined {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: scale(1);
   transition:
     opacity 180ms ease-out,
     transform 220ms cubic-bezier(0.22, 1.4, 0.36, 1);
@@ -201,15 +227,15 @@ html[data-theme="light"] #videoCallWindow .video-body {
 
 .participant.leaving {
   opacity: 0;
-  transform: translateY(10px) scale(0.9);
+  transform: scale(0.9);
   transition:
     opacity 160ms ease-in,
     transform 160ms ease-in;
 }
 
-/* ============================================================
-   VIDEO ELEMENTS — EDGELESS VIEWPORTS
-============================================================ */
+/* ------------------------------------------------------------
+   VIDEO ELEMENTS
+------------------------------------------------------------ */
 
 #localVideo,
 #remoteVideo,
@@ -219,26 +245,26 @@ html[data-theme="light"] #videoCallWindow .video-body {
   object-fit: cover;
   display: none;
   opacity: 0;
-  filter: saturate(1.05) contrast(1.02);
-  transition: opacity 220ms ease, filter 220ms ease;
+  transition: opacity 220ms ease;
 }
 
-/* JS toggles .show for fade‑in */
+/* When JS sets srcObject, we add .show */
+.participant video.show,
 #localVideo.show,
-#remoteVideo.show,
-.participant video.show {
+#remoteVideo.show {
   display: block;
   opacity: 1;
 }
 
-/* subtle hover lift for active video tiles */
-.participant.video-active .media-wrapper:hover video {
-  filter: saturate(1.12) contrast(1.06);
+/* Voice-only mode: hide all video, rely on avatars */
+#videoCallWindow.voice-only .participant video {
+  display: none !important;
+  opacity: 0 !important;
 }
 
-/* ============================================================
-   AVATARS — ORBITAL PORTRAITS
-============================================================ */
+/* ------------------------------------------------------------
+   AVATARS + VOICE PULSE
+------------------------------------------------------------ */
 
 .avatar-wrapper {
   position: absolute;
@@ -247,59 +273,63 @@ html[data-theme="light"] #videoCallWindow .video-body {
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at 50% 0, rgba(120, 255, 214, 0.18), rgba(3, 5, 18, 0.98));
+    radial-gradient(circle at 50% 0, rgba(120, 255, 210, 0.16), rgba(6, 8, 20, 0.98));
   backdrop-filter: blur(18px);
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 
 .avatar-wrapper img {
-  width: 42%;
-  max-width: 170px;
+  width: 40%;
+  max-width: 160px;
   border-radius: 50%;
-  border: 3px solid rgba(120, 255, 214, 0.8);
+  border: 3px solid rgba(120, 255, 210, 0.8);
   box-shadow:
-    0 0 24px rgba(120, 255, 214, 0.7),
-    0 0 40px rgba(255, 163, 253, 0.4);
+    0 0 24px rgba(120, 255, 210, 0.7),
+    0 0 40px rgba(120, 180, 255, 0.45);
 }
 
-/* local avatar id still supported */
-#localAvatarImg {
-  object-fit: cover;
+/* Voice pulse ring */
+.voice-pulse {
+  position: absolute;
+  width: 52%;
+  max-width: 190px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 255, 210, 0.5);
+  box-shadow:
+    0 0 18px rgba(120, 255, 210, 0.7),
+    0 0 32px rgba(120, 180, 255, 0.5);
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
+/* Speaking state */
+.participant.speaking .voice-pulse {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+/* Hide avatar when video is active */
 .avatar-wrapper.hidden {
   opacity: 0;
   transform: scale(1.04);
   pointer-events: none;
 }
 
-/* ============================================================
-   VOICE PULSE — ORBITAL RING
-============================================================ */
-
-.voice-pulse {
-  position: absolute;
-  width: 54%;
-  max-width: 190px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 2px solid rgba(120, 255, 214, 0.6);
-  box-shadow:
-    0 0 18px rgba(120, 255, 214, 0.8),
-    0 0 32px rgba(255, 163, 253, 0.5);
-  opacity: 0;
-  transform: scale(0.9);
-  transition: opacity 160ms ease, transform 160ms ease;
+/* Voice-only mode: avatars are always visible, even if video exists */
+#videoCallWindow.voice-only .avatar-wrapper {
+  opacity: 1 !important;
+  transform: scale(1) !important;
 }
 
-.participant.speaking .voice-pulse {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-/* ============================================================
-   AUDIO VISUALIZER — CONSTELLATION GLOW
-============================================================ */
+/* ------------------------------------------------------------
+   AUDIO LEVEL GLOW (CSS VAR --audio-level)
+------------------------------------------------------------ */
 
 .participant {
   --audio-level: 0;
@@ -312,15 +342,15 @@ html[data-theme="light"] #videoCallWindow .video-body {
   pointer-events: none;
   border-radius: inherit;
   box-shadow:
-    0 0 calc(36px * var(--audio-level)) rgba(120, 255, 214, 0.7),
-    0 0 calc(72px * var(--audio-level)) rgba(255, 163, 253, 0.5);
-  opacity: calc(0.38 * var(--audio-level));
+    0 0 calc(40px * var(--audio-level)) rgba(120, 255, 210, 0.6),
+    0 0 calc(80px * var(--audio-level)) rgba(120, 180, 255, 0.4);
+  opacity: calc(0.4 * var(--audio-level));
   transition: opacity 120ms ease;
 }
 
-/* ============================================================
-   STATUS + TIMER — FLOATING ORBIT LABEL
-============================================================ */
+/* ------------------------------------------------------------
+   CALL STATUS + TIMER (TOP CENTER)
+------------------------------------------------------------ */
 
 .call-top-info {
   position: absolute;
@@ -329,69 +359,75 @@ html[data-theme="light"] #videoCallWindow .video-body {
   transform: translateX(-50%);
   text-align: center;
   z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  pointer-events: none;
 }
 
 .call-status {
+  font-size: 0.98rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 4px;
   padding: 6px 16px;
   border-radius: 999px;
-  background:
-    linear-gradient(120deg, rgba(10, 12, 30, 0.96), rgba(10, 12, 30, 0.8));
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: rgba(3, 5, 18, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
 }
 
 .call-timer {
   font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.98rem;
+  font-size: 1rem;
   color: #ffe66b;
 }
 
-/* ============================================================
-   FLOATING CONTROLS — ORBITAL PILL
-============================================================ */
+/* Voice-only: slightly larger status */
+#videoCallWindow.voice-only .call-status {
+  font-size: 1.02rem;
+}
 
-.call-controls {
+/* ------------------------------------------------------------
+   CALL CONTROLS (BOTTOM CENTER ORBITAL PILL)
+------------------------------------------------------------ */
+
+#call-controls.call-controls {
   position: absolute;
-  bottom: 30px;
+  bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 30;
   display: flex;
   align-items: center;
   gap: 12px;
+  z-index: 30;
 }
 
-/* pill background */
-.call-controls::before {
+/* Orbital pill background */
+#call-controls.call-controls::before {
   content: "";
   position: absolute;
-  inset: -12px -20px;
+  inset: -14px -22px;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 0 0, rgba(120, 255, 214, 0.22), transparent 60%),
-    linear-gradient(120deg, rgba(10, 12, 30, 0.96), rgba(10, 12, 30, 0.9));
+    radial-gradient(circle at 0 0, rgba(120, 255, 210, 0.22), transparent 60%),
+    rgba(3, 5, 18, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(20px);
   z-index: -1;
 }
 
-/* control buttons */
-.control-btn {
+/* Voice-only: slightly tighter controls */
+#videoCallWindow.voice-only #call-controls.call-controls::before {
+  inset: -12px -18px;
+}
+
+/* Buttons */
+#call-controls button {
   width: 52px;
   height: 52px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background:
-    radial-gradient(circle at 30% 0, rgba(120, 255, 214, 0.22), rgba(6, 8, 24, 0.96));
+    radial-gradient(circle at 30% 0, rgba(120, 255, 210, 0.22), rgba(6, 8, 24, 0.96));
   color: #f8f8ff;
   display: flex;
   align-items: center;
@@ -405,7 +441,7 @@ html[data-theme="light"] #videoCallWindow .video-body {
     opacity 160ms ease;
 }
 
-/* inbound / active visibility */
+/* Inbound-only / active-only visibility */
 .inbound-only { display: none; }
 .active-only  { display: none; }
 
@@ -413,24 +449,32 @@ html[data-theme="light"] #videoCallWindow .video-body {
   display: flex;
 }
 
+#videoCallWindow.inbound-mode .active-only {
+  display: none;
+}
+
 #videoCallWindow.active-mode .active-only {
   display: flex;
 }
 
-/* hover / active micro‑motion */
-.control-btn:hover {
-  transform: translateY(-3px) scale(1.06);
-  border-color: #78ffd6;
-  box-shadow:
-    0 0 18px rgba(120, 255, 214, 0.7),
-    0 0 32px rgba(255, 163, 253, 0.5);
+#videoCallWindow.active-mode .inbound-only {
+  display: none;
 }
 
-.control-btn:active {
+/* Hover / active */
+#call-controls button:hover {
+  transform: translateY(-3px) scale(1.06);
+  border-color: #78ffd2;
+  box-shadow:
+    0 0 18px rgba(120, 255, 210, 0.7),
+    0 0 32px rgba(120, 180, 255, 0.5);
+}
+
+#call-controls button:active {
   transform: scale(0.9);
 }
 
-/* destructive / confirm */
+/* Special buttons */
 #decline-call,
 #end-call {
   background: radial-gradient(circle at 30% 0, #ff6b6b, #d90429);
@@ -442,7 +486,13 @@ html[data-theme="light"] #videoCallWindow .video-body {
   color: #05060a;
 }
 
-/* camera flip */
+/* More controls button: subtle */
+.more-controls .control-btn {
+  background:
+    radial-gradient(circle at 30% 0, rgba(120, 180, 255, 0.22), rgba(6, 8, 24, 0.96));
+}
+
+/* Camera toggle flip */
 #camera-toggle .material-symbols-outlined {
   transition: transform 260ms cubic-bezier(0.22, 1.4, 0.36, 1);
 }
@@ -451,74 +501,76 @@ html[data-theme="light"] #videoCallWindow .video-body {
   transform: rotateY(180deg);
 }
 
-/* AI noise glow */
+/* AI noise active glow */
 #ai-noise-toggle.active {
-  border-color: #78ffd6;
+  border-color: #78ffd2;
   box-shadow:
-    0 0 18px rgba(120, 255, 214, 0.9),
-    0 0 36px rgba(120, 255, 214, 0.6);
+    0 0 18px rgba(120, 255, 210, 0.8),
+    0 0 36px rgba(120, 255, 210, 0.5);
 }
 
-/* ============================================================
-   MORE CONTROLS DROPDOWN — FLOATING PANEL
-============================================================ */
+/* Recording active */
+#record-call.active {
+  border-color: #ff6b6b;
+  box-shadow:
+    0 0 18px rgba(255, 107, 107, 0.8),
+    0 0 36px rgba(255, 107, 107, 0.5);
+}
+
+/* ------------------------------------------------------------
+   MORE CONTROLS DROPDOWN
+------------------------------------------------------------ */
 
 .more-controls {
   position: relative;
 }
 
-.more-controls-menu {
+#more-controls-menu {
   position: absolute;
   bottom: 70px;
   right: 0;
   width: 230px;
-  background:
-    linear-gradient(145deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.9));
+  background: rgba(3, 5, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 6px 0;
+  backdrop-filter: blur(16px);
+  z-index: 50;
   box-shadow:
     0 18px 40px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.02);
-  padding: 6px 0;
-  backdrop-filter: blur(18px);
-  z-index: 50;
+    0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
-.more-controls-menu.hidden {
-  display: none;
-}
-
-.more-controls-menu button {
+#more-controls-menu button {
   width: 100%;
-  padding: 9px 14px;
+  padding: 10px 14px;
   background: transparent;
   border: none;
-  color: #f8f8ff;
+  color: #fff;
   display: flex;
   gap: 10px;
   align-items: center;
   cursor: pointer;
   font-size: 0.9rem;
   text-align: left;
-  transition: background 160ms ease, color 160ms ease;
 }
 
-.more-controls-menu button .material-symbols-outlined {
-  font-size: 20px;
-}
-
-.more-controls-menu button:hover {
+#more-controls-menu button:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* ============================================================
-   CALL QUALITY + DEBUG BAR
-============================================================ */
+#more-controls-menu.hidden {
+  display: none;
+}
+
+/* ------------------------------------------------------------
+   CALL INFO BAR (QUALITY + DEBUG)
+------------------------------------------------------------ */
 
 .call-info-bar {
   position: absolute;
-  bottom: 30px;
-  right: 26px;
+  top: 18px;
+  right: 24px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -526,27 +578,27 @@ html[data-theme="light"] #videoCallWindow .video-body {
 }
 
 .quality-indicator {
-  min-width: 90px;
-  padding: 6px 10px;
+  min-width: 80px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   text-align: center;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
-  background: rgba(10, 12, 30, 0.9);
+  letter-spacing: 0.08em;
   border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(3, 5, 18, 0.9);
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* quality color states */
+/* Quality colors */
 .quality-indicator[data-level="excellent"] {
-  border-color: #78ffd6;
-  color: #78ffd6;
+  border-color: #78ffd2;
+  color: #78ffd2;
 }
 
 .quality-indicator[data-level="good"] {
-  border-color: #a4ff9f;
-  color: #a4ff9f;
+  border-color: #7dd3ff;
+  color: #7dd3ff;
 }
 
 .quality-indicator[data-level="fair"] {
@@ -560,55 +612,48 @@ html[data-theme="light"] #videoCallWindow .video-body {
   color: #ff6b6b;
 }
 
+/* Debug toggle */
 .debug-toggle {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(10, 12, 30, 0.9);
-  color: #f8f8ff;
+  background: rgba(3, 5, 18, 0.9);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 160ms ease,
-    border-color 160ms ease;
 }
 
-.debug-toggle:hover {
-  transform: translateY(-2px);
-  border-color: #78ffd6;
-  box-shadow:
-    0 0 14px rgba(120, 255, 214, 0.6),
-    0 0 24px rgba(255, 163, 253, 0.4);
-}
-
-/* ============================================================
+/* ------------------------------------------------------------
    TOASTS — SECONDARY INCOMING + UNAVAILABLE
-============================================================ */
+------------------------------------------------------------ */
 
 .toast {
   position: fixed;
   bottom: 20px;
-  width: 270px;
+  width: 280px;
   padding: 14px 18px;
-  background:
-    linear-gradient(145deg, rgba(10, 12, 30, 0.98), rgba(10, 12, 30, 0.9));
-  border-radius: 14px;
+  background: rgba(3, 5, 18, 0.96);
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(18px);
-  color: #f8f8ff;
+  color: #fff;
   opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 200ms ease, transform 200ms ease;
+  transform: translateY(20px) scale(0.98);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
   z-index: 99999;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .toast.open {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 /* keep in DOM for animation */
@@ -618,11 +663,11 @@ html[data-theme="light"] #videoCallWindow .video-body {
 }
 
 #secondaryIncomingToast {
-  left: 24px;
+  left: 20px;
 }
 
 #unavailableToast {
-  right: 24px;
+  right: 20px;
 }
 
 .toast .sit-actions,
@@ -635,13 +680,14 @@ html[data-theme="light"] #videoCallWindow .video-body {
 
 .toast button {
   flex: 1;
+  margin: 0;
   padding: 8px 10px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.06);
-  color: #f8f8ff;
-  font-size: 0.85rem;
+  color: #fff;
+  font-size: 0.86rem;
   transition: background 140ms ease, transform 120ms ease;
 }
 
@@ -650,9 +696,9 @@ html[data-theme="light"] #videoCallWindow .video-body {
   transform: translateY(-1px);
 }
 
-/* ============================================================
+/* ------------------------------------------------------------
    REMOTE AUDIO ELEMENT
-============================================================ */
+------------------------------------------------------------ */
 
 #remoteAudio {
   position: absolute;
@@ -662,13 +708,13 @@ html[data-theme="light"] #videoCallWindow .video-body {
   pointer-events: none;
 }
 
-/* ============================================================
+/* ------------------------------------------------------------
    RESPONSIVE
-============================================================ */
+------------------------------------------------------------ */
 
 @media (max-width: 900px) {
-  #videoCallWindow.call-window {
-    inset: 0;
+  #videoCallWindow {
+    left: 0;
     width: 100vw;
     max-width: 100vw;
   }
@@ -679,29 +725,28 @@ html[data-theme="light"] #videoCallWindow .video-body {
     padding: 76px 12px 120px;
   }
 
-  .control-btn {
+  #call-controls button {
     width: 46px;
     height: 46px;
   }
 
   .call-info-bar {
-    right: 16px;
+    right: 14px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   .call-grid {
     grid-template-columns: 1fr;
+    padding: 72px 10px 118px;
   }
 
-  .call-controls::before {
-    inset: -10px -14px;
+  .call-top-info {
+    top: 14px;
   }
 
-  .toast {
-    width: calc(100vw - 40px);
-    left: 20px !important;
-    right: 20px !important;
+  #call-controls.call-controls::before {
+    inset: -10px -12px;
   }
 }
 
