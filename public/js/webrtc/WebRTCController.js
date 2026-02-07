@@ -107,7 +107,7 @@ export class WebRTCController {
     // Call session ID for reconnect logic
     rtcState.callSessionId = rtcState.callSessionId || null;
 
-    // Make sure ringtone / ringback loop while ringing
+    // Ensure audio objects loop while ringing
     if (ringback) ringback.loop = true;
     if (ringtone) ringtone.loop = true;
 
@@ -123,7 +123,7 @@ export class WebRTCController {
       }
     });
 
-    // Wire dynamic bandwidth adaptation via onNetworkQuality hook
+    // Dynamic bandwidth adaptation via onNetworkQuality hook
     this.onNetworkQuality = (level, info) => {
       console.log("[WebRTC] Network quality:", level, info || "");
       if (!this.pc) return;
@@ -249,7 +249,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Noise suppression (stub for now)
+     Noise suppression (UI + state only)
   --------------------------------------------------- */
 
   toggleNoiseSuppression() {
@@ -260,7 +260,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Recording (stub for now)
+     Recording (UI + state only)
   --------------------------------------------------- */
 
   toggleRecording() {
@@ -332,8 +332,11 @@ export class WebRTCController {
     });
 
     if (ringback) {
-      ringback.loop = true;
-      ringback.play().catch(() => {});
+      try {
+        ringback.loop = true;
+        ringback.currentTime = 0;
+        ringback.play().catch(() => {});
+      } catch {}
     }
   }
 
@@ -362,7 +365,8 @@ export class WebRTCController {
 
     const displayName = fromUser?.fullname || fromName || `User ${from}`;
 
-    rtcState.callSessionId = callSessionId || rtcState.callSessionId || crypto.randomUUID();
+    rtcState.callSessionId =
+      callSessionId || rtcState.callSessionId || crypto.randomUUID();
     rtcState.peerId = from;
     rtcState.peerName = displayName;
     rtcState.audioOnly = !!audioOnly;
@@ -372,9 +376,13 @@ export class WebRTCController {
     rtcState.usedRelayFallback = false;
 
     if (ringtone) {
-      ringtone.loop = true;
-      ringtone.play().catch(() => {});
+      try {
+        ringtone.loop = true;
+        ringtone.currentTime = 0;
+        ringtone.play().catch(() => {});
+      } catch {}
     }
+
     this.onIncomingCall?.({
       fromName: rtcState.peerName,
       audioOnly: !!audioOnly,
@@ -399,6 +407,7 @@ export class WebRTCController {
 
     startTimer();
     stopAudio(ringtone);
+    stopAudio(ringback);
 
     const pc = await this._createPC({ relayOnly: false });
 
@@ -453,6 +462,10 @@ export class WebRTCController {
     } else if (rtcState.currentCallerId) {
       callerId = rtcState.currentCallerId;
     }
+
+    // Stop ringing on the callee side immediately
+    stopAudio(ringtone);
+    stopAudio(ringback);
 
     if (callerId) {
       this.socket.emit("call:decline", { to: callerId });
@@ -520,6 +533,7 @@ export class WebRTCController {
     await this._flushPendingRemoteCandidates();
 
     stopAudio(ringback);
+    stopAudio(ringtone);
     this.onCallConnected?.();
     startTimer();
   }
@@ -1087,6 +1101,7 @@ export class WebRTCController {
 
         case "busy":
           stopAudio(ringback);
+          stopAudio(ringtone);
           try {
             const busyTone = new Audio("/NewApp/busy.mp3");
             busyTone.play().catch(() => {});
@@ -1099,49 +1114,52 @@ export class WebRTCController {
       }
     });
 
-    this.socket.on("call:restore", ({ callerId, receiverId, status, callSessionId }) => {
-      const me = String(getMyUserId());
-      const callerStr = String(callerId);
-      const receiverStr = String(receiverId);
+    this.socket.on(
+      "call:restore",
+      ({ callerId, receiverId, status, callSessionId }) => {
+        const me = String(getMyUserId());
+        const callerStr = String(callerId);
+        const receiverStr = String(receiverId);
 
-      const isCaller = me === callerStr;
-      const peerId = isCaller ? receiverStr : callerStr;
+        const isCaller = me === callerStr;
+        const peerId = isCaller ? receiverStr : callerStr;
 
-      console.log("[WebRTC] call:restore received:", {
-        me,
-        callerId,
-        receiverId,
-        status,
-        isCaller,
-        peerId,
-        callSessionId,
-      });
+        console.log("[WebRTC] call:restore received:", {
+          me,
+          callerId,
+          receiverId,
+          status,
+          isCaller,
+          peerId,
+          callSessionId,
+        });
 
-      rtcState.callSessionId = callSessionId || rtcState.callSessionId;
-      rtcState.peerId = peerId;
-      rtcState.isCaller = isCaller;
-      rtcState.inCall = status === "active";
+        rtcState.callSessionId = callSessionId || rtcState.callSessionId;
+        rtcState.peerId = peerId;
+        rtcState.isCaller = isCaller;
+        rtcState.inCall = status === "active";
 
-      if (status === "active") {
-        this.onCallConnected?.();
-        if (isCaller) {
-          this._resumeAsCallerAfterRestore(peerId);
-        }
-      } else if (status === "ringing") {
-        if (isCaller) {
-          this.onOutgoingCall?.({
-            targetName: rtcState.peerName || null,
-            video: !rtcState.audioOnly,
-            voiceOnly: !!rtcState.audioOnly,
-          });
-        } else {
-          this.onIncomingCall?.({
-            fromName: rtcState.peerName || "",
-            audioOnly: !!rtcState.audioOnly,
-          });
+        if (status === "active") {
+          this.onCallConnected?.();
+          if (isCaller) {
+            this._resumeAsCallerAfterRestore(peerId);
+          }
+        } else if (status === "ringing") {
+          if (isCaller) {
+            this.onOutgoingCall?.({
+              targetName: rtcState.peerName || null,
+              video: !rtcState.audioOnly,
+              voiceOnly: !!rtcState.audioOnly,
+            });
+          } else {
+            this.onIncomingCall?.({
+              fromName: rtcState.peerName || "",
+              audioOnly: !!rtcState.audioOnly,
+            });
+          }
         }
       }
-    });
+    );
 
     const playUnreachableTone = () => {
       try {
@@ -1232,6 +1250,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
