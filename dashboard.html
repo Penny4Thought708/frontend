@@ -447,8 +447,54 @@ window.currentUserAvatar = user.avatar;
 
     </div>
 
+    <!-- ============================================================
+         REMOTE AUDIO ELEMENT (REQUIRED)
+    ============================================================ -->
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <!-- ============================================================
+         CALL QUALITY + DEBUG TOGGLE
+    ============================================================ -->
+    <div class="call-info-bar">
+      <div id="call-quality-indicator" class="quality-indicator" data-level="unknown">
+        Unknown
+      </div>
+
+      <button id="call-debug-toggle" class="debug-toggle">
+        <span class="material-symbols-outlined">bug_report</span>
+      </button>
+    </div>
+
   </div>
 </section>
+
+<!-- ============================================================
+     SECONDARY INCOMING CALL TOAST
+============================================================ -->
+<div id="secondaryIncomingToast" class="toast secondary-incoming hidden">
+  <div class="sit-content">
+    <div class="sit-message">Someone is calling…</div>
+    <div class="sit-actions">
+      <button class="sit-ignore">Ignore</button>
+      <button class="sit-switch">End & Switch</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     UNAVAILABLE TOAST (VOICEMAIL / MISSED CALL)
+============================================================ -->
+<div id="unavailableToast" class="toast unavailable hidden">
+  <div class="ut-content">
+    <div class="ut-message">User unavailable</div>
+    <div class="ut-actions">
+      <button id="utVoiceBtn">Voice Message</button>
+      <button id="utVideoBtn">Video Message</button>
+      <button id="utTextBtn">Send Text</button>
+    </div>
+  </div>
+</div>
+
   <!-- ============================================================
        GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
   ============================================================ -->
@@ -1390,6 +1436,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
