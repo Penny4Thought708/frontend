@@ -504,6 +504,45 @@ export function initCallUI(rtc) {
 
   logDebug("CallUI initialized");
 }
+/* -------------------------------------------------------
+   SECONDARY INCOMING CALL TOAST
+   (When a third user calls while you're already in a call)
+------------------------------------------------------- */
+
+export function showSecondaryIncomingToast({ fromName, audioOnly }) {
+  const toast = document.getElementById("secondaryIncomingToast");
+  const msgEl = toast?.querySelector(".sit-message");
+  const ignoreBtn = toast?.querySelector(".sit-ignore");
+  const switchBtn = toast?.querySelector(".sit-switch");
+
+  if (!toast || !msgEl || !ignoreBtn || !switchBtn) {
+    console.warn("[CallUI] Secondary incoming toast elements missing");
+    return;
+  }
+
+  msgEl.textContent = `${fromName} is calling you (${audioOnly ? "voice" : "video"})`;
+
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("open"), 10);
+
+  const close = () => {
+    toast.classList.remove("open");
+    setTimeout(() => toast.classList.add("hidden"), 250);
+  };
+
+  ignoreBtn.onclick = () => {
+    close();
+  };
+
+  switchBtn.onclick = () => {
+    close();
+    // End current call and allow user to answer the new one
+    if (window.rtc) {
+      window.rtc.endCall?.(true);
+      // UI will show the new incoming call automatically
+    }
+  };
+}
 
 /* -------------------------------------------------------
    UNAVAILABLE TOAST
@@ -540,22 +579,19 @@ export function showUnavailableToast({ peerId, message }) {
 
   videoBtn.onclick = () => {
     closeToast();
-    // openVideoMessageRecorder(peerId); // future hook
+    // Future: open video message recorder
   };
 
   textBtn.onclick = () => {
     closeToast();
-    if (window.showMessageWindow) {
-      window.showMessageWindow();
-    } else {
-      console.warn("[CallUI] showMessageWindow is not defined on window");
-    }
+    window.showMessageWindow?.();
   };
 }
 
-// ------------------------------------------------------
-// WebRTC Debug Overlay
-// ------------------------------------------------------
+/* -------------------------------------------------------
+   WebRTC Debug Overlay (already created by controller)
+------------------------------------------------------- */
+
 
 (function createWebRTCDebugOverlay() {
   const panel = document.createElement("div");
@@ -614,6 +650,7 @@ export function showUnavailableToast({ peerId, message }) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
