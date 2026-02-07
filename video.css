@@ -444,6 +444,11 @@ html[data-theme="light"] {
 .toast button:hover {
   background: var(--bg-glass-heavy);
 }
+/* Required for proper toast animation */
+.toast.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* ------------------------------------------------------------
    CALL QUALITY INDICATOR + DEBUG TOGGLE
