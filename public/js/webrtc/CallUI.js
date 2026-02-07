@@ -3,6 +3,15 @@
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
+import {
+  initRemoteParticipants,
+  clearAllParticipants,
+  setParticipantSpeaking,
+  setParticipantCameraOff,
+  promoteToStage,
+  demoteStage,
+} from "./RemoteParticipants.js";
+
 export function initCallUI(rtc) {
   if (!rtc) {
     console.warn("[CallUI] No RTC controller provided");
@@ -41,6 +50,22 @@ export function initCallUI(rtc) {
 
   const toastSecondary  = document.getElementById("secondaryIncomingToast");
   const toastUnavailable= document.getElementById("unavailableToast");
+
+  /* -------------------------------------------------------
+     INITIALIZE REMOTE PARTICIPANT SYSTEM
+  ------------------------------------------------------- */
+
+  initRemoteParticipants();
+
+  /* -------------------------------------------------------
+     WIRE MEDIA ELEMENTS INTO CONTROLLER
+  ------------------------------------------------------- */
+
+  rtc.attachMediaElements?.({
+    localVideo,
+    remoteVideo: null, // remote videos handled per‑participant
+    remoteAudio,
+  });
 
   /* -------------------------------------------------------
      INTERNAL STATE
@@ -136,18 +161,12 @@ export function initCallUI(rtc) {
     const ignore = toastSecondary.querySelector(".sit-ignore");
     const sw     = toastSecondary.querySelector(".sit-switch");
 
-    if (!msg || !ignore || !sw) {
-      console.warn("[CallUI] Secondary incoming toast elements missing");
-      return;
-    }
-
     msg.textContent = `${fromName} is calling you (${audioOnly ? "voice" : "video"})`;
 
     ignore.onclick = () => hideToast(toastSecondary);
     sw.onclick = () => {
       hideToast(toastSecondary);
       rtc.endCall?.(true);
-      // New incoming call will trigger rtc.onIncomingCall again
     };
 
     showToast(toastSecondary);
@@ -161,11 +180,6 @@ export function initCallUI(rtc) {
     const video   = document.getElementById("utVideoBtn");
     const textBtn = document.getElementById("utTextBtn");
 
-    if (!msgEl || !voice || !video || !textBtn) {
-      console.warn("[CallUI] Unavailable toast elements missing");
-      return;
-    }
-
     msgEl.textContent = message || "User unavailable";
 
     voice.onclick = () => {
@@ -173,11 +187,7 @@ export function initCallUI(rtc) {
       openVoicemailRecorder?.(peerId);
     };
 
-    video.onclick = () => {
-      hideToast(toastUnavailable);
-      // future: open video message recorder
-    };
-
+    video.onclick = () => hideToast(toastUnavailable);
     textBtn.onclick = () => {
       hideToast(toastUnavailable);
       window.showMessageWindow?.();
@@ -214,7 +224,7 @@ export function initCallUI(rtc) {
   };
 
   cameraBtn.onclick = () => {
-    const off = rtc.toggleCamera?.();
+    const off = rtc.switchCamera?.(); // correct method name
     cameraBtn.classList.toggle("flipped", !!off);
     cameraBtn.innerHTML = off
       ? `<span class="material-symbols-outlined">videocam_off</span>`
@@ -222,8 +232,13 @@ export function initCallUI(rtc) {
     setCameraOff(off);
   };
 
-  shareBtn.onclick  = () => rtc.startScreenShare?.();
-  noiseBtn.onclick  = () => setNoiseSuppression(rtc.toggleNoiseSuppression?.());
+  shareBtn.onclick = () => rtc.startScreenShare?.();
+
+  noiseBtn.onclick = () => {
+    const enabled = rtc.toggleNoiseSuppression?.();
+    setNoiseSuppression(enabled);
+  };
+
   recordBtn.onclick = () => {
     const active = rtc.toggleRecording?.();
     recordBtn.classList.toggle("active", !!active);
@@ -282,7 +297,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     RTC EVENT WIRING
+     RTC EVENT WIRING (GROUP‑READY)
   ------------------------------------------------------- */
 
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
@@ -294,7 +309,7 @@ export function initCallUI(rtc) {
   };
 
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
-    debug(`Calling ${targetName}`);
+    debug(`Calling ${targetName || "user"}`);
     setStatus("Calling…");
     setVoiceOnly(voiceOnly);
     setMode("active");
@@ -313,6 +328,7 @@ export function initCallUI(rtc) {
     stopTimer();
     setStatus("Call ended");
     setMode(null);
+    clearAllParticipants();
     win.classList.add("hidden");
   };
 
@@ -321,17 +337,18 @@ export function initCallUI(rtc) {
     stopTimer();
     setStatus(`Call failed: ${reason}`);
     setMode(null);
+    clearAllParticipants();
     win.classList.add("hidden");
   };
 
-  rtc.onRemoteMuted   = () => debug("Remote muted");
+  rtc.onRemoteMuted = () => debug("Remote muted");
   rtc.onRemoteUnmuted = () => debug("Remote unmuted");
 
-  rtc.onRemoteCameraOff = () => setCameraOff(true);
-  rtc.onRemoteCameraOn  = () => setCameraOff(false);
+  rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
+  rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
 
-  rtc.onRemoteSpeaking = (active) => {
-    // handled visually by WebRTCMedia + CSS
+  rtc.onRemoteSpeaking = ({ peerId, active, level }) => {
+    setParticipantSpeaking(peerId, active, level);
   };
 
   rtc.onNetworkQuality = (level, info) => {
@@ -339,22 +356,31 @@ export function initCallUI(rtc) {
     setQuality(level, info);
   };
 
-  rtc.onScreenShareStarted = () => setScreenShare(true);
-  rtc.onScreenShareStopped = () => setScreenShare(false);
+  rtc.onScreenShareStarted = (peerId) => {
+    setScreenShare(true);
+    promoteToStage(peerId);
+  };
 
-  rtc.onNoiseSuppressionChanged = (enabled) => setNoiseSuppression(enabled);
+  rtc.onScreenShareStopped = (peerId) => {
+    setScreenShare(false);
+    demoteStage(peerId);
+  };
+
+  rtc.onNoiseSuppressionChanged = (enabled) =>
+    setNoiseSuppression(enabled);
 
   rtc.onRecordingChanged = ({ active }) =>
     recordBtn.classList.toggle("active", !!active);
 
-  rtc.onVoicemailPrompt = ({ peerId, message }) =>
-    showUnavailableToastInternal({ peerId, message });
+  rtc.onVoicemailPrompt = (data) =>
+    showUnavailableToastInternal(data);
 
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
 
-  debug("CallUI initialized");
+  console.log("[CallUI] Initialized");
 }
+
 
 /* -------------------------------------------------------
    WebRTC Debug Overlay (stats from controller)
@@ -417,6 +443,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
