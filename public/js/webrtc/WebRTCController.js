@@ -68,6 +68,69 @@ function stopTimer() {
 }
 
 /* -------------------------------------------------------
+   Debug Overlay Injection (Top‑Left, Glass, Resizable)
+------------------------------------------------------- */
+
+(function createWebRTCDebugOverlay() {
+  const panel = document.createElement("div");
+  panel.id = "webrtc-debug-overlay";
+  panel.style.position = "fixed";
+  panel.style.top = "20px";
+  panel.style.left = "20px";
+  panel.style.width = "260px";
+  panel.style.maxHeight = "60vh";
+  panel.style.resize = "both";
+  panel.style.overflow = "auto";
+  panel.style.background = "rgba(0,0,0,0.65)";
+  panel.style.backdropFilter = "blur(6px)";
+  panel.style.color = "#0f0";
+  panel.style.fontFamily = "monospace";
+  panel.style.fontSize = "12px";
+  panel.style.padding = "10px 12px";
+  panel.style.borderRadius = "8px";
+  panel.style.zIndex = "999999";
+  panel.style.whiteSpace = "pre-line";
+  panel.style.pointerEvents = "auto";
+  panel.style.userSelect = "text";
+  panel.style.border = "1px solid rgba(0,255,0,0.3)";
+  panel.style.boxShadow = "0 0 12px rgba(0,255,0,0.2)";
+  panel.innerHTML = "WebRTC Debug Overlay\n----------------------\nInitializing…";
+
+  document.body.appendChild(panel);
+
+  window._webrtcDebugUpdate = function (data) {
+    const {
+      iceState,
+      connState,
+      signalingState,
+      bitrate,
+      codec,
+      localVideo,
+      remoteVideo,
+      screenShare,
+      muted,
+      cameraOff,
+      sessionId,
+    } = data;
+
+    panel.innerHTML =
+      `WebRTC Debug Overlay\n` +
+      `----------------------\n` +
+      `Session: ${sessionId || "none"}\n\n` +
+      `ICE State: ${iceState}\n` +
+      `Conn State: ${connState}\n` +
+      `Signal State: ${signalingState}\n\n` +
+      `Bitrate: ${bitrate || "?"} kbps\n` +
+      `Codec: ${codec || "?"}\n\n` +
+      `Local Video: ${localVideo ? "ON" : "OFF"}\n` +
+      `Remote Video: ${remoteVideo ? "ON" : "OFF"}\n` +
+      `Screen Share: ${screenShare ? "ACTIVE" : "OFF"}\n` +
+      `Muted: ${muted ? "YES" : "NO"}\n` +
+      `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
+  };
+})();
+
+/* -------------------------------------------------------
    WebRTCController
 ------------------------------------------------------- */
 
@@ -142,6 +205,69 @@ export class WebRTCController {
 
       this._setVideoBitrate(this.pc, kbps).catch(() => {});
     };
+
+    this._debugUpdate();
+  }
+
+  /* ---------------------------------------------------
+     Debug Update Method
+  --------------------------------------------------- */
+
+  _debugUpdate() {
+    if (!window._webrtcDebugUpdate) return;
+
+    const pc = this.pc;
+
+    let bitrate = "?";
+    let codec = "?";
+
+    if (pc) {
+      pc.getStats(null).then((stats) => {
+        stats.forEach((report) => {
+          if (report.type === "outbound-rtp" && report.kind === "video") {
+            if (report.bitrateMean) {
+              bitrate = Math.round(report.bitrateMean / 1000);
+            }
+            if (report.codecId && stats.get(report.codecId)) {
+              codec = stats.get(report.codecId).mimeType;
+            }
+          }
+        });
+
+        window._webrtcDebugUpdate({
+          iceState: pc.iceConnectionState,
+          connState: pc.connectionState,
+          signalingState: pc.signalingState,
+          bitrate,
+          codec,
+          localVideo:
+            !!(this.localStream && this.localStream.getVideoTracks().length),
+          remoteVideo: !!rtcState.remoteStream,
+          screenShare: rtcState.screenSharing,
+          muted: this.localStream
+            ? !this.localStream.getAudioTracks()[0].enabled
+            : false,
+          cameraOff: this.localStream
+            ? !this.localStream.getVideoTracks()[0].enabled
+            : false,
+          sessionId: rtcState.callSessionId,
+        });
+      });
+    } else {
+      window._webrtcDebugUpdate({
+        iceState: "none",
+        connState: "none",
+        signalingState: "none",
+        bitrate: "?",
+        codec: "?",
+        localVideo: false,
+        remoteVideo: false,
+        screenShare: rtcState.screenSharing,
+        muted: false,
+        cameraOff: false,
+        sessionId: rtcState.callSessionId,
+      });
+    }
   }
 
   /* ---------------------------------------------------
@@ -152,6 +278,7 @@ export class WebRTCController {
     this.localVideo = localVideo;
     this.remoteVideo = remoteVideo;
     this.remoteAudio = remoteAudio;
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -223,6 +350,8 @@ export class WebRTCController {
       screenTrack.onended = () => {
         this.stopScreenShare();
       };
+
+      this._debugUpdate();
     } catch (err) {
       console.error("[WebRTC] Screen share failed:", err);
     }
@@ -252,6 +381,7 @@ export class WebRTCController {
     this._originalVideoTrack = null;
     rtcState.screenSharing = false;
     this.onScreenShareStopped?.(false);
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -337,6 +467,7 @@ export class WebRTCController {
     });
 
     safePlayLoop(ringback);
+    this._debugUpdate();
   }
 
   async _resumeAsCallerAfterRestore(peerId) {
@@ -378,6 +509,8 @@ export class WebRTCController {
       fromName: rtcState.peerName,
       audioOnly: !!audioOnly,
     });
+
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -444,6 +577,7 @@ export class WebRTCController {
     }, 800);
 
     this.onCallConnected?.();
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -486,6 +620,7 @@ export class WebRTCController {
     rtcState.inCall = false;
 
     this.onCallEnded?.();
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -530,6 +665,7 @@ export class WebRTCController {
     stopAudio(ringtone);
     startTimer();
     this.onCallConnected?.();
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -697,6 +833,7 @@ export class WebRTCController {
     }
 
     this.onCallEnded?.();
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -717,6 +854,7 @@ export class WebRTCController {
       t.enabled = newEnabled;
     });
 
+    this._debugUpdate();
     return !newEnabled;
   }
 
@@ -746,6 +884,8 @@ export class WebRTCController {
     } else {
       this.onRemoteCameraOff?.();
     }
+
+    this._debugUpdate();
   }
 
   /* ---------------------------------------------------
@@ -875,6 +1015,8 @@ export class WebRTCController {
           this.onRemoteSpeaking?.(false);
         };
       }
+
+      this._debugUpdate();
     };
 
     // ICE state → quality + fallback
@@ -897,6 +1039,7 @@ export class WebRTCController {
 
       if (rtcState.answering) {
         console.log("[WebRTC] ICE state change ignored during answer window:", state);
+        this._debugUpdate();
         return;
       }
 
@@ -951,6 +1094,8 @@ export class WebRTCController {
           this.onCallFailed?.("ice failed");
         }
       }
+
+      this._debugUpdate();
     };
 
     pc.onconnectionstatechange = () => {
@@ -960,8 +1105,11 @@ export class WebRTCController {
       if (state === "failed") {
         this.onCallFailed?.("connection failed");
       }
+
+      this._debugUpdate();
     };
 
+    this._debugUpdate();
     return pc;
   }
 
@@ -1001,6 +1149,7 @@ export class WebRTCController {
         params.encodings[0].maxBitrate = maxKbps * 1000;
         await s.setParameters(params);
       }
+      this._debugUpdate();
     } catch (err) {
       console.warn("[WebRTC] _setVideoBitrate failed:", err);
     }
@@ -1154,6 +1303,8 @@ export class WebRTCController {
             });
           }
         }
+
+        this._debugUpdate();
       }
     );
 
@@ -1246,6 +1397,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
