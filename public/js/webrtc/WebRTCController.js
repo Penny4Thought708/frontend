@@ -1,24 +1,19 @@
 // public/js/webrtc/WebRTCController.js
 
 import { rtcState } from "./WebRTCState.js";
-rtcState.answering = false;
-
 import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
 import { addCallLogEntry } from "../call-log.js";
-
 import {
   getMyUserId,
   getMyFullname,
   ringback,
   ringtone,
 } from "../session.js";
-
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
-import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
 /* -------------------------------------------------------
-   Helpers
+   Small helpers
 ------------------------------------------------------- */
 
 function stopAudio(el) {
@@ -26,6 +21,15 @@ function stopAudio(el) {
   try {
     el.pause();
     el.currentTime = 0;
+  } catch {}
+}
+
+function safePlayLoop(audioEl) {
+  if (!audioEl) return;
+  try {
+    audioEl.loop = true;
+    audioEl.currentTime = 0;
+    audioEl.play().catch(() => {});
   } catch {}
 }
 
@@ -64,7 +68,7 @@ function stopTimer() {
 }
 
 /* -------------------------------------------------------
-   WebRTC Controller
+   WebRTCController
 ------------------------------------------------------- */
 
 export class WebRTCController {
@@ -79,7 +83,7 @@ export class WebRTCController {
     this.remoteVideo = null;
     this.remoteAudio = null;
 
-    // Event hooks for CallUI.js
+    // UI hooks (wired by CallUI.js)
     this.onIncomingCall = null;
     this.onOutgoingCall = null;
     this.onCallConnected = null;
@@ -97,6 +101,7 @@ export class WebRTCController {
     this.onRecordingChanged = null;
     this.onVoicemailPrompt = null;
 
+    // Internal flags
     this._screenShareStream = null;
     this._originalVideoTrack = null;
     this._noiseSuppressionEnabled = false;
@@ -104,16 +109,17 @@ export class WebRTCController {
     this._unreachableTone = null;
     this._beepTone = null;
 
-    // Call session ID for reconnect logic
-    rtcState.callSessionId = rtcState.callSessionId || null;
+    rtcState.answering = false;
+    rtcState.callSessionId = null;
+    rtcState.screenSharing = false;
 
-    // Ensure audio objects loop while ringing
+    // Make sure ringtone / ringback loop
     if (ringback) ringback.loop = true;
     if (ringtone) ringtone.loop = true;
 
     this._bindSocketEvents();
 
-    // Network change → ICE restart on current PC
+    // Network change → ICE restart
     window.addEventListener("online", () => {
       if (this.pc) {
         console.warn("[WebRTC] Network changed — restarting ICE");
@@ -123,7 +129,7 @@ export class WebRTCController {
       }
     });
 
-    // Dynamic bandwidth adaptation via onNetworkQuality hook
+    // Default network quality handler → bitrate adaptation
     this.onNetworkQuality = (level, info) => {
       console.log("[WebRTC] Network quality:", level, info || "");
       if (!this.pc) return;
@@ -141,6 +147,7 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Media elements wiring
   --------------------------------------------------- */
+
   attachMediaElements({ localVideo, remoteVideo, remoteAudio }) {
     this.localVideo = localVideo;
     this.remoteVideo = remoteVideo;
@@ -148,7 +155,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Entry points: voice / video / screen share / extras
+     Public entry points: voice / video
   --------------------------------------------------- */
 
   startVoiceCall() {
@@ -175,7 +182,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     REAL SCREEN SHARE IMPLEMENTATION
+     Screen share
   --------------------------------------------------- */
 
   async startScreenShare() {
@@ -210,13 +217,12 @@ export class WebRTCController {
       }
 
       this._screenShareStream = displayStream;
+      rtcState.screenSharing = true;
+      this.onScreenShareStarted?.(true);
 
       screenTrack.onended = () => {
         this.stopScreenShare();
       };
-
-      rtcState.screenSharing = true;
-      this.onScreenShareStarted?.(true);
     } catch (err) {
       console.error("[WebRTC] Screen share failed:", err);
     }
@@ -249,7 +255,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Noise suppression (UI + state only)
+     Noise suppression (UI only)
   --------------------------------------------------- */
 
   toggleNoiseSuppression() {
@@ -260,7 +266,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Recording (UI + state only)
+     Recording (UI only)
   --------------------------------------------------- */
 
   toggleRecording() {
@@ -271,8 +277,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Outgoing Call (with optional relay-only)
+     Outgoing call
   --------------------------------------------------- */
+
   async _startCallInternal(peerId, audioOnly, { relayOnly }) {
     const myId = getMyUserId();
     if (!myId) {
@@ -280,14 +287,14 @@ export class WebRTCController {
       return;
     }
 
-    rtcState.callSessionId = rtcState.callSessionId || crypto.randomUUID();
-
+    rtcState.callSessionId = crypto.randomUUID();
     rtcState.peerId = peerId;
     rtcState.audioOnly = !!audioOnly;
     rtcState.isCaller = true;
     rtcState.inCall = true;
     rtcState.incomingOffer = null;
     rtcState.usedRelayFallback = !!relayOnly;
+    rtcState.answering = false;
 
     this.onOutgoingCall?.({
       targetName: rtcState.peerName || null,
@@ -311,9 +318,7 @@ export class WebRTCController {
         this.localVideo.play().catch(() => {});
       }
     } else {
-      console.warn(
-        "[WebRTC] No local media stream; proceeding with no mic/camera"
-      );
+      console.warn("[WebRTC] No local media stream; proceeding with no mic/camera");
     }
 
     await this._setPreferredCodec(pc, "video", "video/VP9").catch(() => {});
@@ -331,18 +336,9 @@ export class WebRTCController {
       callSessionId: rtcState.callSessionId,
     });
 
-    if (ringback) {
-      try {
-        ringback.loop = true;
-        ringback.currentTime = 0;
-        ringback.play().catch(() => {});
-      } catch {}
-    }
+    safePlayLoop(ringback);
   }
 
-  /**
-   * Resume an existing call after socket/network reconnect.
-   */
   async _resumeAsCallerAfterRestore(peerId) {
     console.log("[WebRTC] Resuming call as caller after restore to peer:", peerId);
 
@@ -353,8 +349,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Incoming Offer
+     Incoming offer
   --------------------------------------------------- */
+
   async handleOffer(data) {
     const { from, offer, fromName, audioOnly, fromUser, callSessionId } =
       data || {};
@@ -365,8 +362,7 @@ export class WebRTCController {
 
     const displayName = fromUser?.fullname || fromName || `User ${from}`;
 
-    rtcState.callSessionId =
-      callSessionId || rtcState.callSessionId || crypto.randomUUID();
+    rtcState.callSessionId = callSessionId || crypto.randomUUID();
     rtcState.peerId = from;
     rtcState.peerName = displayName;
     rtcState.audioOnly = !!audioOnly;
@@ -374,14 +370,9 @@ export class WebRTCController {
     rtcState.inCall = false;
     rtcState.incomingOffer = data;
     rtcState.usedRelayFallback = false;
+    rtcState.answering = false;
 
-    if (ringtone) {
-      try {
-        ringtone.loop = true;
-        ringtone.currentTime = 0;
-        ringtone.play().catch(() => {});
-      } catch {}
-    }
+    safePlayLoop(ringtone);
 
     this.onIncomingCall?.({
       fromName: rtcState.peerName,
@@ -390,8 +381,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Answer Incoming Call
+     Answer incoming call
   --------------------------------------------------- */
+
   async answerIncomingCall() {
     const offerData = rtcState.incomingOffer;
     if (!offerData || !offerData.offer || !offerData.from) {
@@ -404,15 +396,15 @@ export class WebRTCController {
     rtcState.inCall = true;
     rtcState.audioOnly = !!audioOnly;
     rtcState.callSessionId = callSessionId || rtcState.callSessionId;
+    rtcState.answering = true;
 
-    startTimer();
     stopAudio(ringtone);
     stopAudio(ringback);
+    startTimer();
 
     const pc = await this._createPC({ relayOnly: false });
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
-
     await this._flushPendingRemoteCandidates();
 
     const stream = await getLocalMedia(true, !rtcState.audioOnly);
@@ -447,12 +439,17 @@ export class WebRTCController {
 
     rtcState.incomingOffer = null;
 
+    setTimeout(() => {
+      rtcState.answering = false;
+    }, 800);
+
     this.onCallConnected?.();
   }
 
   /* ---------------------------------------------------
      Decline incoming call
   --------------------------------------------------- */
+
   declineIncomingCall() {
     const offerData = rtcState.incomingOffer;
 
@@ -463,7 +460,6 @@ export class WebRTCController {
       callerId = rtcState.currentCallerId;
     }
 
-    // Stop ringing on the callee side immediately
     stopAudio(ringtone);
     stopAudio(ringback);
 
@@ -493,8 +489,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Remote Answer
+     Remote answer
   --------------------------------------------------- */
+
   async handleAnswer(data) {
     if (!this.pc) {
       console.warn("[WebRTC] handleAnswer: no peer connection");
@@ -507,9 +504,7 @@ export class WebRTCController {
     }
 
     if (!rtcState.isCaller) {
-      console.warn(
-        "[WebRTC] handleAnswer: ignoring answer because we are not the caller"
-      );
+      console.warn("[WebRTC] handleAnswer: ignoring answer because we are not the caller");
       return;
     }
 
@@ -529,18 +524,18 @@ export class WebRTCController {
     }, 800);
 
     await this.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-
     await this._flushPendingRemoteCandidates();
 
     stopAudio(ringback);
     stopAudio(ringtone);
-    this.onCallConnected?.();
     startTimer();
+    this.onCallConnected?.();
   }
 
   /* ---------------------------------------------------
-     ICE Candidate
+     Remote ICE
   --------------------------------------------------- */
+
   async handleRemoteIceCandidate(data) {
     if (!data || !data.candidate) return;
 
@@ -563,21 +558,21 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Remote End
+     Remote end
   --------------------------------------------------- */
+
   handleRemoteEnd() {
     if (rtcState.answering) {
-      console.warn(
-        "[WebRTC] handleRemoteEnd: ignoring remote end during answer window"
-      );
+      console.warn("[WebRTC] handleRemoteEnd: ignoring remote end during answer window");
       return;
     }
     this.endCall(false);
   }
 
   /* ---------------------------------------------------
-     End Call (FULL UPDATED VERSION)
+     End call
   --------------------------------------------------- */
+
   endCall(local = true) {
     stopAudio(ringback);
     stopAudio(ringtone);
@@ -586,7 +581,6 @@ export class WebRTCController {
     try {
       this._unreachableTone?.pause();
       this._unreachableTone = null;
-
       this._beepTone?.pause();
       this._beepTone = null;
     } catch {}
@@ -601,10 +595,7 @@ export class WebRTCController {
         window._vmRecorderStream.getTracks().forEach((t) => t.stop());
         window._vmRecorderStream = null;
       }
-      if (
-        window._vmMediaRecorder &&
-        window._vmMediaRecorder.state !== "inactive"
-      ) {
+      if (window._vmMediaRecorder && window._vmMediaRecorder.state !== "inactive") {
         window._vmMediaRecorder.stop();
       }
     } catch {}
@@ -691,6 +682,8 @@ export class WebRTCController {
     rtcState.peerId = null;
     rtcState.incomingOffer = null;
     rtcState.answering = false;
+
+    const sessionIdToSend = rtcState.callSessionId;
     rtcState.callSessionId = null;
 
     if (local && peerId && this.socket) {
@@ -699,7 +692,7 @@ export class WebRTCController {
         to: peerId,
         from: getMyUserId(),
         reason: "hangup",
-        callSessionId: rtcState.callSessionId,
+        callSessionId: sessionIdToSend,
       });
     }
 
@@ -709,6 +702,7 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Mute toggle
   --------------------------------------------------- */
+
   toggleMute() {
     const stream = this.localStream || rtcState.localStream;
     if (!stream) return undefined;
@@ -729,6 +723,7 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Camera toggle
   --------------------------------------------------- */
+
   switchCamera() {
     const stream = this.localStream || rtcState.localStream;
     if (!stream) {
@@ -754,8 +749,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     PeerConnection Factory (TURN‑enabled, relay fallback)
+     PeerConnection factory
   --------------------------------------------------- */
+
   async _createPC({ relayOnly = false } = {}) {
     if (this.pc) {
       try {
@@ -776,6 +772,7 @@ export class WebRTCController {
     const pc = new RTCPeerConnection(config);
     this.pc = pc;
 
+    // TURN keep-alive
     const startTurnKeepAlive = (pcInstance) => {
       let keepAliveTimer = setInterval(() => {
         try {
@@ -795,6 +792,7 @@ export class WebRTCController {
 
     startTurnKeepAlive(pc);
 
+    // DataChannel keep-alive
     try {
       const keepAliveChannel = pc.createDataChannel("keepalive");
 
@@ -809,6 +807,7 @@ export class WebRTCController {
       console.warn("[WebRTC] keepalive datachannel failed:", err);
     }
 
+    // Local ICE
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
 
@@ -833,6 +832,7 @@ export class WebRTCController {
       }
     };
 
+    // Remote tracks
     pc.ontrack = (event) => {
       attachRemoteTrack(event);
 
@@ -877,6 +877,7 @@ export class WebRTCController {
       }
     };
 
+    // ICE state → quality + fallback
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.log("[WebRTC] iceConnectionState:", state);
@@ -895,10 +896,7 @@ export class WebRTCController {
       this.onNetworkQuality?.(level, `ICE: ${state}`);
 
       if (rtcState.answering) {
-        console.log(
-          "[WebRTC] ICE state change ignored during answer window:",
-          state
-        );
+        console.log("[WebRTC] ICE state change ignored during answer window:", state);
         return;
       }
 
@@ -936,11 +934,7 @@ export class WebRTCController {
       }
 
       if (state === "failed") {
-        if (
-          !rtcState.usedRelayFallback &&
-          rtcState.peerId &&
-          !rtcState.answering
-        ) {
+        if (!rtcState.usedRelayFallback && rtcState.peerId && !rtcState.answering) {
           console.warn("[WebRTC] ICE failed — retrying with relay-only…");
           rtcState.usedRelayFallback = true;
 
@@ -972,7 +966,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Codec preference + bitrate helpers
+     Codec + bitrate helpers
   --------------------------------------------------- */
 
   async _setPreferredCodec(pc, kind, codecMime) {
@@ -1013,8 +1007,9 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Flush queued remote ICE
+     Flush queued ICE
   --------------------------------------------------- */
+
   async _flushPendingRemoteCandidates() {
     if (!this.pc || !this.pc.remoteDescription) {
       return;
@@ -1041,6 +1036,7 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Socket bindings
   --------------------------------------------------- */
+
   _bindSocketEvents() {
     if (!this.socket) {
       console.warn("[WebRTC] No socket provided");
@@ -1250,6 +1246,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
