@@ -174,7 +174,7 @@ export function stopSpeakingDetection() {
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (grid-aware)
+   Local Media Acquisition (premium constraints)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -182,12 +182,41 @@ export async function getLocalMedia(audio = true, video = true) {
     return null;
   }
 
-  const constraints = { audio, video };
+  const constraints = {
+    audio: audio
+      ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000,
+        }
+      : false,
+    video: video
+      ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30, max: 60 },
+        }
+      : false,
+  };
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     log("Got local media with constraints:", constraints);
     rtcState.localStream = stream;
+
+    // Content hints for better encoding
+    stream.getVideoTracks().forEach((t) => {
+      try {
+        t.contentHint = "motion";
+      } catch {}
+    });
+    stream.getAudioTracks().forEach((t) => {
+      try {
+        t.contentHint = "speech";
+      } catch {}
+    });
 
     const localVideo = document.getElementById("localVideo");
     if (video && localVideo) {
@@ -240,10 +269,6 @@ export async function getLocalMedia(audio = true, video = true) {
 
 /* -------------------------------------------------------
    Remote Track Handling (GROUP-AWARE)
-   Usage:
-     attachRemoteTrack(peerId, evt)
-   Backwards compatible:
-     attachRemoteTrack(evt)  // peerId = "default"
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
@@ -314,7 +339,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   }
 
   /* -----------------------------
-     Remote Audio (single shared element)
+     Remote Audio (shared element)
   ----------------------------- */
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
