@@ -51,9 +51,9 @@ function createRemoteParticipant(peerId = "default") {
   const clone = tpl.content.firstElementChild.cloneNode(true);
   clone.dataset.peerId = peerId;
 
-  const videoEl = clone.querySelector("video");
+  const videoEl   = clone.querySelector("video");
   const avatarImg = clone.querySelector(".avatar-img");
-  const nameTag = clone.querySelector(".name-tag");
+  const nameTag   = clone.querySelector(".name-tag");
 
   if (nameTag) nameTag.textContent = peerId || "Guest";
   if (avatarImg && !avatarImg.src) {
@@ -238,7 +238,11 @@ export async function getLocalMedia(audio = true, video = true) {
     log("Local media error:", err.name, err.message);
 
     // Retry audio-only if video fails
-    if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
+    if (
+      video &&
+      audio &&
+      (err.name === "NotFoundError" || err.name === "OverconstrainedError")
+    ) {
       log("Retrying getUserMedia with audio-only…");
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
@@ -304,7 +308,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     return;
   }
 
-  const videoEl = participantEl.querySelector("video");
+  const videoEl       = participantEl.querySelector("video");
   const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
 
   const showAvatar = (show) => {
@@ -313,9 +317,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   };
 
   // Track events
-  evt.track.onmute = () => showAvatar(true);
+  evt.track.onmute   = () => showAvatar(true);
   evt.track.onunmute = () => showAvatar(false);
-  evt.track.onended = () => showAvatar(true);
+  evt.track.onended  = () => showAvatar(true);
 
   /* -----------------------------
      Remote Video
@@ -411,6 +415,8 @@ export function cleanupMedia() {
   if (remoteAudioEl) {
     remoteAudioEl.srcObject = null;
   }
+
+  updateLocalAvatarVisibility();
 }
 
 /* -------------------------------------------------------
@@ -419,6 +425,8 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
+
 
 
 
