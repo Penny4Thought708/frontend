@@ -1,7 +1,11 @@
 // public/js/webrtc/WebRTCController.js
 
 import { rtcState } from "./WebRTCState.js";
-import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
+import {
+  getLocalMedia,
+  attachRemoteTrack,
+  cleanupMedia,
+} from "./WebRTCMedia.js";
 import { addCallLogEntry } from "../call-log.js";
 import {
   getMyUserId,
@@ -163,6 +167,7 @@ export class WebRTCController {
     this.onNoiseSuppressionChanged = null;
     this.onRecordingChanged = null;
     this.onVoicemailPrompt = null;
+    this.onSecondaryIncomingCall = null; // new: second call while in call
 
     // Internal flags
     this._screenShareStream = null;
@@ -176,13 +181,11 @@ export class WebRTCController {
     rtcState.callSessionId = null;
     rtcState.screenSharing = false;
 
-    // Make sure ringtone / ringback loop
     if (ringback) ringback.loop = true;
     if (ringtone) ringtone.loop = true;
 
     this._bindSocketEvents();
 
-    // Network change → ICE restart
     window.addEventListener("online", () => {
       if (this.pc) {
         console.warn("[WebRTC] Network changed — restarting ICE");
@@ -192,7 +195,6 @@ export class WebRTCController {
       }
     });
 
-    // Default network quality handler → bitrate adaptation
     this.onNetworkQuality = (level, info) => {
       console.log("[WebRTC] Network quality:", level, info || "");
       if (!this.pc) return;
@@ -242,7 +244,9 @@ export class WebRTCController {
           codec,
           localVideo:
             !!(this.localStream && this.localStream.getVideoTracks().length),
-          remoteVideo: !!rtcState.remoteStream,
+          remoteVideo: !!rtcState.remoteStreams && Object.values(rtcState.remoteStreams).some(
+            (s) => s.getVideoTracks().length
+          ),
           screenShare: rtcState.screenSharing,
           muted: this.localStream
             ? !this.localStream.getAudioTracks()[0].enabled
@@ -303,7 +307,6 @@ export class WebRTCController {
     this._startCallInternal(peerId, false, { relayOnly: false });
   }
 
-  // Legacy API
   async startCall(peerId, audioOnly) {
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
@@ -329,6 +332,10 @@ export class WebRTCController {
         console.warn("[WebRTC] No screen track found");
         return;
       }
+
+      try {
+        screenTrack.contentHint = "detail";
+      } catch {}
 
       const camTrack = (this.localStream?.getVideoTracks() || [])[0];
       this._originalVideoTrack = camTrack || null;
@@ -438,17 +445,10 @@ export class WebRTCController {
     this.localStream = stream;
     rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-      if (this.localVideo && !audioOnly) {
-        this.localVideo.srcObject = stream;
-        this.localVideo.muted = true;
-        this.localVideo.playsInline = true;
-        this.localVideo.play().catch(() => {});
-      }
-    } else {
+    if (!stream) {
       console.warn("[WebRTC] No local media stream; proceeding with no mic/camera");
+    } else {
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     }
 
     await this._setPreferredCodec(pc, "video", "video/VP9").catch(() => {});
@@ -488,6 +488,31 @@ export class WebRTCController {
       data || {};
     if (!from || !offer) {
       console.warn("[WebRTC] handleOffer: invalid data", data);
+      return;
+    }
+
+    // Already in a call with someone else → secondary incoming call notification
+    if (rtcState.inCall && rtcState.peerId && rtcState.peerId !== from) {
+      console.log(
+        "[WebRTC] Secondary incoming call from",
+        from,
+        "while in call with",
+        rtcState.peerId
+      );
+
+      this.socket?.emit("call:busy", {
+        to: from,
+        from: getMyUserId(),
+        reason: "in-another-call",
+      });
+
+      this.onSecondaryIncomingCall?.({
+        fromId: from,
+        fromName: fromUser?.fullname || fromName || `User ${from}`,
+        audioOnly: !!audioOnly,
+        callSessionId,
+      });
+
       return;
     }
 
@@ -544,17 +569,10 @@ export class WebRTCController {
     this.localStream = stream;
     rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-      if (this.localVideo && !rtcState.audioOnly) {
-        this.localVideo.srcObject = stream;
-        this.localVideo.muted = true;
-        this.localVideo.playsInline = true;
-        this.localVideo.play().catch(() => {});
-      }
-    } else {
+    if (!stream) {
       console.warn("[WebRTC] No local media stream on answer");
+    } else {
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     }
 
     await this._setPreferredCodec(pc, "video", "video/VP9").catch(() => {});
@@ -758,40 +776,7 @@ export class WebRTCController {
       this.pc = null;
     }
 
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      this.localStream = null;
-    }
-
-    if (rtcState.localStream) {
-      rtcState.localStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      rtcState.localStream = null;
-    }
-
-    if (rtcState.remoteStream) {
-      rtcState.remoteStream.getTracks().forEach((t) => {
-        try {
-          t.stop();
-        } catch {}
-      });
-      rtcState.remoteStream = null;
-    }
-
-    const localVideo = document.getElementById("localVideo");
-    const remoteVideo = document.getElementById("remoteVideo");
-    const remoteAudioEl = document.getElementById("remoteAudio");
-
-    if (localVideo) localVideo.srcObject = null;
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (remoteAudioEl) remoteAudioEl.srcObject = null;
+    cleanupMedia();
 
     const direction = rtcState.isCaller ? "outgoing" : "incoming";
 
@@ -912,7 +897,6 @@ export class WebRTCController {
     const pc = new RTCPeerConnection(config);
     this.pc = pc;
 
-    // TURN keep-alive
     const startTurnKeepAlive = (pcInstance) => {
       let keepAliveTimer = setInterval(() => {
         try {
@@ -932,7 +916,6 @@ export class WebRTCController {
 
     startTurnKeepAlive(pc);
 
-    // DataChannel keep-alive
     try {
       const keepAliveChannel = pc.createDataChannel("keepalive");
 
@@ -947,7 +930,6 @@ export class WebRTCController {
       console.warn("[WebRTC] keepalive datachannel failed:", err);
     }
 
-    // Local ICE
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
 
@@ -972,54 +954,16 @@ export class WebRTCController {
       }
     };
 
-    // Remote tracks
     pc.ontrack = (event) => {
-      attachRemoteTrack(event);
+      const peerId =
+        rtcState.peerId ||
+        event.streams?.[0]?.id ||
+        "default";
 
-      if (event.track.kind === "video" && this.remoteVideo) {
-        this.remoteVideo.srcObject = event.streams[0];
-        this.remoteVideo.playsInline = true;
-        this.remoteVideo.play().catch(() => {});
-        event.track.onmute = () => {
-          this.onRemoteCameraOff?.();
-        };
-        event.track.onunmute = () => {
-          this.onRemoteCameraOn?.();
-        };
-      }
-
-      if (event.track.kind === "audio" && this.remoteAudio) {
-        try {
-          this.remoteAudio.srcObject = event.streams[0];
-          this.remoteAudio.playsInline = true;
-          this.remoteAudio.muted = false;
-          this.remoteAudio.play().catch(() => {
-            console.warn("[WebRTC] Autoplay blocked for remote audio");
-          });
-        } catch (err) {
-          console.warn("[WebRTC] Error attaching remote audio:", err);
-        }
-
-        event.track.onmute = () => {
-          this.onNetworkQuality?.("fair", "Remote audio muted");
-          this.onRemoteMuted?.();
-          this.onRemoteSpeaking?.(false);
-        };
-        event.track.onunmute = () => {
-          this.onNetworkQuality?.("good", "Remote audio active");
-          this.onRemoteUnmuted?.();
-          this.onRemoteSpeaking?.(true);
-        };
-        event.track.onended = () => {
-          this.onNetworkQuality?.("poor", "Remote audio ended");
-          this.onRemoteSpeaking?.(false);
-        };
-      }
-
+      attachRemoteTrack(peerId, event);
       this._debugUpdate();
     };
 
-    // ICE state → quality + fallback
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.log("[WebRTC] iceConnectionState:", state);
@@ -1397,6 +1341,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
