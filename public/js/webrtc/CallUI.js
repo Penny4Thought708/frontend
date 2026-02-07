@@ -129,10 +129,17 @@ export function initCallUI(rtc) {
     setTimeout(() => el.classList.add("hidden"), 250);
   }
 
-  function showSecondaryIncomingToast({ fromName, audioOnly }) {
-    const msg = toastSecondary.querySelector(".sit-message");
+  function showSecondaryIncomingToastInternal({ fromName, audioOnly }) {
+    if (!toastSecondary) return;
+
+    const msg    = toastSecondary.querySelector(".sit-message");
     const ignore = toastSecondary.querySelector(".sit-ignore");
-    const sw = toastSecondary.querySelector(".sit-switch");
+    const sw     = toastSecondary.querySelector(".sit-switch");
+
+    if (!msg || !ignore || !sw) {
+      console.warn("[CallUI] Secondary incoming toast elements missing");
+      return;
+    }
 
     msg.textContent = `${fromName} is calling you (${audioOnly ? "voice" : "video"})`;
 
@@ -140,26 +147,38 @@ export function initCallUI(rtc) {
     sw.onclick = () => {
       hideToast(toastSecondary);
       rtc.endCall?.(true);
+      // New incoming call will trigger rtc.onIncomingCall again
     };
 
     showToast(toastSecondary);
   }
 
-  function showUnavailableToast({ peerId, message }) {
-    const msg = toastUnavailable.querySelector(".ut-message");
-    const voice = toastUnavailable.querySelector("#utVoiceBtn");
-    const video = toastUnavailable.querySelector("#utVideoBtn");
-    const text  = toastUnavailable.querySelector("#utTextBtn");
+  function showUnavailableToastInternal({ peerId, message }) {
+    if (!toastUnavailable) return;
 
-    msg.textContent = message || "User unavailable";
+    const msgEl   = toastUnavailable.querySelector(".ut-message");
+    const voice   = document.getElementById("utVoiceBtn");
+    const video   = document.getElementById("utVideoBtn");
+    const textBtn = document.getElementById("utTextBtn");
+
+    if (!msgEl || !voice || !video || !textBtn) {
+      console.warn("[CallUI] Unavailable toast elements missing");
+      return;
+    }
+
+    msgEl.textContent = message || "User unavailable";
 
     voice.onclick = () => {
       hideToast(toastUnavailable);
       openVoicemailRecorder?.(peerId);
     };
 
-    video.onclick = () => hideToast(toastUnavailable);
-    text.onclick  = () => {
+    video.onclick = () => {
+      hideToast(toastUnavailable);
+      // future: open video message recorder
+    };
+
+    textBtn.onclick = () => {
       hideToast(toastUnavailable);
       window.showMessageWindow?.();
     };
@@ -203,13 +222,8 @@ export function initCallUI(rtc) {
     setCameraOff(off);
   };
 
-  shareBtn.onclick = () => rtc.startScreenShare?.();
-
-  noiseBtn.onclick = () => {
-    const enabled = rtc.toggleNoiseSuppression?.();
-    setNoiseSuppression(enabled);
-  };
-
+  shareBtn.onclick  = () => rtc.startScreenShare?.();
+  noiseBtn.onclick  = () => setNoiseSuppression(rtc.toggleNoiseSuppression?.());
   recordBtn.onclick = () => {
     const active = rtc.toggleRecording?.();
     recordBtn.classList.toggle("active", !!active);
@@ -310,14 +324,14 @@ export function initCallUI(rtc) {
     win.classList.add("hidden");
   };
 
-  rtc.onRemoteMuted = () => debug("Remote muted");
+  rtc.onRemoteMuted   = () => debug("Remote muted");
   rtc.onRemoteUnmuted = () => debug("Remote unmuted");
 
   rtc.onRemoteCameraOff = () => setCameraOff(true);
   rtc.onRemoteCameraOn  = () => setCameraOff(false);
 
   rtc.onRemoteSpeaking = (active) => {
-    // handled by CSS + WebRTCMedia
+    // handled visually by WebRTCMedia + CSS
   };
 
   rtc.onNetworkQuality = (level, info) => {
@@ -334,101 +348,17 @@ export function initCallUI(rtc) {
     recordBtn.classList.toggle("active", !!active);
 
   rtc.onVoicemailPrompt = ({ peerId, message }) =>
-    showUnavailableToast({ peerId, message });
+    showUnavailableToastInternal({ peerId, message });
 
   rtc.onSecondaryIncomingCall = (data) =>
-    showSecondaryIncomingToast(data);
+    showSecondaryIncomingToastInternal(data);
 
-  logDebug("CallUI initialized");
-}
-/* -------------------------------------------------------
-   SECONDARY INCOMING CALL TOAST
-   (When a third user calls while you're already in a call)
-------------------------------------------------------- */
-
-export function showSecondaryIncomingToast({ fromName, audioOnly }) {
-  const toast = document.getElementById("secondaryIncomingToast");
-  const msgEl = toast?.querySelector(".sit-message");
-  const ignoreBtn = toast?.querySelector(".sit-ignore");
-  const switchBtn = toast?.querySelector(".sit-switch");
-
-  if (!toast || !msgEl || !ignoreBtn || !switchBtn) {
-    console.warn("[CallUI] Secondary incoming toast elements missing");
-    return;
-  }
-
-  msgEl.textContent = `${fromName} is calling you (${audioOnly ? "voice" : "video"})`;
-
-  toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("open"), 10);
-
-  const close = () => {
-    toast.classList.remove("open");
-    setTimeout(() => toast.classList.add("hidden"), 250);
-  };
-
-  ignoreBtn.onclick = () => {
-    close();
-  };
-
-  switchBtn.onclick = () => {
-    close();
-    // End current call and allow user to answer the new one
-    if (window.rtc) {
-      window.rtc.endCall?.(true);
-      // UI will show the new incoming call automatically
-    }
-  };
+  debug("CallUI initialized");
 }
 
 /* -------------------------------------------------------
-   UNAVAILABLE TOAST
+   WebRTC Debug Overlay (stats from controller)
 ------------------------------------------------------- */
-
-export function showUnavailableToast({ peerId, message }) {
-  const toast    = document.getElementById("unavailableToast");
-  const voiceBtn = document.getElementById("utVoiceBtn");
-  const videoBtn = document.getElementById("utVideoBtn");
-  const textBtn  = document.getElementById("utTextBtn");
-
-  if (!toast || !voiceBtn || !videoBtn || !textBtn) {
-    console.warn("[CallUI] Unavailable toast elements missing");
-    return;
-  }
-
-  if (message) {
-    const msgEl = toast.querySelector(".ut-message");
-    if (msgEl) msgEl.textContent = message;
-  }
-
-  toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("open"), 10);
-
-  const closeToast = () => {
-    toast.classList.remove("open");
-    setTimeout(() => toast.classList.add("hidden"), 300);
-  };
-
-  voiceBtn.onclick = () => {
-    closeToast();
-    openVoicemailRecorder?.(peerId);
-  };
-
-  videoBtn.onclick = () => {
-    closeToast();
-    // Future: open video message recorder
-  };
-
-  textBtn.onclick = () => {
-    closeToast();
-    window.showMessageWindow?.();
-  };
-}
-
-/* -------------------------------------------------------
-   WebRTC Debug Overlay (already created by controller)
-------------------------------------------------------- */
-
 
 (function createWebRTCDebugOverlay() {
   const panel = document.createElement("div");
@@ -487,6 +417,8 @@ export function showUnavailableToast({ peerId, message }) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
+
 
 
 
