@@ -567,6 +567,68 @@ export function showUnavailableToast({ peerId, message }) {
   };
 }
 
+// ------------------------------------------------------
+// WebRTC Debug Overlay
+// ------------------------------------------------------
+
+(function createWebRTCDebugOverlay() {
+  const panel = document.createElement("div");
+  panel.id = "webrtc-debug-overlay";
+  panel.style.position = "fixed";
+  panel.style.bottom = "20px";
+  panel.style.right = "20px";
+  panel.style.width = "260px";
+  panel.style.maxHeight = "60vh";
+  panel.style.overflowY = "auto";
+  panel.style.background = "rgba(0,0,0,0.75)";
+  panel.style.color = "#0f0";
+  panel.style.fontFamily = "monospace";
+  panel.style.fontSize = "12px";
+  panel.style.padding = "10px 12px";
+  panel.style.borderRadius = "8px";
+  panel.style.zIndex = "999999";
+  panel.style.whiteSpace = "pre-line";
+  panel.style.pointerEvents = "auto";
+  panel.style.userSelect = "text";
+  panel.style.backdropFilter = "blur(6px)";
+  panel.style.border = "1px solid rgba(0,255,0,0.3)";
+  panel.style.boxShadow = "0 0 12px rgba(0,255,0,0.2)";
+  panel.innerHTML = "WebRTC Debug Overlay\n----------------------\nInitializing…";
+
+  document.body.appendChild(panel);
+
+  window._webrtcDebugUpdate = function (data) {
+    const {
+      iceState,
+      connState,
+      signalingState,
+      bitrate,
+      codec,
+      localVideo,
+      remoteVideo,
+      screenShare,
+      muted,
+      cameraOff,
+      sessionId,
+    } = data;
+
+    panel.innerHTML =
+      `WebRTC Debug Overlay\n` +
+      `----------------------\n` +
+      `Session: ${sessionId || "none"}\n\n` +
+      `ICE State: ${iceState}\n` +
+      `Conn State: ${connState}\n` +
+      `Signal State: ${signalingState}\n\n` +
+      `Bitrate: ${bitrate || "?"} kbps\n` +
+      `Codec: ${codec || "?"}\n\n` +
+      `Local Video: ${localVideo ? "ON" : "OFF"}\n` +
+      `Remote Video: ${remoteVideo ? "ON" : "OFF"}\n` +
+      `Screen Share: ${screenShare ? "ACTIVE" : "OFF"}\n` +
+      `Muted: ${muted ? "YES" : "NO"}\n` +
+      `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
+  };
+})();
+
 
 
 
