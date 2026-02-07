@@ -8,6 +8,8 @@ import {
   clearAllParticipants,
   setParticipantSpeaking,
   setParticipantCameraOff,
+  promoteToStage,
+  demoteStage,
 } from "./RemoteParticipants.js";
 
 export function initCallUI(rtc) {
@@ -49,10 +51,6 @@ export function initCallUI(rtc) {
   const toastSecondary  = document.getElementById("secondaryIncomingToast");
   const toastUnavailable= document.getElementById("unavailableToast");
 
-  if (!win || !grid || !localVideo || !remoteAudio || !callStatus || !callTimerEl) {
-    console.warn("[CallUI] Missing core call UI elements");
-  }
-
   /* -------------------------------------------------------
      INITIALIZE REMOTE PARTICIPANT SYSTEM
   ------------------------------------------------------- */
@@ -65,23 +63,18 @@ export function initCallUI(rtc) {
 
   rtc.attachMediaElements?.({
     localVideo,
-    remoteVideo: null, // remote videos handled per‑participant
+    remoteVideo: null,
     remoteAudio,
   });
-
-  /* -------------------------------------------------------
-     INTERNAL STATE
-  ------------------------------------------------------- */
-
-  let timerId = null;
-  let callStart = null;
 
   /* -------------------------------------------------------
      TIMER
   ------------------------------------------------------- */
 
+  let timerId = null;
+  let callStart = null;
+
   function startTimer() {
-    if (!callTimerEl) return;
     callStart = Date.now();
     if (timerId) clearInterval(timerId);
 
@@ -94,7 +87,6 @@ export function initCallUI(rtc) {
   }
 
   function stopTimer() {
-    if (!callTimerEl) return;
     if (timerId) clearInterval(timerId);
     timerId = null;
     callTimerEl.textContent = "00:00";
@@ -105,39 +97,32 @@ export function initCallUI(rtc) {
   ------------------------------------------------------- */
 
   function setMode(mode) {
-    if (!win) return;
     win.classList.remove("inbound-mode", "active-mode");
     if (mode === "inbound") win.classList.add("inbound-mode");
     if (mode === "active")  win.classList.add("active-mode");
   }
 
   function setStatus(text) {
-    if (!callStatus) return;
     callStatus.textContent = text || "";
   }
 
   function setVoiceOnly(on) {
-    if (!win) return;
     win.classList.toggle("voice-only", !!on);
   }
 
   function setCameraOff(on) {
-    if (!win) return;
     win.classList.toggle("camera-off", !!on);
   }
 
   function setScreenShare(on) {
-    if (!win) return;
     win.classList.toggle("screen-share", !!on);
   }
 
   function setNoiseSuppression(on) {
-    if (!noiseBtn) return;
     noiseBtn.classList.toggle("active", !!on);
   }
 
   function setQuality(level, info) {
-    if (!qualityEl) return;
     const labels = {
       excellent: "Excellent",
       good:      "Good",
@@ -152,60 +137,23 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     STAGE MODE HELPERS (SCREEN SHARE / PRIMARY TILE)
-  ------------------------------------------------------- */
-
-  function promoteToStageLocal() {
-    if (!grid) return;
-    grid.classList.add("stage-mode");
-
-    // clear any existing stage-primary
-    grid.querySelectorAll(".participant.stage-primary").forEach((el) =>
-      el.classList.remove("stage-primary")
-    );
-
-    const localTile = document.getElementById("localParticipant");
-    if (localTile) {
-      localTile.classList.add("stage-primary");
-    }
-  }
-
-  function demoteStage() {
-    if (!grid) return;
-    grid.classList.remove("stage-mode");
-    grid.querySelectorAll(".participant.stage-primary").forEach((el) =>
-      el.classList.remove("stage-primary")
-    );
-  }
-
-  /* -------------------------------------------------------
      TOAST HELPERS
   ------------------------------------------------------- */
 
   function showToast(el) {
-    if (!el) return;
     el.classList.remove("hidden");
-    // allow CSS transition to pick up
-    setTimeout(() => el.classList.add("open"), 10);
+    requestAnimationFrame(() => el.classList.add("open"));
   }
 
   function hideToast(el) {
-    if (!el) return;
     el.classList.remove("open");
     setTimeout(() => el.classList.add("hidden"), 250);
   }
 
   function showSecondaryIncomingToastInternal({ fromName, audioOnly }) {
-    if (!toastSecondary) return;
-
     const msg    = toastSecondary.querySelector(".sit-message");
     const ignore = toastSecondary.querySelector(".sit-ignore");
     const sw     = toastSecondary.querySelector(".sit-switch");
-
-    if (!msg || !ignore || !sw) {
-      console.warn("[CallUI] Secondary incoming toast elements missing");
-      return;
-    }
 
     msg.textContent = `${fromName} is calling you (${audioOnly ? "voice" : "video"})`;
 
@@ -213,24 +161,16 @@ export function initCallUI(rtc) {
     sw.onclick = () => {
       hideToast(toastSecondary);
       rtc.endCall?.(true);
-      // new incoming call will trigger rtc.onIncomingCall again
     };
 
     showToast(toastSecondary);
   }
 
   function showUnavailableToastInternal({ peerId, message }) {
-    if (!toastUnavailable) return;
-
     const msgEl   = toastUnavailable.querySelector(".ut-message");
     const voice   = document.getElementById("utVoiceBtn");
     const video   = document.getElementById("utVideoBtn");
     const textBtn = document.getElementById("utTextBtn");
-
-    if (!msgEl || !voice || !video || !textBtn) {
-      console.warn("[CallUI] Unavailable toast elements missing");
-      return;
-    }
 
     msgEl.textContent = message || "User unavailable";
 
@@ -239,11 +179,7 @@ export function initCallUI(rtc) {
       openVoicemailRecorder?.(peerId);
     };
 
-    video.onclick = () => {
-      hideToast(toastUnavailable);
-      // future: open video message recorder
-    };
-
+    video.onclick = () => hideToast(toastUnavailable);
     textBtn.onclick = () => {
       hideToast(toastUnavailable);
       window.showMessageWindow?.();
@@ -256,86 +192,66 @@ export function initCallUI(rtc) {
      BUTTON BINDINGS
   ------------------------------------------------------- */
 
-  if (declineBtn) {
-    declineBtn.onclick = () => {
-      setStatus("Declining…");
-      rtc.declineIncomingCall?.();
-    };
-  }
+  declineBtn.onclick = () => {
+    setStatus("Declining…");
+    rtc.declineIncomingCall?.();
+  };
 
-  if (answerBtn) {
-    answerBtn.onclick = () => {
-      setStatus("Answering…");
-      setMode("active");
-      rtc.answerIncomingCall?.();
-    };
-  }
+  answerBtn.onclick = () => {
+    setStatus("Answering…");
+    setMode("active");
+    rtc.answerIncomingCall?.();
+  };
 
-  if (endBtn) {
-    endBtn.onclick = () => {
-      setStatus("Call ended");
-      rtc.endCall?.(true);
-    };
-  }
+  endBtn.onclick = () => {
+    setStatus("Call ended");
+    rtc.endCall?.(true);
+  };
 
-  if (muteBtn) {
-    muteBtn.onclick = () => {
-      const muted = rtc.toggleMute?.();
-      muteBtn.innerHTML = muted
-        ? `<span class="material-symbols-outlined">mic_off</span>`
-        : `<span class="material-symbols-outlined">mic</span>`;
-    };
-  }
+  muteBtn.onclick = () => {
+    const muted = rtc.toggleMute?.();
+    muteBtn.innerHTML = muted
+      ? `<span class="material-symbols-outlined">mic_off</span>`
+      : `<span class="material-symbols-outlined">mic</span>`;
+  };
 
-  if (cameraBtn) {
-    cameraBtn.onclick = () => {
-      const off = rtc.switchCamera?.();
-      cameraBtn.classList.toggle("flipped", !!off);
-      cameraBtn.innerHTML = off
-        ? `<span class="material-symbols-outlined">videocam_off</span>`
-        : `<span class="material-symbols-outlined">videocam</span>`;
-      setCameraOff(off);
-    };
-  }
+  cameraBtn.onclick = () => {
+    const off = rtc.toggleCamera?.();   // FIXED: your controller uses toggleCamera()
+    cameraBtn.classList.toggle("flipped", !!off);
+    cameraBtn.innerHTML = off
+      ? `<span class="material-symbols-outlined">videocam_off</span>`
+      : `<span class="material-symbols-outlined">videocam</span>`;
+    setCameraOff(off);
+  };
 
-  if (shareBtn) {
-    shareBtn.onclick = () => rtc.startScreenShare?.();
-  }
+  shareBtn.onclick = () => rtc.startScreenShare?.();
 
-  if (noiseBtn) {
-    noiseBtn.onclick = () => {
-      const enabled = rtc.toggleNoiseSuppression?.();
-      setNoiseSuppression(enabled);
-    };
-  }
+  noiseBtn.onclick = () => {
+    const enabled = rtc.toggleNoiseSuppression?.();
+    setNoiseSuppression(enabled);
+  };
 
-  if (recordBtn) {
-    recordBtn.onclick = () => {
-      const active = rtc.toggleRecording?.();
-      recordBtn.classList.toggle("active", !!active);
-    };
-  }
+  recordBtn.onclick = () => {
+    const active = rtc.toggleRecording?.();
+    recordBtn.classList.toggle("active", !!active);
+  };
 
-  if (historyBtn) {
-    historyBtn.onclick = () => window.toggleCallHistoryPanel?.();
-  }
+  historyBtn.onclick = () => window.toggleCallHistoryPanel?.();
 
   /* More menu */
-  if (moreBtn && moreMenu) {
-    moreBtn.onclick = (e) => {
-      e.stopPropagation();
-      moreMenu.classList.toggle("hidden");
-    };
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    moreMenu.classList.toggle("hidden");
+  };
 
-    document.addEventListener("click", (e) => {
-      if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
-        moreMenu.classList.add("hidden");
-      }
-    });
-  }
+  document.addEventListener("click", (e) => {
+    if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
+      moreMenu.classList.add("hidden");
+    }
+  });
 
   /* -------------------------------------------------------
-     INLINE DEBUG PANEL (simple log)
+     DEBUG PANEL
   ------------------------------------------------------- */
 
   const debugPanel = (() => {
@@ -359,12 +275,10 @@ export function initCallUI(rtc) {
     return el;
   })();
 
-  if (debugToggle) {
-    debugToggle.onclick = () => {
-      debugPanel.style.display =
-        debugPanel.style.display === "none" ? "block" : "none";
-    };
-  }
+  debugToggle.onclick = () => {
+    debugPanel.style.display =
+      debugPanel.style.display === "none" ? "block" : "none";
+  };
 
   function debug(msg) {
     const time = new Date().toLocaleTimeString();
@@ -383,7 +297,7 @@ export function initCallUI(rtc) {
     setStatus("Incoming call…");
     setVoiceOnly(audioOnly);
     setMode("inbound");
-    win?.classList.remove("hidden");
+    win.classList.remove("hidden");
   };
 
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
@@ -391,7 +305,7 @@ export function initCallUI(rtc) {
     setStatus("Calling…");
     setVoiceOnly(voiceOnly);
     setMode("active");
-    win?.classList.remove("hidden");
+    win.classList.remove("hidden");
   };
 
   rtc.onCallConnected = () => {
@@ -408,7 +322,7 @@ export function initCallUI(rtc) {
     setMode(null);
     clearAllParticipants();
     demoteStage();
-    win?.classList.add("hidden");
+    win.classList.add("hidden");
   };
 
   rtc.onCallFailed = (reason) => {
@@ -418,7 +332,7 @@ export function initCallUI(rtc) {
     setMode(null);
     clearAllParticipants();
     demoteStage();
-    win?.classList.add("hidden");
+    win.classList.add("hidden");
   };
 
   rtc.onRemoteMuted = () => debug("Remote muted");
@@ -436,23 +350,21 @@ export function initCallUI(rtc) {
     setQuality(level, info);
   };
 
-  // Controller currently calls onScreenShareStarted/Stopped with no peerId;
-  // we treat local participant as stage primary.
-  rtc.onScreenShareStarted = () => {
+  rtc.onScreenShareStarted = (peerId) => {
     setScreenShare(true);
-    promoteToStageLocal();
+    promoteToStage(peerId);
   };
 
-  rtc.onScreenShareStopped = () => {
+  rtc.onScreenShareStopped = (peerId) => {
     setScreenShare(false);
-    demoteStage();
+    demoteStage(peerId);
   };
 
   rtc.onNoiseSuppressionChanged = (enabled) =>
     setNoiseSuppression(enabled);
 
   rtc.onRecordingChanged = ({ active }) =>
-    recordBtn?.classList.toggle("active", !!active);
+    recordBtn.classList.toggle("active", !!active);
 
   rtc.onVoicemailPrompt = (data) =>
     showUnavailableToastInternal(data);
@@ -525,6 +437,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
