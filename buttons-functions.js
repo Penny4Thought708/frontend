@@ -533,6 +533,37 @@ const Settings = {
   }
 };
 
+const msgWin = document.querySelector(".message-window");
+const newPill = document.getElementById("newMessagesPill");
+
+if (msgWin && newPill) {
+  function isAtBottom() {
+    return msgWin.scrollHeight - msgWin.scrollTop - msgWin.clientHeight < 10;
+  }
+
+  function showPill() {
+    newPill.classList.remove("hidden");
+    requestAnimationFrame(() => newPill.classList.add("show"));
+  }
+
+  function hidePill() {
+    newPill.classList.remove("show");
+    setTimeout(() => newPill.classList.add("hidden"), 200);
+  }
+
+  msgWin.addEventListener("scroll", () => {
+    if (isAtBottom()) {
+      hidePill();
+    } else {
+      showPill();
+    }
+  });
+
+  newPill.addEventListener("click", () => {
+    msgWin.scrollTo({ top: msgWin.scrollHeight, behavior: "smooth" });
+    hidePill();
+  });
+}
 
 
 
