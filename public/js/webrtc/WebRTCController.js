@@ -5,7 +5,9 @@ import {
   getLocalMedia,
   attachRemoteTrack,
   cleanupMedia,
+  refreshLocalAvatarVisibility, // ⬅ add this
 } from "./WebRTCMedia.js";
+
 import { addCallLogEntry } from "../call-log.js";
 import {
   getMyUserId,
@@ -168,6 +170,8 @@ export class WebRTCController {
     this.onRecordingChanged = null;
     this.onVoicemailPrompt = null;
     this.onSecondaryIncomingCall = null; // new: second call while in call
+    this._callRecorder = null;
+    this._callRecorderChunks = [];
 
     // Internal flags
     this._screenShareStream = null;
@@ -395,23 +399,107 @@ export class WebRTCController {
      Noise suppression (UI only)
   --------------------------------------------------- */
 
-  toggleNoiseSuppression() {
-    const enabled = !this._noiseSuppressionEnabled;
-    this._noiseSuppressionEnabled = enabled;
-    this.onNoiseSuppressionChanged?.(enabled);
-    return enabled;
+toggleNoiseSuppression() {
+  const enabled = !this._noiseSuppressionEnabled;
+  this._noiseSuppressionEnabled = enabled;
+
+  const stream = this.localStream || rtcState.localStream;
+  if (stream) {
+    stream.getAudioTracks().forEach((track) => {
+      try {
+        const constraints = {
+          echoCancellation: enabled,
+          noiseSuppression: enabled,
+          autoGainControl: enabled,
+        };
+        track.applyConstraints(constraints).catch(() => {});
+      } catch {}
+    });
   }
+
+  this.onNoiseSuppressionChanged?.(enabled);
+  return enabled;
+}
 
   /* ---------------------------------------------------
      Recording (UI only)
   --------------------------------------------------- */
 
-  toggleRecording() {
-    const active = !this._recordingActive;
-    this._recordingActive = active;
-    this.onRecordingChanged?.(active);
-    return active;
+ toggleRecording() {
+  const active = !this._recordingActive;
+
+  // Stop recording
+  if (!active && this._callRecorder) {
+    try {
+      this._callRecorder.stop();
+    } catch {}
+    this._recordingActive = false;
+    // onRecordingChanged will be fired in onstop with the final URL
+    return false;
   }
+
+  // Start recording
+  const local = this.localStream || rtcState.localStream;
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  const remoteStream = remoteAudioEl?.srcObject || null;
+
+  if (!local && !remoteStream) {
+    console.warn("[WebRTC] toggleRecording: no streams to record");
+    return false;
+  }
+
+  const mix = new MediaStream();
+
+  if (local) {
+    local.getAudioTracks().forEach((t) => mix.addTrack(t));
+  }
+  if (remoteStream) {
+    remoteStream.getAudioTracks().forEach((t) => mix.addTrack(t));
+  }
+
+  try {
+    const rec = new MediaRecorder(mix, {
+      mimeType: "audio/webm",
+    });
+
+    this._callRecorder = rec;
+    this._callRecorderChunks = [];
+    this._recordingActive = true;
+
+    rec.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        this._callRecorderChunks.push(e.data);
+      }
+    };
+
+    rec.onstop = () => {
+      const blob = new Blob(this._callRecorderChunks, { type: "audio/webm" });
+      const url = URL.createObjectURL(blob);
+
+      this._recordingActive = false;
+      this._callRecorder = null;
+      this._callRecorderChunks = [];
+
+      // UI can show "download recording" or attach to call log
+      this.onRecordingChanged?.({
+        active: false,
+        url,
+        blob,
+      });
+    };
+
+    rec.start(1000); // gather chunks every second
+    this.onRecordingChanged?.({ active: true });
+    return true;
+  } catch (err) {
+    console.warn("[WebRTC] Failed to start call recording:", err);
+    this._recordingActive = false;
+    this._callRecorder = null;
+    this._callRecorderChunks = [];
+    this.onRecordingChanged?.({ active: false, error: err?.message });
+    return false;
+  }
+}
 
   /* ---------------------------------------------------
      Outgoing call
@@ -492,29 +580,29 @@ export class WebRTCController {
     }
 
     // Already in a call with someone else → secondary incoming call notification
-    if (rtcState.inCall && rtcState.peerId && rtcState.peerId !== from) {
-      console.log(
-        "[WebRTC] Secondary incoming call from",
-        from,
-        "while in call with",
-        rtcState.peerId
-      );
+// If we are already in any call → secondary incoming call notification
+if (rtcState.inCall && !rtcState.answering) {
+  console.log(
+    "[WebRTC] Secondary incoming call from",
+    from,
+    "while already in a call"
+  );
 
-      this.socket?.emit("call:busy", {
-        to: from,
-        from: getMyUserId(),
-        reason: "in-another-call",
-      });
+  this.socket?.emit("call:busy", {
+    to: from,
+    from: getMyUserId(),
+    reason: "in-another-call",
+  });
 
-      this.onSecondaryIncomingCall?.({
-        fromId: from,
-        fromName: fromUser?.fullname || fromName || `User ${from}`,
-        audioOnly: !!audioOnly,
-        callSessionId,
-      });
+  this.onSecondaryIncomingCall?.({
+    fromId: from,
+    fromName: fromUser?.fullname || fromName || `User ${from}`,
+    audioOnly: !!audioOnly,
+    callSessionId,
+  });
 
-      return;
-    }
+  return;
+}
 
     const displayName = fromUser?.fullname || fromName || `User ${from}`;
 
@@ -846,32 +934,31 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Camera toggle
   --------------------------------------------------- */
-
-  switchCamera() {
-    const stream = this.localStream || rtcState.localStream;
-    if (!stream) {
-      console.warn("[WebRTC] switchCamera: no local stream");
-      return;
-    }
-
-    const videoTracks = stream.getVideoTracks();
-    if (!videoTracks.length) return;
-
-    const enabled = videoTracks.some((t) => t.enabled);
-    const newEnabled = !enabled;
-
-    videoTracks.forEach((t) => {
-      t.enabled = newEnabled;
-    });
-
-    if (newEnabled) {
-      this.onRemoteCameraOn?.();
-    } else {
-      this.onRemoteCameraOff?.();
-    }
-
-    this._debugUpdate();
+switchCamera() {
+  const stream = this.localStream || rtcState.localStream;
+  if (!stream) {
+    console.warn("[WebRTC] switchCamera: no local stream");
+    return;
   }
+
+  const videoTracks = stream.getVideoTracks();
+  if (!videoTracks.length) return;
+
+  const enabled = videoTracks.some((t) => t.enabled);
+  const newEnabled = !enabled;
+
+  videoTracks.forEach((t) => {
+    t.enabled = newEnabled;
+  });
+
+  // Update local avatar visibility in the grid
+  refreshLocalAvatarVisibility();
+
+  // This is LOCAL camera, so don’t call remote callbacks here
+  this._debugUpdate();
+  return !newEnabled; // true = camera now OFF
+}
+
 
   /* ---------------------------------------------------
      PeerConnection factory
@@ -1341,6 +1428,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
