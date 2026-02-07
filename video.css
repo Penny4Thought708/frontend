@@ -62,8 +62,16 @@ html[data-theme="light"] #videoCallWindow .video-body {
     rgba(245, 248, 255, 0.98);
 }
 
+/* subtle overlay */
+#videoCallWindow .video-body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* ============================================================
-   CENTERED STAGE WRAPPER (LIKE DISCORD)
+   CENTERED STAGE GRID
 ============================================================ */
 
 .call-grid {
@@ -78,14 +86,6 @@ html[data-theme="light"] #videoCallWindow .video-body {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
   justify-items: center;
-}
-
-/* Make the grid itself centered in the viewport */
-#videoCallWindow .video-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
 }
 
 /* ============================================================
@@ -103,6 +103,7 @@ html[data-theme="light"] #videoCallWindow .video-body {
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
+  --audio-level: 0;
 }
 
 .participant .media-wrapper {
@@ -119,20 +120,6 @@ html[data-theme="light"] #videoCallWindow .video-body {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.9);
   background: linear-gradient(to right, rgba(6, 8, 20, 0.96), rgba(6, 8, 20, 0.7));
-}
-/* Grid behavior for multiple participants */
-.call-grid {
-  position: relative;
-  width: 100%;
-  max-width: 1120px;
-  max-height: 640px;
-  margin: 0 auto;
-  padding: 80px 20px 120px;
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  align-items: stretch;
-  justify-items: center;
 }
 
 /* Join / leave animations */
@@ -169,10 +156,6 @@ html[data-theme="light"] #videoCallWindow .video-body {
 }
 
 /* Active speaker glow via --audio-level */
-.participant {
-  --audio-level: 0;
-}
-
 .participant::after {
   content: "";
   position: absolute;
@@ -201,16 +184,11 @@ html[data-theme="light"] #videoCallWindow .video-body {
   transition: opacity 220ms ease;
 }
 
-#localVideo[srcObject],
-#remoteVideo[srcObject],
-.participant video[srcObject] {
-  display: block;
-}
-
-/* JS can add .show for fade‑in */
+/* JS toggles .show for fade‑in */
 #localVideo.show,
 #remoteVideo.show,
 .participant video.show {
+  display: block;
   opacity: 1;
 }
 
@@ -264,27 +242,6 @@ html[data-theme="light"] #videoCallWindow .video-body {
 .participant.speaking .voice-pulse {
   opacity: 1;
   transform: scale(1.1);
-}
-
-/* ============================================================
-   AUDIO VISUALIZER / VOICE LEVEL (CSS VAR --audio-level)
-============================================================ */
-
-.participant {
-  --audio-level: 0;
-}
-
-.participant::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  box-shadow:
-    0 0 calc(40px * var(--audio-level)) rgba(94, 242, 255, 0.6),
-    0 0 calc(80px * var(--audio-level)) rgba(255, 123, 255, 0.4);
-  opacity: calc(0.4 * var(--audio-level));
-  transition: opacity 120ms ease;
 }
 
 /* ============================================================
@@ -539,7 +496,7 @@ html[data-theme="light"] #call-controls.call-controls::before {
   transform: translateY(0);
 }
 
-/* critical: keep element in DOM for animation */
+/* keep element in DOM for animation */
 .toast.hidden {
   opacity: 0;
   pointer-events: none;
