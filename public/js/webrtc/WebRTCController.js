@@ -197,9 +197,12 @@ export class WebRTCController {
     this.localStream = stream;
     rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    }
+   if (stream) {
+  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+} else {
+  console.warn("[WebRTC] No local media — continuing call anyway");
+}
+
 
     // 🔥 Notify UI of outgoing call
     this.onOutgoingCall?.({
@@ -586,10 +589,13 @@ async handleOffer(data) {
     console.log("[ontrack] Binding AUDIO to #remoteAudio");
     remoteAudioEl.srcObject = stream;
     remoteAudioEl.playsInline = true;
-    remoteAudioEl.muted = false;
-    remoteAudioEl.play().catch((err) => {
-      console.warn("[ontrack] remoteAudio play blocked:", err?.name || err);
-    });
+  remoteAudioEl.muted = false;
+remoteAudioEl.volume = 1.0;
+
+remoteAudioEl.play().catch(() => {
+  console.warn("[WebRTC] Autoplay blocked — waiting for user gesture");
+});
+
   }
 
   // 3️⃣ Directly wire to first remote video tile
@@ -893,6 +899,7 @@ async handleOffer(data) {
     });
   }
 }
+
 
 
 
