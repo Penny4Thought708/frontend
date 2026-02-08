@@ -1,12 +1,11 @@
 // public/js/webrtc/WebRTCMedia.js
-// Fully working media engine for 1:1 + group calls.
-// Handles: local media, remote media, avatars, speaking detection,
-// audio visualization, voice-only mode, and CSS-aware video visibility.
+// Production‑grade media engine: local/remote media,
+// audio visualization, speaking detection, and voice‑only optimization.
 
 import { rtcState } from "./WebRTCState.js";
 
 /* -------------------------------------------------------
-   Shared AudioContext (Safari-safe)
+   Shared AudioContext (Safari‑safe, mobile‑safe)
 ------------------------------------------------------- */
 let sharedAudioCtx = null;
 function getAudioCtx() {
@@ -18,10 +17,13 @@ function getAudioCtx() {
   return sharedAudioCtx;
 }
 
+/* -------------------------------------------------------
+   Logging Helper
+------------------------------------------------------- */
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
 /* -------------------------------------------------------
-   DOM Helpers
+   DOM Helpers for Group Layout
 ------------------------------------------------------- */
 function getCallGrid() {
   return document.getElementById("callGrid");
@@ -32,7 +34,9 @@ function getRemoteTemplate() {
 }
 
 function ensureRemoteMap() {
-  if (!rtcState.remoteParticipants) rtcState.remoteParticipants = {};
+  if (!rtcState.remoteParticipants) {
+    rtcState.remoteParticipants = {};
+  }
   return rtcState.remoteParticipants;
 }
 
@@ -47,8 +51,20 @@ function createRemoteParticipant(peerId = "default") {
   const clone = tpl.content.firstElementChild.cloneNode(true);
   clone.dataset.peerId = peerId;
 
-  const nameTag = clone.querySelector(".name-tag");
-  if (nameTag) nameTag.textContent = peerId;
+  const videoEl   = clone.querySelector("video");
+  const avatarImg = clone.querySelector(".avatar-img");
+  const nameTag   = clone.querySelector(".name-tag");
+
+  if (nameTag) nameTag.textContent = peerId || "Guest";
+  if (avatarImg && !avatarImg.src) {
+    avatarImg.src = "img/defaultUser.png";
+  }
+
+  // In voice‑only mode, hide the video element entirely
+  if (rtcState.voiceOnly && videoEl) {
+    videoEl.style.display = "none";
+    videoEl.removeAttribute("srcObject");
+  }
 
   grid.appendChild(clone);
   map[peerId] = clone;
@@ -61,40 +77,46 @@ function getRemoteParticipant(peerId = "default") {
 }
 
 /* -------------------------------------------------------
-   Local Avatar Visibility
+   Local Avatar Visibility (grid layout)
 ------------------------------------------------------- */
 function updateLocalAvatarVisibility() {
-  const tile = document.getElementById("localParticipant");
-  if (!tile) return;
+  const localTile = document.getElementById("localParticipant");
+  if (!localTile) return;
 
-  const avatar = tile.querySelector(".avatar-wrapper");
-  if (!avatar) return;
+  const avatarWrapper = localTile.querySelector(".avatar-wrapper");
+  if (!avatarWrapper) return;
 
   const stream = rtcState.localStream;
 
-  if (rtcState.voiceOnly || !stream) {
-    avatar.style.display = "flex";
+  // Voice‑only: always show avatar
+  if (rtcState.voiceOnly) {
+    avatarWrapper.style.display = "flex";
     return;
   }
 
-  const hasVideo = stream.getVideoTracks().some(t => t.enabled);
-  avatar.style.display = hasVideo ? "none" : "flex";
+  if (!stream) {
+    avatarWrapper.style.display = "flex";
+    return;
+  }
+
+  const hasVideo = stream.getVideoTracks().some((t) => t.enabled);
+  avatarWrapper.style.display = hasVideo ? "none" : "flex";
 }
 
 /* -------------------------------------------------------
-   Audio Visualizer
+   Audio Visualizer (CSS variable --audio-level)
 ------------------------------------------------------- */
-function attachAudioVisualizer(stream, tile) {
-  if (!stream || !tile) return;
+function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
+  if (!stream || !target) return;
 
   const ctx = getAudioCtx();
-  if (!ctx) return;
+  if (!ctx) return log("AudioContext not supported");
 
   try {
     const src = ctx.createMediaStreamSource(stream);
     const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
 
+    analyser.fftSize = 256;
     const buf = new Uint8Array(analyser.frequencyBinCount);
     src.connect(analyser);
 
@@ -108,10 +130,11 @@ function attachAudioVisualizer(stream, tile) {
       }
 
       const rms = Math.sqrt(sum / buf.length);
+      // Slightly higher sensitivity in voice‑only mode
       const factor = rtcState.voiceOnly ? 5 : 4;
       const level = Math.min(1, rms * factor);
 
-      tile.style.setProperty("--audio-level", level.toFixed(3));
+      target.style.setProperty(cssVar, level.toFixed(3));
       requestAnimationFrame(tick);
     };
 
@@ -122,13 +145,15 @@ function attachAudioVisualizer(stream, tile) {
 }
 
 /* -------------------------------------------------------
-   Speaking Detection
+   Remote Speaking Detection (per participant)
 ------------------------------------------------------- */
 const speakingLoops = new Map();
 
-function startRemoteSpeakingDetection(stream, tile) {
+function startRemoteSpeakingDetection(stream, participantEl) {
+  if (!participantEl) return;
+
   const ctx = getAudioCtx();
-  if (!ctx) return;
+  if (!ctx) return log("AudioContext not supported");
 
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
@@ -143,42 +168,79 @@ function startRemoteSpeakingDetection(stream, tile) {
     analyser.getByteFrequencyData(buf);
     const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
+    // Slightly more sensitive threshold in voice‑only mode
     smoothed = smoothed * 0.8 + avg * 0.2;
     const threshold = rtcState.voiceOnly ? 0.045 : 0.06;
+    const speaking = smoothed > threshold;
 
-    tile.classList.toggle("speaking", smoothed > threshold);
+    participantEl.classList.toggle("speaking", speaking);
 
     const id = requestAnimationFrame(loop);
-    speakingLoops.set(tile, id);
+    speakingLoops.set(participantEl, id);
   };
 
   loop();
 }
 
 export function stopSpeakingDetection() {
-  for (const [tile, id] of speakingLoops.entries()) {
+  for (const [el, id] of speakingLoops.entries()) {
     cancelAnimationFrame(id);
-    tile.classList.remove("speaking");
+    el.classList.remove("speaking");
   }
   speakingLoops.clear();
 }
 
 /* -------------------------------------------------------
-   Local Media
+   Local Media Acquisition (voice/video aware)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    log("getUserMedia not supported");
+    return null;
+  }
+
+  // Voice‑only flag for the whole engine
   rtcState.voiceOnly = !!audio && !video;
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
-      video: video ? { width: 1280, height: 720 } : false
-    });
+  const constraints = {
+    audio: audio
+      ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: 48000,
+        }
+      : false,
+    video: video
+      ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30, max: 60 },
+        }
+      : false,
+  };
 
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    log("Got local media with constraints:", constraints);
     rtcState.localStream = stream;
 
+    // Content hints
+    stream.getVideoTracks().forEach((t) => {
+      try {
+        t.contentHint = "motion";
+      } catch {}
+    });
+    stream.getAudioTracks().forEach((t) => {
+      try {
+        t.contentHint = "speech";
+      } catch {}
+    });
+
     const localVideo = document.getElementById("localVideo");
-    if (localVideo && video && !rtcState.voiceOnly) {
+
+    if (video && localVideo && !rtcState.voiceOnly) {
       localVideo.srcObject = stream;
       localVideo.muted = true;
       localVideo.playsInline = true;
@@ -188,23 +250,58 @@ export async function getLocalMedia(audio = true, video = true) {
 
     updateLocalAvatarVisibility();
 
-    const tile = document.getElementById("localParticipant");
-    if (tile) attachAudioVisualizer(stream, tile);
+    const localTile =
+      localVideo?.closest(".participant.local") ||
+      document.getElementById("localParticipant");
+    if (localTile) attachAudioVisualizer(stream, localTile);
 
     return stream;
   } catch (err) {
-    log("Local media error:", err);
+    log("Local media error:", err.name, err.message);
+
+    // Retry audio‑only if video fails
+    if (
+      video &&
+      audio &&
+      (err.name === "NotFoundError" || err.name === "OverconstrainedError")
+    ) {
+      log("Retrying getUserMedia with audio‑only…");
+      try {
+        const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false,
+        });
+        rtcState.localStream = audioOnlyStream;
+        rtcState.voiceOnly = true;
+
+        updateLocalAvatarVisibility();
+
+        const localTile = document.getElementById("localParticipant");
+        if (localTile) attachAudioVisualizer(audioOnlyStream, localTile);
+
+        return audioOnlyStream;
+      } catch (err2) {
+        log("Audio‑only also failed:", err2.name, err2.message);
+      }
+    }
+
     rtcState.localStream = null;
-    updateLocalAvatarVisibility();
+    rtcState.voiceOnly = !!audio && !video;
+
+    const localTile = document.getElementById("localParticipant");
+    const avatarWrapper = localTile?.querySelector(".avatar-wrapper");
+    if (avatarWrapper) avatarWrapper.style.display = "flex";
+
     return null;
   }
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (CSS-aware)
+   Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
-  let peerId, evt;
+  let peerId;
+  let evt;
 
   if (maybeEvt) {
     peerId = peerOrEvt || "default";
@@ -214,113 +311,139 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     evt = peerOrEvt;
   }
 
-  if (!evt?.track) return;
-
-  if (!rtcState.remoteStreams) rtcState.remoteStreams = {};
-  let stream = rtcState.remoteStreams[peerId];
-  if (!stream) {
-    stream = new MediaStream();
-    rtcState.remoteStreams[peerId] = stream;
+  if (!evt || !evt.track) {
+    log("attachRemoteTrack called without track");
+    return;
   }
-  stream.addTrack(evt.track);
 
-  const tile = getRemoteParticipant(peerId);
-  if (!tile) return;
+  if (!rtcState.remoteStreams) {
+    rtcState.remoteStreams = {};
+  }
 
-  const videoEl = tile.querySelector("video");
-  const avatar = tile.querySelector(".avatar-wrapper");
+  let remoteStream = rtcState.remoteStreams[peerId];
+  if (!remoteStream) {
+    remoteStream = new MediaStream();
+    rtcState.remoteStreams[peerId] = remoteStream;
+  }
+  remoteStream.addTrack(evt.track);
 
-  const showAvatar = show => {
-    if (!avatar) return;
-    avatar.classList.toggle("hidden", !show);
+  const participantEl = getRemoteParticipant(peerId);
+  if (!participantEl) {
+    log("No participant element for peer:", peerId);
+    return;
+  }
+
+  const videoEl       = participantEl.querySelector("video");
+  const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
+
+  const showAvatar = (show) => {
+    if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
+    if (videoEl && !rtcState.voiceOnly) {
+      videoEl.style.display = show ? "none" : "block";
+    }
   };
 
-  /* -----------------------------
-     VIDEO TRACK
-  ----------------------------- */
-  if (evt.track.kind === "video" && videoEl && !rtcState.voiceOnly) {
-    videoEl.srcObject = stream;
-    videoEl.playsInline = true;
-    videoEl.classList.add("show");
+  evt.track.onmute   = () => showAvatar(true);
+  evt.track.onunmute = () => showAvatar(false);
+  evt.track.onended  = () => showAvatar(true);
 
-    videoEl.play()
+  /* -----------------------------
+     Remote Video (skip in voice‑only)
+  ----------------------------- */
+  if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
+    videoEl.srcObject = remoteStream;
+    videoEl.playsInline = true;
+    videoEl.style.display = "block";
+    videoEl.style.opacity = "1";
+
+    videoEl
+      .play()
       .then(() => {
         showAvatar(false);
-        tile.classList.add("video-active");
+        participantEl.classList.add("video-active");
+        log("Remote VIDEO playing for peer:", peerId);
       })
-      .catch(err => log("Remote video play blocked:", err));
+      .catch((err) => {
+        log("Remote video play blocked or failed:", err?.name || err);
+      });
   }
 
   /* -----------------------------
-     AUDIO TRACK
+     Remote Audio (shared element)
   ----------------------------- */
-  const remoteAudio = document.getElementById("remoteAudio");
-  if (evt.track.kind === "audio" && remoteAudio) {
-    remoteAudio.srcObject = stream;
-    remoteAudio.playsInline = true;
-    remoteAudio.muted = false;
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  if (evt.track.kind === "audio" && remoteAudioEl) {
+    remoteAudioEl.srcObject = remoteStream;
+    remoteAudioEl.playsInline = true;
+    remoteAudioEl.muted = false;
 
-    remoteAudio.play().catch(() => {
+    remoteAudioEl.play().catch(() => {
       log("Remote audio autoplay blocked");
     });
 
-    startRemoteSpeakingDetection(stream, tile);
-    attachAudioVisualizer(stream, tile);
+    startRemoteSpeakingDetection(remoteStream, participantEl);
+    attachAudioVisualizer(remoteStream, participantEl);
   }
-
-  /* -----------------------------
-     MUTE / UNMUTE HANDLERS
-  ----------------------------- */
-  evt.track.onmute = () => {
-    if (videoEl) videoEl.classList.remove("show");
-    showAvatar(true);
-  };
-
-  evt.track.onunmute = () => {
-    if (videoEl && !rtcState.voiceOnly) videoEl.classList.add("show");
-    showAvatar(false);
-  };
-
-  evt.track.onended = () => {
-    if (videoEl) videoEl.classList.remove("show");
-    showAvatar(true);
-  };
 }
 
 /* -------------------------------------------------------
-   Cleanup
+   Cleanup on call end
 ------------------------------------------------------- */
 export function cleanupMedia() {
   stopSpeakingDetection();
 
+  // Stop per‑peer remote streams
   if (rtcState.remoteStreams) {
-    Object.values(rtcState.remoteStreams).forEach(s =>
-      s.getTracks().forEach(t => t.stop())
-    );
+    Object.values(rtcState.remoteStreams).forEach((stream) => {
+      stream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
+    });
     rtcState.remoteStreams = {};
   }
 
+  // Stop local tracks
   if (rtcState.localStream) {
-    rtcState.localStream.getTracks().forEach(t => t.stop());
+    rtcState.localStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {}
+    });
     rtcState.localStream = null;
   }
 
+  rtcState.voiceOnly = false;
+
+  // Clear local video
   const localVideo = document.getElementById("localVideo");
-  if (localVideo) localVideo.classList.remove("show");
+  if (localVideo) {
+    localVideo.srcObject = null;
+    localVideo.style.display = "none";
+    localVideo.style.opacity = "0";
+    localVideo.classList.remove("show");
+  }
 
+  // Clear remote videos (all participants)
   const map = rtcState.remoteParticipants || {};
-  Object.values(map).forEach(tile => {
-    const videoEl = tile.querySelector("video");
-    if (videoEl) videoEl.classList.remove("show");
-
-    const avatar = tile.querySelector(".avatar-wrapper");
-    if (avatar) avatar.classList.remove("hidden");
-
-    tile.classList.remove("video-active", "speaking");
+  Object.values(map).forEach((participantEl) => {
+    const videoEl = participantEl.querySelector("video");
+    if (videoEl) {
+      videoEl.srcObject = null;
+      videoEl.style.display = "none";
+      videoEl.style.opacity = "0";
+    }
+    const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
+    if (avatarWrapper) avatarWrapper.style.display = "flex";
+    participantEl.classList.remove("video-active", "speaking");
   });
 
-  const remoteAudio = document.getElementById("remoteAudio");
-  if (remoteAudio) remoteAudio.srcObject = null;
+  // Clear shared remote audio element
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  if (remoteAudioEl) {
+    remoteAudioEl.srcObject = null;
+  }
 
   updateLocalAvatarVisibility();
 }
@@ -331,6 +454,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
