@@ -238,34 +238,42 @@ export class WebRTCController {
     await this._startCallInternal(peerId, audioOnly, { relayOnly });
   }
 
-  /* ---------------------------------------------------
-     Incoming Offer
-  --------------------------------------------------- */
-  async handleOffer(data) {
-    const { from, offer, fromName, audioOnly, fromUser } = data || {};
-    console.log("[WebRTC] handleOffer", data);
-    if (!from || !offer) return;
+/* ---------------------------------------------------
+   Incoming Offer (Corrected)
+--------------------------------------------------- */
+async handleOffer(data) {
+  const { from, offer, fromName, audioOnly, fromUser } = data || {};
+  console.log("[WebRTC] handleOffer", data);
+  if (!from || !offer) return;
 
-    rtcState.peerId = from;
-    rtcState.peerName = fromUser?.fullname || fromName || `User ${from}`;
-    rtcState.peerAvatar = fromUser?.avatar || null;
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.isCaller = false;
-    rtcState.inCall = false;
-    rtcState.incomingOffer = data;
-    rtcState.usedRelayFallback = false;
+  // 🔥 MUST BE FIRST — ensures remote tracks attach to correct tile
+  rtcState.peerId = from;
 
-    if (fromUser?.avatar) {
-      setRemoteAvatar(fromUser.avatar);
-      showRemoteAvatar();
-    }
+  // Set peer metadata
+  rtcState.peerName   = fromUser?.fullname || fromName || `User ${from}`;
+  rtcState.peerAvatar = fromUser?.avatar  || null;
+  rtcState.audioOnly  = !!audioOnly;
+  rtcState.isCaller   = false;
+  rtcState.inCall     = false;
+  rtcState.incomingOffer = data;
+  rtcState.usedRelayFallback = false;
 
-    ringtone?.play().catch(() => {});
-    this.onIncomingCall?.({
-      fromName: rtcState.peerName,
-      audioOnly: rtcState.audioOnly,
-    });
+  // Update remote avatar UI
+  if (fromUser?.avatar) {
+    setRemoteAvatar(fromUser.avatar);
+    showRemoteAvatar();
   }
+
+  // Play ringtone
+  ringtone?.play().catch(() => {});
+
+  // Notify UI
+  this.onIncomingCall?.({
+    fromName: rtcState.peerName,
+    audioOnly: rtcState.audioOnly,
+  });
+}
+
 
   /* ---------------------------------------------------
      Answer Incoming Call
@@ -850,6 +858,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
