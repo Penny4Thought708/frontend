@@ -538,26 +538,38 @@ export class WebRTCController {
       }
     };
 
-    /* Remote tracks → RemoteParticipants */
+       /* ---------------------------------------------------
+       Remote tracks → RemoteParticipants
+    --------------------------------------------------- */
     pc.ontrack = (event) => {
-      const peerId = rtcState.peerId || "remote";
+      const peerId = rtcState.peerId || "default";
       const stream = event.streams[0];
       if (!stream) return;
 
       rtcState.remoteStream = stream;
 
+      // Video/participant tile handled by RemoteParticipants.js
       attachRemoteStream(peerId, stream, {
         displayName: rtcState.peerName,
         avatarUrl: rtcState.peerAvatar || null,
       });
 
+      // Shared remote audio element (only wire on audio tracks)
       if (event.track.kind === "audio" && this.remoteAudio) {
-        this.remoteAudio.srcObject = stream;
-        this.remoteAudio.play().catch(() => {});
+        if (this.remoteAudio.srcObject !== stream) {
+          this.remoteAudio.srcObject = stream;
+        }
+        this.remoteAudio
+          .play()
+          .catch(() => {
+            console.warn("[WebRTC] Remote audio autoplay blocked");
+          });
       }
     };
 
-    /* ICE state → quality + fallback */
+    /* ---------------------------------------------------
+       ICE state → quality + TURN fallback
+    --------------------------------------------------- */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
 
@@ -606,7 +618,11 @@ export class WebRTCController {
       }
 
       if (state === "failed") {
-        if (!rtcState.usedRelayFallback && rtcState.peerId && !rtcState.answering) {
+        if (
+          !rtcState.usedRelayFallback &&
+          rtcState.peerId &&
+          !rtcState.answering
+        ) {
           rtcState.usedRelayFallback = true;
 
           const peerId = rtcState.peerId;
@@ -624,7 +640,7 @@ export class WebRTCController {
       }
     };
 
-        pc.onconnectionstatechange = () => {
+    pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       if (state === "failed") {
         this.onCallFailed?.("connection failed");
@@ -794,7 +810,10 @@ export class WebRTCController {
     });
 
     this.socket.on("call:dnd", ({ from }) => {
-      triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
+      triggerVoicemailFlow(
+        from,
+        "User is in Do Not Disturb. Leave a voicemail…"
+      );
     });
 
     this.socket.on("call:voicemail", ({ from, reason }) => {
