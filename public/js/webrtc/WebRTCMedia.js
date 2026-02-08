@@ -60,10 +60,10 @@ function createRemoteParticipant(peerId = "default") {
     avatarImg.src = "img/defaultUser.png";
   }
 
-  // In voice‑only mode, hide the video element entirely
+  // Voice‑only → hide video
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
-    videoEl.srcObject = null; // ✅ fix: don't use removeAttribute("srcObject")
+    videoEl.srcObject = null;
   }
 
   grid.appendChild(clone);
@@ -88,13 +88,7 @@ function updateLocalAvatarVisibility() {
 
   const stream = rtcState.localStream;
 
-  // Voice‑only: always show avatar
-  if (rtcState.voiceOnly) {
-    avatarWrapper.style.display = "flex";
-    return;
-  }
-
-  if (!stream) {
+  if (rtcState.voiceOnly || !stream) {
     avatarWrapper.style.display = "flex";
     return;
   }
@@ -110,7 +104,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
   if (!stream || !target) return;
 
   const ctx = getAudioCtx();
-  if (!ctx) return log("AudioContext not supported");
+  if (!ctx) return;
 
   try {
     const src = ctx.createMediaStreamSource(stream);
@@ -130,7 +124,6 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
       }
 
       const rms = Math.sqrt(sum / buf.length);
-      // Slightly higher sensitivity in voice‑only mode
       const factor = rtcState.voiceOnly ? 5 : 4;
       const level = Math.min(1, rms * factor);
 
@@ -145,7 +138,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection (per participant)
+   Remote Speaking Detection
 ------------------------------------------------------- */
 const speakingLoops = new Map();
 
@@ -153,7 +146,7 @@ function startRemoteSpeakingDetection(stream, participantEl) {
   if (!participantEl) return;
 
   const ctx = getAudioCtx();
-  if (!ctx) return log("AudioContext not supported");
+  if (!ctx) return;
 
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
@@ -168,7 +161,6 @@ function startRemoteSpeakingDetection(stream, participantEl) {
     analyser.getByteFrequencyData(buf);
     const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
-    // Slightly more sensitive threshold in voice‑only mode
     smoothed = smoothed * 0.8 + avg * 0.2;
     const threshold = rtcState.voiceOnly ? 0.045 : 0.06;
     const speaking = smoothed > threshold;
@@ -191,7 +183,7 @@ export function stopSpeakingDetection() {
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (voice/video aware)
+   Local Media Acquisition
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -199,7 +191,6 @@ export async function getLocalMedia(audio = true, video = true) {
     return null;
   }
 
-  // Voice‑only flag for the whole engine
   rtcState.voiceOnly = !!audio && !video;
 
   const constraints = {
@@ -223,20 +214,7 @@ export async function getLocalMedia(audio = true, video = true) {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    log("Got local media with constraints:", constraints);
     rtcState.localStream = stream;
-
-    // Content hints
-    stream.getVideoTracks().forEach((t) => {
-      try {
-        t.contentHint = "motion";
-      } catch {}
-    });
-    stream.getAudioTracks().forEach((t) => {
-      try {
-        t.contentHint = "speech";
-      } catch {}
-    });
 
     const localVideo = document.getElementById("localVideo");
 
@@ -245,9 +223,9 @@ export async function getLocalMedia(audio = true, video = true) {
       localVideo.muted = true;
       localVideo.playsInline = true;
       await localVideo.play().catch(() => {});
-      localVideo.classList.add("show");
       localVideo.style.display = "block";
       localVideo.style.opacity = "1";
+      localVideo.classList.add("show");
     }
 
     updateLocalAvatarVisibility();
@@ -259,15 +237,10 @@ export async function getLocalMedia(audio = true, video = true) {
 
     return stream;
   } catch (err) {
-    log("Local media error:", err.name, err.message);
+    log("Local media error:", err);
 
     // Retry audio‑only if video fails
-    if (
-      video &&
-      audio &&
-      (err.name === "NotFoundError" || err.name === "OverconstrainedError")
-    ) {
-      log("Retrying getUserMedia with audio‑only…");
+    if (video && audio) {
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -282,9 +255,7 @@ export async function getLocalMedia(audio = true, video = true) {
         if (localTile) attachAudioVisualizer(audioOnlyStream, localTile);
 
         return audioOnlyStream;
-      } catch (err2) {
-        log("Audio‑only also failed:", err2.name, err2.message);
-      }
+      } catch {}
     }
 
     rtcState.localStream = null;
@@ -299,7 +270,7 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (GROUP‑AWARE + voice‑only)
+   Remote Track Handling (GROUP‑AWARE)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
@@ -330,10 +301,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   remoteStream.addTrack(evt.track);
 
   const participantEl = getRemoteParticipant(peerId);
-  if (!participantEl) {
-    log("No participant element for peer:", peerId);
-    return;
-  }
+  if (!participantEl) return;
 
   const videoEl       = participantEl.querySelector("video");
   const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
@@ -350,7 +318,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   evt.track.onended  = () => showAvatar(true);
 
   /* -----------------------------
-     Remote Video (skip in voice‑only)
+     Remote Video
   ----------------------------- */
   if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
     videoEl.srcObject = remoteStream;
@@ -363,15 +331,14 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
       .then(() => {
         showAvatar(false);
         participantEl.classList.add("video-active");
-        log("Remote VIDEO playing for peer:", peerId);
       })
       .catch((err) => {
-        log("Remote video play blocked or failed:", err?.name || err);
+        log("Remote video play blocked:", err);
       });
   }
 
   /* -----------------------------
-     Remote Audio (shared element)
+     Remote Audio
   ----------------------------- */
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
@@ -394,7 +361,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 export function cleanupMedia() {
   stopSpeakingDetection();
 
-  // Stop per‑peer remote streams
   if (rtcState.remoteStreams) {
     Object.values(rtcState.remoteStreams).forEach((stream) => {
       stream.getTracks().forEach((t) => {
@@ -406,7 +372,6 @@ export function cleanupMedia() {
     rtcState.remoteStreams = {};
   }
 
-  // Stop local tracks
   if (rtcState.localStream) {
     rtcState.localStream.getTracks().forEach((t) => {
       try {
@@ -418,7 +383,6 @@ export function cleanupMedia() {
 
   rtcState.voiceOnly = false;
 
-  // Clear local video
   const localVideo = document.getElementById("localVideo");
   if (localVideo) {
     localVideo.srcObject = null;
@@ -427,7 +391,6 @@ export function cleanupMedia() {
     localVideo.classList.remove("show");
   }
 
-  // Clear remote videos (all participants)
   const map = rtcState.remoteParticipants || {};
   Object.values(map).forEach((participantEl) => {
     const videoEl = participantEl.querySelector("video");
@@ -441,7 +404,6 @@ export function cleanupMedia() {
     participantEl.classList.remove("video-active", "speaking");
   });
 
-  // Clear shared remote audio element
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (remoteAudioEl) {
     remoteAudioEl.srcObject = null;
@@ -456,6 +418,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
