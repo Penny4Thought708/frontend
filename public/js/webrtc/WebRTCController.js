@@ -12,7 +12,6 @@ import {
 
 import { getLocalMedia } from "./WebRTCMedia.js";
 import { attachRemoteTrack, cleanupMedia } from "./WebRTCMedia.js";
-import { attachRemoteStream } from "./RemoteParticipants.js";
 
 import { addCallLogEntry } from "../call-log.js";
 
@@ -26,7 +25,6 @@ import {
   getVideoBtn,
   remoteAudioEl,
 } from "../session.js";
-
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
@@ -87,11 +85,12 @@ export class WebRTCController {
 
     this.localVideo = null;
     this.remoteAudio = null;
-// Wire shared remote audio element
-this.remoteAudio = remoteAudioEl || document.getElementById("remoteAudio");
-if (!this.remoteAudio) {
-  console.warn("[WebRTC] remoteAudio element not found");
-}
+
+    // Wire shared remote audio element
+    this.remoteAudio = remoteAudioEl || document.getElementById("remoteAudio");
+    if (!this.remoteAudio) {
+      console.warn("[WebRTC] remoteAudio element not found");
+    }
 
     // UI callbacks
     this.onOutgoingCall = null;
@@ -102,35 +101,34 @@ if (!this.remoteAudio) {
     this.onQualityChange = null;
 
     this._bindSocketEvents();
-// -------------------------------------------------------
-// Wire call buttons directly to this controller instance
-// -------------------------------------------------------
-const voiceBtn = getVoiceBtn();
-const videoBtn = getVideoBtn();
 
-if (voiceBtn) {
-  voiceBtn.onclick = () => {
-    const peerId = getReceiver();
-    if (!peerId) {
-      console.warn("[WebRTC] Voice call attempted with no receiver");
-      return;
-    }
-    console.log("[WebRTC] Voice button → startCall", peerId);
-    this.startCall(peerId, true);
-  };
-}
+    // Wire call buttons directly to this controller instance
+    const voiceBtn = getVoiceBtn();
+    const videoBtn = getVideoBtn();
 
-if (videoBtn) {
-  videoBtn.onclick = () => {
-    const peerId = getReceiver();
-    if (!peerId) {
-      console.warn("[WebRTC] Video call attempted with no receiver");
-      return;
+    if (voiceBtn) {
+      voiceBtn.onclick = () => {
+        const peerId = getReceiver();
+        if (!peerId) {
+          console.warn("[WebRTC] Voice call attempted with no receiver");
+          return;
+        }
+        console.log("[WebRTC] Voice button → startCall", peerId);
+        this.startCall(peerId, true);
+      };
     }
-    console.log("[WebRTC] Video button → startCall", peerId);
-    this.startCall(peerId, false);
-  };
-}
+
+    if (videoBtn) {
+      videoBtn.onclick = () => {
+        const peerId = getReceiver();
+        if (!peerId) {
+          console.warn("[WebRTC] Video call attempted with no receiver");
+          return;
+        }
+        console.log("[WebRTC] Video button → startCall", peerId);
+        this.startCall(peerId, false);
+      };
+    }
 
     // Initialize local avatar
     setLocalAvatar(getMyAvatar());
@@ -151,7 +149,7 @@ if (videoBtn) {
   --------------------------------------------------- */
   attachMediaElements({ localVideo, remoteAudio }) {
     this.localVideo = localVideo;
-    this.remoteAudio = remoteAudio;
+    this.remoteAudio = remoteAudio || this.remoteAudio;
   }
 
   /* ---------------------------------------------------
@@ -170,16 +168,15 @@ if (videoBtn) {
   }
 
   async startCall(peerId, audioOnly) {
-  console.log("[WebRTC] startCall", { peerId, audioOnly });
-  return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
-}
-
+    console.log("[WebRTC] startCall", { peerId, audioOnly });
+    return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
+  }
 
   /* ---------------------------------------------------
      Outgoing Call
   --------------------------------------------------- */
- async _startCallInternal(peerId, audioOnly, { relayOnly }) { 
-   console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
+  async _startCallInternal(peerId, audioOnly, { relayOnly }) {
+    console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
     const myId = getMyUserId();
     if (!myId) return;
 
@@ -207,21 +204,19 @@ if (videoBtn) {
       }
     }
 
-    // 🔥 Notify UI of outgoing call
+    // Notify UI of outgoing call
     this.onOutgoingCall?.({
       targetName: rtcState.peerName,
       voiceOnly: audioOnly,
     });
 
     // Create offer
-  // Around offer creation
-const offer = await pc.createOffer();
-console.log("[WebRTC] Created offer", offer.type);
-await pc.setLocalDescription(offer);
-console.log("[WebRTC] Local description set, emitting offer");
+    const offer = await pc.createOffer();
+    console.log("[WebRTC] Created offer", offer.type);
+    await pc.setLocalDescription(offer);
+    console.log("[WebRTC] Local description set, emitting offer");
 
-
-    // 🔥 Tell UI the call is now “connecting”
+    // Tell UI the call is now “connecting”
     this.onCallStarted?.();
 
     // Send offer
@@ -353,32 +348,30 @@ console.log("[WebRTC] Local description set, emitting offer");
     this.onCallEnded?.();
   }
 
-/* ---------------------------------------------------
-   Remote Answer
---------------------------------------------------- */
-async handleAnswer(data) {
-  if (!this.pc) return;
-  if (!data?.answer) return;
-  if (!rtcState.isCaller) return;
+  /* ---------------------------------------------------
+     Remote Answer
+  --------------------------------------------------- */
+  async handleAnswer(data) {
+    if (!this.pc) return;
+    if (!data?.answer) return;
+    if (!rtcState.isCaller) return;
 
-  if (this.pc.signalingState !== "have-local-offer") return;
+    if (this.pc.signalingState !== "have-local-offer") return;
 
-  rtcState.answering = true;
-  setTimeout(() => (rtcState.answering = false), 800);
+    rtcState.answering = true;
+    setTimeout(() => (rtcState.answering = false), 800);
 
-  await this.pc.setRemoteDescription(
-    new RTCSessionDescription(data.answer)
-  );
-  await this._flushPendingRemoteCandidates();
+    await this.pc.setRemoteDescription(
+      new RTCSessionDescription(data.answer)
+    );
+    await this._flushPendingRemoteCandidates();
 
-  // 🔥 mark call as active
-  rtcState.inCall = true;
+    rtcState.inCall = true;
 
-  stopAudio(ringback);
-  this.onCallStarted?.();
-  startTimer();
-}
-
+    stopAudio(ringback);
+    this.onCallStarted?.();
+    startTimer();
+  }
 
   /* ---------------------------------------------------
      ICE Candidate
@@ -515,124 +508,151 @@ async handleAnswer(data) {
     return enabled;
   }
 
-/* ---------------------------------------------------
-   PeerConnection Factory
---------------------------------------------------- */
-async _createPC({ relayOnly = false } = {}) {
-  if (this.pc) {
-    try { this.pc.close(); } catch {}
-    this.pc = null;
-  }
+  /* ---------------------------------------------------
+     PeerConnection Factory
+  --------------------------------------------------- */
+  async _createPC({ relayOnly = false } = {}) {
+    if (this.pc) {
+      try {
+        this.pc.close();
+      } catch {}
+      this.pc = null;
+    }
 
-  const iceServers = await getIceServers({ relayOnly });
+    const iceServers = await getIceServers({ relayOnly });
 
-  const config = {
-    iceServers,
-    iceTransportPolicy: "relay",
-  };
-
-  const pc = new RTCPeerConnection(config);
-  this.pc = pc;
-
-  /* TURN keepalive */
-  const startTurnKeepAlive = (pcInstance) => {
-    let keepAliveTimer = setInterval(() => {
-      try { pcInstance.getStats(null); } catch {}
-    }, 3000);
-
-    pcInstance.addEventListener("connectionstatechange", () => {
-      if (
-        pcInstance.connectionState === "closed" ||
-        pcInstance.connectionState === "failed"
-      ) {
-        clearInterval(keepAliveTimer);
-      }
-    });
-  };
-
-  startTurnKeepAlive(pc);
-
-  /* DataChannel keepalive */
-  try {
-    const keepAliveChannel = pc.createDataChannel("keepalive");
-    keepAliveChannel.onopen = () => {
-      setInterval(() => {
-        if (keepAliveChannel.readyState === "open") {
-          keepAliveChannel.send("ping");
-        }
-      }, 5000);
+    const config = {
+      iceServers,
+      iceTransportPolicy: "relay",
     };
-  } catch {}
 
-  /* ---------------------------------------------------
-     Outgoing ICE
-  --------------------------------------------------- */
-  pc.onicecandidate = (event) => {
-    if (!event.candidate) return;
+    const pc = new RTCPeerConnection(config);
+    this.pc = pc;
 
-    const c = event.candidate.candidate || "";
-    let type = "unknown";
-    if (c.includes("relay")) type = "TURN relay";
-    else if (c.includes("srflx")) type = "STUN srflx";
-    else if (c.includes("host")) type = "Host";
+    /* TURN keepalive */
+    const startTurnKeepAlive = (pcInstance) => {
+      let keepAliveTimer = setInterval(() => {
+        try {
+          pcInstance.getStats(null);
+        } catch {}
+      }, 3000);
 
-    this.onQualityChange?.("good", `Candidate: ${type}`);
-
-    if (rtcState.peerId && this.socket) {
-      this.socket.emit("webrtc:signal", {
-        type: "ice",
-        to: rtcState.peerId,
-        from: getMyUserId(),
-        candidate: event.candidate,
-      });
-    }
-  };
-
-  /* ---------------------------------------------------
-     Remote tracks → WebRTCMedia (group-aware)
-  --------------------------------------------------- */
-  pc.ontrack = (event) => {
-    const peerId = rtcState.peerId || "default";
-
-    console.log("[WebRTC] ontrack", {
-      kind: event.track.kind,
-      peerId,
-      streams: event.streams.length,
-    });
-
-    // Unified media engine for 1:1 + group
-    attachRemoteTrack(peerId, event);
-  };
-
-  /* ---------------------------------------------------
-     ICE state → quality + TURN fallback
-  --------------------------------------------------- */
-  pc.oniceconnectionstatechange = () => {
-    const state = pc.iceConnectionState;
-
-    const level =
-      state === "connected"
-        ? "excellent"
-        : state === "checking"
-        ? "fair"
-        : state === "disconnected"
-        ? "poor"
-        : state === "failed"
-        ? "bad"
-        : "unknown";
-
-    this.onQualityChange?.(level, `ICE: ${state}`);
-
-    if (rtcState.answering) return;
-
-    if (state === "disconnected") {
-      try { pc.restartIce(); } catch {}
-    }
-
-    if (state === "checking") {
-      setTimeout(() => {
+      pcInstance.addEventListener("connectionstatechange", () => {
         if (
-          pc.iceConnectionState === "checking" &&
+          pcInstance.connectionState === "closed" ||
+          pcInstance.connectionState === "failed"
+        ) {
+          clearInterval(keepAliveTimer);
+        }
+      });
+    };
+
+    startTurnKeepAlive(pc);
+
+    /* DataChannel keepalive */
+    try {
+      const keepAliveChannel = pc.createDataChannel("keepalive");
+      keepAliveChannel.onopen = () => {
+        setInterval(() => {
+          if (keepAliveChannel.readyState === "open") {
+            keepAliveChannel.send("ping");
+          }
+        }, 5000);
+      };
+    } catch {}
+
+    /* ---------------------------------------------------
+       Outgoing ICE
+    --------------------------------------------------- */
+    pc.onicecandidate = (event) => {
+      if (!event.candidate) return;
+
+      const c = event.candidate.candidate || "";
+      let type = "unknown";
+      if (c.includes("relay")) type = "TURN relay";
+      else if (c.includes("srflx")) type = "STUN srflx";
+      else if (c.includes("host")) type = "Host";
+
+      this.onQualityChange?.("good", `Candidate: ${type}`);
+
+      if (rtcState.peerId && this.socket) {
+        this.socket.emit("webrtc:signal", {
+          type: "ice",
+          to: rtcState.peerId,
+          from: getMyUserId(),
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    /* ---------------------------------------------------
+       Remote tracks → WebRTCMedia (group-aware)
+    --------------------------------------------------- */
+    pc.ontrack = (event) => {
+      const peerId = rtcState.peerId || "default";
+
+      console.log("[WebRTC] ontrack", {
+        kind: event.track.kind,
+        peerId,
+        streams: event.streams.length,
+      });
+
+      // Unified media engine for 1:1 + group
+      attachRemoteTrack(peerId, event);
+    };
+
+    /* ---------------------------------------------------
+       ICE state → quality + TURN fallback
+    --------------------------------------------------- */
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+
+      const level =
+        state === "connected"
+          ? "excellent"
+          : state === "checking"
+          ? "fair"
+          : state === "disconnected"
+          ? "poor"
+          : state === "failed"
+          ? "bad"
+          : "unknown";
+
+      this.onQualityChange?.(level, `ICE: ${state}`);
+
+      if (rtcState.answering) return;
+
+      if (state === "disconnected") {
+        try {
+          pc.restartIce();
+        } catch {}
+      }
+
+      if (state === "checking") {
+        setTimeout(() => {
+          if (
+            pc.iceConnectionState === "checking" &&
+            !rtcState.usedRelayFallback &&
+            rtcState.peerId &&
+            !rtcState.answering
+          ) {
+            rtcState.usedRelayFallback = true;
+
+            const peerId = rtcState.peerId;
+            const audioOnly = rtcState.audioOnly;
+            const isCaller = rtcState.isCaller;
+
+            this.endCall(false);
+
+            if (isCaller) {
+              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+            }
+          }
+        }, 2500);
+      }
+
+      if (state === "failed") {
+        if (
           !rtcState.usedRelayFallback &&
           rtcState.peerId &&
           !rtcState.answering
@@ -648,43 +668,21 @@ async _createPC({ relayOnly = false } = {}) {
           if (isCaller) {
             this._startCallInternal(peerId, audioOnly, { relayOnly: true });
           }
+        } else if (!rtcState.answering) {
+          this.onCallFailed?.("ice failed");
         }
-      }, 2500);
-    }
-
-    if (state === "failed") {
-      if (
-        !rtcState.usedRelayFallback &&
-        rtcState.peerId &&
-        !rtcState.answering
-      ) {
-        rtcState.usedRelayFallback = true;
-
-        const peerId = rtcState.peerId;
-        const audioOnly = rtcState.audioOnly;
-        const isCaller = rtcState.isCaller;
-
-        this.endCall(false);
-
-        if (isCaller) {
-          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-        }
-      } else if (!rtcState.answering) {
-        this.onCallFailed?.("ice failed");
       }
-    }
-  };
+    };
 
-  pc.onconnectionstatechange = () => {
-    const state = pc.connectionState;
-    if (state === "failed") {
-      this.onCallFailed?.("connection failed");
-    }
-  };
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      if (state === "failed") {
+        this.onCallFailed?.("connection failed");
+      }
+    };
 
-  return pc;
-}
-
+    return pc;
+  }
 
   /* ---------------------------------------------------
      Flush queued remote ICE
@@ -816,30 +814,29 @@ async _createPC({ relayOnly = false } = {}) {
       }
     };
 
-const triggerVoicemailFlow = (from, message) => {
-  // 🔒 Ignore voicemail if we’re already in / actively answering a call
-  if (rtcState.inCall || rtcState.answering) {
-    console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
-    return;
-  }
+    const triggerVoicemailFlow = (from, message) => {
+      // Ignore voicemail if we’re already in / actively answering a call
+      if (rtcState.inCall || rtcState.answering) {
+        console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
+        return;
+      }
 
-  stopAudio(ringback);
+      stopAudio(ringback);
 
-  playUnreachableTone();
-  setTimeout(() => playBeepTone(), 1200);
+      playUnreachableTone();
+      setTimeout(() => playBeepTone(), 1200);
 
-  if (window.openVoicemailRecorder) {
-    window.openVoicemailRecorder(from);
-  }
+      if (window.openVoicemailRecorder) {
+        window.openVoicemailRecorder(from);
+      }
 
-  if (window.showUnavailableToastInternal) {
-    window.showUnavailableToastInternal({
-      peerId: from,
-      message,
-    });
-  }
-};
-
+      if (window.showUnavailableToastInternal) {
+        window.showUnavailableToastInternal({
+          peerId: from,
+          message,
+        });
+      }
+    };
 
     this.socket.on("call:timeout", ({ from }) => {
       triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
@@ -879,6 +876,7 @@ const triggerVoicemailFlow = (from, message) => {
     });
   }
 }
+
 
 
 
