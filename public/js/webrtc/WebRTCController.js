@@ -12,6 +12,8 @@ import {
 
 import { getLocalMedia } from "./WebRTCMedia.js";
 import { attachRemoteTrack, cleanupMedia } from "./WebRTCMedia.js";
+import { attachRemoteStream } from "./RemoteParticipants.js";
+
 import { addCallLogEntry } from "../call-log.js";
 
 import {
@@ -23,7 +25,6 @@ import {
   getVoiceBtn,
   getVideoBtn
 } from "../session.js";
-
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
@@ -876,6 +877,7 @@ console.log("[WebRTC] Local description set, emitting offer");
     });
   }
 }
+
 
 
 
