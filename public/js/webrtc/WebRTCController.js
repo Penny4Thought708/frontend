@@ -2,6 +2,7 @@
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
+import { attachRemoteStream } from "./RemoteParticipants.js";
 
 import {
   setRemoteAvatar,
@@ -878,6 +879,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
