@@ -832,10 +832,10 @@ async handleAnswer(data) {
       }
     };
 
- const triggerVoicemailFlow = (from, message) => {
-  // If we’re already in a call, ignore voicemail triggers
-  if (rtcState.inCall) {
-    console.log("[WebRTC] Ignoring voicemail flow (already in call)");
+const triggerVoicemailFlow = (from, message) => {
+  // 🔒 Ignore voicemail if we’re already in / actively answering a call
+  if (rtcState.inCall || rtcState.answering) {
+    console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
     return;
   }
 
@@ -895,6 +895,7 @@ async handleAnswer(data) {
     });
   }
 }
+
 
 
 
