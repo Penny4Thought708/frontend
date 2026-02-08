@@ -297,95 +297,113 @@ export function initCallUI(rtc) {
     debugPanel.appendChild(line);
     debugPanel.scrollTop = debugPanel.scrollHeight;
   }
+/* -------------------------------------------------------
+   RTC EVENT WIRING (GROUP‑READY + FIXED UI LOGIC)
+------------------------------------------------------- */
 
-  /* -------------------------------------------------------
-     RTC EVENT WIRING (GROUP‑READY)
-  ------------------------------------------------------- */
+rtc.onIncomingCall = ({ fromName, audioOnly }) => {
+  const kind = audioOnly ? "voice" : "video";
 
-  rtc.onIncomingCall = ({ fromName, audioOnly }) => {
-    debug(`Incoming call from ${fromName}`);
-    setStatus("Incoming call…");
-    setVoiceOnly(audioOnly);
-    setMode("inbound");
-    win.classList.remove("hidden");
-  };
+  debug(`Incoming ${kind} call from ${fromName}`);
 
-  rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
-    debug(`Calling ${targetName || "user"}`);
-    setStatus("Calling…");
-    setVoiceOnly(voiceOnly);
-    setMode("active");
-    win.classList.remove("hidden");
-  };
+  setStatus(`Incoming ${kind} call…`);
+  setVoiceOnly(audioOnly);     // FIXED: properly toggles voice mode
+  setMode("inbound");          // FIXED: ensures only inbound controls show
 
-  rtc.onCallConnected = () => {
-    debug("Call connected");
-    setStatus("In call");
-    startTimer();
-    setMode("active");
-  };
+  win.classList.remove("hidden");
+};
 
-  rtc.onCallEnded = () => {
-    debug("Call ended");
-    stopTimer();
-    setStatus("Call ended");
-    setMode(null);
-    clearAllParticipants();
-    demoteStage();
-    win.classList.add("hidden");
-  };
+rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
+  const kind = voiceOnly ? "voice" : "video";
 
-  rtc.onCallFailed = (reason) => {
-    debug(`Call failed: ${reason}`);
-    stopTimer();
-    setStatus(`Call failed: ${reason}`);
-    setMode(null);
-    clearAllParticipants();
-    demoteStage();
-    win.classList.add("hidden");
-  };
+  debug(`Placing ${kind} call to ${targetName || "user"}`);
 
-  rtc.onRemoteMuted = () => debug("Remote muted");
-  rtc.onRemoteUnmuted = () => debug("Remote unmuted");
+  setStatus(`Calling (${kind})…`);
+  setVoiceOnly(voiceOnly);     // FIXED: hides camera/screen-share in voice mode
+  setMode("active");           // FIXED: ensures only active controls show
 
-  rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
-  rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
+  win.classList.remove("hidden");
+};
 
-  rtc.onRemoteSpeaking = ({ peerId, active, level }) => {
-    setParticipantSpeaking(peerId, active, level);
-  };
+rtc.onCallConnected = () => {
+  debug("Call connected");
 
-  rtc.onNetworkQuality = (level, info) => {
-    debug(`Network: ${level} (${info})`);
-    setQuality(level, info);
-  };
+  setStatus("In call");
+  startTimer();
+  setMode("active");           // FIXED: ensures inbound buttons disappear
+};
 
-  rtc.onScreenShareStarted = (peerId) => {
-    setScreenShare(true);
-    promoteToStage(peerId);
-  };
+rtc.onCallEnded = () => {
+  debug("Call ended");
 
-  rtc.onScreenShareStopped = (peerId) => {
-    setScreenShare(false);
-    demoteStage(peerId);
-  };
+  stopTimer();
+  setStatus("Call ended");
 
-  rtc.onNoiseSuppressionChanged = (enabled) =>
-    setNoiseSuppression(enabled);
+  setMode(null);               // FIXED: hides all controls
+  clearAllParticipants();
+  demoteStage();
 
-  rtc.onRecordingChanged = ({ active }) =>
-    recordBtn.classList.toggle("active", !!active);
+  win.classList.add("hidden");
+};
 
-  rtc.onVoicemailPrompt = (data) =>
-    showUnavailableToastInternal(data);
+rtc.onCallFailed = (reason) => {
+  debug(`Call failed: ${reason}`);
 
-  rtc.onSecondaryIncomingCall = (data) =>
-    showSecondaryIncomingToastInternal(data);
+  stopTimer();
+  setStatus(`Call failed: ${reason}`);
 
-  console.log("[CallUI] Initialized");
+  setMode(null);
+  clearAllParticipants();
+  demoteStage();
+
+  win.classList.add("hidden");
+};
+
+/* Remote state updates */
+rtc.onRemoteMuted = () => debug("Remote muted");
+rtc.onRemoteUnmuted = () => debug("Remote unmuted");
+
+rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
+rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
+
+rtc.onRemoteSpeaking = ({ peerId, active, level }) => {
+  setParticipantSpeaking(peerId, active, level);
+};
+
+rtc.onNetworkQuality = (level, info) => {
+  debug(`Network: ${level} (${info})`);
+  setQuality(level, info);
+};
+
+/* Screen share → stage mode */
+rtc.onScreenShareStarted = (peerId) => {
+  setScreenShare(true);
+  promoteToStage(peerId);
+};
+
+rtc.onScreenShareStopped = (peerId) => {
+  setScreenShare(false);
+  demoteStage(peerId);
+};
+
+/* Noise suppression */
+rtc.onNoiseSuppressionChanged = (enabled) =>
+  setNoiseSuppression(enabled);
+
+/* Recording */
+rtc.onRecordingChanged = ({ active }) =>
+  recordBtn.classList.toggle("active", !!active);
+
+/* Voicemail / Unavailable */
+rtc.onVoicemailPrompt = (data) =>
+  showUnavailableToastInternal(data);
+
+/* Secondary incoming call */
+rtc.onSecondaryIncomingCall = (data) =>
+  showSecondaryIncomingToastInternal(data);
+
+console.log("[CallUI] Initialized");
 }
-
-
 /* -------------------------------------------------------
    WebRTC Debug Overlay (stats from controller)
 ------------------------------------------------------- */
@@ -447,6 +465,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
