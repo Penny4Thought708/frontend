@@ -68,128 +68,7 @@ function fadeInVideo(el) {
   });
 }
 
-/* -------------------------------------------------------
-   UI Engine — adapted to floating video panel
-------------------------------------------------------- */
 
-const UI = {
-  apply(state, opts = {}) {
-    const { audioOnly = false, callerName = "" } = opts;
-
-    const videoContainer = document.getElementById("video-container");
-    const callControls = document.getElementById("call-controls");
-    const callerOverlay = document.getElementById("callerOverlay");
-    const answerBtn = document.getElementById("answer-call");
-    const declineBtn = document.getElementById("decline-call");
-    const endBtn = document.getElementById("end-call");
-    const camBtn = document.getElementById("camera-toggle");
-    const callStatusEl = document.getElementById("call-status");
-
-    // Status text
-    if (callStatusEl) {
-      switch (state) {
-        case "incoming":
-          callStatusEl.textContent = "Incoming call…";
-          break;
-        case "outgoing":
-          callStatusEl.textContent = "Calling…";
-          break;
-        case "active":
-          callStatusEl.textContent = "Connected";
-          break;
-        case "ending":
-          callStatusEl.textContent = "Call ended";
-          break;
-        case "idle":
-        default:
-          callStatusEl.textContent = "Ready";
-          break;
-      }
-    }
-
-    if (!videoContainer || !callControls) {
-      console.warn("[WebRTC UI] Missing core elements");
-      return;
-    }
-
-    // Reset core visual state
-    callControls.classList.remove("active");
-    videoContainer.classList.remove("voice-mode", "video-mode");
-    hide(answerBtn);
-    hide(declineBtn);
-    hide(endBtn);
-    hide(camBtn);
-    hide(callerOverlay);
-
-    // IDLE → hide floating video panel, reset avatars/videos
-    if (state === "idle") {
-      videoContainer.classList.add("hidden");
-
-      // Messaging avatars (local + remote) via wrapper system
-      applyAvatar(localWrapper, getMyAvatar(), getMyFullname());
-      showAvatar(localWrapper);
-
-      applyAvatar(remoteWrapper, null, "");
-      showAvatar(remoteWrapper);
-
-      const localAvatar = document.getElementById("localAvatar");
-      const remoteAvatar = document.getElementById("remoteAvatar");
-      const localVideo = document.getElementById("localVideo");
-      const remoteVideo = document.getElementById("remoteVideo");
-
-      if (localAvatar) localAvatar.style.display = "flex";
-      if (remoteAvatar) remoteAvatar.style.display = "flex";
-      if (localVideo) {
-        localVideo.style.display = "none";
-        localVideo.style.opacity = "0";
-      }
-      if (remoteVideo) {
-        remoteVideo.style.display = "none";
-        remoteVideo.style.opacity = "0";
-      }
-
-      return;
-    }
-
-    // NON-IDLE → show floating video panel
-    videoContainer.classList.remove("hidden");
-    videoContainer.classList.add(audioOnly ? "voice-mode" : "video-mode");
-
-    switch (state) {
-      case "incoming":
-        callControls.classList.add("active");
-
-        show(answerBtn, "inline-flex");
-        show(declineBtn, "inline-flex");
-        hide(endBtn);
-        hide(camBtn);
-
-        if (callerOverlay) {
-          callerOverlay.style.display = "flex";
-          callerOverlay.textContent = callerName
-            ? `Incoming call from ${callerName}...`
-            : "Incoming call...";
-        }
-        break;
-
-      case "outgoing":
-        callControls.classList.add("active");
-        show(endBtn, "inline-flex");
-        if (!audioOnly) show(camBtn, "inline-flex");
-        break;
-
-      case "active":
-        callControls.classList.add("active");
-        show(endBtn, "inline-flex");
-        if (!audioOnly) show(camBtn, "inline-flex");
-        break;
-
-      case "ending":
-        // brief ending state, then idle will hide panel
-        break;
-    }
-  },
-};
 
 /* -------------------------------------------------------
    Timer
@@ -247,7 +126,7 @@ export class WebRTCController {
     this.onCallFailed = null;
     this.onQualityChange = null;
 
-    UI.apply("idle");
+   
     this._bindSocketEvents();
 
     // Initialize local avatar in call UI
@@ -319,7 +198,7 @@ export class WebRTCController {
     rtcState.incomingOffer = null;
     rtcState.usedRelayFallback = !!relayOnly;
 
-    UI.apply("outgoing", { audioOnly });
+    
 
     const pc = await this._createPC({ relayOnly });
 
@@ -473,7 +352,7 @@ export class WebRTCController {
 
     rtcState.incomingOffer = null;
 
-    UI.apply("active", { audioOnly: rtcState.audioOnly });
+     
     this.onCallStarted?.();
   }
 
@@ -704,9 +583,8 @@ export class WebRTCController {
 
     showLocalAvatar();
     showRemoteAvatar();
-
-    UI.apply("ending");
-    setTimeout(() => UI.apply("idle"), 200);
+ 
+ 
 
     if (local && peerId && this.socket) {
       this.socket.emit("webrtc:signal", {
@@ -1106,7 +984,7 @@ export class WebRTCController {
 
         case "busy":
           stopAudio(ringback);
-          UI.apply("ending");
+          
           try {
             const busyTone = new Audio("/NewApp/busy.mp3");
             busyTone.play().catch(() => {});
@@ -1144,20 +1022,7 @@ export class WebRTCController {
       rtcState.isCaller = isCaller;
       rtcState.inCall = status === "active";
 
-      if (status === "active") {
-        UI.apply("active", { audioOnly: rtcState.audioOnly });
-      } else if (isCaller) {
-        UI.apply("outgoing", { audioOnly: rtcState.audioOnly });
-      } else {
-        UI.apply("incoming", {
-          audioOnly: rtcState.audioOnly,
-          callerName: rtcState.peerName || "",
-        });
-      }
-
-      if (isCaller) {
-        this._resumeAsCallerAfterRestore(peerId);
-      }
+ 
     });
 
     /* -------------------------------------------------------
@@ -1329,6 +1194,7 @@ export class WebRTCController {
     localWrapper.addEventListener("dblclick", toggleSwap);
   }
 }
+
 
 
 
