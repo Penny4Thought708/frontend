@@ -357,6 +357,18 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      RTC EVENT WIRING — ALIGNED WITH WebRTCController
   ------------------------------------------------------- */
+  // Outgoing call (controller calls this.onOutgoingCall)
+  rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
+    const kind = voiceOnly ? "voice" : "video";
+
+    debug(`Placing ${kind} call to ${targetName || "user"}`);
+
+    setStatus(`Calling (${kind})…`);
+    setVoiceOnly(voiceOnly);
+    setMode("active");
+
+    win?.classList.remove("hidden");
+  };
 
   // Incoming call (controller calls this.onIncomingCall)
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
@@ -503,6 +515,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
