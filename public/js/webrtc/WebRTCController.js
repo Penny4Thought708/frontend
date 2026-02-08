@@ -23,8 +23,10 @@ import {
   ringback,
   ringtone,
   getVoiceBtn,
-  getVideoBtn
+  getVideoBtn,
+  remoteAudioEl,
 } from "../session.js";
+
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
@@ -85,6 +87,11 @@ export class WebRTCController {
 
     this.localVideo = null;
     this.remoteAudio = null;
+// Wire shared remote audio element
+this.remoteAudio = remoteAudioEl || document.getElementById("remoteAudio");
+if (!this.remoteAudio) {
+  console.warn("[WebRTC] remoteAudio element not found");
+}
 
     // UI callbacks
     this.onOutgoingCall = null;
@@ -346,28 +353,32 @@ console.log("[WebRTC] Local description set, emitting offer");
     this.onCallEnded?.();
   }
 
-  /* ---------------------------------------------------
-     Remote Answer
-  --------------------------------------------------- */
-  async handleAnswer(data) {
-    if (!this.pc) return;
-    if (!data?.answer) return;
-    if (!rtcState.isCaller) return;
+/* ---------------------------------------------------
+   Remote Answer
+--------------------------------------------------- */
+async handleAnswer(data) {
+  if (!this.pc) return;
+  if (!data?.answer) return;
+  if (!rtcState.isCaller) return;
 
-    if (this.pc.signalingState !== "have-local-offer") return;
+  if (this.pc.signalingState !== "have-local-offer") return;
 
-    rtcState.answering = true;
-    setTimeout(() => (rtcState.answering = false), 800);
+  rtcState.answering = true;
+  setTimeout(() => (rtcState.answering = false), 800);
 
-    await this.pc.setRemoteDescription(
-      new RTCSessionDescription(data.answer)
-    );
-    await this._flushPendingRemoteCandidates();
+  await this.pc.setRemoteDescription(
+    new RTCSessionDescription(data.answer)
+  );
+  await this._flushPendingRemoteCandidates();
 
-    stopAudio(ringback);
-    this.onCallStarted?.();
-    startTimer();
-  }
+  // 🔥 mark call as active
+  rtcState.inCall = true;
+
+  stopAudio(ringback);
+  this.onCallStarted?.();
+  startTimer();
+}
+
 
   /* ---------------------------------------------------
      ICE Candidate
@@ -821,23 +832,30 @@ console.log("[WebRTC] Local description set, emitting offer");
       }
     };
 
-    const triggerVoicemailFlow = (from, message) => {
-      stopAudio(ringback);
+ const triggerVoicemailFlow = (from, message) => {
+  // If we’re already in a call, ignore voicemail triggers
+  if (rtcState.inCall) {
+    console.log("[WebRTC] Ignoring voicemail flow (already in call)");
+    return;
+  }
 
-      playUnreachableTone();
-      setTimeout(() => playBeepTone(), 1200);
+  stopAudio(ringback);
 
-      if (window.openVoicemailRecorder) {
-        window.openVoicemailRecorder(from);
-      }
+  playUnreachableTone();
+  setTimeout(() => playBeepTone(), 1200);
 
-      if (window.showUnavailableToastInternal) {
-        window.showUnavailableToastInternal({
-          peerId: from,
-          message,
-        });
-      }
-    };
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
+
+  if (window.showUnavailableToastInternal) {
+    window.showUnavailableToastInternal({
+      peerId: from,
+      message,
+    });
+  }
+};
+
 
     this.socket.on("call:timeout", ({ from }) => {
       triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
@@ -877,6 +895,7 @@ console.log("[WebRTC] Local description set, emitting offer");
     });
   }
 }
+
 
 
 
