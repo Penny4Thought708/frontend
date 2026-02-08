@@ -60,7 +60,6 @@ function createRemoteParticipant(peerId = "default") {
     avatarImg.src = "img/defaultUser.png";
   }
 
-  // Voice‑only → hide video
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
     videoEl.srcObject = null;
@@ -223,8 +222,6 @@ export async function getLocalMedia(audio = true, video = true) {
       localVideo.muted = true;
       localVideo.playsInline = true;
       await localVideo.play().catch(() => {});
-      localVideo.style.display = "block";
-      localVideo.style.opacity = "1";
       localVideo.classList.add("show");
     }
 
@@ -239,7 +236,6 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err);
 
-    // Retry audio‑only if video fails
     if (video && audio) {
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
@@ -270,7 +266,7 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (GROUP‑AWARE)
+   Remote Track Handling (GROUP‑AWARE + CSS‑aware)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
@@ -307,15 +303,28 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
 
   const showAvatar = (show) => {
-    if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
-    if (videoEl && !rtcState.voiceOnly) {
-      videoEl.style.display = show ? "none" : "block";
+    if (!avatarWrapper) return;
+    if (show) {
+      avatarWrapper.classList.remove("hidden");
+    } else {
+      avatarWrapper.classList.add("hidden");
     }
   };
 
-  evt.track.onmute   = () => showAvatar(true);
-  evt.track.onunmute = () => showAvatar(false);
-  evt.track.onended  = () => showAvatar(true);
+  evt.track.onmute = () => {
+    if (videoEl) videoEl.classList.remove("show");
+    showAvatar(true);
+  };
+
+  evt.track.onunmute = () => {
+    if (videoEl && !rtcState.voiceOnly) videoEl.classList.add("show");
+    showAvatar(false);
+  };
+
+  evt.track.onended = () => {
+    if (videoEl) videoEl.classList.remove("show");
+    showAvatar(true);
+  };
 
   /* -----------------------------
      Remote Video
@@ -323,8 +332,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
     videoEl.srcObject = remoteStream;
     videoEl.playsInline = true;
-    videoEl.style.display = "block";
-    videoEl.style.opacity = "1";
+    videoEl.classList.add("show");
 
     videoEl
       .play()
@@ -386,8 +394,6 @@ export function cleanupMedia() {
   const localVideo = document.getElementById("localVideo");
   if (localVideo) {
     localVideo.srcObject = null;
-    localVideo.style.display = "none";
-    localVideo.style.opacity = "0";
     localVideo.classList.remove("show");
   }
 
@@ -396,11 +402,12 @@ export function cleanupMedia() {
     const videoEl = participantEl.querySelector("video");
     if (videoEl) {
       videoEl.srcObject = null;
-      videoEl.style.display = "none";
-      videoEl.style.opacity = "0";
+      videoEl.classList.remove("show");
     }
     const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
-    if (avatarWrapper) avatarWrapper.style.display = "flex";
+    if (avatarWrapper) {
+      avatarWrapper.classList.remove("hidden");
+    }
     participantEl.classList.remove("video-active", "speaking");
   });
 
