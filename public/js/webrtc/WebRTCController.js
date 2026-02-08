@@ -2,18 +2,16 @@
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
-import { attachRemoteStream } from "./RemoteParticipants.js";
 
 import {
-  setRemoteAvatar,
   setLocalAvatar,
-  showRemoteAvatar,
+  setRemoteAvatar,
   showLocalAvatar,
-  showRemoteVideo,
-  showLocalVideo,
+  showRemoteAvatar,
 } from "./AvatarFallback.js";
 
-import { getLocalMedia, attachRemoteTrack } from "./WebRTCMedia.js";
+import { getLocalMedia } from "./WebRTCMedia.js";
+import { attachRemoteStream } from "./RemoteParticipants.js";
 import { addCallLogEntry } from "../call-log.js";
 
 import {
@@ -39,18 +37,6 @@ function stopAudio(el) {
   } catch {}
 }
 
-function fadeInVideo(el) {
-  if (!el) return;
-  el.style.opacity = "0";
-  el.style.transform = "scale(0.96)";
-  el.style.transition = "opacity 0.4s ease, transform 0.4s ease";
-  el.style.display = "block";
-  requestAnimationFrame(() => {
-    el.style.opacity = "1";
-    el.style.transform = "scale(1)";
-  });
-}
-
 /* -------------------------------------------------------
    Timer
 ------------------------------------------------------- */
@@ -59,6 +45,7 @@ const callTimerEl = document.getElementById("call-timer");
 
 function startTimer() {
   if (!callTimerEl) return;
+
   if (rtcState.callTimerInterval) clearInterval(rtcState.callTimerInterval);
 
   rtcState.callTimerSeconds = 0;
@@ -93,9 +80,10 @@ export class WebRTCController {
     this.pendingRemoteCandidates = [];
 
     this.localVideo = null;
-    this.remoteVideo = null;
     this.remoteAudio = null;
 
+    // UI callbacks
+    this.onOutgoingCall = null;
     this.onIncomingCall = null;
     this.onCallStarted = null;
     this.onCallEnded = null;
@@ -104,9 +92,11 @@ export class WebRTCController {
 
     this._bindSocketEvents();
 
+    // Initialize local avatar
     setLocalAvatar(getMyAvatar());
     showLocalAvatar();
 
+    // Network change → ICE restart
     window.addEventListener("online", () => {
       if (this.pc) {
         try {
@@ -119,9 +109,8 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Media elements wiring
   --------------------------------------------------- */
-  attachMediaElements({ localVideo, remoteVideo, remoteAudio }) {
+  attachMediaElements({ localVideo, remoteAudio }) {
     this.localVideo = localVideo;
-    this.remoteVideo = remoteVideo;
     this.remoteAudio = remoteAudio;
   }
 
@@ -152,6 +141,7 @@ export class WebRTCController {
     if (!myId) return;
 
     rtcState.peerId = peerId;
+    rtcState.peerName = rtcState.peerName || `User ${peerId}`;
     rtcState.audioOnly = !!audioOnly;
     rtcState.isCaller = true;
     rtcState.inCall = true;
@@ -160,6 +150,7 @@ export class WebRTCController {
 
     const pc = await this._createPC({ relayOnly });
 
+    // Local media
     const stream = await getLocalMedia(true, !audioOnly);
     this.localStream = stream;
     rtcState.localStream = stream;
@@ -169,42 +160,39 @@ export class WebRTCController {
 
       if (this.localVideo && !audioOnly) {
         this.localVideo.srcObject = stream;
-        showLocalVideo();
-        fadeInVideo(this.localVideo);
-      } else {
-        showLocalAvatar();
+        this.localVideo.play().catch(() => {});
       }
-    } else {
-      showLocalAvatar();
     }
 
-  // 🔥 Tell UI we are placing a call
-this.onOutgoingCall?.({
-  targetName: rtcState.peerName || null,
-  voiceOnly: audioOnly
-});
+    // 🔥 Notify UI of outgoing call
+    this.onOutgoingCall?.({
+      targetName: rtcState.peerName,
+      voiceOnly: audioOnly,
+    });
 
-// Create offer
-const offer = await pc.createOffer();
-await pc.setLocalDescription(offer);
+    // Create offer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
 
-// 🔥 Tell UI the call is now “started”
-this.onCallStarted?.();
+    // 🔥 Tell UI the call is now “connecting”
+    this.onCallStarted?.();
 
-// Send offer to peer
-this.socket.emit("webrtc:signal", {
-  type: "offer",
-  to: peerId,
-  from: myId,
-  offer,
-  audioOnly: !!audioOnly,
-  fromName: getMyFullname(),
-});
-
+    // Send offer
+    this.socket.emit("webrtc:signal", {
+      type: "offer",
+      to: peerId,
+      from: myId,
+      offer,
+      audioOnly: !!audioOnly,
+      fromName: getMyFullname(),
+    });
 
     ringback?.play().catch(() => {});
   }
 
+  /* ---------------------------------------------------
+     Resume after restore
+  --------------------------------------------------- */
   async _resumeAsCallerAfterRestore(peerId) {
     const relayOnly = !!rtcState.usedRelayFallback;
     const audioOnly = !!rtcState.audioOnly;
@@ -220,6 +208,7 @@ this.socket.emit("webrtc:signal", {
 
     rtcState.peerId = from;
     rtcState.peerName = fromUser?.fullname || fromName || `User ${from}`;
+    rtcState.peerAvatar = fromUser?.avatar || null;
     rtcState.audioOnly = !!audioOnly;
     rtcState.isCaller = false;
     rtcState.inCall = false;
@@ -250,8 +239,8 @@ this.socket.emit("webrtc:signal", {
     rtcState.inCall = true;
     rtcState.audioOnly = !!audioOnly;
 
-    startTimer();
     stopAudio(ringtone);
+    startTimer();
 
     const pc = await this._createPC({ relayOnly: false });
 
@@ -267,13 +256,8 @@ this.socket.emit("webrtc:signal", {
 
       if (this.localVideo && !rtcState.audioOnly) {
         this.localVideo.srcObject = stream;
-        showLocalVideo();
-        fadeInVideo(this.localVideo);
-      } else {
-        showLocalAvatar();
+        this.localVideo.play().catch(() => {});
       }
-    } else {
-      showLocalAvatar();
     }
 
     const answer = await pc.createAnswer();
@@ -296,8 +280,7 @@ this.socket.emit("webrtc:signal", {
   --------------------------------------------------- */
   declineIncomingCall() {
     const offerData = rtcState.incomingOffer;
-
-    let callerId = offerData?.from || rtcState.currentCallerId;
+    const callerId = offerData?.from || rtcState.currentCallerId;
 
     if (callerId) {
       this.socket.emit("call:decline", { to: callerId });
@@ -403,14 +386,6 @@ this.socket.emit("webrtc:signal", {
 
     if (this.localVideo) {
       this.localVideo.srcObject = null;
-      this.localVideo.style.display = "none";
-      this.localVideo.style.opacity = "0";
-    }
-
-    if (this.remoteVideo) {
-      this.remoteVideo.srcObject = null;
-      this.remoteVideo.style.display = "none";
-      this.remoteVideo.style.opacity = "0";
     }
 
     if (this.remoteAudio) {
@@ -485,16 +460,7 @@ this.socket.emit("webrtc:signal", {
     const enabled = videoTracks.some((t) => t.enabled);
     videoTracks.forEach((t) => (t.enabled = !enabled));
 
-    if (!enabled) {
-      showLocalVideo();
-      fadeInVideo(this.localVideo);
-    } else {
-      showLocalAvatar();
-      if (this.localVideo) {
-        this.localVideo.style.display = "none";
-        this.localVideo.style.opacity = "0";
-      }
-    }
+    return enabled;
   }
 
   /* ---------------------------------------------------
@@ -518,6 +484,7 @@ this.socket.emit("webrtc:signal", {
     const pc = new RTCPeerConnection(config);
     this.pc = pc;
 
+    /* TURN keepalive */
     const startTurnKeepAlive = (pcInstance) => {
       let keepAliveTimer = setInterval(() => {
         try {
@@ -537,6 +504,7 @@ this.socket.emit("webrtc:signal", {
 
     startTurnKeepAlive(pc);
 
+    /* DataChannel keepalive */
     try {
       const keepAliveChannel = pc.createDataChannel("keepalive");
       keepAliveChannel.onopen = () => {
@@ -548,6 +516,7 @@ this.socket.emit("webrtc:signal", {
       };
     } catch {}
 
+    /* Outgoing ICE */
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
 
@@ -568,34 +537,27 @@ this.socket.emit("webrtc:signal", {
         });
       }
     };
-pc.ontrack = (event) => {
-  const peerId = rtcState.peerId || "remote";
-  const stream = event.streams[0];
 
-  if (!stream) {
-    console.warn("[WebRTC] ontrack without stream");
-    return;
-  }
+    /* Remote tracks → RemoteParticipants */
+    pc.ontrack = (event) => {
+      const peerId = rtcState.peerId || "remote";
+      const stream = event.streams[0];
+      if (!stream) return;
 
-  // 🔥 Attach into the multi‑party grid
-  attachRemoteStream(peerId, stream, {
-    displayName: rtcState.peerName || `User ${peerId}`,
-    avatarUrl: rtcState.peerAvatar || null,
-  });
+      rtcState.remoteStream = stream;
 
-  // Track‑level quality hints
-  event.track.onmute = () => {
-    this.onQualityChange?.("fair", "Remote track muted");
-  };
-  event.track.onunmute = () => {
-    this.onQualityChange?.("good", "Remote track active");
-  };
-  event.track.onended = () => {
-    this.onQualityChange?.("poor", "Remote track ended");
-  };
-};
+      attachRemoteStream(peerId, stream, {
+        displayName: rtcState.peerName,
+        avatarUrl: rtcState.peerAvatar || null,
+      });
 
+      if (event.track.kind === "audio" && this.remoteAudio) {
+        this.remoteAudio.srcObject = stream;
+        this.remoteAudio.play().catch(() => {});
+      }
+    };
 
+    /* ICE state → quality + fallback */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
 
@@ -662,7 +624,7 @@ pc.ontrack = (event) => {
       }
     };
 
-    pc.onconnectionstatechange = () => {
+        pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
       if (state === "failed") {
         this.onCallFailed?.("connection failed");
@@ -722,6 +684,7 @@ pc.ontrack = (event) => {
         const { avatar, fullname } = data.fromUser;
 
         if (avatar) {
+          rtcState.peerAvatar = avatar;
           setRemoteAvatar(avatar);
           showRemoteAvatar();
         }
@@ -741,13 +704,6 @@ pc.ontrack = (event) => {
           break;
 
         case "ice":
-          console.log(
-            "[SIGNAL] Incoming ICE from",
-            data.from,
-            "→",
-            data.to,
-            data.candidate
-          );
           await this.handleRemoteIceCandidate(data);
           break;
 
@@ -757,10 +713,6 @@ pc.ontrack = (event) => {
 
         case "busy":
           stopAudio(ringback);
-          try {
-            const busyTone = new Audio("/NewApp/busy.mp3");
-            busyTone.play().catch(() => {});
-          } catch {}
           this.onCallFailed?.("busy");
           break;
 
@@ -779,15 +731,6 @@ pc.ontrack = (event) => {
 
       const isCaller = me === callerStr;
       const peerId = isCaller ? receiverStr : callerStr;
-
-      console.log("[WebRTC] call:restore received:", {
-        me,
-        callerId,
-        receiverId,
-        status,
-        isCaller,
-        peerId,
-      });
 
       rtcState.peerId = peerId;
       rtcState.isCaller = isCaller;
@@ -839,28 +782,22 @@ pc.ontrack = (event) => {
     };
 
     this.socket.on("call:timeout", ({ from }) => {
-      console.log("[WebRTC] call:timeout from", from);
       triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
     });
 
     this.socket.on("call:declined", ({ from }) => {
-      console.log("[WebRTC] call:declined from", from);
       triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
     });
 
     this.socket.on("call:missed", ({ from }) => {
-      console.log("[WebRTC] call:missed from", from);
       triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
     });
 
     this.socket.on("call:dnd", ({ from }) => {
-      console.log("[WebRTC] call:dnd from", from);
       triggerVoicemailFlow(from, "User is in Do Not Disturb. Leave a voicemail…");
     });
 
     this.socket.on("call:voicemail", ({ from, reason }) => {
-      console.log("[WebRTC] call:voicemail from", from, "reason:", reason);
-
       const msg =
         reason === "callee-dnd"
           ? "User is in Do Not Disturb. Leave a voicemail…"
@@ -879,6 +816,8 @@ pc.ontrack = (event) => {
     });
   }
 }
+
+
 
 
 
