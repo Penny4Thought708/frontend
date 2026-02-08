@@ -1,5 +1,5 @@
 // public/js/webrtc/CallUI.js
-// Aurora‑Orbit Call UI — modern, modular, multi‑party ready
+// Aurora‑Orbit Call UI — modern, modular, single‑peer ready (for now)
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
@@ -118,7 +118,6 @@ export function initCallUI(rtc) {
     const isOn = !!on;
     win.classList.toggle("voice-only", isOn);
 
-    // In voice mode, visually de‑emphasize camera/screen share
     if (cameraBtn) {
       cameraBtn.classList.toggle("hidden-soft", isOn);
     }
@@ -231,6 +230,9 @@ export function initCallUI(rtc) {
     showToast(toastUnavailable);
   }
 
+  // Expose for WebRTCController, which calls window.showUnavailableToastInternal(...)
+  window.showUnavailableToastInternal = showUnavailableToastInternal;
+
   /* -------------------------------------------------------
      DEBUG PANEL (CALL LOG)
   ------------------------------------------------------- */
@@ -308,7 +310,6 @@ export function initCallUI(rtc) {
 
   if (cameraBtn) {
     cameraBtn.onclick = () => {
-      // Controller exposes switchCamera() in your current code
       const off = rtc.switchCamera?.();
       cameraBtn.classList.toggle("flipped", !!off);
       cameraBtn.innerHTML = off
@@ -354,9 +355,10 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     RTC EVENT WIRING (GROUP‑READY)
+     RTC EVENT WIRING — ALIGNED WITH WebRTCController
   ------------------------------------------------------- */
 
+  // Incoming call (controller calls this.onIncomingCall)
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
     const kind = audioOnly ? "voice" : "video";
 
@@ -369,25 +371,16 @@ export function initCallUI(rtc) {
     win?.classList.remove("hidden");
   };
 
-  rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
-    const kind = voiceOnly ? "voice" : "video";
-
-    debug(`Placing ${kind} call to ${targetName || "user"}`);
-
-    setStatus(`Calling (${kind})…`);
-    setVoiceOnly(voiceOnly);
-    setMode("active");
-
-    win?.classList.remove("hidden");
-  };
-
-  rtc.onCallConnected = () => {
+  // Call started (controller calls this.onCallStarted)
+  rtc.onCallStarted = () => {
     debug("Call connected");
     setStatus("In call");
     startTimer();
     setMode("active");
+    win?.classList.remove("hidden");
   };
 
+  // Call ended (controller calls this.onCallEnded)
   rtc.onCallEnded = () => {
     debug("Call ended");
     stopTimer();
@@ -398,6 +391,7 @@ export function initCallUI(rtc) {
     win?.classList.add("hidden");
   };
 
+  // Call failed (controller calls this.onCallFailed(reason))
   rtc.onCallFailed = (reason) => {
     debug(`Call failed: ${reason}`);
     stopTimer();
@@ -408,19 +402,19 @@ export function initCallUI(rtc) {
     win?.classList.add("hidden");
   };
 
-  rtc.onRemoteMuted = () => debug("Remote muted");
-  rtc.onRemoteUnmuted = () => debug("Remote unmuted");
+  // Network quality (controller calls this.onQualityChange(level, info))
+  rtc.onQualityChange = (level, info) => {
+    debug(`Network: ${level} (${info})`);
+    setQuality(level, info);
+  };
 
+  // The following are future‑ready hooks; controller doesn’t emit them yet,
+  // but RemoteParticipants.js is already wired for multi‑party.
   rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
   rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
 
   rtc.onRemoteSpeaking = ({ peerId, active, level }) => {
     setParticipantSpeaking(peerId, active, level);
-  };
-
-  rtc.onNetworkQuality = (level, info) => {
-    debug(`Network: ${level} (${info})`);
-    setQuality(level, info);
   };
 
   rtc.onScreenShareStarted = (peerId) => {
@@ -509,7 +503,6 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
-
 
 
 
