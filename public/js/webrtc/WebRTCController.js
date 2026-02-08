@@ -11,7 +11,7 @@ import {
 } from "./AvatarFallback.js";
 
 import { getLocalMedia } from "./WebRTCMedia.js";
-import { attachRemoteStream } from "./RemoteParticipants.js";
+import { attachRemoteTrack, cleanupMedia } from "./WebRTCMedia.js";
 import { addCallLogEntry } from "../call-log.js";
 
 import {
@@ -816,6 +816,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
