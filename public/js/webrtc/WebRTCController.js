@@ -130,13 +130,16 @@ export class WebRTCController {
   }
 
   async startCall(peerId, audioOnly) {
-    return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
-  }
+  console.log("[WebRTC] startCall", { peerId, audioOnly });
+  return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
+}
+
 
   /* ---------------------------------------------------
      Outgoing Call
   --------------------------------------------------- */
-  async _startCallInternal(peerId, audioOnly, { relayOnly }) {
+ async _startCallInternal(peerId, audioOnly, { relayOnly }) { 
+   console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
     const myId = getMyUserId();
     if (!myId) return;
 
@@ -171,8 +174,12 @@ export class WebRTCController {
     });
 
     // Create offer
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+  // Around offer creation
+const offer = await pc.createOffer();
+console.log("[WebRTC] Created offer", offer.type);
+await pc.setLocalDescription(offer);
+console.log("[WebRTC] Local description set, emitting offer");
+
 
     // 🔥 Tell UI the call is now “connecting”
     this.onCallStarted?.();
@@ -204,6 +211,7 @@ export class WebRTCController {
   --------------------------------------------------- */
   async handleOffer(data) {
     const { from, offer, fromName, audioOnly, fromUser } = data || {};
+    console.log("[WebRTC] handleOffer", data);
     if (!from || !offer) return;
 
     rtcState.peerId = from;
@@ -694,6 +702,7 @@ export class WebRTCController {
        CORE SIGNALING
     ------------------------------------------------------- */
     this.socket.on("webrtc:signal", async (data) => {
+      console.log("[WebRTC] webrtc:signal received", data?.type, data);
       if (!data || !data.type) return;
 
       if (data.fromUser) {
@@ -835,6 +844,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
