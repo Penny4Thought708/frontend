@@ -10,8 +10,11 @@ import {
   showRemoteAvatar,
 } from "./AvatarFallback.js";
 
-import { getLocalMedia } from "./WebRTCMedia.js";
-import { attachRemoteTrack, cleanupMedia } from "./WebRTCMedia.js";
+import {
+  getLocalMedia,
+  attachRemoteTrack,
+  cleanupMedia,
+} from "./WebRTCMedia.js";
 
 import { addCallLogEntry } from "../call-log.js";
 
@@ -84,9 +87,6 @@ export class WebRTCController {
     this.pendingRemoteCandidates = [];
 
     this.localVideo = null;
-    this.remoteAudio = null;
-
-    // Wire shared remote audio element
     this.remoteAudio = remoteAudioEl || document.getElementById("remoteAudio");
     if (!this.remoteAudio) {
       console.warn("[WebRTC] remoteAudio element not found");
@@ -102,7 +102,9 @@ export class WebRTCController {
 
     this._bindSocketEvents();
 
+    // -------------------------------------------------------
     // Wire call buttons directly to this controller instance
+    // -------------------------------------------------------
     const voiceBtn = getVoiceBtn();
     const videoBtn = getVideoBtn();
 
@@ -145,11 +147,11 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Media elements wiring
+     Media elements wiring (optional override)
   --------------------------------------------------- */
   attachMediaElements({ localVideo, remoteAudio }) {
-    this.localVideo = localVideo;
-    this.remoteAudio = remoteAudio || this.remoteAudio;
+    if (localVideo) this.localVideo = localVideo;
+    if (remoteAudio) this.remoteAudio = remoteAudio;
   }
 
   /* ---------------------------------------------------
@@ -190,21 +192,16 @@ export class WebRTCController {
 
     const pc = await this._createPC({ relayOnly });
 
-    // Local media
+    // Local media (WebRTCMedia handles localVideo wiring)
     const stream = await getLocalMedia(true, !audioOnly);
     this.localStream = stream;
     rtcState.localStream = stream;
 
     if (stream) {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-      if (this.localVideo && !audioOnly) {
-        this.localVideo.srcObject = stream;
-        this.localVideo.play().catch(() => {});
-      }
     }
 
-    // Notify UI of outgoing call
+    // 🔥 Notify UI of outgoing call
     this.onOutgoingCall?.({
       targetName: rtcState.peerName,
       voiceOnly: audioOnly,
@@ -216,7 +213,7 @@ export class WebRTCController {
     await pc.setLocalDescription(offer);
     console.log("[WebRTC] Local description set, emitting offer");
 
-    // Tell UI the call is now “connecting”
+    // 🔥 Tell UI the call is now “connecting”
     this.onCallStarted?.();
 
     // Send offer
@@ -296,11 +293,6 @@ export class WebRTCController {
 
     if (stream) {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-      if (this.localVideo && !rtcState.audioOnly) {
-        this.localVideo.srcObject = stream;
-        this.localVideo.play().catch(() => {});
-      }
     }
 
     const answer = await pc.createAnswer();
@@ -366,6 +358,7 @@ export class WebRTCController {
     );
     await this._flushPendingRemoteCandidates();
 
+    // 🔥 mark call as active
     rtcState.inCall = true;
 
     stopAudio(ringback);
@@ -414,28 +407,9 @@ export class WebRTCController {
       this.pc = null;
     }
 
-    if (this.localStream) {
-      this.localStream.getTracks().forEach((t) => t.stop());
-      this.localStream = null;
-    }
-
-    if (rtcState.localStream) {
-      rtcState.localStream.getTracks().forEach((t) => t.stop());
-      rtcState.localStream = null;
-    }
-
-    if (rtcState.remoteStream) {
-      rtcState.remoteStream.getTracks().forEach((t) => t.stop());
-      rtcState.remoteStream = null;
-    }
-
-    if (this.localVideo) {
-      this.localVideo.srcObject = null;
-    }
-
-    if (this.remoteAudio) {
-      this.remoteAudio.srcObject = null;
-    }
+    // Centralized media cleanup (local + remote + tiles)
+    cleanupMedia();
+    this.localStream = null;
 
     const direction = rtcState.isCaller ? "outgoing" : "incoming";
 
@@ -815,7 +789,7 @@ export class WebRTCController {
     };
 
     const triggerVoicemailFlow = (from, message) => {
-      // Ignore voicemail if we’re already in / actively answering a call
+      // 🔒 Ignore voicemail if we’re already in / actively answering a call
       if (rtcState.inCall || rtcState.answering) {
         console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
         return;
@@ -876,6 +850,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
