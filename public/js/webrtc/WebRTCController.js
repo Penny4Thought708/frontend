@@ -515,162 +515,124 @@ async handleAnswer(data) {
     return enabled;
   }
 
+/* ---------------------------------------------------
+   PeerConnection Factory
+--------------------------------------------------- */
+async _createPC({ relayOnly = false } = {}) {
+  if (this.pc) {
+    try { this.pc.close(); } catch {}
+    this.pc = null;
+  }
+
+  const iceServers = await getIceServers({ relayOnly });
+
+  const config = {
+    iceServers,
+    iceTransportPolicy: "relay",
+  };
+
+  const pc = new RTCPeerConnection(config);
+  this.pc = pc;
+
+  /* TURN keepalive */
+  const startTurnKeepAlive = (pcInstance) => {
+    let keepAliveTimer = setInterval(() => {
+      try { pcInstance.getStats(null); } catch {}
+    }, 3000);
+
+    pcInstance.addEventListener("connectionstatechange", () => {
+      if (
+        pcInstance.connectionState === "closed" ||
+        pcInstance.connectionState === "failed"
+      ) {
+        clearInterval(keepAliveTimer);
+      }
+    });
+  };
+
+  startTurnKeepAlive(pc);
+
+  /* DataChannel keepalive */
+  try {
+    const keepAliveChannel = pc.createDataChannel("keepalive");
+    keepAliveChannel.onopen = () => {
+      setInterval(() => {
+        if (keepAliveChannel.readyState === "open") {
+          keepAliveChannel.send("ping");
+        }
+      }, 5000);
+    };
+  } catch {}
+
   /* ---------------------------------------------------
-     PeerConnection Factory
+     Outgoing ICE
   --------------------------------------------------- */
-  async _createPC({ relayOnly = false } = {}) {
-    if (this.pc) {
-      try {
-        this.pc.close();
-      } catch {}
-      this.pc = null;
+  pc.onicecandidate = (event) => {
+    if (!event.candidate) return;
+
+    const c = event.candidate.candidate || "";
+    let type = "unknown";
+    if (c.includes("relay")) type = "TURN relay";
+    else if (c.includes("srflx")) type = "STUN srflx";
+    else if (c.includes("host")) type = "Host";
+
+    this.onQualityChange?.("good", `Candidate: ${type}`);
+
+    if (rtcState.peerId && this.socket) {
+      this.socket.emit("webrtc:signal", {
+        type: "ice",
+        to: rtcState.peerId,
+        from: getMyUserId(),
+        candidate: event.candidate,
+      });
+    }
+  };
+
+  /* ---------------------------------------------------
+     Remote tracks → WebRTCMedia (group-aware)
+  --------------------------------------------------- */
+  pc.ontrack = (event) => {
+    const peerId = rtcState.peerId || "default";
+
+    console.log("[WebRTC] ontrack", {
+      kind: event.track.kind,
+      peerId,
+      streams: event.streams.length,
+    });
+
+    // Unified media engine for 1:1 + group
+    attachRemoteTrack(peerId, event);
+  };
+
+  /* ---------------------------------------------------
+     ICE state → quality + TURN fallback
+  --------------------------------------------------- */
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+
+    const level =
+      state === "connected"
+        ? "excellent"
+        : state === "checking"
+        ? "fair"
+        : state === "disconnected"
+        ? "poor"
+        : state === "failed"
+        ? "bad"
+        : "unknown";
+
+    this.onQualityChange?.(level, `ICE: ${state}`);
+
+    if (rtcState.answering) return;
+
+    if (state === "disconnected") {
+      try { pc.restartIce(); } catch {}
     }
 
-    const iceServers = await getIceServers({ relayOnly });
-
-    const config = {
-      iceServers,
-      iceTransportPolicy: "relay",
-    };
-
-    const pc = new RTCPeerConnection(config);
-    this.pc = pc;
-
-    /* TURN keepalive */
-    const startTurnKeepAlive = (pcInstance) => {
-      let keepAliveTimer = setInterval(() => {
-        try {
-          pcInstance.getStats(null);
-        } catch {}
-      }, 3000);
-
-      pcInstance.addEventListener("connectionstatechange", () => {
+    if (state === "checking") {
+      setTimeout(() => {
         if (
-          pcInstance.connectionState === "closed" ||
-          pcInstance.connectionState === "failed"
-        ) {
-          clearInterval(keepAliveTimer);
-        }
-      });
-    };
-
-    startTurnKeepAlive(pc);
-
-    /* DataChannel keepalive */
-    try {
-      const keepAliveChannel = pc.createDataChannel("keepalive");
-      keepAliveChannel.onopen = () => {
-        setInterval(() => {
-          if (keepAliveChannel.readyState === "open") {
-            keepAliveChannel.send("ping");
-          }
-        }, 5000);
-      };
-    } catch {}
-
-    /* Outgoing ICE */
-    pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
-
-      const c = event.candidate.candidate || "";
-      let type = "unknown";
-      if (c.includes("relay")) type = "TURN relay";
-      else if (c.includes("srflx")) type = "STUN srflx";
-      else if (c.includes("host")) type = "Host";
-
-      this.onQualityChange?.("good", `Candidate: ${type}`);
-
-      if (rtcState.peerId && this.socket) {
-        this.socket.emit("webrtc:signal", {
-          type: "ice",
-          to: rtcState.peerId,
-          from: getMyUserId(),
-          candidate: event.candidate,
-        });
-      }
-    };
-
-       /* ---------------------------------------------------
-       Remote tracks → RemoteParticipants
-    --------------------------------------------------- */
-    pc.ontrack = (event) => {
-      const peerId = rtcState.peerId || "default";
-      const stream = event.streams[0];
-      if (!stream) return;
-
-      rtcState.remoteStream = stream;
-
-      // Video/participant tile handled by RemoteParticipants.js
-      attachRemoteStream(peerId, stream, {
-        displayName: rtcState.peerName,
-        avatarUrl: rtcState.peerAvatar || null,
-      });
-
-      // Shared remote audio element (only wire on audio tracks)
-      if (event.track.kind === "audio" && this.remoteAudio) {
-        if (this.remoteAudio.srcObject !== stream) {
-          this.remoteAudio.srcObject = stream;
-        }
-        this.remoteAudio
-          .play()
-          .catch(() => {
-            console.warn("[WebRTC] Remote audio autoplay blocked");
-          });
-      }
-    };
-
-    /* ---------------------------------------------------
-       ICE state → quality + TURN fallback
-    --------------------------------------------------- */
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-
-      const level =
-        state === "connected"
-          ? "excellent"
-          : state === "checking"
-          ? "fair"
-          : state === "disconnected"
-          ? "poor"
-          : state === "failed"
-          ? "bad"
-          : "unknown";
-
-      this.onQualityChange?.(level, `ICE: ${state}`);
-
-      if (rtcState.answering) return;
-
-      if (state === "disconnected") {
-        try {
-          pc.restartIce();
-        } catch {}
-      }
-
-      if (state === "checking") {
-        setTimeout(() => {
-          if (
-            pc.iceConnectionState === "checking" &&
-            !rtcState.usedRelayFallback &&
-            rtcState.peerId &&
-            !rtcState.answering
-          ) {
-            rtcState.usedRelayFallback = true;
-
-            const peerId = rtcState.peerId;
-            const audioOnly = rtcState.audioOnly;
-            const isCaller = rtcState.isCaller;
-
-            this.endCall(false);
-
-            if (isCaller) {
-              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-            }
-          }
-        }, 2500);
-      }
-
-      if (state === "failed") {
-        if (
+          pc.iceConnectionState === "checking" &&
           !rtcState.usedRelayFallback &&
           rtcState.peerId &&
           !rtcState.answering
@@ -686,21 +648,43 @@ async handleAnswer(data) {
           if (isCaller) {
             this._startCallInternal(peerId, audioOnly, { relayOnly: true });
           }
-        } else if (!rtcState.answering) {
-          this.onCallFailed?.("ice failed");
         }
-      }
-    };
+      }, 2500);
+    }
 
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      if (state === "failed") {
-        this.onCallFailed?.("connection failed");
-      }
-    };
+    if (state === "failed") {
+      if (
+        !rtcState.usedRelayFallback &&
+        rtcState.peerId &&
+        !rtcState.answering
+      ) {
+        rtcState.usedRelayFallback = true;
 
-    return pc;
-  }
+        const peerId = rtcState.peerId;
+        const audioOnly = rtcState.audioOnly;
+        const isCaller = rtcState.isCaller;
+
+        this.endCall(false);
+
+        if (isCaller) {
+          this._startCallInternal(peerId, audioOnly, { relayOnly: true });
+        }
+      } else if (!rtcState.answering) {
+        this.onCallFailed?.("ice failed");
+      }
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    if (state === "failed") {
+      this.onCallFailed?.("connection failed");
+    }
+  };
+
+  return pc;
+}
+
 
   /* ---------------------------------------------------
      Flush queued remote ICE
@@ -895,6 +879,7 @@ const triggerVoicemailFlow = (from, message) => {
     });
   }
 }
+
 
 
 
