@@ -20,7 +20,10 @@ import {
   getMyAvatar,
   ringback,
   ringtone,
+  getVoiceBtn,
+  getVideoBtn
 } from "../session.js";
+
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
@@ -91,6 +94,35 @@ export class WebRTCController {
     this.onQualityChange = null;
 
     this._bindSocketEvents();
+// -------------------------------------------------------
+// Wire call buttons directly to this controller instance
+// -------------------------------------------------------
+const voiceBtn = getVoiceBtn();
+const videoBtn = getVideoBtn();
+
+if (voiceBtn) {
+  voiceBtn.onclick = () => {
+    const peerId = getReceiver();
+    if (!peerId) {
+      console.warn("[WebRTC] Voice call attempted with no receiver");
+      return;
+    }
+    console.log("[WebRTC] Voice button → startCall", peerId);
+    this.startCall(peerId, true);
+  };
+}
+
+if (videoBtn) {
+  videoBtn.onclick = () => {
+    const peerId = getReceiver();
+    if (!peerId) {
+      console.warn("[WebRTC] Video call attempted with no receiver");
+      return;
+    }
+    console.log("[WebRTC] Video button → startCall", peerId);
+    this.startCall(peerId, false);
+  };
+}
 
     // Initialize local avatar
     setLocalAvatar(getMyAvatar());
@@ -844,6 +876,7 @@ console.log("[WebRTC] Local description set, emitting offer");
     });
   }
 }
+
 
 
 
