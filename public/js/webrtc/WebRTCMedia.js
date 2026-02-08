@@ -63,7 +63,7 @@ function createRemoteParticipant(peerId = "default") {
   // In voice‑only mode, hide the video element entirely
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
-    videoEl.removeAttribute("srcObject");
+    videoEl.srcObject = null; // ✅ fix: don't use removeAttribute("srcObject")
   }
 
   grid.appendChild(clone);
@@ -246,6 +246,8 @@ export async function getLocalMedia(audio = true, video = true) {
       localVideo.playsInline = true;
       await localVideo.play().catch(() => {});
       localVideo.classList.add("show");
+      localVideo.style.display = "block";
+      localVideo.style.opacity = "1";
     }
 
     updateLocalAvatarVisibility();
@@ -454,7 +456,6 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
-
 
 
 
