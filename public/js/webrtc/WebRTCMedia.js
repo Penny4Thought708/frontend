@@ -1,6 +1,6 @@
 // public/js/webrtc/WebRTCMedia.js
 // Production‑grade media engine: local/remote media,
-// audio visualization, speaking detection, and Safari‑safe playback.
+// audio visualization, speaking detection, and voice‑only optimization.
 
 import { rtcState } from "./WebRTCState.js";
 
@@ -60,6 +60,12 @@ function createRemoteParticipant(peerId = "default") {
     avatarImg.src = "img/defaultUser.png";
   }
 
+  // In voice‑only mode, hide the video element entirely
+  if (rtcState.voiceOnly && videoEl) {
+    videoEl.style.display = "none";
+    videoEl.removeAttribute("srcObject");
+  }
+
   grid.appendChild(clone);
   map[peerId] = clone;
   return clone;
@@ -71,7 +77,7 @@ function getRemoteParticipant(peerId = "default") {
 }
 
 /* -------------------------------------------------------
-   Local Avatar Visibility (new grid layout)
+   Local Avatar Visibility (grid layout)
 ------------------------------------------------------- */
 function updateLocalAvatarVisibility() {
   const localTile = document.getElementById("localParticipant");
@@ -81,6 +87,13 @@ function updateLocalAvatarVisibility() {
   if (!avatarWrapper) return;
 
   const stream = rtcState.localStream;
+
+  // Voice‑only: always show avatar
+  if (rtcState.voiceOnly) {
+    avatarWrapper.style.display = "flex";
+    return;
+  }
+
   if (!stream) {
     avatarWrapper.style.display = "flex";
     return;
@@ -117,7 +130,9 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
       }
 
       const rms = Math.sqrt(sum / buf.length);
-      const level = Math.min(1, rms * 4);
+      // Slightly higher sensitivity in voice‑only mode
+      const factor = rtcState.voiceOnly ? 5 : 4;
+      const level = Math.min(1, rms * factor);
 
       target.style.setProperty(cssVar, level.toFixed(3));
       requestAnimationFrame(tick);
@@ -153,8 +168,10 @@ function startRemoteSpeakingDetection(stream, participantEl) {
     analyser.getByteFrequencyData(buf);
     const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
+    // Slightly more sensitive threshold in voice‑only mode
     smoothed = smoothed * 0.8 + avg * 0.2;
-    const speaking = smoothed > 0.06;
+    const threshold = rtcState.voiceOnly ? 0.045 : 0.06;
+    const speaking = smoothed > threshold;
 
     participantEl.classList.toggle("speaking", speaking);
 
@@ -174,13 +191,16 @@ export function stopSpeakingDetection() {
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (premium constraints)
+   Local Media Acquisition (voice/video aware)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
     log("getUserMedia not supported");
     return null;
   }
+
+  // Voice‑only flag for the whole engine
+  rtcState.voiceOnly = !!audio && !video;
 
   const constraints = {
     audio: audio
@@ -206,7 +226,7 @@ export async function getLocalMedia(audio = true, video = true) {
     log("Got local media with constraints:", constraints);
     rtcState.localStream = stream;
 
-    // Content hints for better encoding
+    // Content hints
     stream.getVideoTracks().forEach((t) => {
       try {
         t.contentHint = "motion";
@@ -219,11 +239,13 @@ export async function getLocalMedia(audio = true, video = true) {
     });
 
     const localVideo = document.getElementById("localVideo");
-    if (video && localVideo) {
+
+    if (video && localVideo && !rtcState.voiceOnly) {
       localVideo.srcObject = stream;
       localVideo.muted = true;
       localVideo.playsInline = true;
       await localVideo.play().catch(() => {});
+      localVideo.classList.add("show");
     }
 
     updateLocalAvatarVisibility();
@@ -237,19 +259,21 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // Retry audio-only if video fails
+    // Retry audio‑only if video fails
     if (
       video &&
       audio &&
       (err.name === "NotFoundError" || err.name === "OverconstrainedError")
     ) {
-      log("Retrying getUserMedia with audio-only…");
+      log("Retrying getUserMedia with audio‑only…");
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false,
         });
         rtcState.localStream = audioOnlyStream;
+        rtcState.voiceOnly = true;
+
         updateLocalAvatarVisibility();
 
         const localTile = document.getElementById("localParticipant");
@@ -257,11 +281,12 @@ export async function getLocalMedia(audio = true, video = true) {
 
         return audioOnlyStream;
       } catch (err2) {
-        log("Audio-only also failed:", err2.name, err2.message);
+        log("Audio‑only also failed:", err2.name, err2.message);
       }
     }
 
     rtcState.localStream = null;
+    rtcState.voiceOnly = !!audio && !video;
 
     const localTile = document.getElementById("localParticipant");
     const avatarWrapper = localTile?.querySelector(".avatar-wrapper");
@@ -272,7 +297,7 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (GROUP-AWARE)
+   Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
@@ -291,10 +316,10 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     return;
   }
 
-  // Per-peer remote stream
   if (!rtcState.remoteStreams) {
     rtcState.remoteStreams = {};
   }
+
   let remoteStream = rtcState.remoteStreams[peerId];
   if (!remoteStream) {
     remoteStream = new MediaStream();
@@ -313,18 +338,19 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 
   const showAvatar = (show) => {
     if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
-    if (videoEl) videoEl.style.display = show ? "none" : "block";
+    if (videoEl && !rtcState.voiceOnly) {
+      videoEl.style.display = show ? "none" : "block";
+    }
   };
 
-  // Track events
   evt.track.onmute   = () => showAvatar(true);
   evt.track.onunmute = () => showAvatar(false);
   evt.track.onended  = () => showAvatar(true);
 
   /* -----------------------------
-     Remote Video
+     Remote Video (skip in voice‑only)
   ----------------------------- */
-  if (evt.track.kind === "video" && videoEl) {
+  if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
     videoEl.srcObject = remoteStream;
     videoEl.playsInline = true;
     videoEl.style.display = "block";
@@ -366,7 +392,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 export function cleanupMedia() {
   stopSpeakingDetection();
 
-  // Stop per-peer remote streams
+  // Stop per‑peer remote streams
   if (rtcState.remoteStreams) {
     Object.values(rtcState.remoteStreams).forEach((stream) => {
       stream.getTracks().forEach((t) => {
@@ -388,12 +414,15 @@ export function cleanupMedia() {
     rtcState.localStream = null;
   }
 
+  rtcState.voiceOnly = false;
+
   // Clear local video
   const localVideo = document.getElementById("localVideo");
   if (localVideo) {
     localVideo.srcObject = null;
     localVideo.style.display = "none";
     localVideo.style.opacity = "0";
+    localVideo.classList.remove("show");
   }
 
   // Clear remote videos (all participants)
@@ -425,8 +454,6 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
-
-
 
 
 
