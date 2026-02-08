@@ -662,62 +662,6 @@ function initContentMenu() {
 }
 
 /* -------------------------------------------------------
-   DND toggle via ContactsMenu (full call blocking)
-------------------------------------------------------- */
-window.dndActive = false;
-
-function initDndFromContactsMenu() {
-  const menu = document.querySelector("contacts-menu");
-  if (!menu) return;
-
-  menu.addEventListener("menu-select", (e) => {
-    if (e.detail.action !== "dnd") return;
-
-    window.dndActive = !window.dndActive;
-
-    const dndImg = menu.querySelector("#donot_Btn img");
-    if (dndImg) {
-      dndImg.classList.toggle("active", window.dndActive);
-    }
-
-    socket.emit("dnd:update", {
-      userId: getMyUserId(),
-      active: window.dndActive,
-    });
-
-    window.showNotification(
-      "Do Not Disturb",
-      window.dndActive
-        ? "DND enabled — calls will go to voicemail."
-        : "DND disabled — calls will ring normally."
-    );
-  });
-}
-
-/* -------------------------------------------------------
-   Incoming call handler with DND + voicemail routing
-------------------------------------------------------- */
-socket.on("call:incoming", (data) => {
-  if (window.dndActive) {
-    socket.emit("call:voicemail", {
-      from: data.from,
-      to: data.to,
-    });
-
-    window.showNotification(
-      "Call Sent to Voicemail",
-      "Incoming call was sent to voicemail (DND active)."
-    );
-
-    return;
-  }
-
-  if (typeof window.showIncomingCallUI === "function") {
-    window.showIncomingCallUI(data);
-  }
-});
-
-/* -------------------------------------------------------
    Bottom sheet + emoji + GIF (UI only, no sending)
 ------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
@@ -929,6 +873,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu();
 });
+
 
 
 
