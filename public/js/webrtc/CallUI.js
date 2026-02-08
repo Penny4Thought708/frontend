@@ -107,8 +107,18 @@ export function initCallUI(rtc) {
   }
 
   function setVoiceOnly(on) {
-    win.classList.toggle("voice-only", !!on);
+  win.classList.toggle("voice-only", !!on);
+
+  // Voice mode: hide camera + screen share controls
+  if (on) {
+    cameraBtn?.classList.add("hidden-soft");
+    shareBtn?.classList.add("hidden-soft");
+  } else {
+    cameraBtn?.classList.remove("hidden-soft");
+    shareBtn?.classList.remove("hidden-soft");
   }
+}
+
 
   function setCameraOff(on) {
     win.classList.toggle("camera-off", !!on);
@@ -437,6 +447,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
