@@ -177,17 +177,29 @@ export class WebRTCController {
       showLocalAvatar();
     }
 
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+  // 🔥 Tell UI we are placing a call
+this.onOutgoingCall?.({
+  targetName: rtcState.peerName || null,
+  voiceOnly: audioOnly
+});
 
-    this.socket.emit("webrtc:signal", {
-      type: "offer",
-      to: peerId,
-      from: myId,
-      offer,
-      audioOnly: !!audioOnly,
-      fromName: getMyFullname(),
-    });
+// Create offer
+const offer = await pc.createOffer();
+await pc.setLocalDescription(offer);
+
+// 🔥 Tell UI the call is now “started”
+this.onCallStarted?.();
+
+// Send offer to peer
+this.socket.emit("webrtc:signal", {
+  type: "offer",
+  to: peerId,
+  from: myId,
+  offer,
+  audioOnly: !!audioOnly,
+  fromName: getMyFullname(),
+});
+
 
     ringback?.play().catch(() => {});
   }
@@ -555,23 +567,33 @@ export class WebRTCController {
         });
       }
     };
+pc.ontrack = (event) => {
+  const peerId = rtcState.peerId || "remote";
+  const stream = event.streams[0];
 
-    pc.ontrack = (event) => {
-      const peerId = rtcState.peerId || "remote";
-      attachRemoteTrack(peerId, event);
+  if (!stream) {
+    console.warn("[WebRTC] ontrack without stream");
+    return;
+  }
 
-      if (event.track.kind === "video") {
-        showRemoteVideo();
-        fadeInVideo(this.remoteVideo);
-      }
+  // 🔥 Attach into the multi‑party grid
+  attachRemoteStream(peerId, stream, {
+    displayName: rtcState.peerName || `User ${peerId}`,
+    avatarUrl: rtcState.peerAvatar || null,
+  });
 
-      if (event.track.kind === "audio" && this.remoteAudio) {
-        try {
-          this.remoteAudio.srcObject = event.streams[0];
-          this.remoteAudio.play().catch(() => {});
-        } catch {}
-      }
-    };
+  // Track‑level quality hints
+  event.track.onmute = () => {
+    this.onQualityChange?.("fair", "Remote track muted");
+  };
+  event.track.onunmute = () => {
+    this.onQualityChange?.("good", "Remote track active");
+  };
+  event.track.onended = () => {
+    this.onQualityChange?.("poor", "Remote track ended");
+  };
+};
+
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -856,6 +878,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
