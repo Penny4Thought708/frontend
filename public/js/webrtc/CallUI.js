@@ -1,4 +1,6 @@
-// Aurora‑Orbit Call UI — updated for <call-window id="callWindow">
+// public/js/webrtc/CallUI.js
+// Aurora‑Orbit Call UI — Final Production Version
+// CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
@@ -49,10 +51,6 @@ export function initCallUI(rtc) {
 
   const toastSecondary   = document.getElementById("secondaryIncomingToast");
   const toastUnavailable = document.getElementById("unavailableToast");
-
-  if (!win || !grid) {
-    console.warn("[CallUI] Missing core call window elements");
-  }
 
   /* -------------------------------------------------------
      INITIALIZE REMOTE PARTICIPANT SYSTEM
@@ -117,12 +115,8 @@ export function initCallUI(rtc) {
     const isOn = !!on;
     win.classList.toggle("voice-only", isOn);
 
-    if (cameraBtn) {
-      cameraBtn.classList.toggle("hidden-soft", isOn);
-    }
-    if (shareBtn) {
-      shareBtn.classList.toggle("hidden-soft", isOn);
-    }
+    if (cameraBtn) cameraBtn.classList.toggle("hidden-soft", isOn);
+    if (shareBtn)  shareBtn.classList.toggle("hidden-soft", isOn);
   }
 
   function setCameraOff(on) {
@@ -156,7 +150,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     WINDOW OPEN/CLOSE ANIMATION
+     WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
 
   function openWindowAnimated() {
@@ -165,12 +159,17 @@ export function initCallUI(rtc) {
     win.setAttribute("aria-hidden", "false");
     win.classList.add("call-opening");
     setTimeout(() => win.classList.remove("call-opening"), 300);
+    document.body.classList.add("panel-open");
   }
 
   function hideWindow() {
     if (!win) return;
-    win.classList.add("hidden");
+    win.classList.remove("is-open");
     win.setAttribute("aria-hidden", "true");
+    setTimeout(() => {
+      win.classList.add("hidden");
+      document.body.classList.remove("panel-open");
+    }, 260);
   }
 
   /* -------------------------------------------------------
@@ -247,7 +246,9 @@ export function initCallUI(rtc) {
     showToast(toastUnavailable);
   }
 
+  // Expose for controller callbacks
   window.showUnavailableToastInternal = showUnavailableToastInternal;
+  window.showSecondaryIncomingToastInternal = showSecondaryIncomingToastInternal;
 
   /* -------------------------------------------------------
      DEBUG PANEL (CALL LOG)
