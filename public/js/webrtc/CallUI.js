@@ -160,13 +160,15 @@ function openWindowAnimated() {
   if (win.classList.contains("is-open")) return;
 
   win.classList.remove("hidden");
-  win.setAttribute("aria-hidden", "false");
   win.classList.add("is-open");
-  win.classList.add("call-opening");
+  win.setAttribute("aria-hidden", "false");
 
+  win.classList.add("call-opening");
   setTimeout(() => win.classList.remove("call-opening"), 300);
+
   document.body.classList.add("panel-open");
 }
+
 
 function hideWindow() {
   if (!win) return;
@@ -536,6 +538,7 @@ function hideWindow() {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
