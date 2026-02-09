@@ -651,7 +651,21 @@ window.currentUserAvatar = user.avatar;
 
   <div id="toast" class="toast" style="display:none;"></div>
 
-  <div id="logoutModal" class="modal-1 hidden" role="dialog" aria-modal="true"></div>
+ <!-- LOGOUT MODAL -->
+<div id="logoutModal" class="modal-1 hidden" role="dialog" aria-modal="true">
+  <div class="modal-1-content">
+    <div class="modal-1-title">Sign Out?</div>
+    <div class="modal-1-message">
+      Are you sure you want to log out of your account?
+    </div>
+
+    <div class="modal-1-actions">
+      <button id="cancelLogout" class="modal-1-btn cancel">Cancel</button>
+      <button id="confirmLogout" class="modal-1-btn confirm">Log Out</button>
+    </div>
+  </div>
+</div>
+
 
   <!-- ============================================================
        FOOTER
@@ -1437,6 +1451,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
