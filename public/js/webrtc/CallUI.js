@@ -153,24 +153,35 @@ export function initCallUI(rtc) {
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
 
-  function openWindowAnimated() {
-    if (!win) return;
-    win.classList.remove("hidden");
-    win.setAttribute("aria-hidden", "false");
-    win.classList.add("call-opening");
-    setTimeout(() => win.classList.remove("call-opening"), 300);
-    document.body.classList.add("panel-open");
-  }
+function openWindowAnimated() {
+  if (!win) return;
 
-  function hideWindow() {
-    if (!win) return;
-    win.classList.remove("is-open");
-    win.setAttribute("aria-hidden", "true");
-    setTimeout(() => {
-      win.classList.add("hidden");
-      document.body.classList.remove("panel-open");
-    }, 260);
-  }
+  // Prevent double-open flicker
+  if (win.classList.contains("is-open")) return;
+
+  win.classList.remove("hidden");
+  win.setAttribute("aria-hidden", "false");
+  win.classList.add("is-open");
+  win.classList.add("call-opening");
+
+  setTimeout(() => win.classList.remove("call-opening"), 300);
+  document.body.classList.add("panel-open");
+}
+
+function hideWindow() {
+  if (!win) return;
+
+  if (!win.classList.contains("is-open")) return;
+
+  win.classList.remove("is-open");
+  win.setAttribute("aria-hidden", "true");
+
+  setTimeout(() => {
+    win.classList.add("hidden");
+    document.body.classList.remove("panel-open");
+  }, 260);
+}
+
 
   /* -------------------------------------------------------
      TOAST HELPERS
@@ -525,6 +536,7 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
