@@ -346,72 +346,56 @@ window.currentUserAvatar = user.avatar;
 
   <div class="video-body">
 
-    <!-- ============================================================
-         MULTI-PARTY GRID (LOCAL + REMOTE PARTICIPANTS)
-    ============================================================ -->
+    <!-- GRID: LOCAL + REMOTE PARTICIPANTS -->
     <div id="callGrid" class="call-grid">
 
-      <!-- LOCAL PARTICIPANT TILE -->
+      <!-- LOCAL PARTICIPANT -->
       <div class="participant local" id="localParticipant">
         <div class="media-wrapper">
-
-          <!-- LOCAL VIDEO -->
           <video id="localVideo"
+                 class="localVideo"
                  autoplay
                  playsinline
-                 muted
-                 class="localVideo"></video>
+                 muted></video>
 
-          <!-- LOCAL AVATAR FALLBACK -->
           <div class="avatar-wrapper">
             <img id="localAvatarImg"
                  src="img/defaultUser.png"
                  alt="Local Avatar">
             <div class="voice-pulse"></div>
           </div>
-
         </div>
         <div class="name-tag">You</div>
       </div>
 
-      <!-- REMOTE PARTICIPANT TEMPLATE (USED BY JS) -->
+      <!-- REMOTE PARTICIPANT TEMPLATE -->
       <template id="remoteParticipantTemplate">
         <div class="participant remote">
-
           <div class="media-wrapper">
-
-            <!-- REMOTE VIDEO -->
             <video class="remoteVideo"
                    autoplay
                    playsinline></video>
 
-            <!-- REMOTE AVATAR FALLBACK -->
             <div class="avatar-wrapper">
               <img class="avatar-img"
                    src="img/defaultUser.png"
                    alt="Avatar">
               <div class="voice-pulse"></div>
             </div>
-
           </div>
-
           <div class="name-tag"></div>
         </div>
       </template>
 
     </div>
 
-    <!-- ============================================================
-         STATUS + TIMER
-    ============================================================ -->
+    <!-- STATUS + TIMER -->
     <div class="call-top-info">
       <div id="call-status" class="call-status">Calling…</div>
       <div id="call-timer" class="call-timer">00:00</div>
     </div>
 
-    <!-- ============================================================
-         CALL CONTROLS
-    ============================================================ -->
+    <!-- CONTROLS -->
     <div id="call-controls" class="call-controls">
 
       <!-- INBOUND ONLY -->
@@ -423,7 +407,7 @@ window.currentUserAvatar = user.avatar;
         <span class="material-symbols-outlined">call</span>
       </button>
 
-      <!-- ACTIVE CALL CONTROLS -->
+      <!-- ACTIVE ONLY -->
       <button id="mute-call" class="control-btn active-only">
         <span class="material-symbols-outlined">mic_off</span>
       </button>
@@ -467,16 +451,12 @@ window.currentUserAvatar = user.avatar;
 
     </div>
 
-    <!-- ============================================================
-         REMOTE AUDIO (SHARED)
-    ============================================================ -->
+    <!-- REMOTE AUDIO (SHARED) -->
     <audio id="remoteAudio"
            autoplay
            playsinline></audio>
 
-    <!-- ============================================================
-         QUALITY + DEBUG
-    ============================================================ -->
+    <!-- QUALITY + DEBUG -->
     <div class="call-info-bar">
       <div id="call-quality-indicator"
            class="quality-indicator"
@@ -492,9 +472,7 @@ window.currentUserAvatar = user.avatar;
   </div>
 </section>
 
-<!-- ============================================================
-     SECONDARY INCOMING CALL TOAST
-============================================================ -->
+<!-- SECONDARY INCOMING CALL TOAST -->
 <div id="secondaryIncomingToast"
      class="toast secondary-incoming hidden">
   <div class="sit-content">
@@ -506,19 +484,17 @@ window.currentUserAvatar = user.avatar;
   </div>
 </div>
 
-<!-- ============================================================
-     UNAVAILABLE TOAST (VOICEMAIL / MISSED CALL)
-============================================================ -->
-<div id="unavailableToast" class="toast unavailable hidden">
-  <div class="ut-content">
-    <div class="ut-message">User unavailable</div>
-    <div class="ut-actions">
-      <button id="utVoiceBtn">Voice Message</button>
-      <button id="utVideoBtn">Video Message</button>
-      <button id="utTextBtn">Send Text</button>
-    </div>
+<!-- UNAVAILABLE / VOICEMAIL TOAST -->
+<div id="unavailableToast"
+     class="toast hidden">
+  <div class="ut-message">User unavailable</div>
+  <div class="ut-actions">
+    <button id="utVoiceBtn">Leave Voicemail</button>
+    <button id="utVideoBtn">Dismiss</button>
+    <button id="utTextBtn">Send Message</button>
   </div>
 </div>
+
 
   <!-- ============================================================
        GLOBAL WINDOW MANAGER — SMART FLOATING WINDOWS
@@ -1461,6 +1437,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
