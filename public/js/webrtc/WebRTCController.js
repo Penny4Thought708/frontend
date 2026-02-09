@@ -182,13 +182,7 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) return;
 
-    rtcState.peerId = peerId;
-    rtcState.peerName = rtcState.peerName || `User ${peerId}`;
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.isCaller = true;
-    rtcState.inCall = true;
-    rtcState.incomingOffer = null;
-    rtcState.usedRelayFallback = !!relayOnly;
+   rtcState.peerId = peerId; rtcState.peerName = rtcState.peerName || `User ${peerId}`; rtcState.audioOnly = !!audioOnly; rtcState.isCaller = true; rtcState.busy = true; // 🔥 now “on the phone” rtcState.inCall = false; // not connected yet rtcState.incomingOffer = null; rtcState.usedRelayFallback = !!relayOnly;
 
     const pc = await this._createPC({ relayOnly });
 
@@ -253,11 +247,14 @@ export class WebRTCController {
     rtcState.peerId = from;
 
     // Set peer metadata
-    rtcState.peerName = fromUser?.fullname || fromName || `User ${from}`;
+    rtcState.peerName   = fromUser?.fullname || fromName || `User ${from}`;
     rtcState.peerAvatar = fromUser?.avatar || null;
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.isCaller = false;
-    rtcState.inCall = false;
+    rtcState.audioOnly  = !!audioOnly;
+    rtcState.isCaller   = false;
+
+    // 🔥 We are now “busy” (ringing), but not yet connected
+    rtcState.busy        = true;
+    rtcState.inCall      = false;
     rtcState.incomingOffer = data;
     rtcState.usedRelayFallback = false;
 
@@ -286,8 +283,9 @@ export class WebRTCController {
 
     const { from, offer, audioOnly } = offerData;
 
-    rtcState.inCall = true;
     rtcState.audioOnly = !!audioOnly;
+    rtcState.inCall    = true;   // 🔥 now connected
+    rtcState.busy      = true;
 
     stopAudio(ringtone);
     startTimer();
@@ -345,7 +343,8 @@ export class WebRTCController {
     });
 
     rtcState.incomingOffer = null;
-    rtcState.inCall = false;
+    rtcState.inCall        = false;
+    rtcState.busy          = false;
 
     this.onCallEnded?.();
   }
@@ -368,8 +367,9 @@ export class WebRTCController {
     );
     await this._flushPendingRemoteCandidates();
 
-    // mark call as active
+    // 🔥 call is now active
     rtcState.inCall = true;
+    rtcState.busy   = true;
 
     stopAudio(ringback);
     this.onCallStarted?.();
@@ -440,10 +440,11 @@ export class WebRTCController {
       timestamp: new Date().toISOString(),
     });
 
-    rtcState.inCall = false;
-    rtcState.peerId = null;
+    rtcState.inCall      = false;
+    rtcState.busy        = false;
+    rtcState.peerId      = null;
     rtcState.incomingOffer = null;
-    rtcState.answering = false;
+    rtcState.answering   = false;
 
     showLocalAvatar();
     showRemoteAvatar();
@@ -815,6 +816,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
