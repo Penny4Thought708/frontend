@@ -339,7 +339,7 @@ window.currentUserAvatar = user.avatar;
   </section> <!-- end column-center -->
 
 </main>
- <!-- VIDEO CALL -->
+<!-- VIDEO CALL WINDOW -->
 <section id="videoCallWindow"
          class="call-window hidden"
          data-window-id="video-call">
@@ -347,35 +347,54 @@ window.currentUserAvatar = user.avatar;
   <div class="video-body">
 
     <!-- ============================================================
-         GROUP GRID (AUTO LAYOUT FOR 1:1 OR MULTI-PARTY)
+         MULTI-PARTY GRID (LOCAL + REMOTE PARTICIPANTS)
     ============================================================ -->
     <div id="callGrid" class="call-grid">
 
-      <!-- LOCAL PARTICIPANT -->
+      <!-- LOCAL PARTICIPANT TILE -->
       <div class="participant local" id="localParticipant">
         <div class="media-wrapper">
-          <video id="localVideo" autoplay playsinline muted></video>
 
+          <!-- LOCAL VIDEO -->
+          <video id="localVideo"
+                 autoplay
+                 playsinline
+                 muted
+                 class="localVideo"></video>
+
+          <!-- LOCAL AVATAR FALLBACK -->
           <div class="avatar-wrapper">
-            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
+            <img id="localAvatarImg"
+                 src="img/defaultUser.png"
+                 alt="Local Avatar">
             <div class="voice-pulse"></div>
           </div>
+
         </div>
         <div class="name-tag">You</div>
       </div>
 
-      <!-- REMOTE PARTICIPANTS TEMPLATE -->
+      <!-- REMOTE PARTICIPANT TEMPLATE (USED BY JS) -->
       <template id="remoteParticipantTemplate">
         <div class="participant remote">
+
           <div class="media-wrapper">
-           <video class="remoteVideo show" autoplay playsinline></video>
 
+            <!-- REMOTE VIDEO -->
+            <video class="remoteVideo"
+                   autoplay
+                   playsinline></video>
 
+            <!-- REMOTE AVATAR FALLBACK -->
             <div class="avatar-wrapper">
-              <img class="avatar-img" src="" alt="Avatar">
+              <img class="avatar-img"
+                   src="img/defaultUser.png"
+                   alt="Avatar">
               <div class="voice-pulse"></div>
             </div>
+
           </div>
+
           <div class="name-tag"></div>
         </div>
       </template>
@@ -383,7 +402,7 @@ window.currentUserAvatar = user.avatar;
     </div>
 
     <!-- ============================================================
-         STATUS + TIMER (CENTERED)
+         STATUS + TIMER
     ============================================================ -->
     <div class="call-top-info">
       <div id="call-status" class="call-status">Calling…</div>
@@ -391,7 +410,7 @@ window.currentUserAvatar = user.avatar;
     </div>
 
     <!-- ============================================================
-         FLOATING CONTROLS (PRIMARY ONLY)
+         CALL CONTROLS
     ============================================================ -->
     <div id="call-controls" class="call-controls">
 
@@ -404,7 +423,7 @@ window.currentUserAvatar = user.avatar;
         <span class="material-symbols-outlined">call</span>
       </button>
 
-      <!-- ACTIVE CALL PRIMARY CONTROLS -->
+      <!-- ACTIVE CALL CONTROLS -->
       <button id="mute-call" class="control-btn active-only">
         <span class="material-symbols-outlined">mic_off</span>
       </button>
@@ -417,7 +436,7 @@ window.currentUserAvatar = user.avatar;
         <span class="material-symbols-outlined">call_end</span>
       </button>
 
-      <!-- MORE CONTROLS DROPDOWN -->
+      <!-- MORE CONTROLS -->
       <div class="more-controls">
         <button id="more-controls-btn" class="control-btn">
           <span class="material-symbols-outlined">more_vert</span>
@@ -449,15 +468,19 @@ window.currentUserAvatar = user.avatar;
     </div>
 
     <!-- ============================================================
-         REMOTE AUDIO ELEMENT (REQUIRED)
+         REMOTE AUDIO (SHARED)
     ============================================================ -->
-    <audio id="remoteAudio" autoplay playsinline></audio>
+    <audio id="remoteAudio"
+           autoplay
+           playsinline></audio>
 
     <!-- ============================================================
-         CALL QUALITY + DEBUG TOGGLE
+         QUALITY + DEBUG
     ============================================================ -->
     <div class="call-info-bar">
-      <div id="call-quality-indicator" class="quality-indicator" data-level="unknown">
+      <div id="call-quality-indicator"
+           class="quality-indicator"
+           data-level="unknown">
         Unknown
       </div>
 
@@ -472,7 +495,8 @@ window.currentUserAvatar = user.avatar;
 <!-- ============================================================
      SECONDARY INCOMING CALL TOAST
 ============================================================ -->
-<div id="secondaryIncomingToast" class="toast secondary-incoming hidden">
+<div id="secondaryIncomingToast"
+     class="toast secondary-incoming hidden">
   <div class="sit-content">
     <div class="sit-message">Someone is calling…</div>
     <div class="sit-actions">
@@ -1437,6 +1461,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
