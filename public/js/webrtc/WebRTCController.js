@@ -46,36 +46,6 @@ function stopAudio(el) {
 }
 
 /* -------------------------------------------------------
-   Timer
-------------------------------------------------------- */
-
-const callTimerEl = document.getElementById("call-timer");
-
-function startTimer() {
-  if (!callTimerEl) return;
-
-  if (rtcState.callTimerInterval) clearInterval(rtcState.callTimerInterval);
-
-  rtcState.callTimerSeconds = 0;
-  callTimerEl.textContent = "00:00";
-
-  rtcState.callTimerInterval = setInterval(() => {
-    rtcState.callTimerSeconds++;
-    const s = rtcState.callTimerSeconds;
-    const m = String(Math.floor(s / 60)).padStart(2, "0");
-    const sec = String(s % 60).padStart(2, "0");
-    callTimerEl.textContent = `${m}:${sec}`;
-  }, 1000);
-}
-
-function stopTimer() {
-  if (rtcState.callTimerInterval) clearInterval(rtcState.callTimerInterval);
-  rtcState.callTimerInterval = null;
-  rtcState.callTimerSeconds = 0;
-  if (callTimerEl) callTimerEl.textContent = "00:00";
-}
-
-/* -------------------------------------------------------
    WebRTC Controller
 ------------------------------------------------------- */
 
@@ -277,7 +247,6 @@ export class WebRTCController {
     rtcState.busy = true;
 
     stopAudio(ringtone);
-    startTimer();
 
     const pc = await this._createPC({ relayOnly: false });
 
@@ -360,7 +329,6 @@ export class WebRTCController {
 
     stopAudio(ringback);
     this.onCallStarted?.();
-    startTimer();
   }
 
   /* ---------------------------------------------------
@@ -393,7 +361,6 @@ export class WebRTCController {
   endCall(local = true) {
     stopAudio(ringback);
     stopAudio(ringtone);
-    stopTimer();
 
     const peerId = rtcState.peerId;
 
@@ -825,6 +792,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
