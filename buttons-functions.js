@@ -79,14 +79,21 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
-    showCallWindow() {
-      if (!callWindow) return;
-      this.hideAllOverlays();
-      messagingPanel?.classList.add("hidden");
-      callWindow.classList.remove("hidden");
-      callWindow.setAttribute("aria-hidden", "false");
-      document.body.classList.add("panel-open");
-    },
+showCallWindow() {
+  if (!callWindow) return;
+
+  this.hideAllOverlays();
+  messagingPanel?.classList.add("hidden");
+
+  callWindow.classList.remove("hidden");
+  callWindow.classList.add("is-open", "call-opening");
+  callWindow.setAttribute("aria-hidden", "false");
+
+  setTimeout(() => callWindow.classList.remove("call-opening"), 300);
+
+  document.body.classList.add("panel-open");
+},
+
 
     endCall() {
       if (!callWindow) return;
@@ -515,6 +522,7 @@ const Settings = {
     location.reload();
   }
 };
+
 
 
 
