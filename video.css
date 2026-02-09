@@ -1,26 +1,34 @@
 /* ============================================================
-   CALL WINDOW — FULL APP MODE
+   CALL WINDOW — FULLSCREEN OVERLAY
 ============================================================ */
 .call-window {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, #1b2638 0, #07090d 55%, #020308 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: var(--z-floating);
+  background: radial-gradient(circle at top left, #1b2638 0, #07090d 55%, #020308 100%);
   opacity: 0;
   pointer-events: none;
   transform: scale(0.96);
-  transform-origin: 90% 10%; /* approx from call button */
+  transform-origin: 90% 10%; /* approximate position of call button */
   transition:
     opacity var(--med),
     transform var(--med);
 }
 
-.call-window:not(.hidden) {
+/* global .hidden should be display:none; this keeps behavior consistent */
+.call-window.hidden {
+  display: none;
+}
+
+/* visible state (JS must remove .hidden) */
+.call-window.is-open {
+  display: flex;
   opacity: 1;
   pointer-events: auto;
+  transform: scale(1);
 }
 
 /* opening burst */
@@ -39,7 +47,9 @@
   }
 }
 
-/* inner body */
+/* ============================================================
+   CALL BODY
+============================================================ */
 .call-body {
   width: min(1120px, 96vw);
   height: min(640px, 82vh);
@@ -53,9 +63,12 @@
   display: grid;
   grid-template-rows: 1fr auto auto;
   overflow: hidden;
+  position: relative;
 }
 
-/* grid */
+/* ============================================================
+   PARTICIPANT GRID
+============================================================ */
 .call-grid {
   position: relative;
   padding: 16px;
@@ -71,9 +84,14 @@
   overflow: hidden;
   background: var(--bg-3);
   border: 1px solid var(--border);
+  isolation: isolate;
 }
 
-.participant .media-wrapper {
+.participant.local {
+  box-shadow: 0 0 0 1px rgba(77,163,255,0.4);
+}
+
+.media-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
@@ -81,18 +99,20 @@
   background: #000;
 }
 
-.participant video {
+.media-wrapper video {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
+/* avatar overlay */
 .avatar-wrapper {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
 
 .avatar-wrapper img {
@@ -101,6 +121,11 @@
   border-radius: 50%;
   border: 3px solid var(--bg-2);
   box-shadow: var(--accent-glow);
+}
+
+.avatar-wrapper .avatar-img {
+  width: 64px;
+  height: 64px;
 }
 
 .voice-pulse {
@@ -128,7 +153,14 @@
   font-size: 13px;
 }
 
-/* top info */
+/* voice-only mode: hide video, keep avatar */
+.call-window.voice-only .media-wrapper video {
+  display: none;
+}
+
+/* ============================================================
+   TOP INFO BAR
+============================================================ */
 .call-top-info {
   display: flex;
   justify-content: space-between;
@@ -147,7 +179,9 @@
   font-weight: 600;
 }
 
-/* controls */
+/* ============================================================
+   CONTROLS
+============================================================ */
 .call-controls {
   display: flex;
   justify-content: center;
@@ -181,6 +215,7 @@
   transform: translateY(-1px);
 }
 
+/* primary danger buttons */
 #end-call.control-btn,
 #decline-call.control-btn {
   background: #ff4b5c;
@@ -193,6 +228,16 @@
   box-shadow: 0 0 18px rgba(255,75,92,0.6);
 }
 
+/* inbound vs active modes */
+.call-window.inbound-mode .active-only {
+  display: none;
+}
+
+.call-window.active-mode .inbound-only {
+  display: none;
+}
+
+/* more controls */
 .more-controls {
   position: relative;
 }
@@ -201,7 +246,7 @@
   position: absolute;
   bottom: 52px;
   right: 0;
-  min-width: 180px;
+  min-width: 190px;
   background: var(--bg-3);
   border-radius: var(--radius);
   border: 1px solid var(--border-strong);
@@ -219,13 +264,29 @@
   font-size: 14px;
   background: transparent;
   border-radius: 0;
+  border: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.more-controls-menu button .material-symbols-outlined {
+  font-size: 20px;
 }
 
 .more-controls-menu button:hover {
   background: var(--glass);
 }
 
-/* info bar */
+/* active states */
+#ai-noise-toggle.active,
+#record-call.active {
+  background: rgba(77,163,255,0.16);
+  border-radius: 0;
+}
+
+/* ============================================================
+   INFO BAR
+============================================================ */
 .call-info-bar {
   position: absolute;
   left: 16px;
@@ -259,20 +320,6 @@
   background: rgba(0,0,0,0.6);
 }
 
-/* modes */
-.call-window.inbound-mode .active-only {
-  display: none;
-}
-
-.call-window.active-mode .inbound-only {
-  display: none;
-}
-
-/* voice-only mode */
-.call-window.voice-only .media-wrapper video {
-  display: none;
-}
-
 /* ============================================================
    LIGHT MODE VARIANT
 ============================================================ */
@@ -299,7 +346,7 @@ body.light-mode .quality-indicator {
 }
 
 /* ============================================================
-   CUSTOM BREAKPOINTS
+   RESPONSIVE BREAKPOINTS
 ============================================================ */
 @media (max-width: 1200px) {
   .call-body {
@@ -310,7 +357,7 @@ body.light-mode .quality-indicator {
 @media (max-width: 900px) {
   .call-body {
     width: 100vw;
-    height: calc(100vh - 64px);
+    height: calc(100vh - 64px); /* rail as bottom bar */
     border-radius: 0;
   }
 
@@ -325,12 +372,16 @@ body.light-mode .quality-indicator {
 }
 
 @media (max-width: 600px) {
+  .call-body {
+    height: 100vh;
+  }
+
   .call-controls {
     flex-wrap: wrap;
   }
 
-  .call-body {
-    height: 100vh;
+  .call-grid {
+    padding: 10px;
   }
 }
 
