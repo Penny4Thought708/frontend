@@ -1,6 +1,4 @@
 // public/js/webrtc/WebRTCController.js
-// Production‑grade WebRTC controller: signaling, PC lifecycle,
-// voicemail guards, and TURN‑safe ICE handling.
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
@@ -101,10 +99,11 @@ export class WebRTCController {
     this.onCallEnded = null;
     this.onCallFailed = null;
     this.onQualityChange = null;
+    this.onSecondaryIncomingCall = null;
 
     this._bindSocketEvents();
 
-    // Wire call buttons directly to this controller instance
+    // Wire call buttons
     const voiceBtn = getVoiceBtn();
     const videoBtn = getVideoBtn();
 
@@ -115,7 +114,6 @@ export class WebRTCController {
           console.warn("[WebRTC] Voice call attempted with no receiver");
           return;
         }
-        console.log("[WebRTC] Voice button → startCall", peerId);
         this.startCall(peerId, true);
       };
     }
@@ -127,7 +125,6 @@ export class WebRTCController {
           console.warn("[WebRTC] Video call attempted with no receiver");
           return;
         }
-        console.log("[WebRTC] Video button → startCall", peerId);
         this.startCall(peerId, false);
       };
     }
@@ -170,7 +167,6 @@ export class WebRTCController {
   }
 
   async startCall(peerId, audioOnly) {
-    console.log("[WebRTC] startCall", { peerId, audioOnly });
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
 
@@ -182,11 +178,17 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) return;
 
-   rtcState.peerId = peerId; rtcState.peerName = rtcState.peerName || `User ${peerId}`; rtcState.audioOnly = !!audioOnly; rtcState.isCaller = true; rtcState.busy = true; // 🔥 now “on the phone” rtcState.inCall = false; // not connected yet rtcState.incomingOffer = null; rtcState.usedRelayFallback = !!relayOnly;
+    rtcState.peerId = peerId;
+    rtcState.peerName = rtcState.peerName || `User ${peerId}`;
+    rtcState.audioOnly = !!audioOnly;
+    rtcState.isCaller = true;
+    rtcState.busy = true;      // now “on the phone”
+    rtcState.inCall = false;   // not connected yet
+    rtcState.incomingOffer = null;
+    rtcState.usedRelayFallback = !!relayOnly;
 
     const pc = await this._createPC({ relayOnly });
 
-    // Local media (WebRTCMedia handles localVideo wiring)
     const stream = await getLocalMedia(true, !audioOnly);
     this.localStream = stream;
     rtcState.localStream = stream;
@@ -197,23 +199,17 @@ export class WebRTCController {
       console.warn("[WebRTC] No local media — continuing call anyway");
     }
 
-    // Notify UI of outgoing call
     this.onOutgoingCall?.({
       targetName: rtcState.peerName,
       voiceOnly: audioOnly,
     });
 
-    // Create offer
     const offer = await pc.createOffer();
-    console.log("[WebRTC] Created offer", offer.type);
     await pc.setLocalDescription(offer);
-    console.log("[WebRTC] Local description set, emitting offer");
 
-    // Mark as connecting/active from UI perspective
     this.onCallStarted?.();
     startTimer();
 
-    // Send offer
     this.socket.emit("webrtc:signal", {
       type: "offer",
       to: peerId,
@@ -243,31 +239,25 @@ export class WebRTCController {
     console.log("[WebRTC] handleOffer", data);
     if (!from || !offer) return;
 
-    // Ensure remote tracks attach to correct peer
     rtcState.peerId = from;
 
-    // Set peer metadata
-    rtcState.peerName   = fromUser?.fullname || fromName || `User ${from}`;
+    rtcState.peerName = fromUser?.fullname || fromName || `User ${from}`;
     rtcState.peerAvatar = fromUser?.avatar || null;
-    rtcState.audioOnly  = !!audioOnly;
-    rtcState.isCaller   = false;
+    rtcState.audioOnly = !!audioOnly;
+    rtcState.isCaller = false;
 
-    // 🔥 We are now “busy” (ringing), but not yet connected
-    rtcState.busy        = true;
-    rtcState.inCall      = false;
+    rtcState.busy = true;          // ringing
+    rtcState.inCall = false;
     rtcState.incomingOffer = data;
     rtcState.usedRelayFallback = false;
 
-    // Update remote avatar UI
     if (fromUser?.avatar) {
       setRemoteAvatar(fromUser.avatar);
       showRemoteAvatar();
     }
 
-    // Play ringtone
     ringtone?.play().catch(() => {});
 
-    // Notify UI
     this.onIncomingCall?.({
       fromName: rtcState.peerName,
       audioOnly: rtcState.audioOnly,
@@ -284,8 +274,8 @@ export class WebRTCController {
     const { from, offer, audioOnly } = offerData;
 
     rtcState.audioOnly = !!audioOnly;
-    rtcState.inCall    = true;   // 🔥 now connected
-    rtcState.busy      = true;
+    rtcState.inCall = true;   // now connected
+    rtcState.busy = true;
 
     stopAudio(ringtone);
     startTimer();
@@ -343,8 +333,8 @@ export class WebRTCController {
     });
 
     rtcState.incomingOffer = null;
-    rtcState.inCall        = false;
-    rtcState.busy          = false;
+    rtcState.inCall = false;
+    rtcState.busy = false;
 
     this.onCallEnded?.();
   }
@@ -356,7 +346,6 @@ export class WebRTCController {
     if (!this.pc) return;
     if (!data?.answer) return;
     if (!rtcState.isCaller) return;
-
     if (this.pc.signalingState !== "have-local-offer") return;
 
     rtcState.answering = true;
@@ -367,9 +356,8 @@ export class WebRTCController {
     );
     await this._flushPendingRemoteCandidates();
 
-    // 🔥 call is now active
     rtcState.inCall = true;
-    rtcState.busy   = true;
+    rtcState.busy = true;
 
     stopAudio(ringback);
     this.onCallStarted?.();
@@ -417,7 +405,6 @@ export class WebRTCController {
       this.pc = null;
     }
 
-    // Centralized media cleanup (local + remote + tiles)
     cleanupMedia();
     this.localStream = null;
 
@@ -440,11 +427,11 @@ export class WebRTCController {
       timestamp: new Date().toISOString(),
     });
 
-    rtcState.inCall      = false;
-    rtcState.busy        = false;
-    rtcState.peerId      = null;
+    rtcState.inCall = false;
+    rtcState.busy = false;
+    rtcState.peerId = null;
     rtcState.incomingOffer = null;
-    rtcState.answering   = false;
+    rtcState.answering = false;
 
     showLocalAvatar();
     showRemoteAvatar();
@@ -514,7 +501,6 @@ export class WebRTCController {
     const pc = new RTCPeerConnection(config);
     this.pc = pc;
 
-    /* TURN keepalive */
     const startTurnKeepAlive = (pcInstance) => {
       let keepAliveTimer = setInterval(() => {
         try {
@@ -534,7 +520,6 @@ export class WebRTCController {
 
     startTurnKeepAlive(pc);
 
-    /* DataChannel keepalive */
     try {
       const keepAliveChannel = pc.createDataChannel("keepalive");
       keepAliveChannel.onopen = () => {
@@ -546,9 +531,6 @@ export class WebRTCController {
       };
     } catch {}
 
-    /* ---------------------------------------------------
-       Outgoing ICE
-    --------------------------------------------------- */
     pc.onicecandidate = (event) => {
       if (!event.candidate) return;
 
@@ -570,17 +552,11 @@ export class WebRTCController {
       }
     };
 
-    /* ---------------------------------------------------
-       Remote tracks → WebRTCMedia (group-aware)
-    --------------------------------------------------- */
     pc.ontrack = (event) => {
       const peerId = rtcState.peerId || "default";
       attachRemoteTrack(peerId, event);
     };
 
-    /* ---------------------------------------------------
-       ICE state → quality (no auto‑hangup fallback)
-    --------------------------------------------------- */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
 
@@ -606,8 +582,6 @@ export class WebRTCController {
       }
 
       if (state === "failed") {
-        // No more auto‑end + relay restart here.
-        // Just fail the call cleanly.
         this.onCallFailed?.("ice failed");
         this.endCall(false);
       }
@@ -664,9 +638,6 @@ export class WebRTCController {
     this.socket.off("call:missed");
     this.socket.off("call:dnd");
 
-    /* -------------------------------------------------------
-       CORE SIGNALING
-    ------------------------------------------------------- */
     this.socket.on("webrtc:signal", async (data) => {
       console.log("[WebRTC] webrtc:signal received", data?.type, data);
       if (!data || !data.type) return;
@@ -712,9 +683,6 @@ export class WebRTCController {
       }
     });
 
-    /* -------------------------------------------------------
-       CALL RESTORE
-    ------------------------------------------------------- */
     this.socket.on("call:restore", ({ callerId, receiverId, status }) => {
       const me = String(getMyUserId());
       const callerStr = String(callerId);
@@ -726,6 +694,7 @@ export class WebRTCController {
       rtcState.peerId = peerId;
       rtcState.isCaller = isCaller;
       rtcState.inCall = status === "active";
+      rtcState.busy = status === "active";
 
       if (status === "active" && isCaller) {
         this._resumeAsCallerAfterRestore(peerId);
@@ -755,9 +724,8 @@ export class WebRTCController {
     };
 
     const triggerVoicemailFlow = (from, message) => {
-      // Ignore voicemail if we’re already in / actively answering a call
-      if (rtcState.inCall || rtcState.answering) {
-        console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
+      if (rtcState.inCall || rtcState.answering || rtcState.busy) {
+        console.log("[WebRTC] Ignoring voicemail flow (inCall/answering/busy)");
         return;
       }
 
@@ -778,20 +746,34 @@ export class WebRTCController {
       }
     };
 
+    const handleThirdIncoming = (from, message) => {
+      if (rtcState.busy || rtcState.inCall) {
+        this.onSecondaryIncomingCall?.({
+          fromName: rtcState.peerName || "Unknown",
+          audioOnly: rtcState.audioOnly,
+          fromId: from,
+          message,
+        });
+        return;
+      }
+
+      triggerVoicemailFlow(from, message);
+    };
+
     this.socket.on("call:timeout", ({ from }) => {
-      triggerVoicemailFlow(from, "No answer. Leave a voicemail…");
+      handleThirdIncoming(from, "No answer. Leave a voicemail…");
     });
 
     this.socket.on("call:declined", ({ from }) => {
-      triggerVoicemailFlow(from, "Call declined. Leave a voicemail…");
+      handleThirdIncoming(from, "Call declined. Leave a voicemail…");
     });
 
     this.socket.on("call:missed", ({ from }) => {
-      triggerVoicemailFlow(from, "Missed call. Leave a voicemail…");
+      handleThirdIncoming(from, "Missed call. Leave a voicemail…");
     });
 
     this.socket.on("call:dnd", ({ from }) => {
-      triggerVoicemailFlow(
+      handleThirdIncoming(
         from,
         "User is in Do Not Disturb. Leave a voicemail…"
       );
@@ -803,12 +785,9 @@ export class WebRTCController {
           ? "User is in Do Not Disturb. Leave a voicemail…"
           : "Leave a voicemail…";
 
-      triggerVoicemailFlow(from, msg);
+      handleThirdIncoming(from, msg);
     });
 
-    /* -------------------------------------------------------
-       DISCONNECT CLEANUP
-    ------------------------------------------------------- */
     this.socket.on("disconnect", () => {
       if (rtcState.inCall) {
         this.endCall(false);
@@ -816,6 +795,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
