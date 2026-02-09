@@ -24,6 +24,11 @@ export const rtcState = {
   callEstablished: false,
   mediaReady: false,
 
+  // 🔥 NEW — used by controller + voicemail logic
+  inCall: false,   // true only once call is connected
+  busy: false,     // true from ringing/connecting through active
+  voiceOnly: false,
+
   /* ---------------------------------------------------
      Fallback + Recovery
   --------------------------------------------------- */
@@ -53,7 +58,7 @@ export const rtcState = {
      Internal Guards
   --------------------------------------------------- */
   resetInProgress: false,
-  answering: false,   // 🔥 NEW — blocks fallback during answer window
+  answering: false,   // blocks fallback during answer window
 
   /* ---------------------------------------------------
      Logging Helper
@@ -81,7 +86,6 @@ export const rtcState = {
     this.peerId = id ?? null;
     this.peerName = name ?? null;
 
-    // Assign a unique call ID for debugging multi-device issues
     this.callId = crypto.randomUUID?.() || Date.now().toString();
 
     this.log("Peer set:", {
@@ -116,6 +120,7 @@ export const rtcState = {
 
   markCallEstablished() {
     this.callEstablished = true;
+    this.inCall = true;     // 🔥 mark connected
     this.setPhase("active");
     this.log("Call established");
   },
@@ -174,7 +179,10 @@ export const rtcState = {
     this.pendingIceRestart = false;
 
     this.callId = null;
-    this.answering = false;   // 🔥 NEW — ensure clean state after teardown
+    this.answering = false;
+    this.inCall = false;
+    this.busy = false;
+    this.voiceOnly = false;
 
     this.log("Call state reset");
   },
@@ -214,7 +222,10 @@ export const rtcState = {
       incomingOffer: this.incomingOffer,
       usedRelayFallback: this.usedRelayFallback,
       pendingIceRestart: this.pendingIceRestart,
-      answering: this.answering,   // 🔥 NEW — visible in debug
+      answering: this.answering,
+      inCall: this.inCall,
+      busy: this.busy,
+      voiceOnly: this.voiceOnly,
       hasLocalStream: !!this.localStream,
       hasRemoteStream: !!this.remoteStream,
       remoteTrackCount: this.remoteTracks.size,
@@ -225,6 +236,7 @@ export const rtcState = {
     return snapshot;
   }
 };
+
 
 
 
