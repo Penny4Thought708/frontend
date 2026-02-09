@@ -1,6 +1,7 @@
 // public/js/webrtc/WebRTCMedia.js
-// Production‑grade media engine: local/remote media,
-// audio visualization, speaking detection, and voice‑only optimization.
+// Production‑grade media engine for the new call window:
+// local/remote media, audio visualization, speaking detection,
+// voice‑only optimization, and group‑aware layout.
 
 import { rtcState } from "./WebRTCState.js";
 
@@ -8,6 +9,7 @@ import { rtcState } from "./WebRTCState.js";
    Shared AudioContext (Safari‑safe, mobile‑safe)
 ------------------------------------------------------- */
 let sharedAudioCtx = null;
+
 function getAudioCtx() {
   if (!sharedAudioCtx) {
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -40,9 +42,14 @@ function ensureRemoteMap() {
   return rtcState.remoteParticipants;
 }
 
+/**
+ * Create a remote participant tile from the template and
+ * append it to #callGrid. Returns the tile element.
+ */
 function createRemoteParticipant(peerId = "default") {
   const grid = getCallGrid();
   const tpl = getRemoteTemplate();
+
   if (!grid || !tpl) {
     log("createRemoteParticipant: missing grid or template");
     return null;
@@ -58,12 +65,15 @@ function createRemoteParticipant(peerId = "default") {
   const avatarImg = clone.querySelector(".avatar-img");
   const nameTag   = clone.querySelector(".name-tag");
 
-  if (nameTag) nameTag.textContent = peerId || "Guest";
+  if (nameTag) {
+    nameTag.textContent = peerId || "Guest";
+  }
+
   if (avatarImg && !avatarImg.src) {
     avatarImg.src = "img/defaultUser.png";
   }
 
-  // In voice‑only mode, hide the video element entirely
+  // Voice‑only: hide video element entirely
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
     videoEl.removeAttribute("srcObject");
@@ -115,7 +125,10 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
   if (!stream || !target) return;
 
   const ctx = getAudioCtx();
-  if (!ctx) return log("AudioContext not supported");
+  if (!ctx) {
+    log("AudioContext not supported");
+    return;
+  }
 
   try {
     const src = ctx.createMediaStreamSource(stream);
@@ -154,10 +167,13 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 const speakingLoops = new Map();
 
 function startRemoteSpeakingDetection(stream, participantEl) {
-  if (!participantEl) return;
+  if (!participantEl || !stream) return;
 
   const ctx = getAudioCtx();
-  if (!ctx) return log("AudioContext not supported");
+  if (!ctx) {
+    log("AudioContext not supported");
+    return;
+  }
 
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 512;
@@ -268,6 +284,7 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
+    // Retry audio‑only if full AV fails
     if (
       video &&
       audio &&
