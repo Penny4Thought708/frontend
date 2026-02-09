@@ -42,10 +42,9 @@ function ensureRemoteMap() {
   return rtcState.remoteParticipants;
 }
 
-/**
- * Create a remote participant tile from the template and
- * append it to #callGrid. Returns the tile element.
- */
+/* -------------------------------------------------------
+   Create Remote Participant Tile
+------------------------------------------------------- */
 function createRemoteParticipant(peerId = "default") {
   const grid = getCallGrid();
   const tpl = getRemoteTemplate();
@@ -65,13 +64,8 @@ function createRemoteParticipant(peerId = "default") {
   const avatarImg = clone.querySelector(".avatar-img");
   const nameTag   = clone.querySelector(".name-tag");
 
-  if (nameTag) {
-    nameTag.textContent = peerId || "Guest";
-  }
-
-  if (avatarImg && !avatarImg.src) {
-    avatarImg.src = "img/defaultUser.png";
-  }
+  if (nameTag) nameTag.textContent = peerId || "Guest";
+  if (avatarImg && !avatarImg.src) avatarImg.src = "img/defaultUser.png";
 
   // Voice‑only: hide video element entirely
   if (rtcState.voiceOnly && videoEl) {
@@ -92,7 +86,7 @@ function getRemoteParticipant(peerId = "default") {
 }
 
 /* -------------------------------------------------------
-   Local Avatar Visibility (grid layout)
+   Local Avatar Visibility
 ------------------------------------------------------- */
 function updateLocalAvatarVisibility() {
   const localTile = document.getElementById("localParticipant");
@@ -103,13 +97,7 @@ function updateLocalAvatarVisibility() {
 
   const stream = rtcState.localStream;
 
-  // Voice‑only: always show avatar
-  if (rtcState.voiceOnly) {
-    avatarWrapper.style.display = "flex";
-    return;
-  }
-
-  if (!stream) {
+  if (rtcState.voiceOnly || !stream) {
     avatarWrapper.style.display = "flex";
     return;
   }
@@ -162,7 +150,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection (per participant)
+   Remote Speaking Detection
 ------------------------------------------------------- */
 const speakingLoops = new Map();
 
@@ -189,7 +177,9 @@ function startRemoteSpeakingDetection(stream, participantEl) {
     const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
 
     smoothed = smoothed * 0.8 + avg * 0.2;
-    const threshold = rtcState.voiceOnly ? 0.045 : 0.06;
+
+    // Hybrid threshold tuned for Meet+Discord
+    const threshold = rtcState.voiceOnly ? 0.035 : 0.055;
     const speaking = smoothed > threshold;
 
     participantEl.classList.toggle("speaking", speaking);
@@ -210,7 +200,7 @@ export function stopSpeakingDetection() {
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (voice/video aware)
+   Local Media Acquisition (Meet+Discord tuned)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -235,7 +225,7 @@ export async function getLocalMedia(audio = true, video = true) {
       ? {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          frameRate: { ideal: 30, max: 60 },
+          frameRate: { ideal: 30, max: 30 }, // Meet-style stability
         }
       : false,
   };
@@ -268,17 +258,11 @@ export async function getLocalMedia(audio = true, video = true) {
         .play()
         .then(() => log("Local video playing"))
         .catch((err) => log("Local video play blocked:", err?.name || err));
-    } else if (!localVideo) {
-      log("No #localVideo element found in DOM");
     }
 
     updateLocalAvatarVisibility();
 
-    if (localTile) {
-      attachAudioVisualizer(stream, localTile);
-    } else {
-      log("No local tile found for audio visualizer");
-    }
+    if (localTile) attachAudioVisualizer(stream, localTile);
 
     return stream;
   } catch (err) {
@@ -374,9 +358,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   };
 
-  evt.track.onmute   = () => { log("Remote track muted:", peerId, evt.track.kind); showAvatar(true); };
-  evt.track.onunmute = () => { log("Remote track unmuted:", peerId, evt.track.kind); showAvatar(false); };
-  evt.track.onended  = () => { log("Remote track ended:", peerId, evt.track.kind); showAvatar(true); };
+  evt.track.onmute   = () => { showAvatar(true); };
+  evt.track.onunmute = () => { showAvatar(false); };
+  evt.track.onended  = () => { showAvatar(true); };
 
   /* -----------------------------
      Remote Video
@@ -394,7 +378,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
       .then(() => {
         showAvatar(false);
         participantEl.classList.add("video-active");
-        log("Remote VIDEO playing for peer:", peerId);
       })
       .catch((err) => {
         log("Remote video play blocked or failed:", err?.name || err);
@@ -414,7 +397,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 
     remoteAudioEl
       .play()
-      .then(() => log("Remote audio playing"))
       .catch(() => log("Remote audio autoplay blocked"));
 
     startRemoteSpeakingDetection(remoteStream, participantEl);
@@ -475,6 +457,36 @@ export function cleanupMedia() {
 
   updateLocalAvatarVisibility();
 }
+/* -------------------------------------------------------
+   Screen Share Tile Logic (Meet-style stage mode)
+------------------------------------------------------- */
+export function enterScreenShareMode(peerId = "local") {
+  const grid = document.getElementById("callGrid");
+  if (!grid) return;
+
+  grid.classList.add("screen-share-mode");
+
+  const tiles = grid.querySelectorAll(".participant");
+  tiles.forEach((tile) => {
+    if (tile.dataset.peerId === peerId) {
+      tile.classList.add("stage");
+    } else {
+      tile.classList.add("filmstrip");
+    }
+  });
+}
+
+export function exitScreenShareMode() {
+  const grid = document.getElementById("callGrid");
+  if (!grid) return;
+
+  grid.classList.remove("screen-share-mode");
+
+  const tiles = grid.querySelectorAll(".participant");
+  tiles.forEach((tile) => {
+    tile.classList.remove("stage", "filmstrip");
+  });
+}
 
 /* -------------------------------------------------------
    Public Helper
@@ -482,8 +494,6 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
-
-
 
 
 
