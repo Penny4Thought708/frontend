@@ -8,195 +8,147 @@ document.addEventListener("DOMContentLoaded", () => {
   Settings.init();
 });
 
-/* -----------------------------------------------------------
-   GLOBAL PARALLAX BACKGROUND
------------------------------------------------------------ */
-document.addEventListener("mousemove", (e) => {
-  const x = (e.clientX / window.innerWidth - 0.5) * 10;
-  const y = (e.clientY / window.innerHeight - 0.5) * 10;
-  const bg = document.querySelector(".workspace-bg");
-  if (bg) bg.style.transform = `translate(${x}px, ${y}px)`;
-});
-
 /* ============================================================
    MAIN UI CONTROLLER
 ============================================================ */
 function initUI() {
-  /* -----------------------------------------------------------
-     CORE ELEMENTS (MATCHED TO NEW HTML)
-  ----------------------------------------------------------- */
-  const messaging = document.getElementById("messaging_box");
-  const miniChat = document.getElementById("miniChatBubble");
-
+  const messagingPanel = document.getElementById("messagingPanel");
   const directoryPanel = document.getElementById("directoryPanel");
-  const search = document.getElementById("search_panel");
+  const callWindow = document.getElementById("callWindow");
 
-  const video = document.getElementById("videoCallWindow");
-  const settings = document.getElementById("settingsWindow");
-  const fullProfile = document.getElementById("fullProfileModal");
-  const voicemail = document.getElementById("voicemailModal");
+  const profileWindow = document.getElementById("profileWindow");
+  const settingsWindow = document.getElementById("settingsWindow");
+  const fullProfileModal = document.getElementById("fullProfileModal");
 
-  const toggleBtn = document.getElementById("toggleBtn");
+  const voicemailModal = document.getElementById("voicemailModal");
+  const logoutModal = document.getElementById("logoutModal");
+
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
+  const toggleBtn = document.getElementById("toggleBtn");
+  const videoBtn = document.getElementById("videoBtn");
+
+  const newPill = document.getElementById("newMessagesPill");
+  const msgWin = document.getElementById("messageWin");
 
   /* -----------------------------------------------------------
-     PANEL STATE MANAGEMENT
+     PANEL STATE
   ----------------------------------------------------------- */
   const UIX = {
-    hideAllPanelsExceptMessaging() {
-      [
-        directoryPanel,
-        search,
-        video,
-        settings,
-        fullProfile,
-        voicemail
-      ].forEach(p => {
-        if (!p) return;
-        p.classList.add("hidden");
-      });
-    },
-
-    showMessaging() {
-      this.hideAllPanelsExceptMessaging();
-      messaging?.classList.remove("hidden");
-      miniChat?.classList.add("hidden");
+    hideAllOverlays() {
+      [directoryPanel, profileWindow, settingsWindow, fullProfileModal, voicemailModal, logoutModal, callWindow]
+        .forEach(el => el && el.classList.add("hidden"));
       document.body.classList.remove("panel-open");
     },
 
-    collapseMessaging() {
-      messaging?.classList.add("hidden");
-      miniChat?.classList.remove("hidden");
-    },
-
-    showFloating(panel) {
-      if (!panel) return;
-      this.hideAllPanelsExceptMessaging();
-      this.collapseMessaging();
-      panel.classList.remove("hidden");
-      FloatingWindows.focus(panel);
-      document.body.classList.add("panel-open");
+    showMessaging() {
+      this.hideAllOverlays();
+      messagingPanel?.classList.remove("hidden");
+      document.body.classList.remove("panel-open");
     },
 
     showDirectory() {
       if (!directoryPanel) return;
-
-      this.hideAllPanelsExceptMessaging();
-      this.collapseMessaging();
-
-      if (!directoryOpen) {
-        openDirectory();
-      } else {
-        closeDirectory(() => openDirectory());
-      }
-
+      this.hideAllOverlays();
+      messagingPanel?.classList.add("hidden");
+      directoryPanel.classList.remove("hidden");
+      directoryPanel.classList.add("dir-visible");
+      directoryPanel.setAttribute("aria-hidden", "false");
       document.body.classList.add("panel-open");
+    },
+
+    showFloating(win) {
+      if (!win) return;
+      this.hideAllOverlays();
+      messagingPanel?.classList.add("hidden");
+      win.classList.remove("hidden");
+      FloatingWindows.focus(win);
+      document.body.classList.add("panel-open");
+    },
+
+    showModal(modal) {
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("panel-open");
+    },
+
+    hideModal(modal) {
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("panel-open");
+    },
+
+    showCallWindow() {
+      if (!callWindow) return;
+      this.hideAllOverlays();
+      messagingPanel?.classList.add("hidden");
+      callWindow.classList.remove("hidden");
+      callWindow.setAttribute("aria-hidden", "false");
+      document.body.classList.add("panel-open");
+    },
+
+    endCall() {
+      if (!callWindow) return;
+      callWindow.classList.add("hidden");
+      callWindow.setAttribute("aria-hidden", "true");
+      this.showMessaging();
     }
   };
 
-  /* ============================================================
-     DIRECTORY SECTION SWITCHER — CONTACTS / HISTORY / MESSAGES / VOICEMAIL / BLOCKED
-  ============================================================ */
-  function initDirectorySwitcher() {
+  /* -----------------------------------------------------------
+     DIRECTORY SECTION SWITCHER
+  ----------------------------------------------------------- */
+  (function initDirectorySwitcher() {
     const navButtons = document.querySelectorAll(".directory-nav button");
     const sections = document.querySelectorAll(".dir-section");
-
     if (!navButtons.length || !sections.length) return;
 
- function showSection(sectionName) {
-  const newSection = document.getElementById(`dir-${sectionName}`);
-  const active = document.querySelector(".dir-section.dir-active");
+    function showSection(sectionName) {
+      const newSection = document.getElementById(`dir-${sectionName}`);
+      const active = document.querySelector(".dir-section.dir-active");
+      if (active === newSection) return;
 
-  if (active === newSection) return;
+      if (active) {
+        active.classList.remove("dir-active");
+        active.classList.add("hidden");
+      }
 
-  if (active) {
-    active.classList.remove("dir-active");
-    active.classList.add("hidden");
-  }
-
-  newSection.classList.remove("hidden");
-
-  requestAnimationFrame(() => {
-    newSection.classList.add("dir-active");
-  });
-}
-
+      if (!newSection) return;
+      newSection.classList.remove("hidden");
+      requestAnimationFrame(() => newSection.classList.add("dir-active"));
+    }
 
     navButtons.forEach(btn => {
+      btn.setAttribute("role", "tab");
       btn.addEventListener("click", () => {
         const section = btn.dataset.section;
-
         navButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
-
         showSection(section);
       });
     });
 
     showSection("contacts");
-  }
-
-  /* ============================================================
-     DIRECTORY SLIDE CONTROLLER — FINAL VERSION
-  ============================================================ */
-  let directoryOpen = false;
-  let directoryAnimating = false;
-
-  function openDirectory() {
-    if (directoryAnimating || !directoryPanel) return;
-    directoryAnimating = true;
-
-    directoryPanel.classList.remove("dir-hiding", "hidden");
-    void directoryPanel.offsetWidth; // force reflow
-
-    directoryPanel.classList.add("dir-visible");
-
-    setTimeout(() => {
-      directoryOpen = true;
-      directoryAnimating = false;
-    }, 260);
-  }
-
-  function closeDirectory(callback) {
-    if (directoryAnimating || !directoryPanel) return;
-    directoryAnimating = true;
-
-    directoryPanel.classList.remove("dir-visible");
-    directoryPanel.classList.add("dir-hiding");
-
-    setTimeout(() => {
-      directoryPanel.classList.add("hidden");
-      directoryOpen = false;
-      directoryAnimating = false;
-      if (callback) callback();
-    }, 260);
-  }
-
-  document.querySelectorAll(".directory-nav button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (!directoryOpen) {
-        openDirectory();
-      } else {
-        closeDirectory(() => openDirectory());
-      }
-    });
-  });
+    navButtons[0]?.classList.add("active");
+  })();
 
   /* -----------------------------------------------------------
      THEME TOGGLE
   ----------------------------------------------------------- */
   toggleBtn?.addEventListener("click", () => {
-    const html = document.documentElement;
-    const theme = html.getAttribute("data-theme");
-    const next = theme === "dark" ? "light" : "dark";
-    html.setAttribute("data-theme", next);
-    toggleBtn.textContent = next === "dark" ? "🌙" : "☀️";
+    const body = document.body;
+    const isDark = body.classList.contains("dark-mode");
+    body.classList.toggle("dark-mode", !isDark);
+    body.classList.toggle("light-mode", isDark);
+    toggleBtn.setAttribute("aria-pressed", String(!isDark));
   });
 
   /* -----------------------------------------------------------
-     LEFT RAIL BUTTONS
+     RAIL BUTTON ROUTER
   ----------------------------------------------------------- */
   railButtons.forEach(btn => {
+    btn.setAttribute("role", "button");
     btn.addEventListener("click", () => {
       railButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
@@ -205,23 +157,18 @@ function initUI() {
         case "btn_chat_main":
           UIX.showMessaging();
           break;
-
         case "contact_widget":
           UIX.showDirectory();
           break;
-
         case "btn_search":
-          UIX.showFloating(search);
+          UIX.showFloating(profileWindow); // placeholder: attach real search window if added
           break;
-
         case "btn_settings":
-          UIX.showFloating(settings);
+          UIX.showFloating(settingsWindow);
           break;
-
         case "btn_notifications":
           showToast("Notifications panel coming soon");
           break;
-
         case "btn_help":
           showToast("Help panel coming soon");
           break;
@@ -230,35 +177,50 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     VIDEO CALL
+     VIDEO / CALL WINDOW
   ----------------------------------------------------------- */
-  document.getElementById("videoBtn")?.addEventListener("click", () => {
-    UIX.showFloating(video);
+  videoBtn?.addEventListener("click", () => {
+    UIX.showCallWindow();
   });
 
   document.getElementById("end-call")?.addEventListener("click", () => {
-    if (!video) return;
-    video.classList.add("hidden");
-    UIX.showMessaging();
+    UIX.endCall();
   });
 
   /* -----------------------------------------------------------
-     MINI CHAT BUBBLE
+     LOGOUT MODAL
   ----------------------------------------------------------- */
-  miniChat?.addEventListener("click", () => {
-    UIX.showMessaging();
+  window.showLogoutModal = function () {
+    UIX.showModal(logoutModal);
+  };
+
+  document.getElementById("cancelLogout")?.addEventListener("click", () => {
+    UIX.hideModal(logoutModal);
+  });
+
+  document.getElementById("confirmLogout")?.addEventListener("click", () => {
+    // plug in real logout
+    UIX.hideModal(logoutModal);
+    showToast("Logged out");
   });
 
   /* -----------------------------------------------------------
-     FULL PROFILE MODAL
+     VOICEMAIL MODAL
+  ----------------------------------------------------------- */
+  document.getElementById("vmCancelBtn")?.addEventListener("click", () => {
+    UIX.hideModal(voicemailModal);
+  });
+
+  /* -----------------------------------------------------------
+     FULL PROFILE CLOSE
   ----------------------------------------------------------- */
   document.getElementById("closeFullProfile")?.addEventListener("click", () => {
-    fullProfile?.classList.add("hidden");
+    fullProfileModal?.classList.add("hidden");
     UIX.showMessaging();
   });
 
   /* -----------------------------------------------------------
-     ESC KEY CLOSES FLOATING PANELS
+     ESC KEY
   ----------------------------------------------------------- */
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
@@ -268,20 +230,54 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     INITIALIZE DIRECTORY + DEFAULT STATE
+     NEW MESSAGES PILL
   ----------------------------------------------------------- */
-  initDirectorySwitcher();
-  UIX.showMessaging();
+  if (msgWin && newPill) {
+    function isAtBottom() {
+      return msgWin.scrollHeight - msgWin.scrollTop - msgWin.clientHeight < 10;
+    }
+
+    function showPill() {
+      newPill.classList.remove("hidden");
+      requestAnimationFrame(() => newPill.classList.add("show"));
+    }
+
+    function hidePill() {
+      newPill.classList.remove("show");
+      setTimeout(() => newPill.classList.add("hidden"), 200);
+    }
+
+    msgWin.addEventListener("scroll", () => {
+      if (isAtBottom()) hidePill();
+      else showPill();
+    });
+
+    newPill.addEventListener("click", () => {
+      msgWin.scrollTo({ top: msgWin.scrollHeight, behavior: "smooth" });
+      hidePill();
+    });
+  }
+
+  /* -----------------------------------------------------------
+     ARIA HOOKS
+  ----------------------------------------------------------- */
+  if (directoryPanel) {
+    directoryPanel.setAttribute("role", "complementary");
+    directoryPanel.setAttribute("aria-label", "Directory");
+  }
+  if (messagingPanel) {
+    messagingPanel.setAttribute("role", "main");
+  }
 }
 
 /* ============================================================
-   FLOATING WINDOW ENGINE — DRAGGING + Z‑INDEX + FOCUS
+   FLOATING WINDOW ENGINE
 ============================================================ */
 const FloatingWindows = {
   z: 50,
 
   init() {
-    const windows = document.querySelectorAll("[data-floating]");
+    const windows = document.querySelectorAll(".floating-window");
     windows.forEach(win => {
       this.makeDraggable(win);
       win.addEventListener("mousedown", () => this.focus(win));
@@ -327,6 +323,8 @@ const FloatingWindows = {
 function showToast(msg) {
   const toast = document.createElement("div");
   toast.className = "toast";
+  toast.setAttribute("role", "status");
+  toast.setAttribute("aria-live", "polite");
   toast.textContent = msg;
 
   document.body.appendChild(toast);
@@ -340,38 +338,31 @@ function showToast(msg) {
 }
 
 /* ============================================================
-   SETTINGS CONTROLLER (UNCHANGED)
+   SETTINGS CONTROLLER (UNCHANGED CORE, ARIA-SAFE)
 ============================================================ */
-
 const Settings = {
   data: {
     theme: "system",
     accent: "#4CAF50",
     fontSize: 16,
-
     camera: null,
     resolution: "720p",
     backgroundBlur: false,
     mirrorVideo: false,
-
     microphone: null,
     speaker: null,
     noiseSuppression: false,
     echoCancellation: false,
     autoGain: false,
-
     callAlerts: true,
     messageAlerts: true,
     soundEffects: true,
-
     highContrast: false,
     keyboardShortcuts: true,
     screenReader: false,
-
     profileName: "",
     profileEmail: "",
     profilePicture: null,
-
     showOnline: true,
     allowMessages: true,
   },
@@ -473,30 +464,24 @@ const Settings = {
       theme: "theme_select",
       accent: "accent_color",
       fontSize: "font_size",
-
       camera: "camera_select",
       resolution: "resolution_select",
       backgroundBlur: "background_blur",
       mirrorVideo: "mirror_video",
-
       microphone: "microphone_select",
       speaker: "speaker_select",
       noiseSuppression: "noise_suppression",
       echoCancellation: "echo_cancellation",
       autoGain: "auto_gain",
-
       callAlerts: "call_alerts",
       messageAlerts: "message_alerts",
       soundEffects: "sound_effects",
-
       highContrast: "high_contrast",
       keyboardShortcuts: "keyboard_shortcuts",
       screenReader: "screen_reader",
-
       profileName: "contact_display_name",
       profileEmail: "contact_email",
       profilePicture: "contact_profile_picture",
-
       showOnline: "show_online",
       allowMessages: "allow_messages",
     }[key];
@@ -507,11 +492,9 @@ const Settings = {
       case "theme":
         document.body.dataset.theme = this.data.theme;
         break;
-
       case "accent":
         document.documentElement.style.setProperty("--accent", this.data.accent);
         break;
-
       case "fontSize":
         document.documentElement.style.fontSize = this.data.fontSize + "px";
         break;
@@ -533,37 +516,6 @@ const Settings = {
   }
 };
 
-const msgWin = document.querySelector(".message-window");
-const newPill = document.getElementById("newMessagesPill");
-
-if (msgWin && newPill) {
-  function isAtBottom() {
-    return msgWin.scrollHeight - msgWin.scrollTop - msgWin.clientHeight < 10;
-  }
-
-  function showPill() {
-    newPill.classList.remove("hidden");
-    requestAnimationFrame(() => newPill.classList.add("show"));
-  }
-
-  function hidePill() {
-    newPill.classList.remove("show");
-    setTimeout(() => newPill.classList.add("hidden"), 200);
-  }
-
-  msgWin.addEventListener("scroll", () => {
-    if (isAtBottom()) {
-      hidePill();
-    } else {
-      showPill();
-    }
-  });
-
-  newPill.addEventListener("click", () => {
-    msgWin.scrollTo({ top: msgWin.scrollHeight, behavior: "smooth" });
-    hidePill();
-  });
-}
 
 
 
