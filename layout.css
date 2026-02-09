@@ -466,14 +466,95 @@ app-main {
   justify-content: center;
   z-index: var(--z-modal);
 }
-
+ 
+/* ============================================================
+   MODAL CONTENT
+============================================================ */
 .modal-1-content {
-  background: var(--glass-heavy);
-  padding: 24px;
-  border-radius: var(--radius-lg);
   width: 360px;
-  text-align: center;
+  padding: 28px 26px;
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy));
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
+  box-shadow:
+    0 0 22px rgba(0,0,0,0.45),
+    var(--accent-glow);
+  animation: modalPop var(--med);
+}
+
+/* Smooth OS pop-in */
+@keyframes modalPop {
+  0%   { transform: scale(0.92) translateY(8px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ============================================================
+   TITLE
+============================================================ */
+.modal-1-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+/* ============================================================
+   MESSAGE
+============================================================ */
+.modal-1-message {
+  font-size: 15px;
+  color: var(--text-dim);
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   ACTIONS
+============================================================ */
+.modal-1-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Base button */
+.modal-1-btn {
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 500;
+  transition:
+    background var(--fast),
+    color var(--fast),
+    transform var(--fast);
+}
+
+/* Cancel button */
+.modal-1-btn.cancel {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.modal-1-btn.cancel:hover {
+  background: var(--glass-heavy);
+  transform: translateY(-1px);
+}
+
+/* Confirm button */
+.modal-1-btn.confirm {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  box-shadow: var(--accent-glow);
+}
+
+.modal-1-btn.confirm:hover {
+  background: #5bb0ff;
+  transform: translateY(-1px);
 }
 
 /* ============================================================
