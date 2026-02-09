@@ -1,70 +1,38 @@
 /* ============================================================
-   ROOT VARIABLES — ELECTRIC BLUE NEON OS THEME
+   ROOT THEME TOKENS
 ============================================================ */
 :root {
-  /* ============================================================
-     CORE SURFACE COLORS — DARK OS STACK
-  ============================================================ */
-  --bg: #07090d;          /* deeper, cleaner base */
-  --bg-2: #0e1116;        /* subtle elevation */
-  --bg-3: #161b22;        /* highest neutral surface */
+  --bg: #07090d;
+  --bg-2: #0e1116;
+  --bg-3: #161b22;
 
-  /* ============================================================
-     GLASS + DEPTH LAYERS
-  ============================================================ */
-  --glass: rgba(255, 255, 255, 0.05);        /* soft glass */
-  --glass-heavy: rgba(255, 255, 255, 0.10);  /* stronger glass */
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-heavy: rgba(255, 255, 255, 0.10);
 
-  /* ============================================================
-     BORDERS + DIVIDERS
-  ============================================================ */
   --border: rgba(255, 255, 255, 0.10);
   --border-strong: rgba(255, 255, 255, 0.18);
 
-  /* ============================================================
-     TEXT COLORS
-  ============================================================ */
-  --text: #eef3fb;        /* slightly brighter for readability */
-  --text-dim: #8f9aad;    /* softer, more modern dim tone */
+  --text: #eef3fb;
+  --text-dim: #8f9aad;
 
-  /* ============================================================
-     ACCENT — ELECTRIC BLUE NEON
-  ============================================================ */
   --accent: #4da3ff;
   --accent-glow: 0 0 22px rgba(77, 163, 255, 0.55),
                  0 0 44px rgba(77, 163, 255, 0.35);
 
-  /* ============================================================
-     RADII — OS-GRADE SHAPES
-  ============================================================ */
   --radius: 14px;
   --radius-lg: 22px;
 
-  /* ============================================================
-     BLUR — GLASS DEPTH
-  ============================================================ */
-  --blur: 16px;           /* slightly tighter for clarity */
-  --blur-heavy: 28px;     /* deep frosted panels */
+  --blur: 16px;
+  --blur-heavy: 28px;
 
-  /* ============================================================
-     MOTION — PREMIUM TIMING CURVES
-  ============================================================ */
   --fast: 140ms cubic-bezier(0.25, 0.9, 0.35, 1.0);
   --med: 260ms cubic-bezier(0.22, 0.8, 0.32, 1.0);
   --slow: 420ms cubic-bezier(0.18, 0.8, 0.24, 1.0);
 
-  /* ============================================================
-     LAYOUT TOKENS
-  ============================================================ */
   --rail-width: 72px;
-
-  /* responsive directory width */
   --directory-width-min: 22vw;
   --directory-width-max: 30vw;
 
-  /* ============================================================
-     Z-INDEX STACK — OS LAYERING
-  ============================================================ */
   --z-rail: 20;
   --z-directory: 30;
   --z-floating: 40;
@@ -72,11 +40,12 @@
   --z-toast: 60;
 }
 
-
 /* ============================================================
    GLOBAL RESET + BASE
 ============================================================ */
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -85,8 +54,13 @@
 body.dark-mode {
   background: var(--bg);
   color: var(--text);
-  font-family: "Inter", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
   overflow: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 button {
@@ -94,6 +68,7 @@ button {
   border: none;
   background: none;
   color: var(--text);
+  font: inherit;
 }
 
 .hidden {
@@ -101,7 +76,7 @@ button {
 }
 
 /* ============================================================
-   APP SHELL LAYOUT
+   APP SHELL
 ============================================================ */
 app-shell {
   display: flex;
@@ -137,12 +112,28 @@ app-shell {
 
 .header-nav a {
   color: var(--text-dim);
-  text-decoration: none;
+  position: relative;
+  padding-bottom: 2px;
   transition: color var(--fast);
+}
+
+.header-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width var(--fast);
 }
 
 .header-nav a:hover {
   color: var(--accent);
+}
+
+.header-nav a:hover::after {
+  width: 100%;
 }
 
 .header-right {
@@ -185,7 +176,7 @@ app-main {
 }
 
 /* ============================================================
-   LEFT RAIL (DESKTOP)
+   LEFT RAIL
 ============================================================ */
 .app-rail {
   width: var(--rail-width);
@@ -199,21 +190,72 @@ app-main {
   z-index: var(--z-rail);
 }
 
+.rail-notifications {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-bottom: 8px;
+  box-shadow: var(--accent-glow);
+}
+
 .rail-btn {
   width: 48px;
   height: 48px;
-  margin: 8px 0;
+  margin: 6px 0;
   border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--fast), color var(--fast);
+  transition:
+    background var(--fast),
+    color var(--fast),
+    transform var(--fast),
+    box-shadow var(--fast);
+  position: relative;
+}
+
+.rail-btn .material-symbols-outlined {
+  font-size: 24px;
 }
 
 .rail-btn:hover {
   background: var(--glass-heavy);
   color: var(--accent);
   box-shadow: var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.rail-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--accent-glow);
+}
+
+.rail-btn::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 56px;
+  white-space: nowrap;
+  background: var(--bg-3);
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  opacity: 0;
+  transform: translateX(-4px);
+  pointer-events: none;
+  transition: opacity var(--fast), transform var(--fast);
+}
+
+.rail-btn:hover::after {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .rail-spacer {
@@ -231,7 +273,7 @@ app-main {
 }
 
 /* ============================================================
-   DIRECTORY PANEL (SLIDES FROM RAIL)
+   DIRECTORY PANEL
 ============================================================ */
 .directory-panel {
   position: absolute;
@@ -243,13 +285,13 @@ app-main {
   backdrop-filter: blur(var(--blur-heavy));
   border-right: 1px solid var(--border-strong);
   transform: translateX(-100%);
-  transition: transform var(--med) ease;
+  transition: transform var(--med);
   z-index: var(--z-directory);
   display: flex;
   flex-direction: column;
 }
 
-.directory-panel.open {
+.directory-panel.dir-visible {
   transform: translateX(0);
 }
 
@@ -265,17 +307,20 @@ app-main {
   border-radius: var(--radius);
   background: var(--glass);
   color: var(--text-dim);
-  transition: background var(--fast), color var(--fast);
+  transition: background var(--fast), color var(--fast), transform var(--fast);
 }
 
 .directory-nav button:hover {
-  background: var(--accent);
-  color: #fff;
+  background: var(--glass-heavy);
+  transform: translateY(-1px);
 }
 
-/* ============================================================
-   DIRECTORY SECTIONS
-============================================================ */
+.directory-nav button.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--accent-glow);
+}
+
 .directory-sections {
   flex: 1;
   overflow-y: auto;
@@ -283,12 +328,11 @@ app-main {
 }
 
 .dir-section {
-  animation: fadeIn var(--med) ease;
+  animation: fadeIn var(--med);
 }
 
 .con-list {
   list-style: none;
-  padding: 0;
 }
 
 .con-list li {
@@ -296,11 +340,30 @@ app-main {
   margin-bottom: 8px;
   background: var(--glass);
   border-radius: var(--radius);
-  transition: background var(--fast);
+  border: 1px solid var(--border);
+  transition: background var(--fast), transform var(--fast), border-color var(--fast);
 }
 
 .con-list li:hover {
   background: var(--glass-heavy);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.con-input {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  color: var(--text);
+}
+
+.con-stats {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
 }
 
 /* ============================================================
@@ -315,7 +378,6 @@ app-main {
   overflow: hidden;
 }
 
-/* HEADER */
 .msg-header {
   height: 64px;
   display: flex;
@@ -331,24 +393,46 @@ app-main {
   margin-left: 12px;
   border-radius: var(--radius);
   padding: 8px;
-  transition: background var(--fast), color var(--fast);
+  transition: background var(--fast), color var(--fast), transform var(--fast);
 }
 
 .msg-actions button:hover {
   background: var(--glass-heavy);
   color: var(--accent);
+  transform: translateY(-1px);
 }
 
-/* MESSAGE WINDOW */
+.new-messages-pill {
+  position: absolute;
+  right: 24px;
+  top: 80px;
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: var(--accent-glow);
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity var(--fast), transform var(--fast);
+}
+
+.new-messages-pill.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .message-window {
   flex: 1;
   overflow-y: auto;
   padding: 18px;
 }
 
-/* TYPING INDICATOR */
+/* Typing indicator */
 .typing-indicator {
-  padding: 8px 18px;
+  padding: 6px 18px;
 }
 
 .typing-bubble span {
@@ -369,22 +453,25 @@ app-main {
   40% { opacity: 1; transform: translateY(-4px); }
 }
 
-/* RECORDING INDICATOR */
+/* Recording indicator */
 .recording-indicator {
-  padding: 8px 18px;
+  padding: 6px 18px;
 }
 
 .recording-bubble {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--glass);
 }
 
 .pulse-ring {
   width: 14px;
   height: 14px;
-  border: 2px solid var(--accent);
   border-radius: 50%;
+  border: 2px solid var(--accent);
   animation: pulse 1.6s infinite ease-out;
 }
 
@@ -393,7 +480,7 @@ app-main {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* IMAGE VIEWER */
+/* Image viewer + attachments */
 .img-viewer {
   display: none;
   justify-content: center;
@@ -405,12 +492,11 @@ app-main {
   border-radius: var(--radius);
 }
 
-/* ATTACHMENT PREVIEW */
 .attachment-preview {
   padding: 12px;
 }
 
-/* COMPOSER */
+/* Composer */
 .composer {
   display: flex;
   align-items: center;
@@ -418,6 +504,7 @@ app-main {
   background: var(--glass);
   backdrop-filter: blur(var(--blur));
   border-top: 1px solid var(--border);
+  gap: 8px;
 }
 
 .msg-input {
@@ -426,9 +513,15 @@ app-main {
   padding: 10px 14px;
   background: var(--bg-3);
   border-radius: var(--radius);
-  margin: 0 12px;
   outline: none;
   overflow-y: auto;
+}
+
+/* ============================================================
+   CALL WINDOW (STRUCTURAL ONLY – VISUALS SEPARATE)
+============================================================ */
+.call-window.hidden {
+  display: none;
 }
 
 /* ============================================================
@@ -446,7 +539,92 @@ app-main {
   border-radius: var(--radius-lg);
   padding: 22px;
   z-index: var(--z-floating);
-  box-shadow: 0 0 22px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 22px rgba(0,0,0,0.45),
+    var(--accent-glow);
+  animation: floatIn var(--med);
+}
+
+@keyframes floatIn {
+  0%   { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.floating-body h2 {
+  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.floating-body label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.floating-body input,
+.floating-body textarea {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--text);
+}
+
+.floating-body button {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  margin-top: 12px;
+  box-shadow: var(--accent-glow);
+  transition: background var(--fast), transform var(--fast);
+}
+
+.floating-body button:hover {
+  background: #5bb0ff;
+  transform: translateY(-1px);
+}
+
+/* Full profile extras */
+.full-profile-content {
+  text-align: center;
+}
+
+.close-full-profile {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.full-profile-banner .banner-wrapper img {
+  width: 100%;
+  border-radius: var(--radius);
+}
+
+.avatar-frame {
+  margin-top: -40px;
+}
+
+.full-profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--bg-2);
+  box-shadow: var(--accent-glow);
+}
+
+.profile-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.profile-actions button {
+  margin: 6px;
 }
 
 /* ============================================================
@@ -455,21 +633,24 @@ app-main {
 .modal-1,
 .voicemail-modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(var(--blur));
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(var(--blur));
   z-index: var(--z-modal);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--med);
 }
- 
-/* ============================================================
-   MODAL CONTENT
-============================================================ */
+
+.modal-1:not(.hidden),
+.voicemail-modal:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .modal-1-content {
   width: 360px;
   padding: 28px 26px;
@@ -483,26 +664,18 @@ app-main {
   animation: modalPop var(--med);
 }
 
-/* Smooth OS pop-in */
 @keyframes modalPop {
   0%   { transform: scale(0.92) translateY(8px); opacity: 0; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* ============================================================
-   TITLE
-============================================================ */
 .modal-1-title {
   font-size: 22px;
   font-weight: 600;
-  color: var(--text);
   text-align: center;
   margin-bottom: 12px;
 }
 
-/* ============================================================
-   MESSAGE
-============================================================ */
 .modal-1-message {
   font-size: 15px;
   color: var(--text-dim);
@@ -511,16 +684,12 @@ app-main {
   line-height: 1.5;
 }
 
-/* ============================================================
-   ACTIONS
-============================================================ */
 .modal-1-actions {
   display: flex;
   justify-content: center;
   gap: 14px;
 }
 
-/* Base button */
 .modal-1-btn {
   padding: 10px 20px;
   border-radius: var(--radius);
@@ -532,11 +701,9 @@ app-main {
     transform var(--fast);
 }
 
-/* Cancel button */
 .modal-1-btn.cancel {
   background: var(--glass);
   border: 1px solid var(--border);
-  color: var(--text);
 }
 
 .modal-1-btn.cancel:hover {
@@ -544,11 +711,9 @@ app-main {
   transform: translateY(-1px);
 }
 
-/* Confirm button */
 .modal-1-btn.confirm {
   background: var(--accent);
   color: #fff;
-  border: none;
   box-shadow: var(--accent-glow);
 }
 
@@ -557,10 +722,78 @@ app-main {
   transform: translateY(-1px);
 }
 
+/* Voicemail modal */
+.voicemail-modal .vm-header {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.voicemail-modal .vm-body {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.vm-wave {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.vm-bar {
+  width: 6px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 4px;
+  animation: vmPulse 1.2s infinite ease-in-out;
+}
+
+.vm-bar:nth-child(2) { animation-delay: .1s; }
+.vm-bar:nth-child(3) { animation-delay: .2s; }
+.vm-bar:nth-child(4) { animation-delay: .3s; }
+.vm-bar:nth-child(5) { animation-delay: .4s; }
+
+@keyframes vmPulse {
+  0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+  50%      { transform: scaleY(1); opacity: 1; }
+}
+
+.vm-status {
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.vm-timer {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.vm-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vm-controls button {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  transition: background var(--fast), transform var(--fast);
+}
+
+.vm-controls button:hover {
+  background: var(--glass-heavy);
+  transform: translateY(-1px);
+}
+
 /* ============================================================
    TOASTS
 ============================================================ */
-toast {
+.toast {
   position: fixed;
   right: 24px;
   bottom: 24px;
@@ -570,12 +803,86 @@ toast {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   z-index: var(--z-toast);
-  animation: slideUp var(--med) ease;
+  animation: slideUp var(--med);
 }
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.secondary-incoming.toast {
+  width: 320px;
+}
+
+.sit-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sit-message {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sit-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sit-actions button {
+  flex: 1;
+  margin: 0 4px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  transition: background var(--fast), transform var(--fast);
+}
+
+.sit-actions button:hover {
+  background: var(--glass-heavy);
+  transform: translateY(-1px);
+}
+
+.unavailable-toast {
+  width: 320px;
+}
+
+.ut-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ut-message {
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.ut-options {
+  display: flex;
+  justify-content: space-between;
+}
+
+.ut-options button {
+  flex: 1;
+  margin: 0 4px;
+  padding: 10px;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  transition: background var(--fast), transform var(--fast);
+}
+
+.ut-options button:hover {
+  background: var(--glass-heavy);
+  transform: translateY(-1px);
+}
+
+.gt-message {
+  font-size: 15px;
 }
 
 /* ============================================================
@@ -592,24 +899,27 @@ toast {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .footer-nav a {
   margin: 0 8px;
   color: var(--text-dim);
-  text-decoration: none;
 }
 
 .footer-nav a:hover {
   color: var(--accent);
 }
 
+.social-links a {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
 /* ============================================================
-   MOBILE RESPONSIVE BEHAVIOR
+   MOBILE REFINEMENTS
 ============================================================ */
 @media (max-width: 900px) {
-
-  /* Rail becomes bottom bar */
   .app-rail {
     position: fixed;
     bottom: 0;
@@ -623,31 +933,31 @@ toast {
     z-index: var(--z-rail);
   }
 
-  .rail-btn {
-    margin: 0;
+  .rail-btn::after {
+    display: none;
   }
 
-  /* Directory becomes full-screen slide-over */
   .directory-panel {
     width: 100vw;
-    transform: translateX(-100%);
   }
 
-  /* Messaging panel becomes full-screen */
   .messaging-panel {
     border-left: none;
   }
 
-  /* Floating windows scale down */
   .floating-window {
     width: 90vw;
-    padding: 18px;
   }
 
-  /* Toasts move up */
-  toast {
+  .toast {
     bottom: 88px;
     right: 12px;
     left: 12px;
   }
+
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
+
