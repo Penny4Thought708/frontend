@@ -701,7 +701,7 @@ export class WebRTCController {
     });
 
     /* -------------------------------------------------------
-       VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+       VOICEMAIL + SECONDARY INCOMING (CARRIER‑STYLE)
     ------------------------------------------------------- */
 
     const playUnreachableTone = () => {
@@ -722,9 +722,30 @@ export class WebRTCController {
       }
     };
 
+    // Simple per‑caller debounce so we don’t spam toasts/voicemail
+    const lastCallerEvents = new Map();
+    const EVENT_DEBOUNCE_MS = 8000;
+
+    const shouldProcessCallerEvent = (from) => {
+      const now = Date.now();
+      const last = lastCallerEvents.get(from) || 0;
+      if (now - last < EVENT_DEBOUNCE_MS) return false;
+      lastCallerEvents.set(from, now);
+      return true;
+    };
+
     const triggerVoicemailFlow = (from, message) => {
+      if (!shouldProcessCallerEvent(from)) {
+        console.log("[WebRTC] Skipping voicemail (debounced) for", from);
+        return;
+      }
+
+      // Only allow voicemail when we’re truly free
       if (rtcState.inCall || rtcState.answering || rtcState.busy) {
-        console.log("[WebRTC] Ignoring voicemail flow (inCall/answering/busy)");
+        console.log(
+          "[WebRTC] Ignoring voicemail flow (inCall/answering/busy)",
+          { inCall: rtcState.inCall, answering: rtcState.answering, busy: rtcState.busy }
+        );
         return;
       }
 
@@ -733,17 +754,31 @@ export class WebRTCController {
       playUnreachableTone();
       setTimeout(() => playBeepTone(), 1200);
 
+      // Let UI decide how to present this (toast + recorder)
       this.onVoicemailPrompt?.({
         peerId: from,
         message,
       });
     };
 
-    const handleThirdIncoming = (from, message) => {
-      // Only treat as third caller if NOT the active peer
-      if ((rtcState.busy || rtcState.inCall) && from !== rtcState.activePeerId) {
+    const handleSecondaryIncoming = (from, message) => {
+      if (!shouldProcessCallerEvent(from)) {
+        console.log("[WebRTC] Skipping secondary incoming (debounced) for", from);
+        return;
+      }
+
+      const inCallOrRinging = rtcState.busy || rtcState.inCall;
+
+      // Same peer as active call → ignore as duplicate
+      if (inCallOrRinging && from === rtcState.peerId) {
+        console.log("[WebRTC] Ignoring secondary from active peer", from);
+        return;
+      }
+
+      // Already on a call with someone else → show secondary toast
+      if (inCallOrRinging) {
         this.onSecondaryIncomingCall?.({
-          fromName: from,
+          fromName: rtcState.peerName || `User ${from}`,
           audioOnly: rtcState.audioOnly,
           fromId: from,
           message,
@@ -751,23 +786,24 @@ export class WebRTCController {
         return;
       }
 
+      // Not in call, not ringing → treat as voicemail opportunity
       triggerVoicemailFlow(from, message);
     };
 
     this.socket.on("call:timeout", ({ from }) => {
-      handleThirdIncoming(from, "No answer. Leave a voicemail…");
+      handleSecondaryIncoming(from, "No answer. Leave a voicemail…");
     });
 
     this.socket.on("call:declined", ({ from }) => {
-      handleThirdIncoming(from, "Call declined. Leave a voicemail…");
+      handleSecondaryIncoming(from, "Call declined. Leave a voicemail…");
     });
 
     this.socket.on("call:missed", ({ from }) => {
-      handleThirdIncoming(from, "Missed call. Leave a voicemail…");
+      handleSecondaryIncoming(from, "Missed call. Leave a voicemail…");
     });
 
     this.socket.on("call:dnd", ({ from }) => {
-      handleThirdIncoming(
+      handleSecondaryIncoming(
         from,
         "User is in Do Not Disturb. Leave a voicemail…"
       );
@@ -779,7 +815,7 @@ export class WebRTCController {
           ? "User is in Do Not Disturb. Leave a voicemail…"
           : "Leave a voicemail…";
 
-      handleThirdIncoming(from, msg);
+      handleSecondaryIncoming(from, msg);
     });
 
     this.socket.on("disconnect", () => {
@@ -789,6 +825,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
