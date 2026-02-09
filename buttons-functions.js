@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
 function initUI() {
   const messagingPanel = document.getElementById("messagingPanel");
   const directoryPanel = document.getElementById("directoryPanel");
+
+  // ❗ Call window is intentionally NOT controlled here anymore
   const callWindow = document.getElementById("callWindow");
 
   const profileWindow = document.getElementById("profileWindow");
@@ -25,7 +27,6 @@ function initUI() {
 
   const railButtons = document.querySelectorAll(".app-rail .rail-btn");
   const toggleBtn = document.getElementById("toggleBtn");
-  const videoBtn = document.getElementById("videoBtn");
 
   const newPill = document.getElementById("newMessagesPill");
   const msgWin = document.getElementById("messageWin");
@@ -35,8 +36,16 @@ function initUI() {
   ----------------------------------------------------------- */
   const UIX = {
     hideAllOverlays() {
-      [directoryPanel, profileWindow, settingsWindow, fullProfileModal, voicemailModal, logoutModal, callWindow]
-        .forEach(el => el && el.classList.add("hidden"));
+      // ❗ callWindow REMOVED from this list
+      [
+        directoryPanel,
+        profileWindow,
+        settingsWindow,
+        fullProfileModal,
+        voicemailModal,
+        logoutModal
+      ].forEach(el => el && el.classList.add("hidden"));
+
       document.body.classList.remove("panel-open");
     },
 
@@ -79,27 +88,14 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
-showCallWindow() {
-  if (!callWindow) return;
-
-  this.hideAllOverlays();
-  messagingPanel?.classList.add("hidden");
-
-  callWindow.classList.remove("hidden");
-  callWindow.classList.add("is-open", "call-opening");
-  callWindow.setAttribute("aria-hidden", "false");
-
-  setTimeout(() => callWindow.classList.remove("call-opening"), 300);
-
-  document.body.classList.add("panel-open");
-},
-
+    // ❗ Call window is now controlled ONLY by CallUI.js
+    // These functions remain for compatibility but do nothing harmful.
+    showCallWindow() {
+      console.warn("[UIX] showCallWindow() called — ignored. CallUI controls this.");
+    },
 
     endCall() {
-      if (!callWindow) return;
-      callWindow.classList.add("hidden");
-      callWindow.setAttribute("aria-hidden", "true");
-      this.showMessaging();
+      console.warn("[UIX] endCall() called — ignored. CallUI controls this.");
     }
   };
 
@@ -168,7 +164,7 @@ showCallWindow() {
           UIX.showDirectory();
           break;
         case "btn_search":
-          UIX.showFloating(profileWindow); // placeholder: attach real search window if added
+          UIX.showFloating(profileWindow);
           break;
         case "btn_settings":
           UIX.showFloating(settingsWindow);
@@ -184,15 +180,9 @@ showCallWindow() {
   });
 
   /* -----------------------------------------------------------
-     VIDEO / CALL WINDOW
+     ❗ REMOVED: videoBtn → showCallWindow()
+     Call window is now opened ONLY by CallUI.js
   ----------------------------------------------------------- */
-  videoBtn?.addEventListener("click", () => {
-    UIX.showCallWindow();
-  });
-
-  document.getElementById("end-call")?.addEventListener("click", () => {
-    UIX.endCall();
-  });
 
   /* -----------------------------------------------------------
      LOGOUT MODAL
@@ -206,7 +196,6 @@ showCallWindow() {
   });
 
   document.getElementById("confirmLogout")?.addEventListener("click", () => {
-    // plug in real logout
     UIX.hideModal(logoutModal);
     showToast("Logged out");
   });
@@ -324,204 +313,7 @@ const FloatingWindows = {
   }
 };
 
-/* ============================================================
-   TOAST UTILITY
-============================================================ */
-function showToast(msg) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.setAttribute("role", "status");
-  toast.setAttribute("aria-live", "polite");
-  toast.textContent = msg;
 
-  document.body.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-  }, 2000);
-
-  setTimeout(() => toast.remove(), 2600);
-}
-
-/* ============================================================
-   SETTINGS CONTROLLER (UNCHANGED CORE, ARIA-SAFE)
-============================================================ */
-const Settings = {
-  data: {
-    theme: "system",
-    accent: "#4CAF50",
-    fontSize: 16,
-    camera: null,
-    resolution: "720p",
-    backgroundBlur: false,
-    mirrorVideo: false,
-    microphone: null,
-    speaker: null,
-    noiseSuppression: false,
-    echoCancellation: false,
-    autoGain: false,
-    callAlerts: true,
-    messageAlerts: true,
-    soundEffects: true,
-    highContrast: false,
-    keyboardShortcuts: true,
-    screenReader: false,
-    profileName: "",
-    profileEmail: "",
-    profilePicture: null,
-    showOnline: true,
-    allowMessages: true,
-  },
-
-  async init() {
-    this.loadFromStorage();
-    this.bindUI();
-    await this.loadDevices();
-    this.applyUI();
-  },
-
-  async loadDevices() {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      this.populateSelect("camera_select", devices.filter(d => d.kind === "videoinput"));
-      this.populateSelect("microphone_select", devices.filter(d => d.kind === "audioinput"));
-      this.populateSelect("speaker_select", devices.filter(d => d.kind === "audiooutput"));
-    } catch (err) {
-      console.error("Device load error:", err);
-    }
-  },
-
-  populateSelect(id, list) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = "";
-    list.forEach(dev => {
-      const opt = document.createElement("option");
-      opt.value = dev.deviceId;
-      opt.textContent = dev.label || "Unnamed Device";
-      el.appendChild(opt);
-    });
-  },
-
-  bindUI() {
-    this.bind("theme_select", "theme");
-    this.bind("accent_color", "accent");
-    this.bind("font_size", "fontSize");
-
-    this.bind("camera_select", "camera");
-    this.bind("resolution_select", "resolution");
-    this.bind("background_blur", "backgroundBlur", true);
-    this.bind("mirror_video", "mirrorVideo", true);
-
-    this.bind("microphone_select", "microphone");
-    this.bind("speaker_select", "speaker");
-    this.bind("noise_suppression", "noiseSuppression", true);
-    this.bind("echo_cancellation", "echoCancellation", true);
-    this.bind("auto_gain", "autoGain", true);
-
-    this.bind("call_alerts", "callAlerts", true);
-    this.bind("message_alerts", "messageAlerts", true);
-    this.bind("sound_effects", "soundEffects", true);
-
-    this.bind("high_contrast", "highContrast", true);
-    this.bind("keyboard_shortcuts", "keyboardShortcuts", true);
-    this.bind("screen_reader", "screenReader", true);
-
-    this.bind("contact_display_name", "profileName");
-    this.bind("contact_email", "profileEmail");
-    this.bindFile("contact_profile_picture", "profilePicture");
-
-    this.bind("show_online", "showOnline", true);
-    this.bind("allow_messages", "allowMessages", true);
-
-    document.getElementById("save_settings")?.addEventListener("click", () => this.save());
-    document.getElementById("reset_settings")?.addEventListener("click", () => this.reset());
-  },
-
-  bind(id, key, isCheckbox = false) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("input", () => {
-      this.data[key] = isCheckbox ? el.checked : el.value;
-      this.applyLive(key);
-    });
-  },
-
-  bindFile(id, key) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("change", () => {
-      const file = el.files[0];
-      if (file) this.data[key] = file;
-    });
-  },
-
-  applyUI() {
-    for (const key in this.data) {
-      const el = document.getElementById(this.mapKeyToId(key));
-      if (!el) continue;
-      if (typeof this.data[key] === "boolean") el.checked = this.data[key];
-      else if (key !== "profilePicture") el.value = this.data[key];
-    }
-  },
-
-  mapKeyToId(key) {
-    return {
-      theme: "theme_select",
-      accent: "accent_color",
-      fontSize: "font_size",
-      camera: "camera_select",
-      resolution: "resolution_select",
-      backgroundBlur: "background_blur",
-      mirrorVideo: "mirror_video",
-      microphone: "microphone_select",
-      speaker: "speaker_select",
-      noiseSuppression: "noise_suppression",
-      echoCancellation: "echo_cancellation",
-      autoGain: "auto_gain",
-      callAlerts: "call_alerts",
-      messageAlerts: "message_alerts",
-      soundEffects: "sound_effects",
-      highContrast: "high_contrast",
-      keyboardShortcuts: "keyboard_shortcuts",
-      screenReader: "screen_reader",
-      profileName: "contact_display_name",
-      profileEmail: "contact_email",
-      profilePicture: "contact_profile_picture",
-      showOnline: "show_online",
-      allowMessages: "allow_messages",
-    }[key];
-  },
-
-  applyLive(key) {
-    switch (key) {
-      case "theme":
-        document.body.dataset.theme = this.data.theme;
-        break;
-      case "accent":
-        document.documentElement.style.setProperty("--accent", this.data.accent);
-        break;
-      case "fontSize":
-        document.documentElement.style.fontSize = this.data.fontSize + "px";
-        break;
-    }
-  },
-
-  save() {
-    localStorage.setItem("appSettings", JSON.stringify(this.data));
-  },
-
-  loadFromStorage() {
-    const saved = localStorage.getItem("appSettings");
-    if (saved) this.data = { ...this.data, ...JSON.parse(saved) };
-  },
-
-  reset() {
-    localStorage.removeItem("appSettings");
-    location.reload();
-  }
-};
 
 
 
