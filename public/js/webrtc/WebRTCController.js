@@ -601,28 +601,6 @@ export class WebRTCController {
         } catch {}
       }
 
-      if (state === "checking") {
-        setTimeout(() => {
-          if (
-            pc.iceConnectionState === "checking" &&
-            !rtcState.usedRelayFallback &&
-            rtcState.peerId &&
-            !rtcState.answering
-          ) {
-            rtcState.usedRelayFallback = true;
-
-            const peerId = rtcState.peerId;
-            const audioOnly = rtcState.audioOnly;
-            const isCaller = rtcState.isCaller;
-
-            this.endCall(false);
-
-            if (isCaller) {
-              this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-            }
-          }
-        }, 2500);
-      }
 
       if (state === "failed") {
         if (
@@ -849,6 +827,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
