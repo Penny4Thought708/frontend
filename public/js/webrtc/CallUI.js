@@ -1,3 +1,6 @@
+// public/js/webrtc/CallUI.js
+// Aurora‑Orbit Call UI — modern, modular, single‑peer ready (for now)
+
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
 import {
@@ -67,21 +70,6 @@ export function initCallUI(rtc) {
     remoteVideo: null, // remote videos handled per‑participant
     remoteAudio,
   });
-
-  /* -------------------------------------------------------
-     AUTOPLAY UNLOCK (Chrome / Safari)
-  ------------------------------------------------------- */
-
-  window.addEventListener(
-    "click",
-    () => {
-      const a = document.getElementById("remoteAudio");
-      if (a) {
-        a.play().catch(() => {});
-      }
-    },
-    { once: true }
-  );
 
   /* -------------------------------------------------------
      TIMER
@@ -300,7 +288,6 @@ export function initCallUI(rtc) {
     answerBtn.onclick = () => {
       setStatus("Answering…");
       setMode("active");
-      win?.classList.remove("hidden");
       rtc.answerIncomingCall?.();
     };
   }
@@ -371,7 +358,6 @@ export function initCallUI(rtc) {
      RTC EVENT WIRING — ALIGNED WITH WebRTCController
   ------------------------------------------------------- */
 
-  // Outgoing call (controller calls this.onOutgoingCall)
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
     const kind = voiceOnly ? "voice" : "video";
 
@@ -384,7 +370,6 @@ export function initCallUI(rtc) {
     win?.classList.remove("hidden");
   };
 
-  // Incoming call (controller calls this.onIncomingCall)
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
     const kind = audioOnly ? "voice" : "video";
 
@@ -397,7 +382,6 @@ export function initCallUI(rtc) {
     win?.classList.remove("hidden");
   };
 
-  // Call started (controller calls this.onCallStarted)
   rtc.onCallStarted = () => {
     debug("Call connected");
     setStatus("In call");
@@ -406,7 +390,6 @@ export function initCallUI(rtc) {
     win?.classList.remove("hidden");
   };
 
-  // Call ended (controller calls this.onCallEnded)
   rtc.onCallEnded = () => {
     debug("Call ended");
     stopTimer();
@@ -417,7 +400,6 @@ export function initCallUI(rtc) {
     win?.classList.add("hidden");
   };
 
-  // Call failed (controller calls this.onCallFailed(reason))
   rtc.onCallFailed = (reason) => {
     debug(`Call failed: ${reason}`);
     stopTimer();
@@ -428,13 +410,11 @@ export function initCallUI(rtc) {
     win?.classList.add("hidden");
   };
 
-  // Network quality (controller calls this.onQualityChange(level, info))
   rtc.onQualityChange = (level, info) => {
     debug(`Network: ${level} (${info})`);
     setQuality(level, info);
   };
 
-  // Future‑ready hooks
   rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
   rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
 
@@ -528,7 +508,6 @@ export function initCallUI(rtc) {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
-
 
 
 
