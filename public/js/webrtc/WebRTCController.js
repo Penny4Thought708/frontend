@@ -701,92 +701,94 @@ export class WebRTCController {
       }
     });
 
-    /* -------------------------------------------------------
-       VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
-    ------------------------------------------------------- */
+/* -------------------------------------------------------
+   VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+------------------------------------------------------- */
 
-    const playUnreachableTone = () => {
-      try {
-        const tone = new Audio("uploads/audio/user_unreachable.mp3");
-        tone.play().catch(() => {});
-      } catch (err) {
-        console.warn("[WebRTC] Unreachable tone failed:", err);
-      }
-    };
+const playUnreachableTone = () => {
+  try {
+    const tone = new Audio("uploads/audio/user_unreachable.mp3");
+    tone.play().catch(() => {});
+  } catch (err) {
+    console.warn("[WebRTC] Unreachable tone failed:", err);
+  }
+};
 
-    const playBeepTone = () => {
-      try {
-        const beep = new Audio("/audio/beep.mp3");
-        beep.play().catch(() => {});
-      } catch (err) {
-        console.warn("[WebRTC] Beep tone failed:", err);
-      }
-    };
+const playBeepTone = () => {
+  try {
+    const beep = new Audio("/audio/beep.mp3");
+    beep.play().catch(() => {});
+  } catch (err) {
+    console.warn("[WebRTC] Beep tone failed:", err);
+  }
+};
 
-    const triggerVoicemailFlow = (from, message) => {
-      if (rtcState.inCall || rtcState.answering || rtcState.busy) {
-        console.log("[WebRTC] Ignoring voicemail flow (inCall/answering/busy)");
-        return;
-      }
+const triggerVoicemailFlow = (from, message) => {
+  if (rtcState.inCall || rtcState.answering || rtcState.busy) {
+    console.log("[WebRTC] Ignoring voicemail flow (inCall/answering/busy)");
+    return;
+  }
 
-      stopAudio(ringback);
+  stopAudio(ringback);
 
-      playUnreachableTone();
-      setTimeout(() => playBeepTone(), 1200);
+  playUnreachableTone();
+  setTimeout(() => playBeepTone(), 1200);
 
-      if (window.openVoicemailRecorder) {
-        window.openVoicemailRecorder(from);
-      }
+  if (window.openVoicemailRecorder) {
+    window.openVoicemailRecorder(from);
+  }
 
-      if (window.showUnavailableToastInternal) {
-        window.showUnavailableToastInternal({
-          peerId: from,
-          message,
-        });
-      }
-    };
-
-    const handleThirdIncoming = (from, message) => {
-      if (rtcState.busy || rtcState.inCall) {
-        this.onSecondaryIncomingCall?.({
-          fromName: rtcState.peerName || "Unknown",
-          audioOnly: rtcState.audioOnly,
-          fromId: from,
-          message,
-        });
-        return;
-      }
-
-      triggerVoicemailFlow(from, message);
-    };
-
-    this.socket.on("call:timeout", ({ from }) => {
-      handleThirdIncoming(from, "No answer. Leave a voicemail…");
+  if (window.showUnavailableToastInternal) {
+    window.showUnavailableToastInternal({
+      peerId: from,
+      message,
     });
+  }
+};
 
-    this.socket.on("call:declined", ({ from }) => {
-      handleThirdIncoming(from, "Call declined. Leave a voicemail…");
+const handleThirdIncoming = (from, message) => {
+  // 🔥 Only treat as third caller if NOT the active peer
+  if ((rtcState.busy || rtcState.inCall) && from !== rtcState.activePeerId) {
+    this.onSecondaryIncomingCall?.({
+      fromName: from,        // correct caller
+      audioOnly: rtcState.audioOnly,
+      fromId: from,
+      message,
     });
+    return;
+  }
 
-    this.socket.on("call:missed", ({ from }) => {
-      handleThirdIncoming(from, "Missed call. Leave a voicemail…");
-    });
+  triggerVoicemailFlow(from, message);
+};
 
-    this.socket.on("call:dnd", ({ from }) => {
-      handleThirdIncoming(
-        from,
-        "User is in Do Not Disturb. Leave a voicemail…"
-      );
-    });
+this.socket.on("call:timeout", ({ from }) => {
+  handleThirdIncoming(from, "No answer. Leave a voicemail…");
+});
 
-    this.socket.on("call:voicemail", ({ from, reason }) => {
-      const msg =
-        reason === "callee-dnd"
-          ? "User is in Do Not Disturb. Leave a voicemail…"
-          : "Leave a voicemail…";
+this.socket.on("call:declined", ({ from }) => {
+  handleThirdIncoming(from, "Call declined. Leave a voicemail…");
+});
 
-      handleThirdIncoming(from, msg);
-    });
+this.socket.on("call:missed", ({ from }) => {
+  handleThirdIncoming(from, "Missed call. Leave a voicemail…");
+});
+
+this.socket.on("call:dnd", ({ from }) => {
+  handleThirdIncoming(
+    from,
+    "User is in Do Not Disturb. Leave a voicemail…"
+  );
+});
+
+this.socket.on("call:voicemail", ({ from, reason }) => {
+  const msg =
+    reason === "callee-dnd"
+      ? "User is in Do Not Disturb. Leave a voicemail…"
+      : "Leave a voicemail…";
+
+  handleThirdIncoming(from, msg);
+});
+
 
     this.socket.on("disconnect", () => {
       if (rtcState.inCall) {
@@ -795,6 +797,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
