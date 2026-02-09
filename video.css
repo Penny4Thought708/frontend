@@ -217,7 +217,7 @@
 }
 
 .avatar-wrapper img {
-  width: 42%;
+  width: 100%;
   max-width: 160px;
   border-radius: 50%;
   border: 3px solid rgba(120, 255, 210, 0.8);
