@@ -142,54 +142,99 @@ export class WebRTCController {
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
 
-  /* ---------------------------------------------------
-     Outgoing Call
-  --------------------------------------------------- */
-  async _startCallInternal(peerId, audioOnly, { relayOnly }) {
-    console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
-    const myId = getMyUserId();
-    if (!myId) return;
+/* ---------------------------------------------------
+   Outgoing Call (Hybrid Google‑Meet + Discord Upgrade)
+--------------------------------------------------- */
+async _startCallInternal(peerId, audioOnly, { relayOnly }) {
+  console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
+  const myId = getMyUserId();
+  if (!myId) return;
 
-    rtcState.peerId = peerId;
-    rtcState.peerName = rtcState.peerName || `User ${peerId}`;
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.isCaller = true;
-    rtcState.busy = true;
-    rtcState.inCall = false;
-    rtcState.incomingOffer = null;
-    rtcState.usedRelayFallback = !!relayOnly;
+  // --- State setup ---------------------------------------------------------
+  rtcState.peerId = peerId;
+  rtcState.peerName = rtcState.peerName || `User ${peerId}`;
+  rtcState.audioOnly = !!audioOnly;
+  rtcState.isCaller = true;
+  rtcState.busy = true;
+  rtcState.inCall = false;
+  rtcState.incomingOffer = null;
+  rtcState.usedRelayFallback = !!relayOnly;
 
-    const pc = await this._createPC({ relayOnly });
+  // --- Create PeerConnection -----------------------------------------------
+  const pc = await this._createPC({ relayOnly });
 
-    const stream = await getLocalMedia(true, !audioOnly);
-    this.localStream = stream;
-    rtcState.localStream = stream;
+  // --- Acquire local media --------------------------------------------------
+  const stream = await getLocalMedia(true, !audioOnly);
+  this.localStream = stream;
+  rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    } else {
-      console.warn("[WebRTC] No local media — continuing call anyway");
-    }
-
-    this.onOutgoingCall?.({
-      targetName: rtcState.peerName,
-      voiceOnly: audioOnly,
-    });
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    this.socket.emit("webrtc:signal", {
-      type: "offer",
-      to: peerId,
-      from: myId,
-      offer,
-      audioOnly: !!audioOnly,
-      fromName: getMyFullname(),
-    });
-
-    ringback?.play().catch(() => {});
+  if (stream) {
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  } else {
+    console.warn("[WebRTC] No local media — continuing call anyway");
   }
+
+  // --- Notify UI ------------------------------------------------------------
+  this.onOutgoingCall?.({
+    targetName: rtcState.peerName,
+    voiceOnly: audioOnly,
+  });
+
+  // --- Create Offer ---------------------------------------------------------
+  let offer = await pc.createOffer();
+
+  // ========================================================================
+  //  DISCORD‑STYLE CODEC PRIORITY (VP9 > VP8 > H264)
+  // ========================================================================
+  if (offer.sdp) {
+    // Reorder payload types so VP9 is first if available
+    offer.sdp = offer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => {
+        // VP9 = 98, VP8 = 96, H264 = 97
+        return `${prefix}98 96 97`;
+      }
+    );
+  }
+
+  // Apply modified SDP
+  await pc.setLocalDescription(offer);
+
+  // ========================================================================
+  //  GOOGLE MEET–STYLE BITRATE CONTROL (Stable HD, no pixelation)
+  // ========================================================================
+  const videoSender = pc
+    .getSenders()
+    .find((s) => s.track && s.track.kind === "video");
+
+  if (videoSender) {
+    const params = videoSender.getParameters();
+    params.encodings = [{
+      maxBitrate: 1_500_000,   // 1.5 Mbps — stable HD
+      minBitrate:   300_000,   // prevents pixelation
+      maxFramerate: 30,         // Meet-style stability
+    }];
+
+    try {
+      await videoSender.setParameters(params);
+    } catch (err) {
+      console.warn("[WebRTC] setParameters failed", err);
+    }
+  }
+
+  // --- Send Offer -----------------------------------------------------------
+  this.socket.emit("webrtc:signal", {
+    type: "offer",
+    to: peerId,
+    from: myId,
+    offer,
+    audioOnly: !!audioOnly,
+    fromName: getMyFullname(),
+  });
+
+  // --- Play ringback --------------------------------------------------------
+  ringback?.play().catch(() => {});
+}
 
   /* ---------------------------------------------------
      Resume after restore
@@ -233,48 +278,89 @@ export class WebRTCController {
     });
   }
 
-  /* ---------------------------------------------------
-     Answer Incoming Call
-  --------------------------------------------------- */
-  async answerIncomingCall() {
-    const offerData = rtcState.incomingOffer;
-    if (!offerData) return;
+ /* ---------------------------------------------------
+   Answer Incoming Call (Hybrid Google‑Meet + Discord)
+--------------------------------------------------- */
+async answerIncomingCall() {
+  const offerData = rtcState.incomingOffer;
+  if (!offerData) return;
 
-    const { from, offer, audioOnly } = offerData;
+  const { from, offer, audioOnly } = offerData;
 
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.inCall = true;
-    rtcState.busy = true;
+  rtcState.audioOnly = !!audioOnly;
+  rtcState.inCall = true;
+  rtcState.busy = true;
 
-    stopAudio(ringtone);
+  stopAudio(ringtone);
 
-    const pc = await this._createPC({ relayOnly: false });
+  // --- Create PeerConnection -----------------------------------------------
+  const pc = await this._createPC({ relayOnly: false });
 
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    await this._flushPendingRemoteCandidates();
+  // --- Apply remote offer ---------------------------------------------------
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  await this._flushPendingRemoteCandidates();
 
-    const stream = await getLocalMedia(true, !rtcState.audioOnly);
-    this.localStream = stream;
-    rtcState.localStream = stream;
+  // --- Acquire local media --------------------------------------------------
+  const stream = await getLocalMedia(true, !rtcState.audioOnly);
+  this.localStream = stream;
+  rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    }
-
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    this.socket.emit("webrtc:signal", {
-      type: "answer",
-      to: from,
-      from: getMyUserId(),
-      answer,
-    });
-
-    rtcState.incomingOffer = null;
-
-    this.onCallStarted?.();
+  if (stream) {
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
   }
+
+  // --- Create answer --------------------------------------------------------
+  let answer = await pc.createAnswer();
+
+  // ========================================================================
+  //  DISCORD‑STYLE CODEC PRIORITY (VP9 > VP8 > H264)
+  // ========================================================================
+  if (answer.sdp) {
+    answer.sdp = answer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => {
+        return `${prefix}98 96 97`; // VP9 first
+      }
+    );
+  }
+
+  await pc.setLocalDescription(answer);
+
+  // ========================================================================
+  //  GOOGLE MEET–STYLE BITRATE CONTROL (Stable HD)
+  // ========================================================================
+  const videoSender = pc
+    .getSenders()
+    .find((s) => s.track && s.track.kind === "video");
+
+  if (videoSender) {
+    const params = videoSender.getParameters();
+    params.encodings = [{
+      maxBitrate: 1_500_000,   // 1.5 Mbps HD
+      minBitrate:   300_000,   // prevents pixelation
+      maxFramerate: 30,
+    }];
+
+    try {
+      await videoSender.setParameters(params);
+    } catch (err) {
+      console.warn("[WebRTC] setParameters failed", err);
+    }
+  }
+
+  // --- Send answer ----------------------------------------------------------
+  this.socket.emit("webrtc:signal", {
+    type: "answer",
+    to: from,
+    from: getMyUserId(),
+    answer,
+  });
+
+  rtcState.incomingOffer = null;
+
+  // --- Notify UI ------------------------------------------------------------
+  this.onCallStarted?.();
+}
 
   /* ---------------------------------------------------
      Decline incoming call
@@ -413,6 +499,73 @@ export class WebRTCController {
 
     this.onCallEnded?.();
   }
+/* ---------------------------------------------------
+   Screen Share (Hybrid Google‑Meet + Discord)
+--------------------------------------------------- */
+async startScreenShare() {
+  if (!navigator.mediaDevices.getDisplayMedia) {
+    console.warn("[WebRTC] Screen share not supported");
+    return;
+  }
+
+  try {
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 15, max: 30 }, // Meet-style clarity
+      },
+      audio: false,
+    });
+
+    const screenTrack = screenStream.getVideoTracks()[0];
+    screenTrack.contentHint = "detail"; // Meet-style sharpness
+
+    const sender = this.pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
+
+    if (sender) {
+      await sender.replaceTrack(screenTrack);
+
+      // Discord-style bitrate for screen share
+      const params = sender.getParameters();
+      params.encodings = [{
+        maxBitrate: 2_500_000, // 2.5 Mbps for crisp text
+        minBitrate:   500_000,
+        maxFramerate: 30,
+      }];
+      await sender.setParameters(params);
+    }
+
+    screenTrack.onended = async () => {
+      console.log("[WebRTC] Screen share stopped");
+
+      // Restore camera
+      const camStream = rtcState.localStream;
+      const camTrack = camStream?.getVideoTracks()[0];
+
+      if (camTrack && sender) {
+        await sender.replaceTrack(camTrack);
+
+        // Restore Meet-style camera bitrate
+        const params = sender.getParameters();
+        params.encodings = [{
+          maxBitrate: 1_500_000,
+          minBitrate:   300_000,
+          maxFramerate: 30,
+        }];
+        await sender.setParameters(params);
+      }
+
+      this.onScreenShareStopped?.(rtcState.peerId);
+    };
+
+    this.onScreenShareStarted?.(rtcState.peerId);
+  } catch (err) {
+    console.warn("[WebRTC] Screen share error:", err);
+  }
+}
 
   /* ---------------------------------------------------
      Mute toggle
@@ -447,122 +600,184 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     PeerConnection Factory
+     PeerConnection Factory (Hybrid Meet + Discord)
+--------------------------------------------------- */
+async _createPC({ relayOnly = false } = {}) {
+  if (this.pc) {
+    try { this.pc.close(); } catch {}
+    this.pc = null;
+  }
+
+  const iceServers = await getIceServers({ relayOnly });
+
+  const config = {
+    iceServers,
+    iceTransportPolicy: relayOnly ? "relay" : "all",
+  };
+
+  const pc = new RTCPeerConnection(config);
+  this.pc = pc;
+
+  /* ---------------------------------------------------
+       TURN Keepalive (Meet-style stability)
   --------------------------------------------------- */
-  async _createPC({ relayOnly = false } = {}) {
-    if (this.pc) {
-      try {
-        this.pc.close();
-      } catch {}
-      this.pc = null;
+  const startTurnKeepAlive = (pcInstance) => {
+    let keepAliveTimer = setInterval(() => {
+      try { pcInstance.getStats(null); } catch {}
+    }, 3000);
+
+    pcInstance.addEventListener("connectionstatechange", () => {
+      if (
+        pcInstance.connectionState === "closed" ||
+        pcInstance.connectionState === "failed"
+      ) {
+        clearInterval(keepAliveTimer);
+      }
+    });
+  };
+
+  startTurnKeepAlive(pc);
+
+  /* ---------------------------------------------------
+       DataChannel Keepalive (Discord-style)
+  --------------------------------------------------- */
+  try {
+    const keepAliveChannel = pc.createDataChannel("keepalive");
+    keepAliveChannel.onopen = () => {
+      setInterval(() => {
+        if (keepAliveChannel.readyState === "open") {
+          keepAliveChannel.send("ping");
+        }
+      }, 5000);
+    };
+  } catch {}
+
+  /* ---------------------------------------------------
+       ICE Candidate Handling
+  --------------------------------------------------- */
+  pc.onicecandidate = (event) => {
+    if (!event.candidate) return;
+
+    const c = event.candidate.candidate || "";
+    let type = "unknown";
+    if (c.includes("relay")) type = "TURN relay";
+    else if (c.includes("srflx")) type = "STUN srflx";
+    else if (c.includes("host")) type = "Host";
+
+    this.onQualityChange?.("good", `Candidate: ${type}`);
+
+    if (rtcState.peerId && this.socket) {
+      this.socket.emit("webrtc:signal", {
+        type: "ice",
+        to: rtcState.peerId,
+        from: getMyUserId(),
+        candidate: event.candidate,
+      });
+    }
+  };
+
+  /* ---------------------------------------------------
+       Remote Track Handling
+  --------------------------------------------------- */
+  pc.ontrack = (event) => {
+    const peerId = rtcState.peerId || "default";
+    attachRemoteTrack(peerId, event);
+  };
+
+  /* ---------------------------------------------------
+       ICE State (Meet + Discord hybrid)
+  --------------------------------------------------- */
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+
+    const level =
+      state === "connected"
+        ? "excellent"
+        : state === "checking"
+        ? "fair"
+        : state === "disconnected"
+        ? "poor"
+        : state === "failed"
+        ? "bad"
+        : "unknown";
+
+    this.onQualityChange?.(level, `ICE: ${state}`);
+
+    if (rtcState.answering) return;
+
+    // Meet-style adaptive fallback
+    if (state === "disconnected") {
+      console.warn("[WebRTC] Disconnected — applying fallback");
+
+      try { pc.restartIce(); } catch {}
+
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) {
+        const params = sender.getParameters();
+        params.encodings = [{
+          maxBitrate: 800_000,   // fallback bitrate
+          minBitrate: 150_000,
+          maxFramerate: 24,
+        }];
+        sender.setParameters(params).catch(() => {});
+      }
     }
 
-    const iceServers = await getIceServers({ relayOnly });
+    if (state === "failed") {
+      this.onCallFailed?.("ice failed");
+      this.endCall(false);
+    }
+  };
 
-    const config = {
-      iceServers,
-      iceTransportPolicy: relayOnly ? "relay" : "all",
-    };
+  /* ---------------------------------------------------
+       Connection State
+  --------------------------------------------------- */
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
 
-    const pc = new RTCPeerConnection(config);
-    this.pc = pc;
+    if (state === "connected") {
+      this.onQualityChange?.("excellent", "Connected");
+    }
 
-    const startTurnKeepAlive = (pcInstance) => {
-      let keepAliveTimer = setInterval(() => {
-        try {
-          pcInstance.getStats(null);
-        } catch {}
-      }, 3000);
+    if (state === "failed") {
+      this.onCallFailed?.("connection failed");
+      this.endCall(false);
+    }
+  };
 
-      pcInstance.addEventListener("connectionstatechange", () => {
-        if (
-          pcInstance.connectionState === "closed" ||
-          pcInstance.connectionState === "failed"
-        ) {
-          clearInterval(keepAliveTimer);
-        }
-      });
-    };
-
-    startTurnKeepAlive(pc);
-
+  /* ---------------------------------------------------
+       Renegotiation (Discord-style)
+  --------------------------------------------------- */
+  pc.onnegotiationneeded = async () => {
     try {
-      const keepAliveChannel = pc.createDataChannel("keepalive");
-      keepAliveChannel.onopen = () => {
-        setInterval(() => {
-          if (keepAliveChannel.readyState === "open") {
-            keepAliveChannel.send("ping");
-          }
-        }, 5000);
-      };
-    } catch {}
+      console.log("[WebRTC] Renegotiation needed");
 
-    pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
+      let offer = await pc.createOffer();
 
-      const c = event.candidate.candidate || "";
-      let type = "unknown";
-      if (c.includes("relay")) type = "TURN relay";
-      else if (c.includes("srflx")) type = "STUN srflx";
-      else if (c.includes("host")) type = "Host";
-
-      this.onQualityChange?.("good", `Candidate: ${type}`);
-
-      if (rtcState.peerId && this.socket) {
-        this.socket.emit("webrtc:signal", {
-          type: "ice",
-          to: rtcState.peerId,
-          from: getMyUserId(),
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    pc.ontrack = (event) => {
-      const peerId = rtcState.peerId || "default";
-      attachRemoteTrack(peerId, event);
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-
-      const level =
-        state === "connected"
-          ? "excellent"
-          : state === "checking"
-          ? "fair"
-          : state === "disconnected"
-          ? "poor"
-          : state === "failed"
-          ? "bad"
-          : "unknown";
-
-      this.onQualityChange?.(level, `ICE: ${state}`);
-
-      if (rtcState.answering) return;
-
-      if (state === "disconnected") {
-        try {
-          pc.restartIce();
-        } catch {}
+      // VP9 priority again
+      if (offer.sdp) {
+        offer.sdp = offer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
       }
 
-      if (state === "failed") {
-        this.onCallFailed?.("ice failed");
-        this.endCall(false);
-      }
-    };
+      await pc.setLocalDescription(offer);
 
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      if (state === "failed") {
-        this.onCallFailed?.("connection failed");
-        this.endCall(false);
-      }
-    };
+      this.socket.emit("webrtc:signal", {
+        type: "offer",
+        to: rtcState.peerId,
+        from: getMyUserId(),
+        offer,
+        renegotiate: true,
+      });
+    } catch (err) {
+      console.warn("[WebRTC] Renegotiation failed:", err);
+    }
+  };
 
-    return pc;
-  }
+  return pc;
+}
 
   /* ---------------------------------------------------
      Flush queued remote ICE
@@ -792,6 +1007,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
