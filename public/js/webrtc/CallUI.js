@@ -1,5 +1,4 @@
-// public/js/webrtc/CallUI.js
-// Aurora‑Orbit Call UI — modern, modular, single‑peer ready (for now)
+// Aurora‑Orbit Call UI — updated for <call-window id="callWindow">
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
@@ -22,7 +21,7 @@ export function initCallUI(rtc) {
      DOM ELEMENTS
   ------------------------------------------------------- */
 
-  const win              = document.getElementById("videoCallWindow");
+  const win              = document.getElementById("callWindow");
   const grid             = document.getElementById("callGrid");
 
   const localVideo       = document.getElementById("localVideo");
@@ -67,7 +66,7 @@ export function initCallUI(rtc) {
 
   rtc.attachMediaElements?.({
     localVideo,
-    remoteVideo: null, // remote videos handled per‑participant
+    remoteVideo: null,
     remoteAudio,
   });
 
@@ -157,6 +156,24 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
+     WINDOW OPEN/CLOSE ANIMATION
+  ------------------------------------------------------- */
+
+  function openWindowAnimated() {
+    if (!win) return;
+    win.classList.remove("hidden");
+    win.setAttribute("aria-hidden", "false");
+    win.classList.add("call-opening");
+    setTimeout(() => win.classList.remove("call-opening"), 300);
+  }
+
+  function hideWindow() {
+    if (!win) return;
+    win.classList.add("hidden");
+    win.setAttribute("aria-hidden", "true");
+  }
+
+  /* -------------------------------------------------------
      TOAST HELPERS
   ------------------------------------------------------- */
 
@@ -230,7 +247,6 @@ export function initCallUI(rtc) {
     showToast(toastUnavailable);
   }
 
-  // Expose for WebRTCController, which calls window.showUnavailableToastInternal(...)
   window.showUnavailableToastInternal = showUnavailableToastInternal;
 
   /* -------------------------------------------------------
@@ -355,7 +371,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     RTC EVENT WIRING — ALIGNED WITH WebRTCController
+     RTC EVENT WIRING
   ------------------------------------------------------- */
 
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
@@ -367,7 +383,7 @@ export function initCallUI(rtc) {
     setVoiceOnly(voiceOnly);
     setMode("active");
 
-    win?.classList.remove("hidden");
+    openWindowAnimated();
   };
 
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
@@ -379,7 +395,7 @@ export function initCallUI(rtc) {
     setVoiceOnly(audioOnly);
     setMode("inbound");
 
-    win?.classList.remove("hidden");
+    openWindowAnimated();
   };
 
   rtc.onCallStarted = () => {
@@ -387,7 +403,7 @@ export function initCallUI(rtc) {
     setStatus("In call");
     startTimer();
     setMode("active");
-    win?.classList.remove("hidden");
+    openWindowAnimated();
   };
 
   rtc.onCallEnded = () => {
@@ -397,7 +413,7 @@ export function initCallUI(rtc) {
     setMode(null);
     clearAllParticipants();
     demoteStage();
-    win?.classList.add("hidden");
+    hideWindow();
   };
 
   rtc.onCallFailed = (reason) => {
@@ -407,7 +423,7 @@ export function initCallUI(rtc) {
     setMode(null);
     clearAllParticipants();
     demoteStage();
-    win?.classList.add("hidden");
+    hideWindow();
   };
 
   rtc.onQualityChange = (level, info) => {
@@ -448,7 +464,7 @@ export function initCallUI(rtc) {
 }
 
 /* -------------------------------------------------------
-   WebRTC Debug Overlay (stats from controller)
+   WebRTC Debug Overlay (unchanged)
 ------------------------------------------------------- */
 
 (function createWebRTCDebugOverlay() {
