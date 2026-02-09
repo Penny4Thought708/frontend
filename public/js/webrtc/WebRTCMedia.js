@@ -200,12 +200,16 @@ export function stopSpeakingDetection() {
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (Meet+Discord tuned)
+   Local Media Acquisition (Meet+Discord tuned + avatar fallback)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
-    log("getUserMedia not supported");
-    return null;
+    log("getUserMedia not supported — using empty stream fallback");
+    const empty = new MediaStream();
+    rtcState.localStream = empty;
+    rtcState.voiceOnly = true;
+    updateLocalAvatarVisibility();
+    return empty;
   }
 
   rtcState.voiceOnly = !!audio && !video;
@@ -225,7 +229,7 @@ export async function getLocalMedia(audio = true, video = true) {
       ? {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          frameRate: { ideal: 30, max: 30 }, // Meet-style stability
+          frameRate: { ideal: 30, max: 30 },
         }
       : false,
   };
@@ -233,14 +237,12 @@ export async function getLocalMedia(audio = true, video = true) {
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     log("Got local media with constraints:", constraints);
+
     rtcState.localStream = stream;
 
-    stream.getVideoTracks().forEach((t) => {
-      try { t.contentHint = "motion"; } catch {}
-    });
-    stream.getAudioTracks().forEach((t) => {
-      try { t.contentHint = "speech"; } catch {}
-    });
+    // Apply content hints
+    stream.getVideoTracks().forEach((t) => { try { t.contentHint = "motion"; } catch {} });
+    stream.getAudioTracks().forEach((t) => { try { t.contentHint = "speech"; } catch {} });
 
     const localVideo = document.getElementById("localVideo");
     const localTile =
@@ -248,16 +250,12 @@ export async function getLocalMedia(audio = true, video = true) {
       document.getElementById("localParticipant");
 
     if (localVideo && video && !rtcState.voiceOnly) {
-      log("Attaching local stream to #localVideo");
       localVideo.srcObject = stream;
       localVideo.muted = true;
       localVideo.playsInline = true;
       localVideo.classList.add("show");
 
-      localVideo
-        .play()
-        .then(() => log("Local video playing"))
-        .catch((err) => log("Local video play blocked:", err?.name || err));
+      localVideo.play().catch((err) => log("Local video play blocked:", err));
     }
 
     updateLocalAvatarVisibility();
@@ -268,18 +266,15 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // Retry audio‑only if full AV fails
-    if (
-      video &&
-      audio &&
-      (err.name === "NotFoundError" || err.name === "OverconstrainedError")
-    ) {
-      log("Retrying getUserMedia with audio‑only…");
+    // Try audio-only fallback
+    if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
+      log("Retrying getUserMedia with audio-only…");
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false,
         });
+
         rtcState.localStream = audioOnlyStream;
         rtcState.voiceOnly = true;
 
@@ -290,18 +285,18 @@ export async function getLocalMedia(audio = true, video = true) {
 
         return audioOnlyStream;
       } catch (err2) {
-        log("Audio‑only also failed:", err2.name, err2.message);
+        log("Audio-only also failed:", err2.name, err2.message);
       }
     }
 
-    rtcState.localStream = null;
-    rtcState.voiceOnly = !!audio && !video;
+    // FINAL FALLBACK — ALWAYS RETURN A SAFE EMPTY STREAM
+    log("Falling back to empty MediaStream (avatar-only mode)");
+    const empty = new MediaStream();
+    rtcState.localStream = empty;
+    rtcState.voiceOnly = true;
 
-    const localTile = document.getElementById("localParticipant");
-    const avatarWrapper = localTile?.querySelector(".avatar-wrapper");
-    if (avatarWrapper) avatarWrapper.style.display = "flex";
-
-    return null;
+    updateLocalAvatarVisibility();
+    return empty;
   }
 }
 
@@ -494,6 +489,7 @@ export function exitScreenShareMode() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
