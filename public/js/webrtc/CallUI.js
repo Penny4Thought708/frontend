@@ -1,6 +1,3 @@
-// public/js/webrtc/CallUI.js
-// Aurora‑Orbit Call UI — modern, modular, single‑peer ready (for now)
-
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 
 import {
@@ -70,6 +67,21 @@ export function initCallUI(rtc) {
     remoteVideo: null, // remote videos handled per‑participant
     remoteAudio,
   });
+
+  /* -------------------------------------------------------
+     AUTOPLAY UNLOCK (Chrome / Safari)
+  ------------------------------------------------------- */
+
+  window.addEventListener(
+    "click",
+    () => {
+      const a = document.getElementById("remoteAudio");
+      if (a) {
+        a.play().catch(() => {});
+      }
+    },
+    { once: true }
+  );
 
   /* -------------------------------------------------------
      TIMER
@@ -288,6 +300,7 @@ export function initCallUI(rtc) {
     answerBtn.onclick = () => {
       setStatus("Answering…");
       setMode("active");
+      win?.classList.remove("hidden");
       rtc.answerIncomingCall?.();
     };
   }
@@ -357,6 +370,7 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      RTC EVENT WIRING — ALIGNED WITH WebRTCController
   ------------------------------------------------------- */
+
   // Outgoing call (controller calls this.onOutgoingCall)
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
     const kind = voiceOnly ? "voice" : "video";
@@ -420,8 +434,7 @@ export function initCallUI(rtc) {
     setQuality(level, info);
   };
 
-  // The following are future‑ready hooks; controller doesn’t emit them yet,
-  // but RemoteParticipants.js is already wired for multi‑party.
+  // Future‑ready hooks
   rtc.onRemoteCameraOff = (peerId) => setParticipantCameraOff(peerId, true);
   rtc.onRemoteCameraOn  = (peerId) => setParticipantCameraOff(peerId, false);
 
