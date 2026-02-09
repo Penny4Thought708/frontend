@@ -1,7 +1,3 @@
-// public/js/webrtc/WebRTCMedia.js
-// Production‑grade media engine: local/remote media,
-// audio visualization, speaking detection, and voice‑only optimization.
-
 import { rtcState } from "./WebRTCState.js";
 
 /* -------------------------------------------------------
@@ -454,8 +450,6 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
-
-
 
 
 
