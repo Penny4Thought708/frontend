@@ -1,7 +1,6 @@
 /* ============================================================
    NEBULA‑SYNTH CALL WINDOW THEME
-   A completely original UI/UX aesthetic
-   Designed for your HTML + CallUI.js
+   Fully aligned with corrected WebRTC + UI logic
 ============================================================ */
 
 /* ------------------------------------------------------------
@@ -66,7 +65,6 @@
   overflow: hidden;
 }
 
-/* Nebula particles */
 .video-body::before {
   content: "";
   position: absolute;
@@ -318,7 +316,6 @@
   z-index: 30;
 }
 
-/* Orbital pill background */
 .call-controls::before {
   content: "";
   position: absolute;
@@ -332,7 +329,6 @@
   z-index: -1;
 }
 
-/* Buttons */
 .control-btn {
   width: 52px;
   height: 52px;
@@ -351,7 +347,6 @@
     border-color 200ms ease;
 }
 
-/* Hover */
 .control-btn:hover {
   transform: translateY(-3px) scale(1.06);
   border-color: #78ffd2;
@@ -360,12 +355,10 @@
     0 0 32px rgba(120,180,255,0.5);
 }
 
-/* Active */
 .control-btn:active {
   transform: scale(0.9);
 }
 
-/* Inbound / Active visibility */
 #call-controls .inbound-only { display: none; }
 #call-controls .active-only  { display: none; }
 
@@ -377,7 +370,6 @@
   display: flex;
 }
 
-/* Special buttons */
 #decline-call,
 #end-call {
   background: radial-gradient(circle at 30% 0, #ff6b6b, #d90429);
@@ -388,12 +380,10 @@
   color: #05060a;
 }
 
-/* Camera flip */
 #camera-toggle.flipped .material-symbols-outlined {
   transform: rotateY(180deg);
 }
 
-/* Voice Mode hides camera + share */
 #videoCallWindow.voice-only #camera-toggle,
 #videoCallWindow.voice-only #share-screen {
   opacity: 0;
@@ -469,14 +459,12 @@
   color: rgba(255,255,255,0.85);
 }
 
-/* Quality colors */
 .quality-indicator[data-level="excellent"] { color:#78ffd2; border-color:#78ffd2; }
 .quality-indicator[data-level="good"]      { color:#7dd3ff; border-color:#7dd3ff; }
 .quality-indicator[data-level="fair"]      { color:#ffe66b; border-color:#ffe66b; }
 .quality-indicator[data-level="poor"],
 .quality-indicator[data-level="bad"]       { color:#ff6b6b; border-color:#ff6b6b; }
 
-/* Debug toggle */
 .debug-toggle {
   width: 32px;
   height: 32px;
@@ -494,22 +482,22 @@
 ------------------------------------------------------------ */
 
 .toast {
-position: fixed;
-   left: 50%;
-    bottom: 420px;
-    display: flex;
-    width: 180px;
-    flex-direction: row;
-    padding: 14px 18px;
-    background: rgba(10, 10, 20, 0.96);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    backdrop-filter: blur(18px);
-    color: #fff;
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-    transition: opacity 200ms ease, transform 200ms ease;
-    z-index: 99999;
+  position: fixed;
+  left: 50%;
+  bottom: 420px;
+  display: flex;
+  width: 180px;
+  flex-direction: row;
+  padding: 14px 18px;
+  background: rgba(10, 10, 20, 0.96);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px);
+  color: #fff;
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+  transition: opacity 200ms ease, transform 200ms ease;
+  z-index: 99999;
 }
 
 .toast.open {
@@ -526,24 +514,24 @@ position: fixed;
 #unavailableToast       { right: 20px; }
 
 .toast button {
-    flex: 1;
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: none;
-    background: rgba(255, 255, 255, 0.06);
-    margin: 5px;
-    color: #fff;
-    cursor: pointer;
-    transition: background 140ms ease, transform 120ms ease;
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 5px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 140ms ease, transform 120ms ease;
 }
-
 
 .toast button:hover {
   background: rgba(255,255,255,0.12);
   transform: translateY(-1px);
 }
+
 /* ============================================================
-   SECONDARY INCOMING CALL TOAST — NEBULA‑SYNTH STYLE
+   SECONDARY INCOMING CALL TOAST
 ============================================================ */
 
 #secondaryIncomingToast {
@@ -553,15 +541,12 @@ position: fixed;
   width: 300px;
   padding: 16px 20px;
   border-radius: 18px;
-
   background:
     radial-gradient(circle at 0 0, rgba(120,255,210,0.18), transparent 60%),
     rgba(10,10,20,0.96);
-
   border: 1px solid rgba(255,255,255,0.14);
   backdrop-filter: blur(18px);
-
-  color: #fff;
+   color: #fff;
   font-size: 0.95rem;
 
   opacity: 0;
@@ -653,7 +638,6 @@ position: fixed;
 
 /* ============================================================
    FLOATING WINDOWS (PROFILE, SETTINGS, ETC.)
-   Nebula‑Synth Floating Window System
 ============================================================ */
 
 #windowManager {
@@ -663,34 +647,33 @@ position: fixed;
   z-index: 2000;
 }
 
-/* Base floating window */
 .floating-window {
-position: absolute;
-    top: 420px;
-    left: calc(50% - 200px);
-    width: 380px;
-    max-width: 90vw;
-    background: linear-gradient(145deg, rgba(15, 15, 30, 0.96), rgba(10, 10, 20, 0.98));
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(18px);
-    padding: 0;
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    transition: opacity 200ms ease, transform 200ms ease;
-    pointer-events: auto;
-    z-index: 9999;
+  position: absolute;
+  top: 420px;
+  left: calc(50% - 200px);
+  width: 380px;
+  max-width: 90vw;
+  background: linear-gradient(145deg, rgba(15, 15, 30, 0.96), rgba(10, 10, 20, 0.98));
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+  padding: 0;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: auto;
+  z-index: 9999;
 }
 
-/* Hidden state */
 .floating-window.hidden {
   opacity: 0;
   transform: translateY(10px) scale(0.96);
   pointer-events: none;
 }
 
-/* Draggable cursor */
 .floating-window[data-draggable] {
   cursor: grab;
 }
@@ -699,7 +682,6 @@ position: absolute;
   cursor: grabbing;
 }
 
-/* Floating window body */
 .floating-body {
   padding: 20px 24px;
   color: #fff;
@@ -713,7 +695,6 @@ position: absolute;
   color: #78ffd2;
 }
 
-/* Form elements */
 .floating-body form label {
   display: flex;
   flex-direction: column;
@@ -760,7 +741,6 @@ position: absolute;
     0 0 32px rgba(120,180,255,0.5);
 }
 
-/* Settings window container */
 #settings_container {
   margin-top: 10px;
   color: rgba(255,255,255,0.85);
