@@ -1,3 +1,7 @@
+// public/js/webrtc/WebRTCController.js
+// Production‑grade WebRTC controller: signaling, PC lifecycle,
+// voicemail guards, and TURN‑safe ICE handling.
+
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
 
@@ -100,9 +104,7 @@ export class WebRTCController {
 
     this._bindSocketEvents();
 
-    // -------------------------------------------------------
     // Wire call buttons directly to this controller instance
-    // -------------------------------------------------------
     const voiceBtn = getVoiceBtn();
     const videoBtn = getVideoBtn();
 
@@ -201,7 +203,7 @@ export class WebRTCController {
       console.warn("[WebRTC] No local media — continuing call anyway");
     }
 
-    // 🔥 Notify UI of outgoing call
+    // Notify UI of outgoing call
     this.onOutgoingCall?.({
       targetName: rtcState.peerName,
       voiceOnly: audioOnly,
@@ -213,8 +215,9 @@ export class WebRTCController {
     await pc.setLocalDescription(offer);
     console.log("[WebRTC] Local description set, emitting offer");
 
-    // 🔥 Tell UI the call is now “connecting”
+    // Mark as connecting/active from UI perspective
     this.onCallStarted?.();
+    startTimer();
 
     // Send offer
     this.socket.emit("webrtc:signal", {
@@ -365,7 +368,7 @@ export class WebRTCController {
     );
     await this._flushPendingRemoteCandidates();
 
-    // 🔥 mark call as active
+    // mark call as active
     rtcState.inCall = true;
 
     stopAudio(ringback);
@@ -504,7 +507,7 @@ export class WebRTCController {
 
     const config = {
       iceServers,
-      iceTransportPolicy: "relay",
+      iceTransportPolicy: relayOnly ? "relay" : "all",
     };
 
     const pc = new RTCPeerConnection(config);
@@ -575,7 +578,7 @@ export class WebRTCController {
     };
 
     /* ---------------------------------------------------
-       ICE state → quality + TURN fallback
+       ICE state → quality (no auto‑hangup fallback)
     --------------------------------------------------- */
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -601,27 +604,11 @@ export class WebRTCController {
         } catch {}
       }
 
-
       if (state === "failed") {
-        if (
-          !rtcState.usedRelayFallback &&
-          rtcState.peerId &&
-          !rtcState.answering
-        ) {
-          rtcState.usedRelayFallback = true;
-
-          const peerId = rtcState.peerId;
-          const audioOnly = rtcState.audioOnly;
-          const isCaller = rtcState.isCaller;
-
-          this.endCall(false);
-
-          if (isCaller) {
-            this._startCallInternal(peerId, audioOnly, { relayOnly: true });
-          }
-        } else if (!rtcState.answering) {
-          this.onCallFailed?.("ice failed");
-        }
+        // No more auto‑end + relay restart here.
+        // Just fail the call cleanly.
+        this.onCallFailed?.("ice failed");
+        this.endCall(false);
       }
     };
 
@@ -629,6 +616,7 @@ export class WebRTCController {
       const state = pc.connectionState;
       if (state === "failed") {
         this.onCallFailed?.("connection failed");
+        this.endCall(false);
       }
     };
 
@@ -766,7 +754,7 @@ export class WebRTCController {
     };
 
     const triggerVoicemailFlow = (from, message) => {
-      // 🔒 Ignore voicemail if we’re already in / actively answering a call
+      // Ignore voicemail if we’re already in / actively answering a call
       if (rtcState.inCall || rtcState.answering) {
         console.log("[WebRTC] Ignoring voicemail flow (inCall/answering)");
         return;
@@ -827,6 +815,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
