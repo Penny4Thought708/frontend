@@ -1,5 +1,3 @@
-// public/js/webrtc/WebRTCController.js
-
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
 
@@ -197,12 +195,11 @@ export class WebRTCController {
     this.localStream = stream;
     rtcState.localStream = stream;
 
-   if (stream) {
-  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-} else {
-  console.warn("[WebRTC] No local media — continuing call anyway");
-}
-
+    if (stream) {
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    } else {
+      console.warn("[WebRTC] No local media — continuing call anyway");
+    }
 
     // 🔥 Notify UI of outgoing call
     this.onOutgoingCall?.({
@@ -241,42 +238,41 @@ export class WebRTCController {
     await this._startCallInternal(peerId, audioOnly, { relayOnly });
   }
 
-/* ---------------------------------------------------
-   Incoming Offer (Corrected)
---------------------------------------------------- */
-async handleOffer(data) {
-  const { from, offer, fromName, audioOnly, fromUser } = data || {};
-  console.log("[WebRTC] handleOffer", data);
-  if (!from || !offer) return;
+  /* ---------------------------------------------------
+     Incoming Offer
+  --------------------------------------------------- */
+  async handleOffer(data) {
+    const { from, offer, fromName, audioOnly, fromUser } = data || {};
+    console.log("[WebRTC] handleOffer", data);
+    if (!from || !offer) return;
 
-  // 🔥 MUST BE FIRST — ensures remote tracks attach to correct tile
-  rtcState.peerId = from;
+    // Ensure remote tracks attach to correct peer
+    rtcState.peerId = from;
 
-  // Set peer metadata
-  rtcState.peerName   = fromUser?.fullname || fromName || `User ${from}`;
-  rtcState.peerAvatar = fromUser?.avatar  || null;
-  rtcState.audioOnly  = !!audioOnly;
-  rtcState.isCaller   = false;
-  rtcState.inCall     = false;
-  rtcState.incomingOffer = data;
-  rtcState.usedRelayFallback = false;
+    // Set peer metadata
+    rtcState.peerName = fromUser?.fullname || fromName || `User ${from}`;
+    rtcState.peerAvatar = fromUser?.avatar || null;
+    rtcState.audioOnly = !!audioOnly;
+    rtcState.isCaller = false;
+    rtcState.inCall = false;
+    rtcState.incomingOffer = data;
+    rtcState.usedRelayFallback = false;
 
-  // Update remote avatar UI
-  if (fromUser?.avatar) {
-    setRemoteAvatar(fromUser.avatar);
-    showRemoteAvatar();
+    // Update remote avatar UI
+    if (fromUser?.avatar) {
+      setRemoteAvatar(fromUser.avatar);
+      showRemoteAvatar();
+    }
+
+    // Play ringtone
+    ringtone?.play().catch(() => {});
+
+    // Notify UI
+    this.onIncomingCall?.({
+      fromName: rtcState.peerName,
+      audioOnly: rtcState.audioOnly,
+    });
   }
-
-  // Play ringtone
-  ringtone?.play().catch(() => {});
-
-  // Notify UI
-  this.onIncomingCall?.({
-    fromName: rtcState.peerName,
-    audioOnly: rtcState.audioOnly,
-  });
-}
-
 
   /* ---------------------------------------------------
      Answer Incoming Call
@@ -573,56 +569,10 @@ async handleOffer(data) {
     /* ---------------------------------------------------
        Remote tracks → WebRTCMedia (group-aware)
     --------------------------------------------------- */
-     pc.ontrack = (event) => {
-  const stream = event.streams[0];
-  console.log("[ontrack] kind:", event.track.kind, "streams:", event.streams.length, "stream:", stream);
-
-  // 1️⃣ Sanity: mark that we *did* get a track
-  if (!stream) {
-    console.warn("[ontrack] No stream on event");
-    return;
-  }
-
-  // 2️⃣ Directly wire to shared remoteAudio
-  const remoteAudioEl = document.getElementById("remoteAudio");
-  if (event.track.kind === "audio" && remoteAudioEl) {
-    console.log("[ontrack] Binding AUDIO to #remoteAudio");
-    remoteAudioEl.srcObject = stream;
-    remoteAudioEl.playsInline = true;
-  remoteAudioEl.muted = false;
-remoteAudioEl.volume = 1.0;
-
-remoteAudioEl.play().catch(() => {
-  console.warn("[WebRTC] Autoplay blocked — waiting for user gesture");
-});
-
-  }
-
-  // 3️⃣ Directly wire to first remote video tile
-  const tpl = document.getElementById("remoteParticipantTemplate");
-  const grid = document.getElementById("callGrid");
-  if (event.track.kind === "video" && tpl && grid) {
-    let remoteTile = grid.querySelector(".participant.remote.debug-test");
-    if (!remoteTile) {
-      remoteTile = tpl.content.firstElementChild.cloneNode(true);
-      remoteTile.classList.add("debug-test");
-      grid.appendChild(remoteTile);
-    }
-
-    const videoEl = remoteTile.querySelector("video");
-    if (videoEl) {
-      console.log("[ontrack] Binding VIDEO to debug remote tile");
-      videoEl.srcObject = stream;
-      videoEl.playsInline = true;
-      videoEl.style.display = "block";
-      videoEl.style.opacity = "1";
-      videoEl.play().catch((err) => {
-        console.warn("[ontrack] remote video play blocked:", err?.name || err);
-      });
-    }
-  }
-};
-
+    pc.ontrack = (event) => {
+      const peerId = rtcState.peerId || "default";
+      attachRemoteTrack(peerId, event);
+    };
 
     /* ---------------------------------------------------
        ICE state → quality + TURN fallback
@@ -899,6 +849,7 @@ remoteAudioEl.play().catch(() => {
     });
   }
 }
+
 
 
 
