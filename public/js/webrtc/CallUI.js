@@ -152,7 +152,6 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
-
 function openWindowAnimated() {
   if (!win) return;
 
@@ -183,6 +182,7 @@ function hideWindow() {
     document.body.classList.remove("panel-open");
   }, 260);
 }
+
 
 
   /* -------------------------------------------------------
@@ -538,6 +538,7 @@ function hideWindow() {
       `Camera Off: ${cameraOff ? "YES" : "NO"}\n`;
   };
 })();
+
 
 
 
