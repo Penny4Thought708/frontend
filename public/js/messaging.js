@@ -69,6 +69,19 @@ newMsgBubble?.addEventListener("click", () => {
   hideNewMessageBubble();
 });
 
+// ===== Normalization =====
+function normalizeMessage(msg) {
+  const myUserId = getMyUserId();
+
+  return {
+    ...msg,
+    is_me: msg.sender_id === myUserId,
+    sender_name:
+      userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
+    sender_avatar:
+      userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
+  };
+}
 // -------------------------------------------------------
 // Helpers
 // -------------------------------------------------------
@@ -112,7 +125,95 @@ function smartScroll() {
     hideNewMessageBubble();
   }
 }
+/ ===== Loading messages =====
+export async function loadMessages() {
+  console.log("[messaging] loadMessages called for receiver:", receiver_id);
+  console.log("userNames cache right now:", userNames);
 
+  if (!receiver_id) {
+    console.warn("[messaging] loadMessages: no receiver_id");
+    return [];
+  }
+
+  try {
+    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+    console.log("[messaging] loadMessages raw:", res);
+
+    if (!res || !res.success || !Array.isArray(res.messages)) {
+      console.error("[messaging] loadMessages: invalid response format");
+      return [];
+    }
+
+    let messages = res.messages.map(normalizeMessage);
+    lastLoadedMessages = messages;
+    const myUserId = getMyUserId();
+
+    if (messageWin) {
+      messages.forEach((msg) => {
+        const msgId = msg.id != null ? String(msg.id) : null;
+
+        const exists = msgId
+          ? document.querySelector(`[data-msg-id="${msgId}"]`)
+          : null;
+
+        if (!exists) {
+          renderMessage(msg);
+
+          if (!msg.is_me && msg.id !== undefined) {
+            socket.emit("message:delivered", {
+              from: msg.sender_id,
+              to: myUserId,
+              messageId: msg.id,
+            });
+          }
+        }
+
+        const display = document.querySelector(
+          `[data-msg-id="${msg.id}"] .reaction-display`
+        );
+        if (display) display.innerHTML = "";
+
+        if (msg.reactions) {
+          const counts = {};
+          msg.reactions.forEach((emoji) => {
+            counts[emoji] = (counts[emoji] || 0) + 1;
+          });
+
+          Object.entries(counts).forEach(([emoji, count]) => {
+            for (let i = 0; i < count; i++) {
+              addReactionToMessage(msg.id, emoji);
+            }
+          });
+        }
+      });
+    }
+
+    const last = messages[messages.length - 1];
+    if (
+      last &&
+      typeof last.id === "number" &&
+      last.id > lastSeenMessageId &&
+      !last.is_me
+    ) {
+      playNotification();
+      const bell = document.querySelector(".notification-bell");
+      if (bell) {
+        bell.classList.add("active");
+        setTimeout(() => bell.classList.remove("active"), 1000);
+      }
+    }
+
+    if (last && typeof last.id === "number") {
+      lastSeenMessageId = last.id;
+    }
+
+    observeMessagesForRead();
+    return messages;
+  } catch (err) {
+    console.error("[messaging] loadMessages failed:", err);
+    return [];
+  }
+}
 // -------------------------------------------------------
 // Network helpers
 // -------------------------------------------------------
@@ -686,6 +787,7 @@ export function setupDataChannel(channel) {
     observeMessagesForRead();
   };
 }
+
 
 
 
