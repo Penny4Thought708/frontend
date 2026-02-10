@@ -594,25 +594,48 @@
   margin-bottom: 6px;
 }
 
-/* Emoji picker */
+/* ============================================
+   EMOJI PICKER — FIXED (no display:none)
+   ============================================ */
+
 emoji-picker,
-.emoji-picker {
-  display: none !important;
-}
-
-emoji-picker.active,
-.emoji-picker.active {
-  display: block !important;
-}
-
 .emoji-picker {
   position: absolute;
   bottom: 60px;
   right: 16px;
   z-index: 60;
+
+  /* Hide without breaking emoji detection */
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+
+  /* Smooth slide + fade animation */
+  transform: translateY(10px);
+  transition:
+    opacity 0.20s ease,
+    transform 0.20s ease,
+    visibility 0s linear 0.20s; /* delay visibility off */
 }
 
-/* GIF picker */
+/* When active, show it */
+emoji-picker.active,
+.emoji-picker.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    opacity 0.20s ease,
+    transform 0.20s ease,
+    visibility 0s;
+}
+
+
+/* ============================================
+   GIF PICKER — MATCHED TO EMOJI PICKER
+   ============================================ */
+
 .gif-picker {
   position: absolute;
   bottom: 60px;
@@ -626,11 +649,31 @@ emoji-picker.active,
   flex-direction: column;
   gap: 6px;
   backdrop-filter: blur(18px);
-  display: none !important; /* HIDDEN BY DEFAULT */
+  z-index: 60;
+
+  /* Hide without display:none */
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+
+  /* Smooth slide + fade animation */
+  transform: translateY(10px);
+  transition:
+    opacity .20s ease,
+    transform .20s ease,
+    visibility 0s linear .20s;
 }
 
+/* When active, show it */
 .gif-picker.active {
-  display: flex !important; /* SHOW WHEN ACTIVE */
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    opacity .20s ease,
+    transform .20s ease,
+    visibility 0s;
 }
 
 
