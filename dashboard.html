@@ -656,6 +656,26 @@ window.currentUserAvatar = user.avatar;
     <audio id="notification" src="notification.mp3" preload="auto"></audio>
 
   </app-shell>
+<!-- Delete menu bottom sheet -->
+<div id="deleteMenuSheet" class="bottom-sheet delete-menu">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Delete message?</div>
+  <button type="button" class="sheet-btn danger" id="btnDeleteForEveryone">
+    Delete for everyone
+  </button>
+  <button type="button" class="sheet-btn" id="btnDeleteForMe">
+    Delete for me
+  </button>
+  <button type="button" class="sheet-btn secondary" id="btnDeleteCancel">
+    Cancel
+  </button>
+</div>
+
+<!-- Undo toast -->
+<div id="undoToast" class="undo-toast">
+  <span class="undo-text">Message deleted</span>
+  <button type="button" id="btnUndoDelete" class="undo-btn">UNDO</button>
+</div>
 
 </body>
 
@@ -1406,6 +1426,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
