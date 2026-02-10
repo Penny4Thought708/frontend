@@ -23,7 +23,6 @@ import {
   msgInput,
   badge,
   messageBox,
-  msgOpenBtn,
   attachmentInput,
   attachmentBtn,
   previewDiv,
@@ -1006,6 +1005,7 @@ micBtn?.addEventListener("click", () => {
 
 // ===== END OF FILE =====
 console.log("[messaging] Fully upgraded messaging.js loaded");
+
 
 
 
