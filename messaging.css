@@ -595,6 +595,16 @@
 }
 
 /* Emoji picker */
+emoji-picker,
+.emoji-picker {
+  display: none !important;
+}
+
+emoji-picker.active,
+.emoji-picker.active {
+  display: block !important;
+}
+
 .emoji-picker {
   position: absolute;
   bottom: 60px;
@@ -613,14 +623,18 @@
   border: 1px solid var(--border);
   box-shadow: 0 10px 30px var(--shadow);
   padding: 8px;
-  display: flex;
   flex-direction: column;
   gap: 6px;
   backdrop-filter: blur(18px);
+  display: none !important; /* HIDDEN BY DEFAULT */
+}
+
+.gif-picker.active {
+  display: flex !important; /* SHOW WHEN ACTIVE */
 }
 
 .gif-picker.hidden {
-  display: none;
+  display: none !important; /* FORCE HIDE */
 }
 
 .gif-search {
