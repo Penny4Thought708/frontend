@@ -44,7 +44,7 @@ let lastLoadedMessages = [];
 let readObserver = null;
 const previewEl = previewDiv;
 
-// ===== UI ELEMENTS ADDED =====
+// ===== UI ELEMENTS =====
 const emptyStateEl = document.getElementById("messageEmptyState");
 const newMessagesPill = document.getElementById("newMessagesPill");
 const typingIndicator = document.querySelector(".typing-indicator");
@@ -75,6 +75,7 @@ function hideNewMessagePill() {
 }
 
 newMessagesPill?.addEventListener("click", () => {
+  if (!messageWin) return;
   messageWin.scrollTo({ top: messageWin.scrollHeight, behavior: "smooth" });
   hideNewMessagePill();
 });
@@ -102,14 +103,12 @@ export function setReceiver(id) {
   }
   console.log("[messaging] Receiver set:", receiver_id);
 
-  // Reset UI state
   hideNewMessagePill();
   hideEmptyState();
   if (messageWin) messageWin.innerHTML = "";
   if (typingIndicator) typingIndicator.classList.remove("active");
   if (recordingIndicator) recordingIndicator.classList.remove("active");
 
-  // Load thread
   loadMessages().catch((err) =>
     console.error("[messaging] loadMessages after setReceiver failed:", err)
   );
@@ -285,7 +284,6 @@ function addReactionToMessage(id, emoji) {
     `;
     container.appendChild(bubble);
 
-    // Hover animation
     bubble.addEventListener("mouseenter", () =>
       bubble.classList.add("hover")
     );
@@ -329,23 +327,20 @@ function renderMessage(msg) {
 
   hideEmptyState();
 
+  const bodyText = msg.message || msg.text || "";
+
   const isFileMessage =
     msg.type === "file" ||
     msg.file ||
-    /^File:/i.test(msg.message || "");
+    /^File:/i.test(bodyText);
 
-  // ===== Outer wrapper =====
   const wrapper = document.createElement("div");
   wrapper.className =
     msg.is_me ? "msg-wrapper sender_msg" : "msg-wrapper receiver_msg";
 
-  // WhatsApp-style bubble shape
   wrapper.classList.add("bubble-style");
 
-  // iMessage spring physics
   wrapper.style.animation = "msgPop 0.25s cubic-bezier(.17,.89,.32,1.49)";
-
-  // Smooth fade-in
   wrapper.style.opacity = "0";
   requestAnimationFrame(() => {
     wrapper.style.transition = "opacity 0.25s ease";
@@ -356,7 +351,6 @@ function renderMessage(msg) {
   if (!msg.is_me && msg.sender_id)
     wrapper.dataset.senderId = String(msg.sender_id);
 
-  // ===== Sender name (only for received messages) =====
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
@@ -367,17 +361,15 @@ function renderMessage(msg) {
     wrapper.appendChild(nameEl);
   }
 
-  // ===== Bubble =====
   const bubble = document.createElement("p");
   bubble.className = "msg-bubble-text";
   wrapper.appendChild(bubble);
 
-  // ===== File or Text =====
   if (isFileMessage) {
     const name =
       msg.name ||
       msg.filename ||
-      (msg.message || "").replace(/^File:\s*/, "");
+      bodyText.replace(/^File:\s*/, "");
 
     const fileUrl = msg.url || msg.file_url || msg.data || null;
 
@@ -387,14 +379,13 @@ function renderMessage(msg) {
       comment: msg.comment,
     });
   } else {
-    bubble.textContent = msg.message ?? "";
+    bubble.textContent = bodyText;
 
-    // ===== Inline editing for your messages =====
     if (msg.is_me && msg.id) {
       bubble.ondblclick = () => {
         console.log("[messaging] edit dblclick:", msg.id);
 
-        const original = msg.message ?? "";
+        const original = bodyText;
         const input = document.createElement("input");
         input.type = "text";
         input.value = original;
@@ -432,12 +423,10 @@ function renderMessage(msg) {
     }
   }
 
-  // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
   wrapper.appendChild(reactionDisplay);
 
-  // ===== Reaction bar =====
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -464,7 +453,6 @@ function renderMessage(msg) {
     addReactionToMessage(msg.id, emoji);
   });
 
-  // ===== Meta (timestamp + delete) =====
   const ts =
     msg.created_at instanceof Date
       ? msg.created_at
@@ -491,7 +479,6 @@ function renderMessage(msg) {
   meta.appendChild(statusSpan);
   wrapper.appendChild(meta);
 
-  // ===== Append to DOM =====
   messageWin.appendChild(wrapper);
   smartScroll();
   observeMessagesForRead();
@@ -574,7 +561,6 @@ export function setupDataChannel(channel) {
     playNotification();
     const myUserId = getMyUserId();
 
-    // FILE
     if (payload && payload.type === "file") {
       console.log("[messaging] Incoming P2P file:", payload);
 
@@ -621,7 +607,6 @@ export function setupDataChannel(channel) {
       return;
     }
 
-    // TEXT
     const text =
       typeof payload === "string" ? payload : safeJSON(payload);
 
@@ -656,6 +641,7 @@ function normalizeMessage(msg) {
       userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
     sender_avatar:
       userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
+    reactions: msg.reactions || [],
   };
 }
 
@@ -716,7 +702,7 @@ export async function loadMessages() {
         );
         if (display) display.innerHTML = "";
 
-        if (msg.reactions) {
+        if (msg.reactions && msg.reactions.length) {
           const counts = {};
           msg.reactions.forEach((emoji) => {
             counts[emoji] = (counts[emoji] || 0) + 1;
@@ -783,15 +769,12 @@ msgInput?.addEventListener("input", () => {
   }, 800);
 });
 
-socket.on("typing:start", ({ from, fullname }) => {
+socket.on("typing:start", ({ from }) => {
   const currentChatPartner = receiver_id || getPeerId();
   if (!typingIndicator || !currentChatPartner) return;
 
   if (String(from) === String(currentChatPartner)) {
-    const name =
-      fullname || userNames[String(from)] || `User ${from}`;
     typingIndicator.classList.add("active");
-    typingIndicator.textContent = `${name} is typing...`;
   }
 });
 
@@ -801,7 +784,6 @@ socket.on("typing:stop", ({ from }) => {
 
   if (String(from) === String(currentChatPartner)) {
     typingIndicator.classList.remove("active");
-    typingIndicator.textContent = "";
   }
 });
 
@@ -933,13 +915,13 @@ const micBtn = document.getElementById("micBtn");
 
 // ===== Toggle bottom sheet =====
 plusBtn?.addEventListener("click", () => {
-  bottomSheet.classList.toggle("active");
+  bottomSheet?.classList.toggle("active");
 });
 
 // ===== Emoji Picker =====
 sheetEmoji?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  emojiPicker.classList.toggle("active");
+  bottomSheet?.classList.remove("active");
+  emojiPicker?.classList.toggle("active");
 });
 
 emojiPicker?.addEventListener("emoji-click", (e) => {
@@ -949,9 +931,9 @@ emojiPicker?.addEventListener("emoji-click", (e) => {
 
 // ===== GIF Picker =====
 sheetGif?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  gifPicker.classList.toggle("hidden");
-  gifSearch.focus();
+  bottomSheet?.classList.remove("active");
+  gifPicker?.classList.toggle("hidden");
+  gifSearch?.focus();
 });
 
 // Simple GIF search using Tenor API
@@ -988,24 +970,78 @@ gifSearch?.addEventListener("input", async () => {
 
 // ===== File Picker =====
 sheetFile?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
-  attachmentInput.click();
+  bottomSheet?.classList.remove("active");
+  attachmentInput?.click();
 });
 
-// ===== Audio Recording (placeholder) =====
+attachmentInput?.addEventListener("change", () => {
+  const files = Array.from(attachmentInput.files || []);
+  renderPreviews(files);
+});
+
+// ===== Audio Recording (placeholder + bubble toggle) =====
 sheetAudio?.addEventListener("click", () => {
-  bottomSheet.classList.remove("active");
+  bottomSheet?.classList.remove("active");
+  if (recordingIndicator) {
+    recordingIndicator.classList.toggle("active");
+  }
   console.log("[composer] Voice message coming soon");
 });
 
-// ===== Mic Button (same as sheetAudio for now) =====
+// ===== Mic Button (toggle recording bubble) =====
 micBtn?.addEventListener("click", () => {
   console.log("[composer] Mic button clicked");
+  if (recordingIndicator) {
+    recordingIndicator.classList.toggle("active");
+  }
+});
+
+// ===== Sending messages =====
+async function sendMessage() {
+  if (!receiver_id) {
+    console.warn("[messaging] sendMessage: no receiver_id");
+    return;
+  }
+
+  const text = (msgInput.textContent || "").trim();
+  const files = Array.from(attachmentInput?.files || []);
+
+  if (!text && files.length === 0) {
+    console.log("[messaging] sendMessage: nothing to send");
+    return;
+  }
+
+  try {
+    const res = await apiPost("/send", {
+      receiver_id,
+      message: text || "",
+      file: files.length > 0,
+      file_url: null,
+    });
+
+    console.log("[messaging] sendMessage response:", res);
+
+    if (res && res.success && res.message) {
+      const normalized = normalizeMessage(res.message);
+      renderMessage(normalized);
+      msgInput.textContent = "";
+      if (previewEl) previewEl.innerHTML = "";
+      if (attachmentInput) attachmentInput.value = "";
+    }
+  } catch (err) {
+    console.error("[messaging] sendMessage failed:", err);
+    showError("Failed to send message");
+  }
+}
+
+// Prevent form reload + send
+msgForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  sendMessage();
 });
 
 // ===== END OF FILE =====
 console.log("[messaging] Fully upgraded messaging.js loaded");
-
 
 
 
