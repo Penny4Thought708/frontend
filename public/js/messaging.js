@@ -125,7 +125,7 @@ function smartScroll() {
     hideNewMessageBubble();
   }
 }
-/ ===== Loading messages =====
+/// ===== Loading messages =====/
 export async function loadMessages() {
   console.log("[messaging] loadMessages called for receiver:", receiver_id);
   console.log("userNames cache right now:", userNames);
@@ -787,6 +787,7 @@ export function setupDataChannel(channel) {
     observeMessagesForRead();
   };
 }
+
 
 
 
