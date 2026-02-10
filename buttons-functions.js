@@ -31,19 +31,13 @@ function initUI() {
   const newPill = document.getElementById("newMessagesPill");
   const msgWin = document.getElementById("messageWin");
 
+  const emptyState = document.getElementById("messageEmptyState");
+
   /* -----------------------------------------------------------
      ALWAYS‑VISIBLE PANELS
-     - Directory panel is ALWAYS visible
-     - Messaging panel is ALWAYS visible
-     - Message window ALWAYS visible
   ----------------------------------------------------------- */
   if (directoryPanel) directoryPanel.classList.remove("hidden");
   if (messagingPanel) messagingPanel.classList.remove("hidden");
-      directoryPanel?.classList.remove("hidden");
-      directoryPanel?.classList.add("dir-visible");
-
-  // Show empty state until a contact is selected
-  const emptyState = document.getElementById("messageEmptyState");
   if (emptyState) emptyState.classList.remove("hidden");
 
   /* -----------------------------------------------------------
@@ -59,20 +53,24 @@ function initUI() {
         logoutModal
       ].forEach(el => el && el.classList.add("hidden"));
 
+      // Directory + Messaging ALWAYS visible
+      directoryPanel?.classList.remove("hidden");
+      messagingPanel?.classList.remove("hidden");
+
       document.body.classList.remove("panel-open");
     },
 
     showMessaging() {
-      // Messaging + Directory ALWAYS visible
-      messagingPanel?.classList.remove("hidden");
       directoryPanel?.classList.remove("hidden");
+      messagingPanel?.classList.remove("hidden");
       document.body.classList.remove("panel-open");
     },
 
- showDirectory() {
-  messagingPanel?.classList.remove("hidden");
-  directoryPanel?.classList.remove("hidden"); // always visible
-}
+    showDirectory() {
+      directoryPanel?.classList.remove("hidden");
+      messagingPanel?.classList.remove("hidden");
+      document.body.classList.add("panel-open");
+    },
 
     showFloating(win) {
       if (!win) return;
@@ -193,7 +191,7 @@ function initUI() {
     UIX.showModal(logoutModal);
   };
 
-  document.get.getElementById("cancelLogout")?.addEventListener("click", () => {
+  document.getElementById("cancelLogout")?.addEventListener("click", () => {
     UIX.hideModal(logoutModal);
   });
 
@@ -314,6 +312,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
