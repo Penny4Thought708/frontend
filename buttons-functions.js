@@ -39,6 +39,8 @@ function initUI() {
   ----------------------------------------------------------- */
   if (directoryPanel) directoryPanel.classList.remove("hidden");
   if (messagingPanel) messagingPanel.classList.remove("hidden");
+      directoryPanel?.classList.remove("hidden");
+      directoryPanel?.classList.add("dir-visible");
 
   // Show empty state until a contact is selected
   const emptyState = document.getElementById("messageEmptyState");
@@ -67,12 +69,10 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
-    showDirectory() {
-      // Directory ALWAYS visible — just ensure it's focused
-      directoryPanel?.classList.remove("hidden");
-      messagingPanel?.classList.remove("hidden");
-      document.body.classList.add("panel-open");
-    },
+ showDirectory() {
+  messagingPanel?.classList.remove("hidden");
+  directoryPanel?.classList.remove("hidden"); // always visible
+}
 
     showFloating(win) {
       if (!win) return;
@@ -314,6 +314,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
