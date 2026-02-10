@@ -633,9 +633,6 @@ emoji-picker.active,
   display: flex !important; /* SHOW WHEN ACTIVE */
 }
 
-.gif-picker.hidden {
-  display: none !important; /* FORCE HIDE */
-}
 
 .gif-search {
   width: 100%;
