@@ -165,16 +165,35 @@
 }
 
 /* ============================================================
-   MESSAGE BUBBLES — WhatsApp + iMessage Hybrid
+   MESSAGE WINDOW BASE
+   ============================================================ */
+
+#messageWin.message-window {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--bg);
+  position: relative;
+}
+
+/* Smooth scroll */
+#messageWin {
+  scroll-behavior: smooth;
+}
+
+/* ============================================================
+   MESSAGE WRAPPER
    ============================================================ */
 
 .msg-wrapper {
   display: flex;
   flex-direction: column;
-  margin: 6px 0;
-  max-width: 80%;
-  position: relative;
-  animation: fadeIn 0.25s ease;
+  max-width: 78%;
+  padding: 0;
+  animation: msgPop 0.25s cubic-bezier(.17,.89,.32,1.49);
+  opacity: 1;
 }
 
 .sender_msg {
@@ -185,40 +204,47 @@
   align-self: flex-start;
 }
 
+/* ============================================================
+   SENDER NAME
+   ============================================================ */
+
+.msg-sender-name {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+/* ============================================================
+   MESSAGE BUBBLE
+   ============================================================ */
+
 .msg-bubble-text {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 18px;
   font-size: 15px;
   line-height: 1.35;
   word-break: break-word;
-  position: relative;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  position: relative;
   transition: background 0.25s ease;
 }
 
-/* Theme variants */
-body.light .sender_msg .msg-bubble-text {
-  background: rgba(0, 132, 255, 0.15);
-  color: #003a66;
-}
-
-body.dark .sender_msg .msg-bubble-text {
+/* Sender bubble */
+.sender_msg .msg-bubble-text {
   background: rgba(0, 132, 255, 0.35);
-  color: #dceaff;
+  color: #e9f4ff;
 }
 
-body.light .receiver_msg .msg-bubble-text {
-  background: rgba(0, 0, 0, 0.06);
-  color: #222;
+/* Receiver bubble */
+.receiver_msg .msg-bubble-text {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f1f1f1;
 }
 
-body.dark .receiver_msg .msg-bubble-text {
-  background: rgba(255, 255, 255, 0.08);
-  color: #eee;
-}
-
-/* Tails */
+/* WhatsApp-style tails */
 .sender_msg .msg-bubble-text::after {
   content: "";
   position: absolute;
@@ -241,63 +267,93 @@ body.dark .receiver_msg .msg-bubble-text {
   clip-path: polygon(100% 0, 0 100%, 100% 100%);
 }
 
-/* iMessage spring pop */
+/* ============================================================
+   META (timestamp + delete)
+   ============================================================ */
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.meta small {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.status-flags button.delete-msg {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.status-flags button.delete-msg:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ============================================================
+   REACTIONS
+   ============================================================ */
+
+.reaction-display {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.reaction-bubble {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.reaction-bubble:hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Reaction bar (appears on hover) */
+.reaction-bar {
+  display: none;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.msg-wrapper:hover .reaction-bar {
+  display: flex;
+}
+
+.react-emoji {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.react-emoji:hover {
+  transform: scale(1.3);
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+
 @keyframes msgPop {
   0% { transform: scale(0.7); opacity: 0; }
   60% { transform: scale(1.05); opacity: 1; }
   100% { transform: scale(1); }
 }
 
-/* Smooth fade-in */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Sender name */
-.msg-sender-name {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-bottom: 2px;
-  padding-left: 4px;
-}
-
-/* Meta (timestamp + actions) */
-.msg-wrapper .meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2px;
-}
-
-.msg-wrapper small {
-  font-size: 11px;
-  opacity: 0.6;
-}
-
-.status-flags {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.delete-msg {
-  font-size: 12px;
-  padding: 2px 6px;
-}
-
-/* File caption */
-.file-caption {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  opacity: 0.8;
-}
-
-.file-comment {
-  margin-top: 4px;
-  font-size: 12px;
-  opacity: 0.8;
 }
 
 /* ============================================================
