@@ -932,7 +932,7 @@ emojiPicker?.addEventListener("emoji-click", (e) => {
 // ===== GIF Picker =====
 sheetGif?.addEventListener("click", () => {
   bottomSheet?.classList.remove("active");
-  gifPicker?.classList.toggle("hidden");
+  gifPicker?.classList.toggle("active");
   gifSearch?.focus();
 });
 
@@ -1042,6 +1042,7 @@ msgForm?.addEventListener("submit", (e) => {
 
 // ===== END OF FILE =====
 console.log("[messaging] Fully upgraded messaging.js loaded");
+
 
 
 
