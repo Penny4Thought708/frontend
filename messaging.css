@@ -1,26 +1,81 @@
+/* ============================================================
+   NEON VAPOR — GLOBAL THEME ENGINE
+   ============================================================ */
 
+:root {
+  /* Accent (electric blue) */
+  --accent: #4da3ff;
+  --accent-glow: rgba(77, 163, 255, 0.55);
+  --accent-soft: rgba(77, 163, 255, 0.25);
+
+  /* Light Mode */
+  --bg: #eef3ff;
+  --bg-panel: rgba(255, 255, 255, 0.65);
+  --bg-glass: rgba(255, 255, 255, 0.35);
+  --bg-elevated: rgba(255, 255, 255, 0.85);
+
+  --text: #0f1115;
+  --text-soft: #444;
+
+  --border: rgba(0, 0, 0, 0.12);
+  --border-soft: rgba(0, 0, 0, 0.08);
+
+  --shadow: rgba(0, 0, 0, 0.15);
+  --fg: #0f1115;
+
+  --glow-strong: 0 0 22px var(--accent-glow);
+  --glow-soft: 0 0 12px var(--accent-soft);
+}
+
+/* ============================================================
+   DARK MODE — TRUE NEON VAPOR
+   ============================================================ */
+
+:root[data-theme="dark"] {
+  --bg: #0b0d11;
+  --bg-panel: rgba(18, 20, 26, 0.65);
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --bg-elevated: rgba(255, 255, 255, 0.12);
+
+  --text: #e8ecf7;
+  --text-soft: #9aa3b8;
+
+  --border: rgba(255, 255, 255, 0.12);
+  --border-soft: rgba(255, 255, 255, 0.08);
+
+  --shadow: rgba(0, 0, 0, 0.55);
+  --fg: #ffffff;
+
+  --glow-strong: 0 0 28px var(--accent-glow);
+  --glow-soft: 0 0 16px var(--accent-soft);
+}
+
+/* Smooth theme transitions */
+html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
+  transition: background 0.25s ease, color 0.25s ease, border 0.25s ease;
+}
 
 .accent {
   color: var(--accent);
 }
 
 /* ============================================================
-   MESSAGING PANEL LAYOUT (GLASS OS)
+   MESSAGING PANEL LAYOUT
    ============================================================ */
 
 .messaging-panel {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    left: 40%;
-    flex: .6;
-    position: relative;
-    color: var(--text);
-    border-left: 1px solid var(--border);
-    backdrop-filter: blur(22px) saturate(1.4);
-    -webkit-backdrop-filter: blur(22px) saturate(1.4);
-    box-shadow: 0 0 40px var(--shadow);
-    animation: panelSlideIn 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: .6;
+  position: relative;
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 0 40px var(--shadow);
+  animation: panelSlideIn 0.35s ease;
+  background: var(--bg-panel);
 }
 
 .msg-header {
@@ -67,12 +122,15 @@
   display: none;
 }
 
-/* Composer */
+/* ============================================================
+   COMPOSER
+   ============================================================ */
+
 .composer {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
   backdrop-filter: blur(18px);
@@ -80,11 +138,10 @@
 
 .msg-input {
   flex: 1;
-  min-height: 40px;
-  max-height: 120px;
-  overflow-y: auto;
-  padding: 10px 14px;
-  border-radius: 14px;
+  min-height: 42px;
+  max-height: 140px;
+  padding: 12px 16px;
+  border-radius: 16px;
   background: var(--bg-glass);
   border: 1px solid var(--border);
   color: var(--text);
@@ -94,11 +151,14 @@
 
 .msg-input:focus {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 0 2px var(--accent-soft);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--glow-soft);
 }
 
-/* Attachment preview */
+/* ============================================================
+   ATTACHMENT PREVIEW
+   ============================================================ */
+
 .attachment-preview {
   padding: 8px 12px;
   border-top: 1px solid var(--border);
@@ -146,7 +206,10 @@
   padding: 0;
 }
 
-/* Image viewer */
+/* ============================================================
+   IMAGE VIEWER
+   ============================================================ */
+
 .img-viewer {
   position: fixed;
   inset: 0;
@@ -165,7 +228,7 @@
 }
 
 /* ============================================================
-   MESSAGE WINDOW BASE
+   MESSAGE WINDOW
    ============================================================ */
 
 #messageWin.message-window {
@@ -178,7 +241,6 @@
   position: relative;
 }
 
-/* Smooth scroll */
 #messageWin {
   scroll-behavior: smooth;
 }
@@ -217,7 +279,7 @@
 }
 
 /* ============================================================
-   MESSAGE BUBBLE
+   MESSAGE BUBBLE — NEON VAPOR
    ============================================================ */
 
 .msg-bubble-text {
@@ -226,25 +288,28 @@
   font-size: 15px;
   line-height: 1.35;
   word-break: break-word;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   position: relative;
-  transition: background 0.25s ease;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Sender bubble */
+/* Sender bubble — electric neon */
 .sender_msg .msg-bubble-text {
-  background: rgba(0, 132, 255, 0.35);
-  color: #e9f4ff;
+  background: rgba(77, 163, 255, 0.22);
+  color: var(--fg);
+  box-shadow: var(--glow-soft);
+  border: 1px solid rgba(77, 163, 255, 0.35);
 }
 
-/* Receiver bubble */
+/* Receiver bubble — glass vapor */
 .receiver_msg .msg-bubble-text {
-  background: rgba(255, 255, 255, 0.12);
-  color: #f1f1f1;
+  background: var(--bg-glass);
+  color: var(--text);
+  border: 1px solid var(--border-soft);
 }
 
-/* WhatsApp-style tails */
+/* Bubble tails */
 .sender_msg .msg-bubble-text::after {
   content: "";
   position: absolute;
@@ -254,6 +319,7 @@
   height: 12px;
   background: inherit;
   clip-path: polygon(0 0, 100% 100%, 0 100%);
+  filter: drop-shadow(var(--glow-soft));
 }
 
 .receiver_msg .msg-bubble-text::before {
@@ -298,7 +364,7 @@
 }
 
 /* ============================================================
-   REACTIONS
+   REACTIONS — NEON VAPOR
    ============================================================ */
 
 .reaction-display {
@@ -308,23 +374,25 @@
 }
 
 .reaction-bubble {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 2px 6px;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 3px 8px;
+  border-radius: 14px;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid var(--border-soft);
 }
 
 .reaction-bubble:hover {
-  transform: scale(1.15);
-  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.18);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: var(--glow-soft);
 }
 
-/* Reaction bar (appears on hover) */
+/* Reaction bar */
 .reaction-bar {
   display: none;
   gap: 6px;
@@ -345,15 +413,18 @@
 }
 
 /* ============================================================
-   ANIMATIONS
+   ANIMATIONS — NEON VAPOR
    ============================================================ */
 
 @keyframes msgPop {
-  0% { transform: scale(0.7); opacity: 0; }
-  60% { transform: scale(1.05); opacity: 1; }
+  0% { transform: scale(0.7); opacity: 0; filter: blur(4px); }
+  60% { transform: scale(1.05); opacity: 1; filter: blur(0); }
   100% { transform: scale(1); }
 }
 
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 /* ============================================================
@@ -367,13 +438,13 @@
   transform: translateX(-50%) translateY(-10px);
   background: var(--accent);
   color: white;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 13px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease, transform 0.25s ease;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--glow-strong);
 }
 
 .new-messages-pill.show {
@@ -472,63 +543,6 @@
 }
 
 /* ============================================================
-   REACTION BUBBLES + HOVER ANIMATION
-   ============================================================ */
-
-.reaction-display {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.reaction-bubble {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: transform 0.15s ease, background 0.15s ease;
-  cursor: pointer;
-}
-
-.reaction-bubble.hover {
-  transform: scale(1.15);
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.reaction-bubble.pop {
-  animation: reactPop 0.25s cubic-bezier(.17,.89,.32,1.49);
-}
-
-@keyframes reactPop {
-  0% { transform: scale(0.6); }
-  60% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-/* Reaction bar */
-.reaction-bar {
-  display: none;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.msg-wrapper:hover .reaction-bar {
-  display: flex;
-}
-
-.react-emoji {
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.react-emoji:hover {
-  transform: scale(1.3);
-}
-
-/* ============================================================
    WAVEFORM VISUALIZER
    ============================================================ */
 
@@ -558,7 +572,7 @@
 }
 
 /* ============================================================
-   BOTTOM SHEET, EMOJI & GIF PICKERS
+   BOTTOM SHEET — NEON VAPOR
    ============================================================ */
 
 .bottom-sheet {
@@ -567,13 +581,14 @@
   right: 0;
   bottom: 0;
   background: var(--bg-panel);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(26px) saturate(1.8);
   border-top: 1px solid var(--border);
-  box-shadow: 0 -10px 30px var(--shadow);
-  padding: 10px 12px 16px;
+  padding: 18px 16px 26px;
   transform: translateY(100%);
-  transition: transform 0.25s ease;
+  transition: transform 0.28s cubic-bezier(.17,.89,.32,1.49);
   z-index: 50;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -12px 40px var(--shadow);
 }
 
 .bottom-sheet.active {
@@ -588,82 +603,90 @@
   margin: 0 auto 10px;
 }
 
-.sheet-item {
-  width: 100%;
-  text-align: left;
-  margin-bottom: 6px;
-}
-/* Delete menu bottom sheet */
+/* Delete menu */
 .bottom-sheet.delete-menu {
   background: var(--bg-panel);
-  border-radius: 16px 16px 0 0;
-  padding: 12px 12px 18px;
-  box-shadow: 0 -10px 30px var(--shadow);
-}
-
-.bottom-sheet.delete-menu .sheet-handle {
-  width: 40px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--border-soft);
-  margin: 0 auto 10px;
+  border-radius: 22px 22px 0 0;
+  padding: 16px 16px 24px;
+  box-shadow: 0 -12px 40px var(--shadow);
 }
 
 .bottom-sheet.delete-menu .sheet-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  margin-bottom: 10px;
   text-align: center;
+  margin-bottom: 12px;
+  color: var(--text);
 }
 
 .sheet-btn {
   width: 100%;
   border: none;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-top: 6px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 8px;
   font-size: 14px;
   text-align: center;
   cursor: pointer;
   background: var(--bg-elevated);
   color: var(--fg);
-  transition: background .15s ease, transform .1s ease;
+  transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
+  border: 1px solid var(--border-soft);
+}
+
+.sheet-btn:hover {
+  background: var(--accent-soft);
+  box-shadow: var(--glow-soft);
+}
+
+.sheet-btn:active {
+  transform: scale(.96);
 }
 
 .sheet-btn.secondary {
   background: transparent;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.sheet-btn.secondary:hover {
+  background: var(--bg-glass);
 }
 
 .sheet-btn.danger {
-  background: #ff3b30;
+  background: rgba(255, 59, 48, 0.85);
   color: #fff;
+  border: none;
+  box-shadow: 0 0 12px rgba(255, 59, 48, 0.45);
 }
 
-.sheet-btn:active {
-  transform: scale(.97);
+.sheet-btn.danger:hover {
+  background: rgba(255, 59, 48, 1);
+  box-shadow: 0 0 18px rgba(255, 59, 48, 0.55);
 }
 
-/* Undo toast */
+/* ============================================================
+   UNDO TOAST — NEON VAPOR
+   ============================================================ */
+
 .undo-toast {
   position: fixed;
   left: 50%;
   bottom: 80px;
   transform: translateX(-50%) translateY(20px);
-  background: var(--bg-panel);
+  background: var(--bg-elevated);
   color: var(--fg);
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 10px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 10px 30px var(--shadow);
+  gap: 12px;
+  box-shadow: var(--glow-soft);
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity .18s ease,
-    transform .18s ease;
+  transition: opacity .22s ease, transform .22s ease;
   z-index: 80;
+  border: 1px solid var(--border-soft);
 }
 
 .undo-toast.show {
@@ -679,15 +702,20 @@
 .undo-btn {
   border: none;
   background: transparent;
-  color: var(--accent, #4da3ff);
+  color: var(--accent);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
+  transition: opacity .15s ease;
 }
 
-/* ============================================
-   EMOJI PICKER — FIXED (no display:none)
-   ============================================ */
+.undo-btn:hover {
+  opacity: 0.7;
+}
+
+/* ============================================================
+   EMOJI PICKER — NEON VAPOR
+   ============================================================ */
 
 emoji-picker,
 .emoji-picker {
@@ -696,20 +724,17 @@ emoji-picker,
   right: 16px;
   z-index: 60;
 
-  /* Hide without breaking emoji detection */
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
 
-  /* Smooth slide + fade animation */
   transform: translateY(10px);
   transition:
     opacity 0.20s ease,
     transform 0.20s ease,
-    visibility 0s linear 0.20s; /* delay visibility off */
+    visibility 0s linear 0.20s;
 }
 
-/* When active, show it */
 emoji-picker.active,
 .emoji-picker.active {
   visibility: visible;
@@ -722,10 +747,9 @@ emoji-picker.active,
     visibility 0s;
 }
 
-
-/* ============================================
-   GIF PICKER — MATCHED TO EMOJI PICKER
-   ============================================ */
+/* ============================================================
+   GIF PICKER — NEON VAPOR
+   ============================================================ */
 
 .gif-picker {
   position: absolute;
@@ -742,12 +766,10 @@ emoji-picker.active,
   backdrop-filter: blur(18px);
   z-index: 60;
 
-  /* Hide without display:none */
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
 
-  /* Smooth slide + fade animation */
   transform: translateY(10px);
   transition:
     opacity .20s ease,
@@ -755,7 +777,6 @@ emoji-picker.active,
     visibility 0s linear .20s;
 }
 
-/* When active, show it */
 .gif-picker.active {
   visibility: visible;
   opacity: 1;
@@ -766,7 +787,6 @@ emoji-picker.active,
     transform .20s ease,
     visibility 0s;
 }
-
 
 .gif-search {
   width: 100%;
@@ -790,6 +810,12 @@ emoji-picker.active,
   width: 100%;
   border-radius: 6px;
   cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.gif-thumb:hover {
+  transform: scale(1.05);
+  box-shadow: var(--glow-soft);
 }
 
 /* ============================================================
@@ -809,7 +835,7 @@ button {
 button:hover {
   background: var(--accent-soft);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--glow-soft);
 }
 
 button:active {
@@ -837,4 +863,3 @@ button:hover .material-symbols-outlined {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-
