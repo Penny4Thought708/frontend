@@ -1,36 +1,4 @@
-/* ============================================================
-   THEME SYSTEM
-   ============================================================ */
 
-:root {
-  --accent: #0af;
-  --accent-soft: rgba(0, 170, 255, 0.25);
-
-  --bg: #f5f7fa;
-  --bg-panel: rgba(255, 255, 255, 0.65);
-  --bg-glass: rgba(255, 255, 255, 0.35);
-
-  --text: #1a1a1a;
-  --text-soft: #555;
-
-  --border: rgba(0, 0, 0, 0.1);
-  --shadow: rgba(0, 0, 0, 0.15);
-}
-
-body.dark {
-  --accent: #4db8ff;
-  --accent-soft: rgba(77, 184, 255, 0.25);
-
-  --bg: #0d0f12;
-  --bg-panel: rgba(20, 22, 26, 0.65);
-  --bg-glass: rgba(255, 255, 255, 0.08);
-
-  --text: #e8ecf2;
-  --text-soft: #9aa4b2;
-
-  --border: rgba(255, 255, 255, 0.08);
-  --shadow: rgba(0, 0, 0, 0.4);
-}
 
 .accent {
   color: var(--accent);
@@ -41,16 +9,18 @@ body.dark {
    ============================================================ */
 
 .messaging-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border-left: 1px solid var(--border);
-  backdrop-filter: blur(22px) saturate(1.4);
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  box-shadow: 0 0 40px var(--shadow);
-  animation: panelSlideIn 0.35s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    left: 40%;
+    flex: .6;
+    position: relative;
+    color: var(--text);
+    border-left: 1px solid var(--border);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    box-shadow: 0 0 40px var(--shadow);
+    animation: panelSlideIn 0.35s ease;
 }
 
 .msg-header {
