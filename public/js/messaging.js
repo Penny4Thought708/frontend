@@ -987,7 +987,7 @@ emojiPicker?.addEventListener("emoji-click", (e) => {
 sheetGif?.addEventListener("click", () => {
   bottomSheet?.classList.remove("active");
   if (!gifPicker) return;
-  gifPicker.classList.toggle("hidden");
+  gifPicker.classList.toggle("active");
   if (!gifPicker.classList.contains("hidden")) {
     gifSearch?.focus();
   }
@@ -1100,6 +1100,7 @@ msgForm?.addEventListener("submit", (e) => {
 
 // ===== END OF FILE =====
 console.log("[messaging] Fully upgraded messaging.js loaded");
+
 
 
 
