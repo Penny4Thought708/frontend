@@ -308,7 +308,33 @@ window.currentUserAvatar = user.avatar;
 
             <input id="attachment_input" type="file" multiple hidden />
           </form>
+<!-- ============================================================
+       BOTTOM SHEET
+  ============================================================ -->
+  <div id="bottomSheet" class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-item" id="sheetCamera">📷 Camera</button>
+    <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
+    <button class="sheet-item" id="sheetFile">📎 File</button>
+    <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
+    <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
+    <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+  </div>
 
+  <!-- ============================================================
+       EMOJI PICKER
+  ============================================================ -->
+  <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
+
+  <!-- ============================================================
+       GIF PICKER
+  ============================================================ -->
+  <div id="gifPicker" class="gif-picker hidden">
+    <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+    <div id="gifResults" class="gif-results"></div>
+  </div>
+
+</div>
         </messaging-panel>
 
 
@@ -1378,6 +1404,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
