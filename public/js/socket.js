@@ -1,5 +1,6 @@
 // public/js/socket.js
-import io from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
+import { io } from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
+
 
 // -------------------------------------------------------
 // ES‑module‑safe singleton guard
@@ -26,6 +27,7 @@ if (window.__SOCKET_INSTANCE__) {
 }
 
 export { socket };
+
 
 
 
