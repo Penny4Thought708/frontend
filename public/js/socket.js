@@ -1,5 +1,6 @@
 // public/js/socket.js
-import { io } from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
+import { io } from "https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.esm.min.js";
+
 
 
 // -------------------------------------------------------
@@ -27,6 +28,7 @@ if (window.__SOCKET_INSTANCE__) {
 }
 
 export { socket };
+
 
 
 
