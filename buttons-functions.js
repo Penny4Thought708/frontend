@@ -1,5 +1,5 @@
 /* ============================================================
-   HYBRID FLOATING‑SPACE UI CONTROLLER — FINAL ARCHITECTURE
+   HYBRID FLOATING‑SPACE UI CONTROLLER — ALWAYS‑VISIBLE LAYOUT
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -15,7 +15,7 @@ function initUI() {
   const messagingPanel = document.getElementById("messagingPanel");
   const directoryPanel = document.getElementById("directoryPanel");
 
-  // ❗ Call window is intentionally NOT controlled here anymore
+  // Call window intentionally NOT controlled here
   const callWindow = document.getElementById("callWindow");
 
   const profileWindow = document.getElementById("profileWindow");
@@ -32,13 +32,24 @@ function initUI() {
   const msgWin = document.getElementById("messageWin");
 
   /* -----------------------------------------------------------
-     PANEL STATE
+     ALWAYS‑VISIBLE PANELS
+     - Directory panel is ALWAYS visible
+     - Messaging panel is ALWAYS visible
+     - Message window ALWAYS visible
+  ----------------------------------------------------------- */
+  if (directoryPanel) directoryPanel.classList.remove("hidden");
+  if (messagingPanel) messagingPanel.classList.remove("hidden");
+
+  // Show empty state until a contact is selected
+  const emptyState = document.getElementById("messageEmptyState");
+  if (emptyState) emptyState.classList.remove("hidden");
+
+  /* -----------------------------------------------------------
+     PANEL STATE (Call window removed from this logic)
   ----------------------------------------------------------- */
   const UIX = {
     hideAllOverlays() {
-      // ❗ callWindow REMOVED from this list
       [
-        directoryPanel,
         profileWindow,
         settingsWindow,
         fullProfileModal,
@@ -50,25 +61,22 @@ function initUI() {
     },
 
     showMessaging() {
-      this.hideAllOverlays();
+      // Messaging + Directory ALWAYS visible
       messagingPanel?.classList.remove("hidden");
+      directoryPanel?.classList.remove("hidden");
       document.body.classList.remove("panel-open");
     },
 
     showDirectory() {
-      if (!directoryPanel) return;
-      this.hideAllOverlays();
-      messagingPanel?.classList.add("hidden");
-      directoryPanel.classList.remove("hidden");
-      directoryPanel.classList.add("dir-visible");
-      directoryPanel.setAttribute("aria-hidden", "false");
+      // Directory ALWAYS visible — just ensure it's focused
+      directoryPanel?.classList.remove("hidden");
+      messagingPanel?.classList.remove("hidden");
       document.body.classList.add("panel-open");
     },
 
     showFloating(win) {
       if (!win) return;
       this.hideAllOverlays();
-      messagingPanel?.classList.add("hidden");
       win.classList.remove("hidden");
       FloatingWindows.focus(win);
       document.body.classList.add("panel-open");
@@ -88,14 +96,13 @@ function initUI() {
       document.body.classList.remove("panel-open");
     },
 
-    // ❗ Call window is now controlled ONLY by CallUI.js
-    // These functions remain for compatibility but do nothing harmful.
+    // Call window is controlled ONLY by CallUI.js
     showCallWindow() {
-      console.warn("[UIX] showCallWindow() called — ignored. CallUI controls this.");
+      console.warn("[UIX] showCallWindow() ignored — CallUI controls this.");
     },
 
     endCall() {
-      console.warn("[UIX] endCall() called — ignored. CallUI controls this.");
+      console.warn("[UIX] endCall() ignored — CallUI controls this.");
     }
   };
 
@@ -180,18 +187,13 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     ❗ REMOVED: videoBtn → showCallWindow()
-     Call window is now opened ONLY by CallUI.js
-  ----------------------------------------------------------- */
-
-  /* -----------------------------------------------------------
      LOGOUT MODAL
   ----------------------------------------------------------- */
   window.showLogoutModal = function () {
     UIX.showModal(logoutModal);
   };
 
-  document.getElementById("cancelLogout")?.addEventListener("click", () => {
+  document.get.getElementById("cancelLogout")?.addEventListener("click", () => {
     UIX.hideModal(logoutModal);
   });
 
@@ -312,6 +314,8 @@ const FloatingWindows = {
     });
   }
 };
+
+
 
 
 
