@@ -265,7 +265,13 @@ window.currentUserAvatar = user.avatar;
 
           <div id="newMessagesPill" class="new-messages-pill hidden">New Messages</div>
 
-          <div id="messageWin" class="message-window"></div>
+          <div id="messageWin" class="message-window">
+             <div id="messageEmptyState" class="empty-state">
+              <p>Select a contact to start messaging</p>
+            </div>
+
+            
+          </div>
 
           <div class="typing-indicator">
             <div class="typing-bubble"><span></span><span></span><span></span></div>
@@ -1372,6 +1378,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
