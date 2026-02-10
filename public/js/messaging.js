@@ -44,11 +44,19 @@ let lastLoadedMessages = [];
 let readObserver = null;
 const previewEl = previewDiv;
 
-// ===== UI ELEMENTS =====
+// ===== UI ELEMENTS ADDED =====
 const emptyStateEl = document.getElementById("messageEmptyState");
 const newMessagesPill = document.getElementById("newMessagesPill");
 const typingIndicator = document.querySelector(".typing-indicator");
 const recordingIndicator = document.querySelector(".recording-indicator");
+
+// Make sure emoji/GIF pickers start hidden
+const emojiPicker = document.getElementById("emojiPicker");
+const gifPicker = document.getElementById("gifPicker");
+if (emojiPicker) emojiPicker.classList.remove("active");
+if (gifPicker && !gifPicker.classList.contains("hidden")) {
+  gifPicker.classList.add("hidden");
+}
 
 // ===== UI HELPERS =====
 function showEmptyState() {
@@ -103,12 +111,19 @@ export function setReceiver(id) {
   }
   console.log("[messaging] Receiver set:", receiver_id);
 
+  // Reset UI state
   hideNewMessagePill();
   hideEmptyState();
   if (messageWin) messageWin.innerHTML = "";
-  if (typingIndicator) typingIndicator.classList.remove("active");
+  if (typingIndicator) {
+    typingIndicator.classList.remove("active");
+    typingIndicator.textContent = "";
+  }
   if (recordingIndicator) recordingIndicator.classList.remove("active");
+  lastSeenMessageId = 0;
+  lastLoadedMessages = [];
 
+  // Load thread
   loadMessages().catch((err) =>
     console.error("[messaging] loadMessages after setReceiver failed:", err)
   );
@@ -284,6 +299,7 @@ function addReactionToMessage(id, emoji) {
     `;
     container.appendChild(bubble);
 
+    // Hover animation
     bubble.addEventListener("mouseenter", () =>
       bubble.classList.add("hover")
     );
@@ -316,6 +332,16 @@ function removeReactionFromMessage(id, emoji) {
   }
 }
 
+// Live reaction updates from backend
+socket.on("message:reaction:update", ({ messageId, emoji, action }) => {
+  if (!messageId || !emoji || !action) return;
+  if (action === "added") {
+    addReactionToMessage(messageId, emoji);
+  } else if (action === "removed") {
+    removeReactionFromMessage(messageId, emoji);
+  }
+});
+
 // ===== RENDER MESSAGE (NEW LAYOUT + ANIMATIONS) =====
 function renderMessage(msg) {
   console.log("[messaging] renderMessage:", msg);
@@ -327,20 +353,23 @@ function renderMessage(msg) {
 
   hideEmptyState();
 
-  const bodyText = msg.message || msg.text || "";
-
   const isFileMessage =
     msg.type === "file" ||
     msg.file ||
-    /^File:/i.test(bodyText);
+    /^File:/i.test(msg.message || "");
 
+  // ===== Outer wrapper =====
   const wrapper = document.createElement("div");
   wrapper.className =
     msg.is_me ? "msg-wrapper sender_msg" : "msg-wrapper receiver_msg";
 
+  // WhatsApp-style bubble shape
   wrapper.classList.add("bubble-style");
 
+  // iMessage spring physics
   wrapper.style.animation = "msgPop 0.25s cubic-bezier(.17,.89,.32,1.49)";
+
+  // Smooth fade-in
   wrapper.style.opacity = "0";
   requestAnimationFrame(() => {
     wrapper.style.transition = "opacity 0.25s ease";
@@ -351,6 +380,7 @@ function renderMessage(msg) {
   if (!msg.is_me && msg.sender_id)
     wrapper.dataset.senderId = String(msg.sender_id);
 
+  // ===== Sender name (only for received messages) =====
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
@@ -361,15 +391,17 @@ function renderMessage(msg) {
     wrapper.appendChild(nameEl);
   }
 
+  // ===== Bubble =====
   const bubble = document.createElement("p");
   bubble.className = "msg-bubble-text";
   wrapper.appendChild(bubble);
 
+  // ===== File or Text =====
   if (isFileMessage) {
     const name =
       msg.name ||
       msg.filename ||
-      bodyText.replace(/^File:\s*/, "");
+      (msg.message || "").replace(/^File:\s*/, "");
 
     const fileUrl = msg.url || msg.file_url || msg.data || null;
 
@@ -379,13 +411,14 @@ function renderMessage(msg) {
       comment: msg.comment,
     });
   } else {
-    bubble.textContent = bodyText;
+    bubble.textContent = msg.message ?? "";
 
+    // ===== Inline editing for your messages =====
     if (msg.is_me && msg.id) {
       bubble.ondblclick = () => {
         console.log("[messaging] edit dblclick:", msg.id);
 
-        const original = bodyText;
+        const original = msg.message ?? "";
         const input = document.createElement("input");
         input.type = "text";
         input.value = original;
@@ -423,10 +456,12 @@ function renderMessage(msg) {
     }
   }
 
+  // ===== Reaction display container =====
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
   wrapper.appendChild(reactionDisplay);
 
+  // ===== Reaction bar =====
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -446,13 +481,14 @@ function renderMessage(msg) {
 
     socket.emit("message:reaction", {
       messageId: msg.id,
-      from: getMyUserId(),
       emoji,
     });
 
+    // Optimistic update; backend will sync via message:reaction:update
     addReactionToMessage(msg.id, emoji);
   });
 
+  // ===== Meta (timestamp + delete) =====
   const ts =
     msg.created_at instanceof Date
       ? msg.created_at
@@ -479,6 +515,7 @@ function renderMessage(msg) {
   meta.appendChild(statusSpan);
   wrapper.appendChild(meta);
 
+  // ===== Append to DOM =====
   messageWin.appendChild(wrapper);
   smartScroll();
   observeMessagesForRead();
@@ -561,6 +598,7 @@ export function setupDataChannel(channel) {
     playNotification();
     const myUserId = getMyUserId();
 
+    // FILE
     if (payload && payload.type === "file") {
       console.log("[messaging] Incoming P2P file:", payload);
 
@@ -607,6 +645,7 @@ export function setupDataChannel(channel) {
       return;
     }
 
+    // TEXT
     const text =
       typeof payload === "string" ? payload : safeJSON(payload);
 
@@ -636,16 +675,16 @@ function normalizeMessage(msg) {
 
   return {
     ...msg,
-    is_me: msg.sender_id === myUserId,
+    message: msg.text ?? msg.message ?? "",
+    is_me: String(msg.sender_id) === String(myUserId),
     sender_name:
       userNames[String(msg.sender_id)] || `User ${msg.sender_id}`,
     sender_avatar:
       userAvatars[String(msg.sender_id)] || "img/defaultUser.png",
-    reactions: msg.reactions || [],
   };
 }
 
-// ===== Loading messages =====
+// ===== Loading messages (incremental with since_id) =====
 export async function loadMessages() {
   console.log("[messaging] loadMessages called for receiver:", receiver_id);
   console.log("userNames cache right now:", userNames);
@@ -656,8 +695,15 @@ export async function loadMessages() {
     return [];
   }
 
+  const sinceParam =
+    lastSeenMessageId && Number.isFinite(lastSeenMessageId)
+      ? `?since_id=${encodeURIComponent(lastSeenMessageId)}`
+      : "";
+
   try {
-    const res = await apiGet(`/thread/${encodeURIComponent(receiver_id)}`);
+    const res = await apiGet(
+      `/thread/${encodeURIComponent(receiver_id)}${sinceParam}`
+    );
     console.log("[messaging] loadMessages raw:", res);
 
     if (!res || !res.success || !Array.isArray(res.messages)) {
@@ -667,10 +713,15 @@ export async function loadMessages() {
     }
 
     let messages = res.messages.map(normalizeMessage);
-    lastLoadedMessages = messages;
+    if (!sinceParam) {
+      lastLoadedMessages = messages;
+    } else {
+      lastLoadedMessages = [...lastLoadedMessages, ...messages];
+    }
+
     const myUserId = getMyUserId();
 
-    if (messages.length === 0) {
+    if (lastLoadedMessages.length === 0) {
       showEmptyState();
       return [];
     }
@@ -717,7 +768,7 @@ export async function loadMessages() {
       });
     }
 
-    const last = messages[messages.length - 1];
+    const last = lastLoadedMessages[lastLoadedMessages.length - 1];
     if (
       last &&
       typeof last.id === "number" &&
@@ -745,7 +796,7 @@ export async function loadMessages() {
     }
 
     observeMessagesForRead();
-    return messages;
+    return lastLoadedMessages;
   } catch (err) {
     console.error("[messaging] loadMessages failed:", err);
     showEmptyState();
@@ -769,12 +820,15 @@ msgInput?.addEventListener("input", () => {
   }, 800);
 });
 
-socket.on("typing:start", ({ from }) => {
+socket.on("typing:start", ({ from, fullname }) => {
   const currentChatPartner = receiver_id || getPeerId();
   if (!typingIndicator || !currentChatPartner) return;
 
   if (String(from) === String(currentChatPartner)) {
+    const name =
+      fullname || userNames[String(from)] || `User ${from}`;
     typingIndicator.classList.add("active");
+    typingIndicator.textContent = `${name} is typing...`;
   }
 });
 
@@ -784,6 +838,7 @@ socket.on("typing:stop", ({ from }) => {
 
   if (String(from) === String(currentChatPartner)) {
     typingIndicator.classList.remove("active");
+    typingIndicator.textContent = "";
   }
 });
 
@@ -888,14 +943,14 @@ let activityTimeout;
   });
 });
 
-// ===== Polling =====
+// ===== Polling (light recovery) =====
 setInterval(() => {
   if (receiver_id) {
     loadMessages().catch((err) =>
       console.error("[messaging] Poll failed:", err)
     );
   }
-}, 8000);
+}, 60000);
 
 // -------------------------------------------------------
 // ⭐ COMPOSER UI CONTROLS
@@ -907,8 +962,6 @@ const sheetEmoji = document.getElementById("sheetEmoji");
 const sheetGif = document.getElementById("sheetGif");
 const sheetFile = document.getElementById("sheetFile");
 const sheetAudio = document.getElementById("sheetAudio");
-const emojiPicker = document.getElementById("emojiPicker");
-const gifPicker = document.getElementById("gifPicker");
 const gifSearch = document.getElementById("gifSearch");
 const gifResults = document.getElementById("gifResults");
 const micBtn = document.getElementById("micBtn");
@@ -921,7 +974,8 @@ plusBtn?.addEventListener("click", () => {
 // ===== Emoji Picker =====
 sheetEmoji?.addEventListener("click", () => {
   bottomSheet?.classList.remove("active");
-  emojiPicker?.classList.toggle("active");
+  if (!emojiPicker) return;
+  emojiPicker.classList.toggle("active");
 });
 
 emojiPicker?.addEventListener("emoji-click", (e) => {
@@ -932,8 +986,11 @@ emojiPicker?.addEventListener("emoji-click", (e) => {
 // ===== GIF Picker =====
 sheetGif?.addEventListener("click", () => {
   bottomSheet?.classList.remove("active");
-  gifPicker?.classList.toggle("active");
-  gifSearch?.focus();
+  if (!gifPicker) return;
+  gifPicker.classList.toggle("hidden");
+  if (!gifPicker.classList.contains("hidden")) {
+    gifSearch?.focus();
+  }
 });
 
 // Simple GIF search using Tenor API
@@ -941,6 +998,7 @@ gifSearch?.addEventListener("input", async () => {
   const q = gifSearch.value.trim();
   if (!q) return;
 
+  if (!gifResults) return;
   gifResults.innerHTML = "Searching…";
 
   try {
@@ -959,7 +1017,7 @@ gifSearch?.addEventListener("input", async () => {
       img.className = "gif-thumb";
       img.onclick = () => {
         msgInput.textContent += gif.media_formats?.tinygif?.url;
-        gifPicker.classList.add("hidden");
+        if (gifPicker) gifPicker.classList.add("hidden");
       };
       gifResults.appendChild(img);
     });
