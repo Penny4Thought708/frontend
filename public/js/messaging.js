@@ -1,6 +1,6 @@
 // public/js/messaging.js
 // -------------------------------------------------------
-// Messaging System (Node backend, new floating layout, UI-lean, production-ready)
+// Messaging System (Node backend, floating layout, full UI integration)
 // -------------------------------------------------------
 
 import {
@@ -26,8 +26,48 @@ let lastLoadedMessages = [];
 let readObserver = null;
 let activeDataChannel = null;
 
-// New layout: dedicated preview strip
+// UI elements
 const previewEl = document.getElementById("attachmentPreview");
+const emptyStateEl = document.getElementById("messageEmptyState");
+const typingIndicator = document.querySelector(".typing-indicator");
+const recordingIndicator = document.querySelector(".recording-indicator");
+const newMsgBubble = document.querySelector(".new-message-bubble");
+
+// -------------------------------------------------------
+// Empty State Helpers
+// -------------------------------------------------------
+
+function showEmptyState() {
+  if (!messageWin || !emptyStateEl) return;
+  messageWin.innerHTML = "";
+  emptyStateEl.classList.remove("hidden");
+}
+
+function hideEmptyState() {
+  if (!emptyStateEl) return;
+  emptyStateEl.classList.add("hidden");
+}
+
+// -------------------------------------------------------
+// New Message Bubble (appears when user is scrolled up)
+// -------------------------------------------------------
+
+function showNewMessageBubble() {
+  if (!newMsgBubble) return;
+  newMsgBubble.classList.remove("hidden");
+  requestAnimationFrame(() => newMsgBubble.classList.add("show"));
+}
+
+function hideNewMessageBubble() {
+  if (!newMsgBubble) return;
+  newMsgBubble.classList.remove("show");
+  setTimeout(() => newMsgBubble.classList.add("hidden"), 200);
+}
+
+newMsgBubble?.addEventListener("click", () => {
+  messageWin.scrollTo({ top: messageWin.scrollHeight, behavior: "smooth" });
+  hideNewMessageBubble();
+});
 
 // -------------------------------------------------------
 // Helpers
@@ -66,7 +106,11 @@ function smartScroll() {
       messageWin.scrollTop -
       messageWin.clientHeight <
     80;
-  if (nearBottom) messageWin.scrollTop = messageWin.scrollHeight;
+
+  if (nearBottom) {
+    messageWin.scrollTop = messageWin.scrollHeight;
+    hideNewMessageBubble();
+  }
 }
 
 // -------------------------------------------------------
@@ -107,7 +151,6 @@ async function apiPost(path, body) {
   }
 }
 
-// simple retry wrapper for transient failures
 async function safeSendMessage(payload) {
   try {
     return await apiPost("/send", payload);
@@ -126,7 +169,20 @@ export function setReceiver(id) {
   receiver_id = id;
   window.receiver_id = id;
   window.currentReceiverId = id;
+
   console.log("[messaging] Receiver set:", id);
+
+  // Reset UI
+  if (messageWin) messageWin.innerHTML = "";
+  hideEmptyState();
+  typingIndicator?.classList.remove("active");
+  recordingIndicator?.classList.remove("active");
+  hideNewMessageBubble();
+
+  // Load thread
+  loadMessages().catch((err) =>
+    console.error("[messaging] loadMessages after setReceiver failed:", err)
+  );
 }
 
 export function getReceiver() {
@@ -176,7 +232,6 @@ function appendFileContentToParagraph(p, options) {
   }
 }
 
-// Close viewer
 document.getElementById("img-viewer")?.addEventListener("click", () => {
   document.getElementById("img-viewer").style.display = "none";
 });
@@ -227,32 +282,27 @@ function addReactionToMessage(id, emoji) {
 }
 
 // -------------------------------------------------------
-// Render message (new layout)
+// Render message
 // -------------------------------------------------------
 
 function renderMessage(msg) {
   if (!messageWin) return;
 
-  // ensure every message has an id for DOM anchoring
-  if (!msg.id) {
-    msg.id = msg.id || `rtc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
+  hideEmptyState();
 
-  const isFileMessage =
-    msg.type === "file" ||
-    msg.file ||
-    /^File:/i.test(msg.message || "");
+  if (!msg.id) {
+    msg.id = `rtc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
 
   const wrapper = document.createElement("div");
   wrapper.className = msg.is_me
     ? "msg-wrapper sender_msg"
     : "msg-wrapper receiver_msg";
 
-  if (msg.id) wrapper.dataset.msgId = msg.id;
+  wrapper.dataset.msgId = msg.id;
   if (!msg.is_me && msg.sender_id)
     wrapper.dataset.senderId = msg.sender_id;
 
-  // Sender name
   if (!msg.is_me) {
     const nameEl = document.createElement("div");
     nameEl.className = "msg-sender-name";
@@ -263,10 +313,14 @@ function renderMessage(msg) {
     wrapper.appendChild(nameEl);
   }
 
-  // Bubble
   const bubble = document.createElement("p");
   bubble.className = "msg-bubble-text";
   wrapper.appendChild(bubble);
+
+  const isFileMessage =
+    msg.type === "file" ||
+    msg.file ||
+    /^File:/i.test(msg.message || "");
 
   if (isFileMessage) {
     appendFileContentToParagraph(bubble, {
@@ -278,12 +332,10 @@ function renderMessage(msg) {
     bubble.textContent = sanitizeHTML(msg.message ?? "");
   }
 
-  // Reaction display
   const reactionDisplay = document.createElement("div");
   reactionDisplay.className = "reaction-display";
   wrapper.appendChild(reactionDisplay);
 
-  // Reaction bar
   const reactionBar = document.createElement("div");
   reactionBar.className = "reaction-bar";
   reactionBar.innerHTML = `
@@ -308,7 +360,6 @@ function renderMessage(msg) {
     addReactionToMessage(msg.id, emoji);
   });
 
-  // Meta
   const ts = new Date(msg.created_at || Date.now());
   const meta = document.createElement("div");
   meta.className = "meta";
@@ -328,7 +379,19 @@ function renderMessage(msg) {
   wrapper.appendChild(meta);
 
   messageWin.appendChild(wrapper);
-  smartScroll();
+
+  const nearBottom =
+    messageWin.scrollHeight -
+      messageWin.scrollTop -
+      messageWin.clientHeight <
+    80;
+
+  if (nearBottom) {
+    smartScroll();
+  } else {
+    showNewMessageBubble();
+  }
+
   observeMessagesForRead();
 }
 
@@ -386,7 +449,7 @@ attachmentInput?.addEventListener("change", () => {
 });
 
 // -------------------------------------------------------
-// Send messages (contenteditable input)
+// Send messages
 // -------------------------------------------------------
 
 msgForm?.addEventListener("submit", async (e) => {
@@ -401,6 +464,7 @@ msgForm?.addEventListener("submit", async (e) => {
 
   if (!targetId && !text && !files.length) {
     showError("No receiver selected");
+    showEmptyState();
     return;
   }
 
@@ -594,7 +658,7 @@ export function setupDataChannel(channel) {
         file: 1,
       });
 
-      safeSendMessage({
+          safeSendMessage({
         sender_id: getPeerId(),
         receiver_id: myUserId,
         message: `File: ${payload.name}`,
@@ -622,265 +686,6 @@ export function setupDataChannel(channel) {
     observeMessagesForRead();
   };
 }
-
-// -------------------------------------------------------
-// Normalization
-// -------------------------------------------------------
-
-function normalizeMessage(msg) {
-  const myUserId = getMyUserId();
-
-  return {
-    ...msg,
-    is_me: msg.sender_id === myUserId,
-    sender_name:
-      userNames[msg.sender_id] || `User ${msg.sender_id}`,
-    sender_avatar:
-      userAvatars[msg.sender_id] || "img/defaultUser.png",
-  };
-}
-
-// -------------------------------------------------------
-// Load messages
-// -------------------------------------------------------
-
-export async function loadMessages() {
-  if (!receiver_id) return [];
-
-  try {
-    const res = await apiGet(`/thread/${receiver_id}`);
-
-    if (!res?.success || !Array.isArray(res.messages)) return [];
-
-    const messages = res.messages.map(normalizeMessage);
-    lastLoadedMessages = messages;
-
-    const myUserId = getMyUserId();
-
-    messages.forEach((msg) => {
-      const exists = msg.id
-        ? document.querySelector(`[data-msg-id="${msg.id}"]`)
-        : null;
-
-      if (!exists) {
-        renderMessage(msg);
-
-        if (!msg.is_me && msg.id) {
-          socket.emit("message:delivered", {
-            from: msg.sender_id,
-            to: myUserId,
-            messageId: msg.id,
-          });
-        }
-      }
-
-      const display = document.querySelector(
-        `[data-msg-id="${msg.id}"] .reaction-display`
-      );
-      if (display) display.innerHTML = "";
-
-      if (msg.reactions) {
-        const counts = {};
-        msg.reactions.forEach((emoji) => {
-          counts[emoji] = (counts[emoji] || 0) + 1;
-        });
-
-        Object.entries(counts).forEach(([emoji, count]) => {
-          for (let i = 0; i < count; i++) {
-            addReactionToMessage(msg.id, emoji);
-          }
-        });
-      }
-    });
-
-    const last = messages[messages.length - 1];
-    if (last && !last.is_me && last.id > lastSeenMessageId) {
-      playNotification();
-    }
-
-    if (last?.id) lastSeenMessageId = last.id;
-
-    observeMessagesForRead();
-    return messages;
-  } catch (err) {
-    console.error("[messaging] loadMessages failed:", err);
-    return [];
-  }
-}
-
-// -------------------------------------------------------
-// Typing indicator (new bubble style)
-// -------------------------------------------------------
-
-const typingIndicator = document.querySelector(".typing-indicator");
-let typingStopTimer = null;
-
-msgInput?.addEventListener("input", () => {
-  const myUserId = getMyUserId();
-  const targetId = getPeerId() || receiver_id;
-  if (!targetId) return;
-
-  socket.emit("typing:start", { from: myUserId, to: targetId });
-
-  clearTimeout(typingStopTimer);
-  typingStopTimer = setTimeout(() => {
-    socket.emit("typing:stop", { from: myUserId, to: targetId });
-  }, 600);
-});
-
-socket.on("typing:start", ({ from, fullname }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-  if (String(from) !== String(currentChatPartner)) return;
-
-  const name =
-    fullname || userNames[String(from)] || `User ${from}`;
-
-  typingIndicator.classList.add("active");
-
-  const avatarImg = typingIndicator.querySelector(".typing-avatar");
-  if (avatarImg) {
-    avatarImg.src =
-      userAvatars[String(from)] || "img/defaultUser.png";
-    avatarImg.alt = name;
-  }
-});
-
-socket.on("typing:stop", ({ from }) => {
-  const currentChatPartner = receiver_id || getPeerId();
-  if (!typingIndicator || !currentChatPartner) return;
-  if (String(from) !== String(currentChatPartner)) return;
-
-  typingIndicator.classList.remove("active");
-});
-
-// -------------------------------------------------------
-// Read receipts
-// -------------------------------------------------------
-
-socket.on("message:delivered", ({ messageId }) => {
-  if (!messageId) return;
-
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ delivered")) {
-    el.textContent += " ✓ delivered";
-  }
-});
-
-socket.on("message:read", ({ messageId }) => {
-  if (!messageId) return;
-
-  const el = document.querySelector(
-    `[data-msg-id="${String(messageId)}"] small`
-  );
-  if (el && !el.textContent.includes("✓ read")) {
-    el.textContent += " ✓ read";
-    el.classList.add("seen");
-  }
-});
-
-// -------------------------------------------------------
-// Presence updates
-// -------------------------------------------------------
-
-socket.on("statusUpdate", ({ contact_id, online, away }) => {
-  const statusText = away ? "Away" : online ? "Online" : "Offline";
-  console.log(`[messaging] Contact ${contact_id} is ${statusText}`);
-
-  const el = document.querySelector(
-    `[data-contact-id="${contact_id}"] .status`
-  );
-  if (el) {
-    el.textContent = statusText;
-    el.className = `status ${statusText.toLowerCase()}`;
-  }
-});
-
-// -------------------------------------------------------
-// Read observer
-// -------------------------------------------------------
-
-function createReadObserver() {
-  if (!messageWin) return null;
-
-  return new IntersectionObserver(
-    (entries, observer) => {
-      const myUserId = getMyUserId();
-
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-
-        const msgEl = entry.target;
-        const msgId = msgEl.dataset.msgId;
-        const senderId = msgEl.dataset.senderId;
-
-        if (msgId && senderId && senderId !== String(myUserId)) {
-          socket.emit("message:read", {
-            from: senderId,
-            to: myUserId,
-            messageId: msgId,
-          });
-
-          observer.unobserve(msgEl);
-          delete msgEl.dataset.observing;
-        }
-      });
-    },
-    { root: messageWin, threshold: 0.8 }
-  );
-}
-
-function observeMessagesForRead() {
-  if (!messageWin) return;
-
-  if (!readObserver) {
-    readObserver = createReadObserver();
-    if (!readObserver) return;
-  }
-
-  messageWin
-    .querySelectorAll(".msg-wrapper.receiver_msg")
-    .forEach((el) => {
-      if (!el.dataset.observing) {
-        readObserver.observe(el);
-        el.dataset.observing = "1";
-      }
-    });
-}
-
-// -------------------------------------------------------
-// Activity tracking
-// -------------------------------------------------------
-
-let activityTimeout;
-["keydown", "mousemove", "click", "scroll"].forEach((evt) => {
-  document.addEventListener(evt, () => {
-    clearTimeout(activityTimeout);
-    activityTimeout = setTimeout(() => {
-      if (socket && socket.connected) {
-        socket.emit("activity");
-      }
-    }, 750);
-
-    observeMessagesForRead();
-  });
-});
-
-// -------------------------------------------------------
-// Polling (throttled when tab hidden)
-// -------------------------------------------------------
-
-setInterval(() => {
-  if (document.hidden) return;
-  if (receiver_id) {
-    loadMessages().catch((err) =>
-      console.error("[messaging] Poll failed:", err)
-    );
-  }
-}, 8000);
-
 
 
 
