@@ -1,100 +1,260 @@
-/* MESSAGING.CSS — Message window, bubbles, composer */
+/* ============================================================
+   MESSAGE BUBBLES — WhatsApp + iMessage Hybrid
+   ============================================================ */
 
-#messageWin {
-  height: calc(100vh - 260px);
-  padding: var(--space-4);
+.msg-wrapper {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  overflow-y: auto;
-}
-
-/* Bubbles */
-.message {
-  max-width: 70%;
-  padding: var(--space-3) var(--space-4);
-  border-radius: 18px;
-  font-size: var(--font-md);
-  line-height: 1.4;
+  margin: 6px 0;
+  max-width: 80%;
   position: relative;
+  animation: fadeIn 0.25s ease;
 }
 
-.message.incoming {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-primary);
-}
-
-.message.outgoing {
+.sender_msg {
   align-self: flex-end;
-  background: var(--accent-soft);
-  color: var(--text-primary);
 }
 
-/* Images */
-.message img {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+.receiver_msg {
+  align-self: flex-start;
 }
 
-/* Typing indicator */
-.typing-indicator {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+.msg-bubble-text {
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.35;
+  word-break: break-word;
+  position: relative;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.25s ease;
+}
+
+/* Light/Dark theme variants */
+body.light .sender_msg .msg-bubble-text {
+  background: rgba(0, 132, 255, 0.15);
+  color: #003a66;
+}
+
+body.dark .sender_msg .msg-bubble-text {
+  background: rgba(0, 132, 255, 0.35);
+  color: #dceaff;
+}
+
+body.light .receiver_msg .msg-bubble-text {
+  background: rgba(0, 0, 0, 0.06);
+  color: #222;
+}
+
+body.dark .receiver_msg .msg-bubble-text {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eee;
+}
+
+/* WhatsApp-style tails */
+.sender_msg .msg-bubble-text::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.receiver_msg .msg-bubble-text::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+}
+
+/* iMessage spring pop */
+@keyframes msgPop {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* Smooth fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Sender name */
+.msg-sender-name {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 2px;
+  padding-left: 4px;
+}
+
+/* ============================================================
+   NEW MESSAGE PILL
+   ============================================================ */
+
+.new-messages-pill {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: var(--accent, #0af);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
   opacity: 0;
-  transform: translateY(4px);
-  transition: var(--motion-medium);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.new-messages-pill.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/* ============================================================
+   TYPING INDICATOR
+   ============================================================ */
+
+.typing-indicator {
+  height: 26px;
+  display: none;
+  align-items: center;
+  margin: 6px 0;
 }
 
 .typing-indicator.active {
-  opacity: 1;
-  transform: translateY(0);
+  display: flex;
+}
+
+.typing-bubble {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 10px;
+  border-radius: 16px;
+  display: flex;
+  gap: 4px;
+  backdrop-filter: blur(10px);
 }
 
 .typing-bubble span {
   width: 6px;
   height: 6px;
-  border-radius: 999px;
-  background: var(--text-secondary);
-  opacity: 0.4;
+  background: white;
+  border-radius: 50%;
+  animation: typingBlink 1.4s infinite ease-in-out;
 }
 
-/* Composer */
-.composer {
+.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
+.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBlink {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* ============================================================
+   RECORDING INDICATOR
+   ============================================================ */
+
+.recording-indicator {
+  display: none;
+  margin: 6px 0;
+}
+
+.recording-indicator.active {
+  display: flex;
+}
+
+.recording-bubble {
+  background: rgba(255, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border-top: 1px solid var(--border-subtle);
-  background: rgba(10, 12, 20, 0.9);
+  gap: 8px;
+  position: relative;
+  backdrop-filter: blur(10px);
 }
 
-.msg-input {
-  flex: 1;
-  min-height: 40px;
-  max-height: 120px;
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  overflow-y: auto;
+.pulse-ring {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border: 2px solid rgba(255, 0, 0, 0.5);
+  border-radius: 50%;
+  animation: pulse 1.4s infinite ease-out;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.composer-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid transparent;
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+}
+
+/* ============================================================
+   REACTION BUBBLES + HOVER ANIMATION
+   ============================================================ */
+
+.reaction-display {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.reaction-bubble {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 13px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  transition: transform 0.15s ease, background 0.15s ease;
   cursor: pointer;
-  transition: var(--motion-fast);
 }
 
-.composer-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+.reaction-bubble.hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.reaction-bubble.pop {
+  animation: reactPop 0.25s cubic-bezier(.17,.89,.32,1.49);
+}
+
+@keyframes reactPop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Reaction bar */
+.reaction-bar {
+  display: none;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.msg-wrapper:hover .reaction-bar {
+  display: flex;
+}
+
+.react-emoji {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.react-emoji:hover {
+  transform: scale(1.3);
 }
