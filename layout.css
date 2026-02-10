@@ -276,20 +276,21 @@ app-main {
    DIRECTORY PANEL
 ============================================================ */
 .directory-panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: clamp(var(--directory-width-min), 26vw, var(--directory-width-max));
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy));
-  border-right: 1px solid var(--border-strong);
-  transform: translateX(-100%);
-  transition: transform var(--med);
-  z-index: var(--z-directory);
-  display: flex;
-  flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: clamp(var(--directory-width-min), 28vw, var(--directory-width-max));
+    background: var(--glass-heavy);
+    backdrop-filter: blur(var(--blur-heavy));
+    border-right: 1px solid var(--border-strong);
+    transition: transform var(--med);
+    z-index: var(--z-directory);
+    display: flex;
+    padding: 10px;
+    flex-direction: column;
 }
+
 
 .directory-panel.dir-visible {
   transform: translateX(0);
