@@ -25,10 +25,11 @@
 
 /* visible state (JS must remove .hidden) */
 .call-window.is-open {
-  display: flex;
-  opacity: 1;
-  pointer-events: auto;
-  transform: scale(1);
+display: flex;
+    opacity: 1;
+    z-index: 9999999;
+    pointer-events: auto;
+    transform: scale(1);
 }
 
 /* opening burst */
