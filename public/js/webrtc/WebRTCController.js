@@ -269,84 +269,87 @@ async _startCallInternal(peerId, audioOnly, { relayOnly }) {
     });
   }
 
-  /* ---------------------------------------------------
-     Answer Incoming Call (Hybrid Google‑Meet + Discord)
-  --------------------------------------------------- */
-  async answerIncomingCall() {
-    const offerData = rtcState.incomingOffer;
-    if (!offerData) return;
+/* ---------------------------------------------------
+   Answer Incoming Call (Hybrid Google‑Meet + Discord)
+--------------------------------------------------- */
+async answerIncomingCall() {
+  const offerData = rtcState.incomingOffer;
+  if (!offerData) return;
 
-    const { from, offer, audioOnly } = offerData;
+  const { from, offer, audioOnly } = offerData;
 
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.inCall = true;
-    rtcState.busy = true;
+  rtcState.audioOnly = !!audioOnly;
+  rtcState.inCall = true;
+  rtcState.busy = true;
 
-    stopAudio(ringtone);
+  stopAudio(ringtone);
 
-    const pc = await this._createPC({ relayOnly: false });
+  const pc = await this._createPC({ relayOnly: false });
 
-    // VP9 priority on remote offer
-    if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    await this._flushPendingRemoteCandidates();
-
-    const stream = await getLocalMedia(true, !rtcState.audioOnly);
-    this.localStream = stream;
-    rtcState.localStream = stream;
-
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    }
-
-    let answer = await pc.createAnswer();
-
-    // VP9 priority on answer
-    if (answer.sdp) {
-      answer.sdp = answer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
-    await pc.setLocalDescription(answer);
-
-    // Meet-style bitrate
-    const videoSender = pc
-      .getSenders()
-      .find((s) => s.track && s.track.kind === "video");
-
-    if (videoSender) {
-      const params = videoSender.getParameters();
-      params.encodings = [{
-        maxBitrate: 1_500_000,
-        minBitrate:   300_000,
-        maxFramerate: 30,
-      }];
-      try {
-        await videoSender.setParameters(params);
-      } catch (err) {
-        console.warn("[WebRTC] setParameters failed", err);
-      }
-    }
-
-    this.socket.emit("webrtc:signal", {
-      type: "answer",
-      to: from,
-      from: getMyUserId(),
-      answer,
-    });
-
-    rtcState.incomingOffer = null;
-
-    this.onCallStarted?.();
+  // VP9 priority on remote offer
+  if (offer.sdp) {
+    offer.sdp = offer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => `${prefix}98 96 97`
+    );
   }
+
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  await this._flushPendingRemoteCandidates();
+
+  const stream = await getLocalMedia(true, !rtcState.audioOnly);
+  this.localStream = stream;
+  rtcState.localStream = stream;
+
+  // 🔥 make receiver’s local preview show
+  this.onLocalStream?.(stream);
+
+  if (stream) {
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  }
+
+  let answer = await pc.createAnswer();
+
+  // VP9 priority on answer
+  if (answer.sdp) {
+    answer.sdp = answer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => `${prefix}98 96 97`
+    );
+  }
+
+  await pc.setLocalDescription(answer);
+
+  // Meet-style bitrate
+  const videoSender = pc
+    .getSenders()
+    .find((s) => s.track && s.track.kind === "video");
+
+  if (videoSender) {
+    const params = videoSender.getParameters();
+    params.encodings = [{
+      maxBitrate: 1_500_000,
+      minBitrate:   300_000,
+      maxFramerate: 30,
+    }];
+    try {
+      await videoSender.setParameters(params);
+    } catch (err) {
+      console.warn("[WebRTC] setParameters failed", err);
+    }
+  }
+
+  this.socket.emit("webrtc:signal", {
+    type: "answer",
+    to: from,
+    from: getMyUserId(),
+    answer,
+  });
+
+  rtcState.incomingOffer = null;
+
+  this.onCallStarted?.();
+}
 
   /* ---------------------------------------------------
      Decline incoming call
@@ -836,6 +839,7 @@ async switchCamera() {
     });
   }
 }
+
 
 
 
