@@ -1008,12 +1008,12 @@ button:hover .material-symbols-outlined {
   50% { height: 18px; opacity: 1; }
 }
 /* ============================================================
-   GLOBAL MOBILE LAYOUT
+   GLOBAL MOBILE LAYOUT — FIXED + CLEANED
 ============================================================ */
 
 @media (max-width: 900px) {
 
-  /* HEADER */
+  /* HEADER — brand logo full width, everything stacked */
   .app-header {
     display: flex;
     flex-direction: column;
@@ -1063,7 +1063,7 @@ button:hover .material-symbols-outlined {
     display: none;
   }
 
-  /* RAIL → BOTTOM BAR */
+  /* RAIL → BOTTOM NAV BAR */
   app-rail.app-rail {
     position: fixed;
     bottom: 0;
@@ -1100,7 +1100,7 @@ button:hover .material-symbols-outlined {
     overflow: visible;
   }
 
-  /* DIRECTORY PANEL UNDER RAIL */
+  /* DIRECTORY PANEL — now sits UNDER the rail */
   directory-panel.directory-panel {
     position: fixed;
     top: 0;
@@ -1154,7 +1154,9 @@ button:hover .material-symbols-outlined {
   }
 }
 
+/* SMALLER MOBILE */
 @media (max-width: 600px) {
+
   .header-nav a {
     font-size: 14px;
     padding: 4px 6px;
