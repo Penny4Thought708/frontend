@@ -733,8 +733,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-  /* ============================================================
-   DIRECTORY BOTTOM SHEET — FREE DRAG + SNAP (F1)
+/* ============================================================
+   DIRECTORY BOTTOM SHEET — FREE DRAG + SNAP + SWIPE-TO-CLOSE
    ============================================================ */
 
 (function () {
@@ -764,7 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* -------------------------------
-     Start Drag
+     Start Drag (touch or mouse)
   --------------------------------*/
   function startDrag(clientY) {
     dragging = true;
@@ -801,6 +801,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     sheet.style.transition = "transform .28s cubic-bezier(.17,.89,.32,1.49)";
 
+    // Velocity-based flick close
+    if (velocity > 0.8) {
+      currentY = maxY;
+      sheet.style.transform = `translateY(${maxY}px)`;
+      sheet.classList.remove("active");
+      return;
+    }
+
     // Snap logic (F1)
     const threshold1 = maxY * 0.30; // close
     const threshold2 = maxY * 0.85; // full
@@ -834,8 +842,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("mouseup", endDrag);
 
   /* -------------------------------
-     Open Directory Programmatically
-     (When user taps Contacts button)
+     Programmatic Open (Contacts button)
   --------------------------------*/
   const contactBtn = document.getElementById("contact_widget");
   if (contactBtn) {
@@ -845,7 +852,23 @@ document.addEventListener("DOMContentLoaded", () => {
       sheet.style.transform = `translateY(${midY}px)`;
     });
   }
+
+  /* -------------------------------
+     OPTIONAL: Tap outside to close
+     (Uncomment if you want it)
+  --------------------------------*/
+  /*
+  const backdrop = document.getElementById("pickerBackdrop");
+  if (backdrop) {
+    backdrop.addEventListener("click", () => {
+      sheet.classList.remove("active");
+      currentY = maxY;
+      sheet.style.transform = `translateY(${maxY}px)`;
+    });
+  }
+  */
 })();
+
 
 </script>
 
@@ -1552,6 +1575,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
