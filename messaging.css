@@ -1,9 +1,7 @@
 /* ============================================================
-   NEON VAPOR — MESSAGING PANEL (PRODUCTION)
-   HTML + messaging.js aligned only
+   ROOT PANEL
 ============================================================ */
 
-/* ROOT PANEL */
 .messaging-panel {
   display: flex;
   flex-direction: column;
@@ -17,7 +15,6 @@
   box-shadow: 0 0 40px var(--shadow);
   position: relative;
   overflow: hidden;
-  animation: panelSlideIn 0.35s ease;
 }
 
 /* ============================================================
@@ -60,7 +57,7 @@
   justify-content: center;
   color: var(--text-soft);
   cursor: pointer;
-  transition: background .2s, transform .15s, box-shadow .2s, color .2s;
+  transition: background .2s, transform .15s, box-shadow .2s;
 }
 
 .msg-actions button:hover {
@@ -86,19 +83,12 @@
   scroll-behavior: smooth;
 }
 
-/* Scrollbar */
 .message-window::-webkit-scrollbar {
   width: 8px;
 }
-.message-window::-webkit-scrollbar-track {
-  background: transparent;
-}
 .message-window::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.18);
   border-radius: 999px;
-}
-.message-window:hover::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.28);
 }
 
 /* Empty state */
@@ -109,9 +99,7 @@
   color: var(--text-soft);
   font-size: 14px;
 }
-.empty-state.hidden {
-  display: none;
-}
+.empty-state.hidden { display: none; }
 
 /* New message pill */
 .new-messages-pill {
@@ -127,11 +115,8 @@
   transform: translateY(-8px);
   pointer-events: none;
   transition: opacity .25s, transform .25s;
-  box-shadow: var(--glow-strong);
 }
-.new-messages-pill.hidden {
-  display: none;
-}
+.new-messages-pill.hidden { display: none; }
 .new-messages-pill.show {
   opacity: 1;
   transform: translateY(0);
@@ -146,16 +131,10 @@
   display: flex;
   flex-direction: column;
   max-width: 78%;
-  animation: msgPop .25s cubic-bezier(.17,.89,.32,1.49);
 }
 
-.sender_msg {
-  align-self: flex-end;
-}
-
-.receiver_msg {
-  align-self: flex-start;
-}
+.sender_msg { align-self: flex-end; }
+.receiver_msg { align-self: flex-start; }
 
 .msg-sender-name {
   font-size: 12px;
@@ -163,7 +142,6 @@
   opacity: 0.75;
   margin-bottom: 4px;
   padding-left: 4px;
-  color: var(--text-soft);
 }
 
 .msg-bubble-text {
@@ -173,24 +151,21 @@
   line-height: 1.35;
   word-break: break-word;
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   position: relative;
-  transition: background .25s, box-shadow .25s;
 }
 
 /* Sender bubble */
 .sender_msg .msg-bubble-text {
-  background: rgba(77, 163, 255, 0.22);
+  background: rgba(77,163,255,0.22);
+  border: 1px solid rgba(77,163,255,0.35);
   color: var(--fg);
-  box-shadow: var(--glow-soft);
-  border: 1px solid rgba(77, 163, 255, 0.35);
 }
 
 /* Receiver bubble */
 .receiver_msg .msg-bubble-text {
   background: var(--bg-glass);
-  color: var(--text);
   border: 1px solid var(--border-soft);
+  color: var(--text);
 }
 
 /* Bubble tails */
@@ -204,7 +179,6 @@
   background: inherit;
   clip-path: polygon(0 0, 100% 100%, 0 100%);
 }
-
 .receiver_msg .msg-bubble-text::before {
   content: "";
   position: absolute;
@@ -216,66 +190,38 @@
   clip-path: polygon(100% 0, 0 100%, 100% 100%);
 }
 
-/* Meta (timestamp + delete) */
+/* Meta */
 .meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-top: 6px;
 }
-
 .meta small {
   font-size: 11px;
   opacity: 0.6;
 }
 
-.status-flags button.delete-msg {
+.delete-msg {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 14px;
   opacity: 0.7;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity .2s, transform .2s;
 }
-
-.status-flags button.delete-msg:hover {
+.delete-msg:hover {
   opacity: 1;
   transform: scale(1.15);
 }
 
-/* Edit input (inline edit) */
-.edit-input {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--accent);
-  padding: 6px 10px;
-  font-size: 14px;
-  background: rgba(0,0,0,0.25);
-  color: var(--fg);
-  outline: none;
-}
-
 /* ============================================================
-   FILE CONTENT INSIDE BUBBLES
+   FILE CONTENT
 ============================================================ */
 
 .msg-bubble-text img {
+  max-width: 220px;
   border-radius: 10px;
   margin-top: 6px;
-  max-width: 220px;
-  height: auto;
   cursor: pointer;
-  display: block;
-}
-
-.msg-bubble-text a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.msg-bubble-text a:hover {
-  text-decoration: underline;
 }
 
 .file-caption {
@@ -288,7 +234,16 @@
 .file-comment {
   margin-top: 6px;
   font-size: 13px;
-  opacity: 0.9;
+}
+
+/* ============================================================
+   INLINE GIFS
+============================================================ */
+
+.gif-inline {
+  max-width: 180px;
+  border-radius: 10px;
+  margin: 6px 0;
 }
 
 /* ============================================================
@@ -302,26 +257,23 @@
 }
 
 .reaction-bubble {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.12);
   padding: 3px 8px;
   border-radius: 14px;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
   border: 1px solid var(--border-soft);
+  cursor: pointer;
+  transition: transform .15s, background .15s;
 }
 
-.reaction-bubble.pop {
-  transform: scale(1.15);
-}
+.reaction-bubble.pop { transform: scale(1.15); }
 
 .reaction-bubble:hover {
   transform: scale(1.18);
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: var(--glow-soft);
+  background: rgba(255,255,255,0.22);
 }
 
 .reaction-bar {
@@ -336,9 +288,8 @@
 
 .react-emoji {
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: transform .15s;
 }
-
 .react-emoji:hover {
   transform: scale(1.3);
 }
@@ -359,12 +310,11 @@
 }
 
 .typing-bubble {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.15);
   padding: 6px 10px;
   border-radius: 16px;
   display: flex;
   gap: 4px;
-  backdrop-filter: blur(10px);
 }
 
 .typing-bubble span {
@@ -375,11 +325,11 @@
   animation: typingBlink 1.4s infinite ease-in-out;
 }
 
-.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
-.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+.typing-bubble span:nth-child(2) { animation-delay: .2s; }
+.typing-bubble span:nth-child(3) { animation-delay: .4s; }
 
 @keyframes typingBlink {
-  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  0%, 80%, 100% { opacity: .3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-3px); }
 }
 
@@ -397,39 +347,13 @@
 }
 
 .recording-bubble {
-  background: rgba(255, 0, 0, 0.25);
+  background: rgba(255,0,0,0.25);
   padding: 8px 12px;
   border-radius: 16px;
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
   position: relative;
-  backdrop-filter: blur(10px);
-}
-
-.recording-text {
-  font-size: 13px;
-}
-
-.mic-icon {
-  font-size: 16px;
-}
-
-.pulse-ring {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border: 2px solid rgba(255, 0, 0, 0.5);
-  border-radius: 50%;
-  animation: pulse 1.4s infinite ease-out;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-@keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
 }
 
 /* ============================================================
@@ -439,19 +363,17 @@
 .img-viewer {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0,0,0,0.7);
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 999;
-  backdrop-filter: blur(8px);
 }
 
 .img-viewer img {
   max-width: 90vw;
   max-height: 90vh;
   border-radius: 12px;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
 }
 
 /* ============================================================
@@ -466,43 +388,31 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-
-.attachment-preview.hidden {
-  display: none;
-}
+.attachment-preview.hidden { display: none; }
 
 .preview-wrapper {
   position: relative;
   border-radius: 10px;
-  overflow: hidden;
   background: var(--bg-glass);
   border: 1px solid var(--border);
   padding: 4px;
 }
 
 .preview-wrapper img {
-  display: block;
   max-width: 100px;
   max-height: 100px;
   border-radius: 6px;
-}
-
-.preview-wrapper a {
-  font-size: 12px;
-  color: var(--accent);
-  text-decoration: none;
 }
 
 .remove-preview {
   position: absolute;
   top: 2px;
   right: 2px;
-  border-radius: 50%;
   width: 18px;
   height: 18px;
+  border-radius: 50%;
   font-size: 11px;
   line-height: 16px;
-  padding: 0;
 }
 
 /* ============================================================
@@ -533,13 +443,6 @@
   color: var(--text);
   outline: none;
   overflow-y: auto;
-  transition: border 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.msg-input:focus {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: var(--glow-soft);
 }
 
 .composer button {
@@ -553,18 +456,17 @@
   justify-content: center;
   color: var(--text-soft);
   cursor: pointer;
-  transition: background .2s, transform .15s, box-shadow .2s;
+  transition: background .2s, transform .15s;
 }
 
 .composer button:hover {
   background: var(--accent-soft);
   color: var(--fg);
-  box-shadow: var(--glow-soft);
   transform: translateY(-1px);
 }
 
 /* ============================================================
-   BOTTOM SHEET
+   BOTTOM SHEET (JS uses .visible)
 ============================================================ */
 
 .bottom-sheet {
@@ -573,17 +475,15 @@
   right: 0;
   bottom: 0;
   background: var(--bg-panel);
-  backdrop-filter: blur(26px) saturate(1.8);
   border-top: 1px solid var(--border);
   padding: 18px 16px 26px;
   transform: translateY(100%);
-  transition: transform 0.28s cubic-bezier(.17,.89,.32,1.49);
+  transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
   z-index: 50;
   border-radius: 22px 22px 0 0;
-  box-shadow: 0 -12px 40px var(--shadow);
 }
 
-.bottom-sheet.active {
+.bottom-sheet.visible {
   transform: translateY(0);
 }
 
@@ -597,26 +497,23 @@
 
 .sheet-item {
   width: 100%;
-  text-align: left;
+  padding: 10px 12px;
   margin-bottom: 6px;
   border-radius: 12px;
-  padding: 10px 12px;
   border: 1px solid var(--border-soft);
   background: var(--bg-elevated);
-  color: var(--fg);
   cursor: pointer;
   font-size: 14px;
-  transition: background .18s, transform .12s, box-shadow .18s;
+  transition: background .18s, transform .12s;
 }
 
 .sheet-item:hover {
   background: var(--accent-soft);
-  box-shadow: var(--glow-soft);
   transform: translateY(-2px);
 }
 
 /* ============================================================
-   EMOJI PICKER & GIF PICKER
+   EMOJI PICKER + GIF PICKER (JS uses .hidden)
 ============================================================ */
 
 emoji-picker,
@@ -626,20 +523,10 @@ emoji-picker,
   bottom: 60px;
   right: 16px;
   z-index: 60;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(10px);
-  transition: opacity .20s ease, transform .20s ease, visibility 0s linear .20s;
 }
 
-emoji-picker.active,
-.emoji-picker.active,
-.gif-picker.active {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
+.hidden {
+  display: none !important;
 }
 
 .gif-picker {
@@ -647,9 +534,8 @@ emoji-picker.active,
   background: var(--bg-panel);
   border-radius: 12px;
   border: 1px solid var(--border);
-  box-shadow: 0 10px 30px var(--shadow);
   padding: 8px;
-  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px var(--shadow);
 }
 
 .gif-search {
@@ -659,7 +545,6 @@ emoji-picker.active,
   border: 1px solid var(--border);
   background: var(--bg-glass);
   color: var(--text);
-  font-size: 13px;
 }
 
 .gif-results {
@@ -670,30 +555,100 @@ emoji-picker.active,
   overflow-y: auto;
 }
 
-.gif-thumb {
+.gif-results img {
   width: 100%;
   border-radius: 6px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease;
+  transition: transform .15s;
 }
 
-.gif-thumb:hover {
+.gif-results img:hover {
   transform: scale(1.05);
-  box-shadow: var(--glow-soft);
 }
 
 /* ============================================================
-   ANIMATIONS
+   MOBILE LAYOUT
 ============================================================ */
 
-@keyframes msgPop {
-  0% { transform: scale(0.7); opacity: 0; filter: blur(4px); }
-  60% { transform: scale(1.05); opacity: 1; filter: blur(0); }
-  100% { transform: scale(1); }
+@media (max-width: 900px) {
+  .messaging-panel {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .msg-header {
+    padding: 12px 14px;
+  }
+
+  .message-window {
+    padding: 12px 12px 8px;
+    gap: 10px;
+  }
+
+  .msg-wrapper {
+    max-width: 88%;
+  }
+
+  .msg-bubble-text {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+
+  .composer {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .composer button {
+    width: 34px;
+    height: 34px;
+  }
+
+  .msg-input {
+    min-height: 38px;
+    padding: 10px 14px;
+  }
+
+  .bottom-sheet {
+    padding: 14px 14px 22px;
+  }
+
+  .gif-picker,
+  emoji-picker {
+    right: 10px;
+    bottom: 70px;
+  }
 }
 
-@keyframes panelSlideIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (max-width: 600px) {
+  .msg-wrapper {
+    max-width: 92%;
+  }
+
+  .msg-bubble-text {
+    font-size: 13.5px;
+    padding: 9px 12px;
+  }
+
+  .gif-inline {
+    max-width: 150px;
+  }
+
+  .msg-actions button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .composer button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .bottom-sheet {
+    border-radius: 18px 18px 0 0;
+  }
 }
 
