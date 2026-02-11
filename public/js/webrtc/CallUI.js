@@ -467,6 +467,137 @@ export function initCallUI(rtc) {
 
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
+/* ============================================================
+   INLINE RTC FEATURE IMPLEMENTATIONS
+   (Camera toggle, Screen share, Noise suppression, Recording)
+============================================================ */
+
+// Ensure rtc object exists
+rtc._state = rtc._state || {};
+rtc._state.cameraOff = false;
+rtc._state.noiseSuppression = false;
+rtc._state.recording = false;
+
+/* ------------------------------------------------------------
+   CAMERA TOGGLE (front/back or on/off)
+------------------------------------------------------------ */
+rtc.switchCamera = function () {
+  try {
+    const videoTracks = rtc.localStream?.getVideoTracks();
+    if (!videoTracks || !videoTracks.length) return false;
+
+    rtc._state.cameraOff = !rtc._state.cameraOff;
+
+    videoTracks.forEach(t => t.enabled = !rtc._state.cameraOff);
+
+    return rtc._state.cameraOff; // true = camera OFF
+  } catch (err) {
+    console.error("switchCamera failed:", err);
+    return false;
+  }
+};
+
+/* ------------------------------------------------------------
+   SCREEN SHARE
+------------------------------------------------------------ */
+rtc.startScreenShare = async function () {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false
+    });
+
+    const track = stream.getVideoTracks()[0];
+    const sender = rtc.peerConnection.getSenders()
+      .find(s => s.track && s.track.kind === "video");
+
+    if (sender) sender.replaceTrack(track);
+
+    track.onended = () => rtc.stopScreenShare();
+
+    rtc.onScreenShareStarted?.(rtc.localPeerId);
+  } catch (err) {
+    console.error("Screen share failed:", err);
+  }
+};
+
+rtc.stopScreenShare = function () {
+  try {
+    const camTrack = rtc.localStream.getVideoTracks()[0];
+    const sender = rtc.peerConnection.getSenders()
+      .find(s => s.track && s.track.kind === "video");
+
+    if (sender) sender.replaceTrack(camTrack);
+
+    rtc.onScreenShareStopped?.(rtc.localPeerId);
+  } catch (err) {
+    console.error("stopScreenShare failed:", err);
+  }
+};
+
+/* ------------------------------------------------------------
+   AI NOISE SUPPRESSION
+------------------------------------------------------------ */
+rtc.toggleNoiseSuppression = function () {
+  try {
+    rtc._state.noiseSuppression = !rtc._state.noiseSuppression;
+
+    rtc.localStream?.getAudioTracks().forEach(track => {
+      track.applyConstraints({
+        noiseSuppression: rtc._state.noiseSuppression
+      });
+    });
+
+    rtc.onNoiseSuppressionChanged?.(rtc._state.noiseSuppression);
+
+    return rtc._state.noiseSuppression;
+  } catch (err) {
+    console.error("toggleNoiseSuppression failed:", err);
+    return false;
+  }
+};
+
+/* ------------------------------------------------------------
+   RECORD CALL (remote stream)
+------------------------------------------------------------ */
+rtc.toggleRecording = function () {
+  try {
+    if (!rtc._state.recording) {
+      rtc._state.recording = true;
+      rtc._state.recordedChunks = [];
+
+      rtc._state.recorder = new MediaRecorder(rtc.remoteStream, {
+        mimeType: "video/webm; codecs=vp9"
+      });
+
+      rtc._state.recorder.ondataavailable = e => {
+        if (e.data.size > 0) rtc._state.recordedChunks.push(e.data);
+      };
+
+      rtc._state.recorder.onstop = () => {
+        const blob = new Blob(rtc._state.recordedChunks, {
+          type: "video/webm"
+        });
+        const url = URL.createObjectURL(blob);
+        console.log("Recording saved:", url);
+      };
+
+      rtc._state.recorder.start();
+      rtc.onRecordingChanged?.({ active: true });
+      return true;
+    }
+
+    // Stop recording
+    rtc._state.recording = false;
+    rtc._state.recorder.stop();
+    rtc.onRecordingChanged?.({ active: false });
+    return false;
+
+  } catch (err) {
+    console.error("toggleRecording failed:", err);
+    return false;
+  }
+};
 
   /* -------------------------------------------------------
      MOBILE VIDEO BEHAVIOR — GOOGLE MEET STYLE
@@ -629,6 +760,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
