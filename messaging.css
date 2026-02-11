@@ -3,7 +3,7 @@
    ============================================================ */
 
 .messaging-panel {
-  width: 480px;
+  width: 580px;
   min-width: 480px;
   max-width: 480px;
   height: 100%;
@@ -85,7 +85,7 @@
    ============================================================ */
 
 .message-window {
-  flex: 1;
+ height:90%;
   overflow-y: auto;
   padding: 20px 20px 14px;
   background: var(--bg);
