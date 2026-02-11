@@ -334,12 +334,11 @@ export function initCallUI(rtc) {
 
   if (cameraBtn) {
     cameraBtn.onclick = () => {
-      const off = rtc.switchCamera?.();
-      cameraBtn.classList.toggle("flipped", !!off);
-      cameraBtn.innerHTML = off
-        ? `<span class="material-symbols-outlined">videocam_off</span>`
-        : `<span class="material-symbols-outlined">videocam</span>`;
-      setCameraOff(off);
+      const off = rtc.switchCamera?.(); // flip camera; returns false (camera on)
+      cameraBtn.classList.toggle("flipped");
+      cameraBtn.innerHTML =
+        `<span class="material-symbols-outlined">videocam</span>`;
+      setCameraOff(!!off && off === true); // stays false for flip behavior
     };
   }
 
@@ -467,137 +466,237 @@ export function initCallUI(rtc) {
 
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
-/* ============================================================
-   INLINE RTC FEATURE IMPLEMENTATIONS
-   (Camera toggle, Screen share, Noise suppression, Recording)
-============================================================ */
 
-// Ensure rtc object exists
-rtc._state = rtc._state || {};
-rtc._state.cameraOff = false;
-rtc._state.noiseSuppression = false;
-rtc._state.recording = false;
+  /* ============================================================
+     ENHANCED INLINE RTC FEATURE IMPLEMENTATIONS
+     - Camera flip (front/back)
+     - Echo cancellation + AGC + Noise suppression
+     - Recording local + remote
+     - Waveform visualization
+  ============================================================ */
 
-/* ------------------------------------------------------------
-   CAMERA TOGGLE (front/back or on/off)
------------------------------------------------------------- */
-rtc.switchCamera = function () {
-  try {
-    const videoTracks = rtc.localStream?.getVideoTracks();
-    if (!videoTracks || !videoTracks.length) return false;
+  rtc._state = rtc._state || {};
+  rtc._state.cameraFacing = rtc._state.cameraFacing || "user"; // "user" | "environment"
+  rtc._state.noiseSuppression = !!rtc._state.noiseSuppression;
+  rtc._state.recording = !!rtc._state.recording;
+  rtc._state.recorder = rtc._state.recorder || null;
+  rtc._state.recordedChunks = rtc._state.recordedChunks || [];
 
-    rtc._state.cameraOff = !rtc._state.cameraOff;
+  /* ------------------------------------------------------------
+     CAMERA FLIP (front/back)
+  ------------------------------------------------------------ */
+  rtc.switchCamera = async function () {
+    try {
+      rtc._state.cameraFacing =
+        rtc._state.cameraFacing === "user" ? "environment" : "user";
 
-    videoTracks.forEach(t => t.enabled = !rtc._state.cameraOff);
-
-    return rtc._state.cameraOff; // true = camera OFF
-  } catch (err) {
-    console.error("switchCamera failed:", err);
-    return false;
-  }
-};
-
-/* ------------------------------------------------------------
-   SCREEN SHARE
------------------------------------------------------------- */
-rtc.startScreenShare = async function () {
-  try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: false
-    });
-
-    const track = stream.getVideoTracks()[0];
-    const sender = rtc.peerConnection.getSenders()
-      .find(s => s.track && s.track.kind === "video");
-
-    if (sender) sender.replaceTrack(track);
-
-    track.onended = () => rtc.stopScreenShare();
-
-    rtc.onScreenShareStarted?.(rtc.localPeerId);
-  } catch (err) {
-    console.error("Screen share failed:", err);
-  }
-};
-
-rtc.stopScreenShare = function () {
-  try {
-    const camTrack = rtc.localStream.getVideoTracks()[0];
-    const sender = rtc.peerConnection.getSenders()
-      .find(s => s.track && s.track.kind === "video");
-
-    if (sender) sender.replaceTrack(camTrack);
-
-    rtc.onScreenShareStopped?.(rtc.localPeerId);
-  } catch (err) {
-    console.error("stopScreenShare failed:", err);
-  }
-};
-
-/* ------------------------------------------------------------
-   AI NOISE SUPPRESSION
------------------------------------------------------------- */
-rtc.toggleNoiseSuppression = function () {
-  try {
-    rtc._state.noiseSuppression = !rtc._state.noiseSuppression;
-
-    rtc.localStream?.getAudioTracks().forEach(track => {
-      track.applyConstraints({
-        noiseSuppression: rtc._state.noiseSuppression
-      });
-    });
-
-    rtc.onNoiseSuppressionChanged?.(rtc._state.noiseSuppression);
-
-    return rtc._state.noiseSuppression;
-  } catch (err) {
-    console.error("toggleNoiseSuppression failed:", err);
-    return false;
-  }
-};
-
-/* ------------------------------------------------------------
-   RECORD CALL (remote stream)
------------------------------------------------------------- */
-rtc.toggleRecording = function () {
-  try {
-    if (!rtc._state.recording) {
-      rtc._state.recording = true;
-      rtc._state.recordedChunks = [];
-
-      rtc._state.recorder = new MediaRecorder(rtc.remoteStream, {
-        mimeType: "video/webm; codecs=vp9"
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: rtc._state.cameraFacing,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
       });
 
-      rtc._state.recorder.ondataavailable = e => {
-        if (e.data.size > 0) rtc._state.recordedChunks.push(e.data);
-      };
+      const newTrack = newStream.getVideoTracks()[0];
 
-      rtc._state.recorder.onstop = () => {
-        const blob = new Blob(rtc._state.recordedChunks, {
-          type: "video/webm"
-        });
-        const url = URL.createObjectURL(blob);
-        console.log("Recording saved:", url);
-      };
+      const senders = rtc.peerConnection?.getSenders() || [];
+      const videoSender = senders.find(
+        (s) => s.track && s.track.kind === "video"
+      );
+      if (videoSender) {
+        await videoSender.replaceTrack(newTrack);
+      }
 
-      rtc._state.recorder.start();
-      rtc.onRecordingChanged?.({ active: true });
-      return true;
+      rtc.localStream?.getVideoTracks().forEach((t) => t.stop());
+
+      if (rtc.localStream) {
+        const oldVideo = rtc.localStream.getVideoTracks()[0];
+        if (oldVideo) rtc.localStream.removeTrack(oldVideo);
+        rtc.localStream.addTrack(newTrack);
+      }
+
+      if (localVideo) {
+        localVideo.srcObject = rtc.localStream || newStream;
+      }
+
+      return false; // camera is ON (flip, not off)
+    } catch (err) {
+      console.error("switchCamera (flip) failed:", err);
+      return false;
     }
+  };
 
-    // Stop recording
-    rtc._state.recording = false;
-    rtc._state.recorder.stop();
-    rtc.onRecordingChanged?.({ active: false });
-    return false;
+  /* ------------------------------------------------------------
+     AUDIO PROCESSING: Echo cancellation + AGC + Noise suppression
+  ------------------------------------------------------------ */
+  rtc.applyAudioProcessing = function () {
+    try {
+      rtc.localStream?.getAudioTracks().forEach((track) => {
+        track.applyConstraints({
+          echoCancellation: true,
+          autoGainControl: true,
+          noiseSuppression: rtc._state.noiseSuppression,
+        });
+      });
 
-  } catch (err) {
-    console.error("toggleRecording failed:", err);
-    return false;
-  }
-};
+      rtc.onNoiseSuppressionChanged?.(rtc._state.noiseSuppression);
+    } catch (err) {
+      console.error("applyAudioProcessing failed:", err);
+    }
+  };
+
+  rtc.toggleNoiseSuppression = function () {
+    rtc._state.noiseSuppression = !rtc._state.noiseSuppression;
+    rtc.applyAudioProcessing();
+    return rtc._state.noiseSuppression;
+  };
+
+  /* ------------------------------------------------------------
+     SCREEN SHARE
+  ------------------------------------------------------------ */
+  rtc.startScreenShare = async function () {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+
+      const track = stream.getVideoTracks()[0];
+      const sender = rtc.peerConnection
+        ?.getSenders()
+        .find((s) => s.track && s.track.kind === "video");
+
+      if (sender && track) await sender.replaceTrack(track);
+
+      track.onended = () => rtc.stopScreenShare();
+
+      rtc.onScreenShareStarted?.(rtc.localPeerId);
+    } catch (err) {
+      console.error("Screen share failed:", err);
+    }
+  };
+
+  rtc.stopScreenShare = async function () {
+    try {
+      const camTrack = rtc.localStream?.getVideoTracks()[0];
+      const sender = rtc.peerConnection
+        ?.getSenders()
+        .find((s) => s.track && s.track.kind === "video");
+
+      if (sender && camTrack) await sender.replaceTrack(camTrack);
+
+      rtc.onScreenShareStopped?.(rtc.localPeerId);
+    } catch (err) {
+      console.error("stopScreenShare failed:", err);
+    }
+  };
+
+  /* ------------------------------------------------------------
+     RECORDING: Local + Remote mixed
+  ------------------------------------------------------------ */
+  rtc.toggleRecording = function () {
+    try {
+      if (!rtc._state.recording) {
+        const mixedStream = new MediaStream();
+
+        rtc.localStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
+        rtc.remoteStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
+
+        rtc._state.recordedChunks = [];
+        rtc._state.recorder = new MediaRecorder(mixedStream, {
+          mimeType: "video/webm; codecs=vp9",
+        });
+
+        rtc._state.recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) rtc._state.recordedChunks.push(e.data);
+        };
+
+        rtc._state.recorder.onstop = () => {
+          const blob = new Blob(rtc._state.recordedChunks, {
+            type: "video/webm",
+          });
+          const url = URL.createObjectURL(blob);
+          console.log("Recording ready:", url);
+          // TODO: upload or save
+        };
+
+        rtc._state.recorder.start();
+        rtc._state.recording = true;
+        rtc.onRecordingChanged?.({ active: true });
+        return true;
+      }
+
+      rtc._state.recorder?.stop();
+      rtc._state.recording = false;
+      rtc.onRecordingChanged?.({ active: false });
+      return false;
+    } catch (err) {
+      console.error("toggleRecording failed:", err);
+      return false;
+    }
+  };
+
+  /* ------------------------------------------------------------
+     WAVEFORM VISUALIZATION (Noise / Mic)
+  ------------------------------------------------------------ */
+  (function initWaveform() {
+    try {
+      const canvas = document.getElementById("noiseWaveform");
+      if (!canvas || !rtc.localStream) return;
+
+      const ctx = canvas.getContext("2d");
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(rtc.localStream);
+      const analyser = audioCtx.createAnalyser();
+
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      source.connect(analyser);
+
+      function draw() {
+        requestAnimationFrame(draw);
+
+        analyser.getByteTimeDomainData(dataArray);
+
+        const { width, height } = canvas;
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = rtc._state.noiseSuppression
+          ? "#4ade80"
+          : "#f97316";
+
+        ctx.beginPath();
+
+        const sliceWidth = width / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * height) / 2;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+
+        ctx.lineTo(width, height / 2);
+        ctx.stroke();
+      }
+
+      draw();
+    } catch (err) {
+      console.error("Waveform init failed:", err);
+    }
+  })();
 
   /* -------------------------------------------------------
      MOBILE VIDEO BEHAVIOR — GOOGLE MEET STYLE
@@ -655,7 +754,7 @@ rtc.toggleRecording = function () {
     // Active speaker auto-fullscreen
     window.setActiveSpeaker = function (participantId) {
       participants = Array.from(callGrid.querySelectorAll(".participant"));
-      const index = participants.findIndex(p => p.dataset.id === participantId);
+      const index = participants.findIndex((p) => p.dataset.id === participantId);
       if (index >= 0) {
         callGrid.scrollTo({
           left: index * callGrid.clientWidth,
@@ -675,7 +774,7 @@ rtc.toggleRecording = function () {
 
     // Double-tap to switch camera
     let lastTap = 0;
-    callWindow.addEventListener("touchend", (e) => {
+    callWindow.addEventListener("touchend", () => {
       const now = Date.now();
       if (now - lastTap < 300) {
         rtc.switchCamera?.();
@@ -760,7 +859,6 @@ rtc.toggleRecording = function () {
 
   console.log("[CallUI] Initialized");
 }
-
 
 
 
