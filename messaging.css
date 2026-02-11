@@ -124,17 +124,16 @@
 }
 
 /* ============================================================
-   BASE WRAPPER
+   WRAPPER — Discord spacing + alignment
 ============================================================ */
 
 .msg-wrapper {
   display: flex;
   flex-direction: column;
-  max-width: 78%;
-  gap: 6px;
+  max-width: 85%;
   padding: 2px 0;
+  gap: 4px;
   position: relative;
-  animation: msgPop .25s cubic-bezier(.17,.89,.32,1.49);
 }
 
 .sender_msg {
@@ -146,111 +145,92 @@
 }
 
 /* ============================================================
-   NAME LABEL (receiver only)
+   NAME LABEL — Discord uses subtle, small labels
 ============================================================ */
 
 .msg-sender-name {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-soft);
-  opacity: 0.85;
+  opacity: 0.9;
   margin-left: 6px;
   margin-bottom: -2px;
 }
 
 /* ============================================================
-   BUBBLE CORE
+   BUBBLE — Discord-style soft, rounded, low-contrast
 ============================================================ */
 
 .msg-bubble-text {
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: 10px 14px;
+  border-radius: 14px;
   font-size: 15px;
   line-height: 1.35;
   word-break: break-word;
   position: relative;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  transition: background .25s ease, box-shadow .25s ease;
-}
-
-/* ============================================================
-   RECEIVER BUBBLE — SOFT GLASS
-============================================================ */
-
-.receiver_msg .msg-bubble-text {
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: var(--bg-elevated);
+  border: 1px solid rgba(255,255,255,0.06);
   color: var(--text);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  transition: background .2s ease, box-shadow .2s ease;
 }
 
-/* Receiver tail */
-.receiver_msg .msg-bubble-text::before {
-  content: "";
-  position: absolute;
-  left: -6px;
-  bottom: 0;
-  width: 12px;
-  height: 12px;
-  background: inherit;
-  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+/* Receiver bubble (Discord gray) */
+.receiver_msg .msg-bubble-text {
+  background: rgba(255,255,255,0.08);
 }
 
-/* ============================================================
-   SENDER BUBBLE — ELECTRIC NEON
-============================================================ */
-
+/* Sender bubble (Discord blue-ish accent) */
 .sender_msg .msg-bubble-text {
-  background: rgba(0,140,255,0.22);
-  border: 1px solid rgba(0,140,255,0.40);
+  background: rgba(88, 101, 242, 0.22);
+  border-color: rgba(88, 101, 242, 0.35);
   color: var(--fg);
-  box-shadow: 0 0 18px rgba(0,140,255,0.35);
 }
 
-/* Sender tail */
-.sender_msg .msg-bubble-text::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  bottom: 0;
-  width: 12px;
-  height: 12px;
-  background: inherit;
-  clip-path: polygon(0 0, 100% 100%, 0 100%);
+/* No tails — Discord does NOT use tails */
+.msg-bubble-text::before,
+.msg-bubble-text::after {
+  display: none !important;
+}
+
+/* Hover elevation (Discord subtle lift) */
+.msg-bubble-text:hover {
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.28);
+}
+
+/* Sender hover */
+.sender_msg .msg-bubble-text:hover {
+  background: rgba(88, 101, 242, 0.28);
 }
 
 /* ============================================================
-   REACTIONS
+   REACTIONS — Discord pill reactions
 ============================================================ */
 
 .reaction-display {
   display: flex;
   gap: 6px;
   margin-left: 4px;
-  margin-top: -2px;
+  margin-top: 2px;
 }
 
 .reaction-bubble {
-  background: rgba(255,255,255,0.14);
-  padding: 3px 8px;
-  border-radius: 14px;
+  background: rgba(255,255,255,0.12);
+  padding: 2px 8px;
+  border-radius: 12px;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.18);
   cursor: pointer;
-  transition: transform .15s ease, background .15s ease;
-}
-
-.reaction-bubble.pop {
-  transform: scale(1.15);
+  transition: background .15s ease, transform .15s ease;
 }
 
 .reaction-bubble:hover {
-  transform: scale(1.18);
   background: rgba(255,255,255,0.22);
+  transform: scale(1.1);
 }
 
 /* Reaction bar (hover menu) */
@@ -270,11 +250,11 @@
 }
 
 .react-emoji:hover {
-  transform: scale(1.3);
+  transform: scale(1.25);
 }
 
 /* ============================================================
-   META (timestamp + delete)
+   META — Discord timestamp style
 ============================================================ */
 
 .meta {
@@ -287,21 +267,22 @@
 
 .meta small {
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.45;
   color: var(--text-soft);
 }
 
+/* Delete button (Discord subtle icon button) */
 .delete-msg {
   background: transparent;
   border: none;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.4;
   transition: opacity .2s ease, transform .2s ease;
 }
 
 .delete-msg:hover {
   opacity: 1;
-  transform: scale(1.2);
+  transform: scale(1.15);
 }
 
 /* ============================================================
