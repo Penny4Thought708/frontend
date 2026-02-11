@@ -74,7 +74,7 @@
   flex-direction: column;
   height: 100%;
   min-width: 0;
-   width:780px;
+  width: 780px;
   background: var(--bg-panel);
   border-left: 1px solid var(--border);
   backdrop-filter: blur(24px) saturate(1.6);
@@ -165,7 +165,7 @@
 ============================================================ */
 
 .message-window {
-  height:580px;
+  height: 580px;
   overflow-y: auto;
   padding: 12px 16px 10px;
   background: var(--bg);
@@ -443,7 +443,7 @@
   font-size: 13px;
 }
 
-/* INLINE S */
+/* INLINE GIF */
 .gif-inline {
   max-width: 180px;
   border-radius: 10px;
@@ -631,6 +631,7 @@
   overflow-y: auto;
 }
 
+/* Composer buttons */
 .composer button {
   width: 34px;
   height: 34px;
@@ -702,9 +703,10 @@
   transform: translateY(-2px);
 }
 
-/* Delete menu variant */
+/* ============================================================
+   DELETE SHEET
+============================================================ */
 
-/* DELETE SHEET — independent from bottomSheet */
 .delete-sheet {
   position: fixed;
   left: 50%;
@@ -718,13 +720,12 @@
   padding: 18px 16px 26px;
   box-shadow: 0 -12px 40px rgba(0,0,0,0.55);
   transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
-  z-index: 200; /* ABOVE the attachment sheet */
+  z-index: 200;
 }
 
 .delete-sheet.active {
   transform: translate(-50%, 0);
 }
-
 
 .sheet-title {
   font-size: 15px;
@@ -775,37 +776,26 @@
   bottom: 70px;
   right: 16px;
   z-index: 120;
-
   width: 280px;
   max-height: 320px;
-
   background: var(--bg-glass);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-
   border-radius: 16px;
   border: 1px solid var(--border-soft);
   box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-
   padding: 8px;
-
-  /* FIX: hide on load */
   display: none;
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px) scale(.96);
-
-  transition:
-    opacity .22s ease,
-    transform .22s cubic-bezier(.17,.89,.32,1.49);
+  transition: opacity .22s ease, transform .22s cubic-bezier(.17,.89,.32,1.49);
 }
 
-/* JS toggles .hidden */
 .emoji-picker.hidden {
   display: none !important;
 }
 
-/* Show when NOT hidden */
 .emoji-picker:not(.hidden) {
   display: block;
   opacity: 1;
@@ -813,7 +803,6 @@
   transform: translateY(0) scale(1);
 }
 
-/* Remove default internal borders */
 emoji-picker {
   --background: transparent;
   --border-color: transparent;
@@ -822,7 +811,7 @@ emoji-picker {
   height: 100%;
 }
 
-
+/* Category bar */
 emoji-picker::part(category-buttons) {
   padding: 6px;
   border-bottom: 1px solid var(--border-soft);
@@ -843,13 +832,11 @@ emoji-picker::part(category-button) {
   transition: background .15s ease, transform .15s ease;
 }
 
-/* Hover */
 emoji-picker::part(category-button):hover {
   background: var(--accent-soft);
   transform: translateY(-2px);
 }
 
-/* Active category */
 emoji-picker::part(category-button-active) {
   background: var(--accent);
   color: var(--fg);
@@ -865,26 +852,18 @@ emoji-picker::part(category-button-active) {
   bottom: 70px;
   right: 16px;
   width: 260px;
-
   background: var(--bg-glass);
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-
   border-radius: 16px;
   border: 1px solid var(--border-soft);
   box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-
   padding: 10px;
-
-  /* FIX: hide on load */
   display: none;
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px) scale(.96);
-
-  transition:
-    opacity .22s ease,
-    transform .22s cubic-bezier(.17,.89,.32,1.49);
+  transition: opacity .22s ease, transform .22s cubic-bezier(.17,.89,.32,1.49);
 }
 
 .gif-picker.hidden {
@@ -898,7 +877,6 @@ emoji-picker::part(category-button-active) {
   transform: translateY(0) scale(1);
 }
 
-/* Search bar */
 .gif-search {
   width: 100%;
   padding: 6px 8px;
@@ -909,7 +887,6 @@ emoji-picker::part(category-button-active) {
   margin-bottom: 8px;
 }
 
-/* Grid */
 .gif-results {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -923,6 +900,9 @@ emoji-picker::part(category-button-active) {
   border-radius: 8px;
   cursor: pointer;
   transition: transform .15s ease, box-shadow .15s ease;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 100%);
+  background-size: 200% 100%;
+  animation: gifShimmer 1.2s infinite;
 }
 
 .gif-results img:hover {
@@ -930,31 +910,18 @@ emoji-picker::part(category-button-active) {
   box-shadow: 0 0 10px var(--shadow);
 }
 
-/* Shimmer placeholder */
-.gif-results img {
-  background: linear-gradient(
-    90deg,
-    rgba(255,255,255,0.05) 0%,
-    rgba(255,255,255,0.15) 50%,
-    rgba(255,255,255,0.05) 100%
-  );
-  background-size: 200% 100%;
-  animation: gifShimmer 1.2s infinite;
-}
-
 @keyframes gifShimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* Remove shimmer once loaded */
 .gif-results img.loaded {
   animation: none;
   background: none;
 }
 
 /* ============================================================
-   PICKER BACKDROP — FADE IN / OUT
+   PICKER BACKDROP
 ============================================================ */
 
 .picker-backdrop {
@@ -975,109 +942,6 @@ emoji-picker::part(category-button-active) {
 
 .picker-backdrop.hidden {
   display: none;
-}
-@media (max-width: 700px) {
-  .emoji-picker,
-  .gif-picker {
-    left: 50%;
-    right: auto;
-    bottom: 0;
-    transform: translate(-50%, 20px) scale(.96);
-    width: 100%;
-    max-width: 420px;
-    border-radius: 22px 22px 0 0;
-    padding: 14px;
-  }
-
-  .emoji-picker:not(.hidden),
-  .gif-picker:not(.hidden) {
-    transform: translate(-50%, 0) scale(1);
-  }
-}
-
-/* ============================================================
-   ANIMATION PACK (hover, press, ripple)
-============================================================ */
-
-.hover-lift {
-  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
-}
-.hover-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px var(--shadow);
-}
-
-.press-scale {
-  transition: transform .08s ease-out;
-}
-.press-scale:active {
-  transform: scale(0.96);
-}
-
-.ripple {
-  position: relative;
-  overflow: hidden;
-}
-.ripple::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.25), transparent 60%);
-  opacity: 0;
-  transform: scale(0.2);
-  transition: opacity .35s ease, transform .35s ease;
-}
-.ripple:active::after {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.msg-actions button,
-.composer button,
-.sheet-item,
-.sheet-btn,
-.reaction-bubble,
-.react-emoji {
-  transition: background .18s ease, transform .12s ease, box-shadow .18s ease, opacity .18s ease;
-}
-
-/* New message pill pulse */
-
-.new-messages-pill.show {
-  animation: pillPulse 1.4s ease-out;
-}
-
-@keyframes pillPulse {
-  0% { transform: translateY(-4px) scale(0.96); opacity: 0; }
-  40% { transform: translateY(0) scale(1.02); opacity: 1; }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-/* ============================================================
-   LIGHT / AMOLED SPECIFIC TWEAKS
-============================================================ */
-
-[data-theme="light"] .messaging-panel {
-  box-shadow: 0 0 24px rgba(15, 23, 42, 0.18);
-}
-
-[data-theme="light"] .msg-bubble-text {
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
-}
-
-[data-theme="amoled"] .messaging-panel {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 0 40px rgba(0,0,0,0.9);
-}
-
-[data-theme="amoled"] .message-window {
-  background: #000000;
-}
-
-[data-theme="amoled"] .msg-bubble-text {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
 
 /* ============================================================
@@ -1137,6 +1001,25 @@ emoji-picker::part(category-button-active) {
   }
 }
 
+@media (max-width: 700px) {
+  .emoji-picker,
+  .gif-picker {
+    left: 50%;
+    right: auto;
+    bottom: 0;
+    transform: translate(-50%, 20px) scale(.96);
+    width: 100%;
+    max-width: 420px;
+    border-radius: 22px 22px 0 0;
+    padding: 14px;
+  }
+
+  .emoji-picker:not(.hidden),
+  .gif-picker:not(.hidden) {
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 @media (max-width: 600px) {
   .msg-wrapper {
     max-width: 94%;
@@ -1170,8 +1053,83 @@ emoji-picker::part(category-button-active) {
   }
 
   .bottom-sheet,
-  .delete-menu {
+  .delete-sheet {
     border-radius: 18px 18px 0 0;
   }
+}
+
+/* ============================================================
+   ANIMATION PACK
+============================================================ */
+
+.hover-lift {
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--shadow);
+}
+
+.press-scale {
+  transition: transform .08s ease-out;
+}
+.press-scale:active {
+  transform: scale(0.96);
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ripple::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.25), transparent 60%);
+  opacity: 0;
+  transform: scale(0.2);
+  transition: opacity .35s ease, transform .35s ease;
+}
+.ripple:active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* New message pill pulse */
+.new-messages-pill.show {
+  animation: pillPulse 1.4s ease-out;
+}
+
+@keyframes pillPulse {
+  0% { transform: translateY(-4px) scale(0.96); opacity: 0; }
+  40% { transform: translateY(0) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   LIGHT / AMOLED TWEAKS
+============================================================ */
+
+[data-theme="light"] .messaging-panel {
+  box-shadow: 0 0 24px rgba(15, 23, 42, 0.18);
+}
+
+[data-theme="light"] .msg-bubble-text {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="amoled"] .messaging-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 0 40px rgba(0,0,0,0.9);
+}
+
+[data-theme="amoled"] .message-window {
+  background: #000000;
+}
+
+[data-theme="amoled"] .msg-bubble-text {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
 
