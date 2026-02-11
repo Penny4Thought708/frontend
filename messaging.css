@@ -85,15 +85,15 @@
    ============================================================ */
 
 .message-window {
- height:90%;
-  overflow-y: auto;
-  padding: 20px 20px 14px;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  position: relative;
-  scroll-behavior: smooth;
+height: 600px;
+    overflow-y: auto;
+    padding: 20px 20px 14px;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    scroll-behavior: smooth;
 }
 
 /* Empty state */
@@ -335,7 +335,7 @@
 
 .msg-input {
   flex: 1;
-  min-height: 42px;
+  min-height: 2px;
   max-height: 140px;
   overflow-y: auto;
   padding: 12px 16px;
