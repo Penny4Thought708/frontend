@@ -797,12 +797,6 @@
    opacity:0;
 }
 
-.emoji-picker:not(.hidden) {
-  display: block;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0) scale(1);
-}
 
 emoji-picker {
   --background: transparent;
