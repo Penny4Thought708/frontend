@@ -731,6 +731,122 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 });
+
+
+  /* ============================================================
+   DIRECTORY BOTTOM SHEET — FREE DRAG + SNAP (F1)
+   ============================================================ */
+
+(function () {
+  const sheet = document.getElementById("directoryPanel");
+  if (!sheet) return;
+
+  const railHeight = 60; // bottom rail height
+  const minY = 0;        // fully expanded
+  const midY = window.innerHeight * 0.30; // 70% height (B1)
+  const maxY = window.innerHeight - railHeight; // fully closed
+
+  let startY = 0;
+  let currentY = maxY; // start closed
+  let dragging = false;
+  let velocity = 0;
+  let lastY = 0;
+  let lastTime = 0;
+
+  // Apply initial closed position
+  sheet.style.transform = `translateY(${maxY}px)`;
+
+  /* -------------------------------
+     Utility: Clamp value
+  --------------------------------*/
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(v, max));
+  }
+
+  /* -------------------------------
+     Start Drag
+  --------------------------------*/
+  function startDrag(clientY) {
+    dragging = true;
+    startY = clientY - currentY;
+    lastY = clientY;
+    lastTime = performance.now();
+    sheet.style.transition = "none";
+  }
+
+  /* -------------------------------
+     During Drag
+  --------------------------------*/
+  function onDrag(clientY) {
+    if (!dragging) return;
+
+    const now = performance.now();
+    const deltaY = clientY - lastY;
+    const deltaTime = now - lastTime;
+
+    velocity = deltaY / deltaTime; // px per ms
+    lastY = clientY;
+    lastTime = now;
+
+    currentY = clamp(clientY - startY, minY, maxY);
+    sheet.style.transform = `translateY(${currentY}px)`;
+  }
+
+  /* -------------------------------
+     End Drag → Snap to nearest height (F1)
+  --------------------------------*/
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+
+    sheet.style.transition = "transform .28s cubic-bezier(.17,.89,.32,1.49)";
+
+    // Snap logic (F1)
+    const threshold1 = maxY * 0.30; // close
+    const threshold2 = maxY * 0.85; // full
+
+    let targetY;
+
+    if (currentY > threshold2) {
+      targetY = maxY; // close
+      sheet.classList.remove("active");
+    } else if (currentY < threshold1) {
+      targetY = minY; // full
+      sheet.classList.add("active");
+    } else {
+      targetY = midY; // settle at 70%
+      sheet.classList.add("active");
+    }
+
+    currentY = targetY;
+    sheet.style.transform = `translateY(${currentY}px)`;
+  }
+
+  /* -------------------------------
+     Event Bindings (Touch + Mouse)
+  --------------------------------*/
+  sheet.addEventListener("touchstart", (e) => startDrag(e.touches[0].clientY));
+  sheet.addEventListener("touchmove", (e) => onDrag(e.touches[0].clientY));
+  sheet.addEventListener("touchend", endDrag);
+
+  sheet.addEventListener("mousedown", (e) => startDrag(e.clientY));
+  window.addEventListener("mousemove", (e) => onDrag(e.clientY));
+  window.addEventListener("mouseup", endDrag);
+
+  /* -------------------------------
+     Open Directory Programmatically
+     (When user taps Contacts button)
+  --------------------------------*/
+  const contactBtn = document.getElementById("contact_widget");
+  if (contactBtn) {
+    contactBtn.addEventListener("click", () => {
+      sheet.classList.add("active");
+      currentY = midY;
+      sheet.style.transform = `translateY(${midY}px)`;
+    });
+  }
+})();
+
 </script>
 
 <!--
@@ -1436,6 +1552,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
