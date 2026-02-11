@@ -472,6 +472,45 @@ body.light-mode .quality-indicator {
     padding: 3px 8px;
     font-size: 12px;
   }
+.media-wrapper video.zoomable {
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+}
+.participant.local.draggable {
+  touch-action: none;
+  transition: transform 0.15s ease-out;
+}
+/* LANDSCAPE MODE */
+
+  .call-grid.landscape-mode {
+    flex-direction: row;
+  }
+
+  .call-grid.landscape-mode .participant {
+    flex: 1 0 50%;
+  }
+
+  .call-grid.screen-share-mode {
+    flex-direction: column;
+  }
+
+  .participant.stage {
+    flex: 1 0 auto;
+    width: 100%;
+    height: 100%;
+  }
+
+  .participant.filmstrip {
+    display: none !important;
+  }
+
+
+  .participant.local {
+    width: 100px;
+    height: 150px;
+    bottom: 20px;
+    right: 20px;
+  }
 
   /* Screen share mode */
   .call-grid.screen-share-mode {
