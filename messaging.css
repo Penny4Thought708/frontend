@@ -1,261 +1,143 @@
 /* ============================================================
-   NEON VAPOR — GLOBAL THEME ENGINE
-   ============================================================ */
-
-:root {
-  /* Accent (electric blue) */
-  --accent: #4da3ff;
-  --accent-glow: rgba(77, 163, 255, 0.55);
-  --accent-soft: rgba(77, 163, 255, 0.25);
-
-  /* Light Mode */
-  --bg: #eef3ff;
-  --bg-panel: rgba(255, 255, 255, 0.65);
-  --bg-glass: rgba(255, 255, 255, 0.35);
-  --bg-elevated: rgba(255, 255, 255, 0.85);
-
-  --text: #0f1115;
-  --text-soft: #444;
-
-  --border: rgba(0, 0, 0, 0.12);
-  --border-soft: rgba(0, 0, 0, 0.08);
-
-  --shadow: rgba(0, 0, 0, 0.15);
-  --fg: #0f1115;
-
-  --glow-strong: 0 0 22px var(--accent-glow);
-  --glow-soft: 0 0 12px var(--accent-soft);
-}
-
-/* ============================================================
-   DARK MODE — TRUE NEON VAPOR
-   ============================================================ */
-
-:root[data-theme="dark"] {
-  --bg: #0b0d11;
-  --bg-panel: rgba(18, 20, 26, 0.65);
-  --bg-glass: rgba(255, 255, 255, 0.06);
-  --bg-elevated: rgba(255, 255, 255, 0.12);
-
-  --text: #e8ecf7;
-  --text-soft: #9aa3b8;
-
-  --border: rgba(255, 255, 255, 0.12);
-  --border-soft: rgba(255, 255, 255, 0.08);
-
-  --shadow: rgba(0, 0, 0, 0.55);
-  --fg: #ffffff;
-
-  --glow-strong: 0 0 28px var(--accent-glow);
-  --glow-soft: 0 0 16px var(--accent-soft);
-}
-
-/* Smooth theme transitions */
-html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
-  transition: background 0.25s ease, color 0.25s ease, border 0.25s ease;
-}
-
-.accent {
-  color: var(--accent);
-}
-
-/* ============================================================
-   MESSAGING PANEL LAYOUT
+   MESSAGING PANEL — NEON VAPOR GLASS OS (WITH FLAIR)
    ============================================================ */
 
 .messaging-panel {
+  width: 480px;
+  min-width: 480px;
+  max-width: 480px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  flex: .6;
-  position: relative;
-  color: var(--text);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.02)
+  );
   border-left: 1px solid var(--border);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  box-shadow: 0 0 40px var(--shadow);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  box-shadow: -14px 0 40px rgba(0, 0, 0, 0.55);
+  position: relative;
+  overflow: hidden;
   animation: panelSlideIn 0.35s ease;
-  background: var(--bg-panel);
 }
+
+/* ============================================================
+   HEADER
+   ============================================================ */
 
 .msg-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(18px);
+  padding: 16px 20px;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0.10),
+    rgba(255, 255, 255, 0.04)
+  );
+  border-bottom: 1px solid var(--border-soft);
+  backdrop-filter: blur(22px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
 .msg-header h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 6px rgba(77,163,255,0.35);
 }
 
 .msg-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
-.message-window {
-    height: 590px;
-    overflow-y: auto;
-    padding: 16px;
-    background: var(--bg);
-    position: relative;
-}
-
-/* Empty state */
-.empty-state {
+.msg-actions button {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-glass);
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
   color: var(--text-soft);
-  font-size: 14px;
-  text-align: center;
+  cursor: pointer;
+  transition: background .2s, transform .15s, box-shadow .2s, color .2s;
 }
 
-.empty-state.hidden {
-  display: none;
-}
-
-/* ============================================================
-   COMPOSER
-   ============================================================ */
-
-.composer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px;
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border);
-  backdrop-filter: blur(18px);
-}
-
-.msg-input {
-  flex: 1;
-  min-height: 42px;
-  max-height: 140px;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border);
-  color: var(--text);
-  outline: none;
-  transition: border 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.msg-input:focus {
-  border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: var(--glow-soft);
-}
-
-/* ============================================================
-   ATTACHMENT PREVIEW
-   ============================================================ */
-
-.attachment-preview {
-  padding: 8px 12px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-panel);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.attachment-preview.hidden {
-  display: none;
-}
-
-.preview-wrapper {
-  position: relative;
-  border-radius: 10px;
-  overflow: hidden;
-  background: var(--bg-glass);
-  border: 1px solid var(--border);
-  padding: 4px;
-}
-
-.preview-wrapper img {
-  display: block;
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 6px;
-}
-
-.preview-wrapper a {
-  font-size: 12px;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.remove-preview {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 11px;
-  line-height: 16px;
-  padding: 0;
-}
-
-/* ============================================================
-   IMAGE VIEWER
-   ============================================================ */
-
-.img-viewer {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.img-viewer img {
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 12px;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+.msg-actions button:hover {
+  background: var(--accent-soft);
+  color: var(--fg);
+  box-shadow: 0 0 14px var(--accent-soft);
+  transform: translateY(-2px);
 }
 
 /* ============================================================
    MESSAGE WINDOW
    ============================================================ */
 
-#messageWin.message-window {
-  padding: 20px;
+.message-window {
+  flex: 1;
   overflow-y: auto;
+  padding: 20px 20px 14px;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: var(--bg);
   position: relative;
-}
-
-#messageWin {
   scroll-behavior: smooth;
 }
 
+/* Empty state */
+.empty-state {
+  margin-top: auto;
+  margin-bottom: auto;
+  text-align: center;
+  color: var(--text-soft);
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* New message pill */
+.new-messages-pill {
+  position: sticky;
+  top: 12px;
+  align-self: center;
+  background: var(--accent);
+  color: #fff;
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.new-messages-pill.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 /* ============================================================
-   MESSAGE WRAPPER
+   MESSAGE BUBBLES
    ============================================================ */
 
 .msg-wrapper {
   display: flex;
   flex-direction: column;
   max-width: 78%;
-  padding: 0;
-  animation: msgPop 0.25s cubic-bezier(.17,.89,.32,1.49);
-  opacity: 1;
+  animation: msgPop .25s cubic-bezier(.17,.89,.32,1.49);
 }
 
 .sender_msg {
@@ -266,22 +148,6 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   align-self: flex-start;
 }
 
-/* ============================================================
-   SENDER NAME
-   ============================================================ */
-
-.msg-sender-name {
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.75;
-  margin-bottom: 4px;
-  padding-left: 4px;
-}
-
-/* ============================================================
-   MESSAGE BUBBLE — NEON VAPOR
-   ============================================================ */
-
 .msg-bubble-text {
   padding: 12px 16px;
   border-radius: 18px;
@@ -289,20 +155,19 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   line-height: 1.35;
   word-break: break-word;
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   position: relative;
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+  transition: background .25s, box-shadow .25s;
 }
 
-/* Sender bubble — electric neon */
+/* Sender bubble */
 .sender_msg .msg-bubble-text {
-  background: rgba(77, 163, 255, 0.22);
+  background: rgba(77, 163, 255, 0.25);
   color: var(--fg);
-  box-shadow: var(--glow-soft);
   border: 1px solid rgba(77, 163, 255, 0.35);
+  box-shadow: 0 0 16px rgba(77,163,255,0.25);
 }
 
-/* Receiver bubble — glass vapor */
+/* Receiver bubble */
 .receiver_msg .msg-bubble-text {
   background: var(--bg-glass);
   color: var(--text);
@@ -319,7 +184,6 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   height: 12px;
   background: inherit;
   clip-path: polygon(0 0, 100% 100%, 0 100%);
-  filter: drop-shadow(var(--glow-soft));
 }
 
 .receiver_msg .msg-bubble-text::before {
@@ -333,135 +197,27 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   clip-path: polygon(100% 0, 0 100%, 100% 100%);
 }
 
-/* ============================================================
-   META (timestamp + delete)
-   ============================================================ */
-
+/* Meta */
 .meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-top: 6px;
 }
 
 .meta small {
   font-size: 11px;
-  opacity: 0.6;
-}
-
-.status-flags button.delete-msg {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  opacity: 0.7;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.status-flags button.delete-msg:hover {
-  opacity: 1;
-  transform: scale(1.15);
+  opacity: .6;
 }
 
 /* ============================================================
-   REACTIONS — NEON VAPOR
-   ============================================================ */
-
-.reaction-display {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.reaction-bubble {
-  background: rgba(255, 255, 255, 0.12);
-  padding: 3px 8px;
-  border-radius: 14px;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-  border: 1px solid var(--border-soft);
-}
-
-.reaction-bubble:hover {
-  transform: scale(1.18);
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: var(--glow-soft);
-}
-
-/* Reaction bar */
-.reaction-bar {
-  display: none;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.msg-wrapper:hover .reaction-bar {
-  display: flex;
-}
-
-.react-emoji {
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.react-emoji:hover {
-  transform: scale(1.3);
-}
-
-/* ============================================================
-   ANIMATIONS — NEON VAPOR
-   ============================================================ */
-
-@keyframes msgPop {
-  0% { transform: scale(0.7); opacity: 0; filter: blur(4px); }
-  60% { transform: scale(1.05); opacity: 1; filter: blur(0); }
-  100% { transform: scale(1); }
-}
-
-@keyframes panelSlideIn {
-  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
-}
-
-/* ============================================================
-   NEW MESSAGE PILL
-   ============================================================ */
-
-.new-messages-pill {
-  position: absolute;
-  top: 60px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-10px);
-  background: var(--accent);
-  color: white;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  box-shadow: var(--glow-strong);
-}
-
-.new-messages-pill.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-  pointer-events: auto;
-}
-
-/* ============================================================
-   TYPING INDICATOR
+   TYPING INDICATOR — WITH FLAIR
    ============================================================ */
 
 .typing-indicator {
-  height: 26px;
   display: none;
   align-items: center;
-  margin: 6px 0;
+  margin-top: auto;
+  padding-bottom: 6px;
 }
 
 .typing-indicator.active {
@@ -469,27 +225,34 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
 }
 
 .typing-bubble {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 6px 12px;
   border-radius: 16px;
   display: flex;
-  gap: 4px;
-  backdrop-filter: blur(10px);
+  gap: 5px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 14px rgba(255,255,255,0.15);
+  animation: floatPulse 2.4s infinite ease-in-out;
+}
+
+@keyframes floatPulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
 }
 
 .typing-bubble span {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   background: white;
   border-radius: 50%;
   animation: typingBlink 1.4s infinite ease-in-out;
 }
 
-.typing-bubble span:nth-child(2) { animation-delay: 0.2s; }
-.typing-bubble span:nth-child(3) { animation-delay: 0.4s; }
+.typing-bubble span:nth-child(2) { animation-delay: .2s; }
+.typing-bubble span:nth-child(3) { animation-delay: .4s; }
 
 @keyframes typingBlink {
-  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  0%, 80%, 100% { opacity: .3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-3px); }
 }
 
@@ -515,64 +278,104 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   gap: 8px;
   position: relative;
   backdrop-filter: blur(10px);
-}
-
-.recording-text {
-  font-size: 13px;
-}
-
-.mic-icon {
-  font-size: 16px;
-}
-
-.pulse-ring {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border: 2px solid rgba(255, 0, 0, 0.5);
-  border-radius: 50%;
-  animation: pulse 1.4s infinite ease-out;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-@keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+  box-shadow: 0 0 16px rgba(255,0,0,0.35);
 }
 
 /* ============================================================
-   WAVEFORM VISUALIZER
+   IMAGE VIEWER
    ============================================================ */
 
-.waveform {
-  display: flex;
+.img-viewer {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: none;
   align-items: center;
-  gap: 3px;
-  height: 20px;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(8px);
 }
 
-.waveform .bar {
-  width: 3px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 2px;
-  animation: waveBounce 1.2s infinite ease-in-out;
-}
-
-.waveform .bar:nth-child(2) { animation-delay: 0.15s; }
-.waveform .bar:nth-child(3) { animation-delay: 0.3s; }
-.waveform .bar:nth-child(4) { animation-delay: 0.45s; }
-.waveform .bar:nth-child(5) { animation-delay: 0.6s; }
-
-@keyframes waveBounce {
-  0%, 100% { height: 6px; opacity: 0.6; }
-  50% { height: 18px; opacity: 1; }
+.img-viewer img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
 }
 
 /* ============================================================
-   BOTTOM SHEET — NEON VAPOR
+   ATTACHMENT PREVIEW
+   ============================================================ */
+
+.attachment-preview {
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ============================================================
+   COMPOSER BAR
+   ============================================================ */
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--bg-panel-strong);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+
+.msg-input {
+  flex: 1;
+  min-height: 42px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  color: var(--text);
+  outline: none;
+  transition: border .2s, background .2s, box-shadow .2s;
+}
+
+.msg-input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 14px var(--accent-soft);
+}
+
+.composer button {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background .2s, transform .15s, box-shadow .2s;
+}
+
+.composer button:hover {
+  background: var(--accent-soft);
+  color: var(--fg);
+  box-shadow: 0 0 14px var(--accent-soft);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   BOTTOM SHEET
    ============================================================ */
 
 .bottom-sheet {
@@ -603,189 +406,59 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
   margin: 0 auto 10px;
 }
 
-/* Delete menu */
-.bottom-sheet.delete-menu {
-  background: var(--bg-panel);
-  border-radius: 22px 22px 0 0;
-  padding: 16px 16px 24px;
-  box-shadow: 0 -12px 40px var(--shadow);
-}
-
-.bottom-sheet.delete-menu .sheet-title {
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  margin-bottom: 12px;
-  color: var(--text);
-}
-
-.sheet-btn {
+.sheet-item {
   width: 100%;
-  border: none;
+  text-align: left;
+  margin-bottom: 6px;
   border-radius: 12px;
-  padding: 12px 14px;
-  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-elevated);
+  color: var(--fg);
+  cursor: pointer;
   font-size: 14px;
-  text-align: center;
-  cursor: pointer;
-  background: var(--bg-elevated);
-  color: var(--fg);
-  transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
-  border: 1px solid var(--border-soft);
+  transition: background .18s, transform .12s, box-shadow .18s;
 }
 
-.sheet-btn:hover {
+.sheet-item:hover {
   background: var(--accent-soft);
-  box-shadow: var(--glow-soft);
-}
-
-.sheet-btn:active {
-  transform: scale(.96);
-}
-
-.sheet-btn.secondary {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-.sheet-btn.secondary:hover {
-  background: var(--bg-glass);
-}
-
-.sheet-btn.danger {
-  background: rgba(255, 59, 48, 0.85);
-  color: #fff;
-  border: none;
-  box-shadow: 0 0 12px rgba(255, 59, 48, 0.45);
-}
-
-.sheet-btn.danger:hover {
-  background: rgba(255, 59, 48, 1);
-  box-shadow: 0 0 18px rgba(255, 59, 48, 0.55);
+  box-shadow: 0 0 14px var(--accent-soft);
+  transform: translateY(-2px);
 }
 
 /* ============================================================
-   UNDO TOAST — NEON VAPOR
+   EMOJI PICKER + GIF PICKER
    ============================================================ */
 
-.undo-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 80px;
-  transform: translateX(-50%) translateY(20px);
-  background: var(--bg-elevated);
-  color: var(--fg);
-  border-radius: 999px;
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: var(--glow-soft);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .22s ease, transform .22s ease;
-  z-index: 80;
-  border: 1px solid var(--border-soft);
-}
-
-.undo-toast.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
-}
-
-.undo-text {
-  font-size: 13px;
-}
-
-.undo-btn {
-  border: none;
-  background: transparent;
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  transition: opacity .15s ease;
-}
-
-.undo-btn:hover {
-  opacity: 0.7;
-}
-
-/* ============================================================
-   EMOJI PICKER — NEON VAPOR
-   ============================================================ */
-
-emoji-picker,
-.emoji-picker {
-  position: absolute;
-  bottom: 60px;
-  right: 16px;
-  z-index: 60;
-
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-
-  transform: translateY(10px);
-  transition:
-    opacity 0.20s ease,
-    transform 0.20s ease,
-    visibility 0s linear 0.20s;
-}
-
-emoji-picker.active,
-.emoji-picker.active {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-  transition:
-    opacity 0.20s ease,
-    transform 0.20s ease,
-    visibility 0s;
-}
-
-/* ============================================================
-   GIF PICKER — NEON VAPOR
-   ============================================================ */
-
+.emoji-picker,
 .gif-picker {
   position: absolute;
   bottom: 60px;
   right: 16px;
+  z-index: 60;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity .20s, transform .20s, visibility 0s linear .20s;
+}
+
+.emoji-picker.active,
+.gif-picker.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.gif-picker {
   width: 260px;
   background: var(--bg-panel);
   border-radius: 12px;
   border: 1px solid var(--border);
   box-shadow: 0 10px 30px var(--shadow);
   padding: 8px;
-  flex-direction: column;
-  gap: 6px;
   backdrop-filter: blur(18px);
-  z-index: 60;
-
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-
-  transform: translateY(10px);
-  transition:
-    opacity .20s ease,
-    transform .20s ease,
-    visibility 0s linear .20s;
-}
-
-.gif-picker.active {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-  transition:
-    opacity .20s ease,
-    transform .20s ease,
-    visibility 0s;
 }
 
 .gif-search {
@@ -810,56 +483,25 @@ emoji-picker.active,
   width: 100%;
   border-radius: 6px;
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease;
+  transition: transform .15s, box-shadow .15s;
 }
 
 .gif-thumb:hover {
   transform: scale(1.05);
-  box-shadow: var(--glow-soft);
+  box-shadow: 0 0 14px var(--accent-soft);
 }
 
 /* ============================================================
-   BUTTONS & MICRO‑INTERACTIONS
+   ANIMATIONS
    ============================================================ */
 
-button {
-  background: var(--bg-glass);
-  border: 1px solid var(--border);
-  padding: 8px 10px;
-  border-radius: 10px;
-  cursor: pointer;
-  color: var(--text);
-  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+@keyframes msgPop {
+  0% { transform: scale(.7); opacity: 0; filter: blur(4px); }
+  60% { transform: scale(1.05); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); }
 }
 
-button:hover {
-  background: var(--accent-soft);
-  transform: translateY(-1px);
-  box-shadow: var(--glow-soft);
-}
-
-button:active {
-  transform: scale(0.96);
-  box-shadow: none;
-}
-
-button .material-symbols-outlined {
-  font-size: 22px;
-  transition: transform 0.2s ease;
-}
-
-button:hover .material-symbols-outlined {
-  transform: scale(1.15);
-}
-
-/* Panel slide-in */
 @keyframes panelSlideIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-/* Bottom sheet rise */
-@keyframes sheetRise {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
 }
