@@ -770,8 +770,7 @@
    EMOJI PICKER + GIF PICKER
 ============================================================ */
 
-.emoji-picker,
-emoji-picker {
+.emoji-picker {
   position: absolute;
   bottom: 70px;
   right: 16px;
@@ -783,7 +782,6 @@ emoji-picker {
   padding: 6px;
 }
 
-.emoji-picker.hidden,
 emoji-picker.hidden {
   display: none !important;
 }
