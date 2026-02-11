@@ -3,9 +3,9 @@
    ============================================================ */
 
 .messaging-panel {
-  width: 580px;
+  width: 980px;
   min-width: 480px;
-  max-width: 480px;
+
   height: 100%;
   display: flex;
   flex-direction: column;
