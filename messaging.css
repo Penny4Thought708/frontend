@@ -72,7 +72,7 @@
 ============================================================ */
 
 .message-window {
-  flex: 1;
+  height:580px;
   overflow-y: auto;
   padding: 16px 16px 10px;
   background: var(--bg);
