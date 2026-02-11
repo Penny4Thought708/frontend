@@ -43,7 +43,7 @@ function ensureRemoteMap() {
 }
 
 /* -------------------------------------------------------
-   Create Remote Participant Tile
+   Create Remote Participant Tile (Meet‑style)
 ------------------------------------------------------- */
 function createRemoteParticipant(peerId = "default") {
   const grid = getCallGrid();
@@ -58,14 +58,21 @@ function createRemoteParticipant(peerId = "default") {
   if (map[peerId]) return map[peerId];
 
   const clone = tpl.content.firstElementChild.cloneNode(true);
+
+  // Match CallUI mobile behavior: use both peerId and id
   clone.dataset.peerId = peerId;
+  clone.dataset.id = peerId;
 
   const videoEl   = clone.querySelector("video");
   const avatarImg = clone.querySelector(".avatar-img");
   const nameTag   = clone.querySelector(".name-tag");
 
   if (nameTag) nameTag.textContent = peerId || "Guest";
-  if (avatarImg && !avatarImg.src) avatarImg.src = "img/defaultUser.png";
+
+  // Remote avatar fallback
+  if (avatarImg && !avatarImg.src) {
+    avatarImg.src = "img/defaultUser.png";
+  }
 
   // Voice‑only: hide video element entirely
   if (rtcState.voiceOnly && videoEl) {
@@ -152,7 +159,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 /* -------------------------------------------------------
    Remote Speaking Detection
 ------------------------------------------------------- */
-const speakingLoops = new Map();
+const speakingLoops = new Map(); // key: participantEl
 
 function startRemoteSpeakingDetection(stream, participantEl) {
   if (!participantEl || !stream) return;
@@ -301,6 +308,84 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
+   CAMERA FLIP SUPPORT (front/back) — used by CallUI rtc.switchCamera
+------------------------------------------------------- */
+rtcState.cameraFacing = rtcState.cameraFacing || "user"; // "user" | "environment"
+
+/**
+ * Flip local camera between front/back and update:
+ * - rtcState.localStream
+ * - peerConnection video sender
+ * - #localVideo preview
+ */
+export async function flipLocalCamera(rtc) {
+  try {
+    if (!rtc) {
+      log("flipLocalCamera: rtc not provided");
+      return false;
+    }
+
+    rtcState.cameraFacing =
+      rtcState.cameraFacing === "user" ? "environment" : "user";
+
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: rtcState.cameraFacing,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+
+    const newTrack = newStream.getVideoTracks()[0];
+    if (!newTrack) {
+      log("flipLocalCamera: no video track in new stream");
+      return false;
+    }
+
+    const senders = rtc.peerConnection?.getSenders() || [];
+    const videoSender = senders.find(
+      (s) => s.track && s.track.kind === "video"
+    );
+    if (videoSender) {
+      await videoSender.replaceTrack(newTrack);
+    }
+
+    // Stop old video tracks
+    rtcState.localStream?.getVideoTracks().forEach((t) => {
+      try { t.stop(); } catch {}
+    });
+
+    // Replace track in localStream
+    if (rtcState.localStream) {
+      const oldVideo = rtcState.localStream.getVideoTracks()[0];
+      if (oldVideo) rtcState.localStream.removeTrack(oldVideo);
+      rtcState.localStream.addTrack(newTrack);
+    } else {
+      rtcState.localStream = newStream;
+    }
+
+    // Re-bind local preview
+    const localVideo = document.getElementById("localVideo");
+    if (localVideo) {
+      localVideo.srcObject = rtcState.localStream;
+      localVideo.muted = true;
+      localVideo.playsInline = true;
+      localVideo.classList.add("show");
+      localVideo.play().catch((err) =>
+        log("flipLocalCamera: local video play blocked:", err)
+      );
+    }
+
+    updateLocalAvatarVisibility();
+    return true;
+  } catch (err) {
+    log("flipLocalCamera failed:", err);
+    return false;
+  }
+}
+
+/* -------------------------------------------------------
    Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
@@ -364,6 +449,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     log("Attaching remote VIDEO to participant:", peerId);
     videoEl.srcObject = remoteStream;
     videoEl.playsInline = true;
+    videoEl.muted = true; // helps autoplay on mobile
     videoEl.style.display = "block";
     videoEl.style.opacity = "1";
     videoEl.classList.add("show");
@@ -452,6 +538,7 @@ export function cleanupMedia() {
 
   updateLocalAvatarVisibility();
 }
+
 /* -------------------------------------------------------
    Screen Share Tile Logic (Meet-style stage mode)
 ------------------------------------------------------- */
@@ -463,10 +550,12 @@ export function enterScreenShareMode(peerId = "local") {
 
   const tiles = grid.querySelectorAll(".participant");
   tiles.forEach((tile) => {
-    if (tile.dataset.peerId === peerId) {
+    if (tile.dataset.peerId === peerId || tile.dataset.id === peerId) {
       tile.classList.add("stage");
+      tile.classList.remove("filmstrip");
     } else {
       tile.classList.add("filmstrip");
+      tile.classList.remove("stage");
     }
   });
 }
@@ -481,6 +570,33 @@ export function exitScreenShareMode() {
   tiles.forEach((tile) => {
     tile.classList.remove("stage", "filmstrip");
   });
+}
+
+/* -------------------------------------------------------
+   Active Speaker Helper (Meet-style auto-focus)
+------------------------------------------------------- */
+export function setActiveSpeaker(peerId) {
+  const grid = document.getElementById("callGrid");
+  if (!grid) return;
+
+  const participants = Array.from(grid.querySelectorAll(".participant"));
+  const index = participants.findIndex(
+    (p) => p.dataset.peerId === peerId || p.dataset.id === peerId
+  );
+
+  participants.forEach((p) =>
+    p.classList.toggle(
+      "active",
+      p.dataset.peerId === peerId || p.dataset.id === peerId
+    )
+  );
+
+  if (index >= 0) {
+    grid.scrollTo({
+      left: index * grid.clientWidth,
+      behavior: "smooth",
+    });
+  }
 }
 
 /* -------------------------------------------------------
