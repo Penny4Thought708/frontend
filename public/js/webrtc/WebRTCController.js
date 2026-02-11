@@ -144,83 +144,99 @@ export class WebRTCController {
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
 
-  /* ---------------------------------------------------
-     Outgoing Call (Hybrid Google‑Meet + Discord Upgrade)
-  --------------------------------------------------- */
-  async _startCallInternal(peerId, audioOnly, { relayOnly }) {
-    console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
-    const myId = getMyUserId();
-    if (!myId) return;
+ /* ---------------------------------------------------
+   Outgoing Call (Hybrid Google‑Meet + Discord Upgrade)
+--------------------------------------------------- */
+async _startCallInternal(peerId, audioOnly, { relayOnly }) {
+  console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
+  const myId = getMyUserId();
+  if (!myId) return;
 
-    rtcState.peerId = peerId;
-    rtcState.peerName = rtcState.peerName || `User ${peerId}`;
-    rtcState.audioOnly = !!audioOnly;
-    rtcState.isCaller = true;
-    rtcState.busy = true;
-    rtcState.inCall = false;
-    rtcState.incomingOffer = null;
-    rtcState.usedRelayFallback = !!relayOnly;
+  rtcState.peerId = peerId;
+  rtcState.peerName = rtcState.peerName || `User ${peerId}`;
+  rtcState.audioOnly = !!audioOnly;
+  rtcState.isCaller = true;
+  rtcState.busy = true;
+  rtcState.inCall = false;
+  rtcState.incomingOffer = null;
+  rtcState.usedRelayFallback = !!relayOnly;
 
-    const pc = await this._createPC({ relayOnly });
+  const pc = await this._createPC({ relayOnly });
 
-    const stream = await getLocalMedia(true, !audioOnly);
-    this.localStream = stream;
-    rtcState.localStream = stream;
+  // 🔹 Ensure local media is acquired with video when not audioOnly
+  const stream = await getLocalMedia(true, !audioOnly);
+  this.localStream = stream;
+  rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    } else {
-      console.warn("[WebRTC] No local media — continuing call anyway");
-    }
+  // 🔹 Explicitly bind to controller's localVideo element if present
+  if (stream && this.localVideo) {
+    this.localVideo.srcObject = stream;
+    this.localVideo.muted = true;
+    this.localVideo.playsInline = true;
+    this.localVideo.classList.add("show");
 
-    this.onOutgoingCall?.({
-      targetName: rtcState.peerName,
-      voiceOnly: audioOnly,
+    const callWindow = document.getElementById("callWindow");
+    callWindow?.classList.remove("voice-only");
+
+    this.localVideo.play().catch(() => {
+      setTimeout(() => this.localVideo.play().catch(() => {}), 50);
     });
-
-    // Create offer
-    let offer = await pc.createOffer();
-
-    // VP9 priority
-    if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
-    await pc.setLocalDescription(offer);
-
-    // Meet-style bitrate
-    const videoSender = pc
-      .getSenders()
-      .find((s) => s.track && s.track.kind === "video");
-
-    if (videoSender) {
-      const params = videoSender.getParameters();
-      params.encodings = [{
-        maxBitrate: 1_500_000,
-        minBitrate:   300_000,
-        maxFramerate: 30,
-      }];
-      try {
-        await videoSender.setParameters(params);
-      } catch (err) {
-        console.warn("[WebRTC] setParameters failed", err);
-      }
-    }
-
-    this.socket.emit("webrtc:signal", {
-      type: "offer",
-      to: peerId,
-      from: myId,
-      offer,
-      audioOnly: !!audioOnly,
-      fromName: getMyFullname(),
-    });
-
-    ringback?.play().catch(() => {});
   }
+
+  if (stream) {
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  } else {
+    console.warn("[WebRTC] No local media — continuing call anyway");
+  }
+
+  this.onOutgoingCall?.({
+    targetName: rtcState.peerName,
+    voiceOnly: audioOnly,
+  });
+
+  // Create offer
+  let offer = await pc.createOffer();
+
+  // VP9 priority
+  if (offer.sdp) {
+    offer.sdp = offer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => `${prefix}98 96 97`
+    );
+  }
+
+  await pc.setLocalDescription(offer);
+
+  // Meet-style bitrate
+  const videoSender = pc
+    .getSenders()
+    .find((s) => s.track && s.track.kind === "video");
+
+  if (videoSender) {
+    const params = videoSender.getParameters();
+    params.encodings = [{
+      maxBitrate: 1_500_000,
+      minBitrate:   300_000,
+      maxFramerate: 30,
+    }];
+    try {
+      await videoSender.setParameters(params);
+    } catch (err) {
+      console.warn("[WebRTC] setParameters failed", err);
+    }
+  }
+
+  this.socket.emit("webrtc:signal", {
+    type: "offer",
+    to: peerId,
+    from: myId,
+    offer,
+    audioOnly: !!audioOnly,
+    fromName: getMyFullname(),
+  });
+
+  ringback?.play().catch(() => {});
+}
 
   /* ---------------------------------------------------
      Resume after restore
@@ -831,6 +847,7 @@ async switchCamera() {
     });
   }
 }
+
 
 
 
