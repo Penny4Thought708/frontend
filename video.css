@@ -376,7 +376,7 @@ body.light-mode .quality-indicator {
 }
 
 /* ============================================================
-   MOBILE CALL LAYOUT — GOOGLE MEET STYLE
+   MOBILE CALL — GOOGLE MEET BEHAVIOR
 ============================================================ */
 @media (max-width: 900px) {
 
@@ -388,71 +388,71 @@ body.light-mode .quality-indicator {
     padding: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
-  /* Remove desktop grid padding */
+  /* Remove grid, use stacked layout */
   .call-grid {
     padding: 0 !important;
     gap: 0 !important;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    scroll-snap-type: x mandatory;
+    overflow-x: auto;
   }
 
-  /* Each participant fills screen */
+  /* Each participant = full screen slide */
   .participant {
+    flex: 0 0 100%;
     width: 100%;
     height: 100%;
+    scroll-snap-align: center;
+    position: relative;
     border-radius: 0 !important;
     border: none !important;
   }
 
-  /* Video fills viewport */
-  .media-wrapper {
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
-  }
-
-  /* Name tag moves to top-left */
-  .name-tag {
-    top: 10px;
-    bottom: auto;
-    left: 10px;
-    background: rgba(0,0,0,0.55);
-    font-size: 12px;
-    padding: 3px 8px;
-  }
-
-  /* Local video becomes floating PIP */
+  /* Local video PIP */
   .participant.local {
     position: absolute;
     width: 120px;
     height: 180px;
-    bottom: 90px; /* above controls */
+    bottom: 90px;
     right: 12px;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     overflow: hidden;
     z-index: 20;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+    animation: pipFloat 0.35s ease-out;
   }
 
-  /* Controls docked bottom */
+  @keyframes pipFloat {
+    0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  /* Tap-to-show controls */
+  .call-controls.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .call-controls {
     position: absolute;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 0;
     z-index: 30;
     background: rgba(0,0,0,0.35);
     backdrop-filter: blur(10px);
     border-radius: 999px;
     padding: 10px 16px;
+    transition: opacity .25s ease;
   }
 
-  /* Top info bar overlays video */
+  /* Top info bar overlay */
   .call-top-info {
     position: absolute;
     top: 0;
@@ -463,9 +463,25 @@ body.light-mode .quality-indicator {
     background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
   }
 
-  /* Hide filmstrip mode entirely */
-  #callGrid.screen-share-mode {
-    grid-template-columns: 1fr !important;
+  /* Name tag reposition */
+  .name-tag {
+    top: 10px;
+    left: 10px;
+    bottom: auto;
+    background: rgba(0,0,0,0.55);
+    padding: 3px 8px;
+    font-size: 12px;
+  }
+
+  /* Screen share mode */
+  .call-grid.screen-share-mode {
+    flex-direction: column;
+  }
+
+  .participant.stage {
+    flex: 1 0 auto;
+    width: 100%;
+    height: 100%;
   }
 
   .participant.filmstrip {
