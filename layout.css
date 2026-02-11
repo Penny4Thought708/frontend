@@ -1069,14 +1069,14 @@ button:hover .material-symbols-outlined {
     height: 40px;
   }
 
-  /* Workspace becomes vertical */
+@media (max-width: 900px) {
+
   app-workspace.app-workspace {
     flex-direction: column;
     height: calc(100vh - 60px);
-    overflow: hidden;
+    overflow: visible; /* FIX */
   }
 
-  /* Directory panel becomes slide-over */
   directory-panel.directory-panel {
     position: fixed;
     top: 0;
@@ -1087,7 +1087,7 @@ button:hover .material-symbols-outlined {
     max-width: none;
 
     background: var(--bg-panel);
-    z-index: 300;
+    z-index: 999; /* FIX */
 
     transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
@@ -1096,6 +1096,7 @@ button:hover .material-symbols-outlined {
   directory-panel.directory-panel.active {
     transform: translateX(0);
   }
+}
 
   /* Messaging panel becomes full width */
   messaging-panel.messaging-panel {
