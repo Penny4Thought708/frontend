@@ -68,6 +68,14 @@ export function initCallUI(rtc) {
     remoteAudio,
   });
 
+  // 🔧 Ensure local preview is always visible when we already have a stream
+  if (rtc.localStream && localVideo) {
+    localVideo.srcObject = rtc.localStream;
+    localVideo.muted = true;
+    localVideo.playsInline = true;
+    localVideo.classList.add("show");
+  }
+
   /* -------------------------------------------------------
      TIMER
   ------------------------------------------------------- */
@@ -338,7 +346,8 @@ export function initCallUI(rtc) {
       cameraBtn.classList.toggle("flipped");
       cameraBtn.innerHTML =
         `<span class="material-symbols-outlined">videocam</span>`;
-      setCameraOff(!!off && off === true); // stays false for flip behavior
+      // we keep camera logically "on" for flip behavior; no hard off here
+      setCameraOff(false);
     };
   }
 
@@ -411,6 +420,14 @@ export function initCallUI(rtc) {
     startTimer();
     setMode("active");
     openWindowAnimated();
+
+    // 🔧 Ensure local preview is bound once call is live
+    if (rtc.localStream && localVideo && !localVideo.srcObject) {
+      localVideo.srcObject = rtc.localStream;
+      localVideo.muted = true;
+      localVideo.playsInline = true;
+      localVideo.classList.add("show");
+    }
   };
 
   rtc.onCallEnded = () => {
@@ -509,16 +526,24 @@ export function initCallUI(rtc) {
         await videoSender.replaceTrack(newTrack);
       }
 
+      // Stop old video tracks
       rtc.localStream?.getVideoTracks().forEach((t) => t.stop());
 
+      // Replace track in localStream
       if (rtc.localStream) {
         const oldVideo = rtc.localStream.getVideoTracks()[0];
         if (oldVideo) rtc.localStream.removeTrack(oldVideo);
         rtc.localStream.addTrack(newTrack);
+      } else {
+        rtc.localStream = newStream;
       }
 
+      // 🔧 Always re-bind local preview to the updated localStream
       if (localVideo) {
-        localVideo.srcObject = rtc.localStream || newStream;
+        localVideo.srcObject = rtc.localStream;
+        localVideo.muted = true;
+        localVideo.playsInline = true;
+        localVideo.classList.add("show");
       }
 
       return false; // camera is ON (flip, not off)
@@ -859,7 +884,6 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
-
 
 
 
