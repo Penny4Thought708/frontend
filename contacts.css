@@ -154,6 +154,335 @@
     font-size: 12.5px;
   }
 
+  .contact-last {
+    font-size: 11.5px;
+  }
+
+  .contact-actions {
+    gap: 6px;
+  }
+
   .contact-actions button {
     width: 30px;
-    height:
+    height: 30px;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .contact-card {
+    padding: 8px 10px;
+    gap: 10px;
+  }
+
+  .avatar-wrapper {
+    width: 38px;
+    height: 38px;
+  }
+
+  .contact-name {
+    font-size: 13.5px;
+  }
+
+  .contact-email {
+    font-size: 12px;
+  }
+
+  .contact-last {
+    font-size: 11px;
+  }
+
+  .contact-actions {
+    gap: 4px;
+  }
+
+  .contact-actions button {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+}
+
+/* ============================================================
+   CALL LOG — BASE LAYOUT
+============================================================ */
+
+#dir-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.con-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-glass);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border .2s ease, background .2s ease;
+}
+
+.con-input:focus {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.12);
+}
+
+/* ============================================================
+   STATS BAR
+============================================================ */
+
+.con-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+  color: var(--text-soft);
+}
+
+/* ============================================================
+   DATE HEADER
+============================================================ */
+
+.call-log-date-header {
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  opacity: 0.85;
+  padding-left: 4px;
+}
+
+/* ============================================================
+   CALL ITEM
+============================================================ */
+
+.call-log-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.call-swipe-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-panel);
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  transition: transform .25s ease;
+}
+
+.call-log-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  flex: 1;
+}
+
+/* ============================================================
+   AVATAR
+============================================================ */
+
+.call-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 6px rgba(0,0,0,0.35);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+/* ============================================================
+   CALL INFO
+============================================================ */
+
+.call-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.call-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+/* Icons */
+.call-icon-incoming {
+  color: #3ba55d;
+}
+.call-icon-outgoing {
+  color: #2563eb;
+}
+.call-icon-click {
+  cursor: pointer;
+  transition: transform .15s ease;
+}
+.call-icon-click:hover {
+  transform: scale(1.15);
+}
+
+/* Status */
+.call-status.ended {
+  color: #9ca3af;
+}
+.call-status.rejected {
+  color: #ef4444;
+}
+
+/* Time */
+.call-time {
+  margin-left: auto;
+  opacity: 0.8;
+}
+
+/* ============================================================
+   ACTION BUTTONS
+============================================================ */
+
+.call-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.call-actions button {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-glass);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background .18s ease, transform .12s ease, box-shadow .18s ease;
+}
+
+.call-actions button:hover {
+  background: var(--accent-soft);
+  color: var(--fg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px var(--shadow);
+}
+
+/* ============================================================
+   SWIPE DELETE BUTTON
+============================================================ */
+
+.call-delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 90px;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(100%);
+  transition: transform .25s ease;
+}
+
+.call-log-item.swiped .call-swipe-wrapper {
+  transform: translateX(-90px);
+}
+
+.call-log-item.swiped .call-delete-btn {
+  transform: translateX(0);
+}
+
+/* ============================================================
+   MOBILE CONFIGURATION
+============================================================ */
+
+@media (max-width: 900px) {
+  .call-log-main {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .call-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .call-name {
+    font-size: 14px;
+  }
+
+  .call-meta {
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .call-actions button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .call-delete-btn {
+    width: 80px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 600px) {
+  .call-log-main {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .call-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .call-name {
+    font-size: 13.5px;
+  }
+
+  .call-meta {
+    font-size: 11.5px;
+  }
+
+  .call-actions {
+    gap: 4px;
+  }
+
+  .call-actions button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .call-delete-btn {
+    width: 70px;
+    font-size: 12px;
+  }
+}
