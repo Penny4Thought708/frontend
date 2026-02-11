@@ -100,11 +100,11 @@ html, body, .messaging-panel, .msg-bubble-text, .composer, .bottom-sheet {
 }
 
 .message-window {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  background: var(--bg);
-  position: relative;
+    height: 590px;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--bg);
+    position: relative;
 }
 
 /* Empty state */
