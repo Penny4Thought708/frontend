@@ -1101,24 +1101,24 @@ button:hover .material-symbols-outlined {
     overflow: visible;
   }
 
-@media (max-width: 900px) {
-  directory-panel.directory-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 60px; /* sits above rail */
-    width: 100%;
-    height: auto;
-    background: var(--bg-panel);
-    z-index: 999;
-    transform: translateX(-100%);
-    transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
-  }
-
-  directory-panel.directory-panel.active {
-    transform: translateX(0);
-  }
+/* DIRECTORY PANEL — mobile slide-over */
+directory-panel.directory-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 60px; /* sits above rail */
+  width: 100%;
+  height: auto;
+  background: var(--bg-panel);
+  z-index: 999;
+  transform: translateX(-100%);
+  transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
 }
+
+directory-panel.directory-panel.active {
+  transform: translateX(0);
+}
+
 
 
   /* MESSAGING PANEL */
