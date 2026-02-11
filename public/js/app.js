@@ -684,17 +684,38 @@ document.addEventListener("DOMContentLoaded", () => {
   const attachmentInput = document.getElementById("attachment_input");
   const micBtn = document.getElementById("micBtn");
 
-  // expose micBtn for other modules if needed
+  const backdrop = document.getElementById("pickerBackdrop");
+
   window.micBtn = micBtn;
 
   if (!messageInput) return;
 
+  /* -------------------------------------------------------
+     BACKDROP CONTROL
+  ------------------------------------------------------- */
+  function showBackdrop() {
+    backdrop.classList.remove("hidden");
+    requestAnimationFrame(() => backdrop.classList.add("show"));
+  }
+
+  function hideBackdrop() {
+    backdrop.classList.remove("show");
+    setTimeout(() => backdrop.classList.add("hidden"), 200);
+  }
+
+  /* -------------------------------------------------------
+     CLOSE EVERYTHING
+  ------------------------------------------------------- */
   const closeAll = () => {
     bottomSheet?.classList.remove("visible");
     emojiPicker?.classList.add("hidden");
     gifPicker?.classList.add("hidden");
+    hideBackdrop();
   };
 
+  /* -------------------------------------------------------
+     CARET POSITIONING
+  ------------------------------------------------------- */
   const moveCaretToEnd = (el) => {
     const range = document.createRange();
     const sel = window.getSelection();
@@ -704,15 +725,27 @@ document.addEventListener("DOMContentLoaded", () => {
     sel.addRange(range);
   };
 
+  /* -------------------------------------------------------
+     PLUS BUTTON
+  ------------------------------------------------------- */
   plusBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     emojiPicker?.classList.add("hidden");
     gifPicker?.classList.add("hidden");
+
+    const isOpening = !bottomSheet.classList.contains("visible");
     bottomSheet?.classList.toggle("visible");
+
+    if (isOpening) showBackdrop();
+    else hideBackdrop();
   });
 
+  /* -------------------------------------------------------
+     CLICK OUTSIDE TO CLOSE
+  ------------------------------------------------------- */
   document.addEventListener("click", (e) => {
     const target = e.target;
+
     const clickedInsideSheet = bottomSheet?.contains(target);
     const clickedPlus = target === plusBtn;
     const clickedEmojiShadow =
@@ -729,9 +762,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  /* -------------------------------------------------------
+     SHEET ACTIONS
+  ------------------------------------------------------- */
   sheetCamera?.addEventListener("click", () => {
     closeAll();
-    // camera flow could be added here later
   });
 
   sheetGallery?.addEventListener("click", () => {
@@ -749,11 +784,19 @@ document.addEventListener("DOMContentLoaded", () => {
     micBtn?.click();
   });
 
+  /* -------------------------------------------------------
+     EMOJI PICKER
+  ------------------------------------------------------- */
   sheetEmoji?.addEventListener("click", (e) => {
     e.stopPropagation();
     bottomSheet?.classList.remove("visible");
     gifPicker?.classList.add("hidden");
+
+    const isOpening = emojiPicker.classList.contains("hidden") === true;
     emojiPicker?.classList.toggle("hidden");
+
+    if (isOpening) showBackdrop();
+    else hideBackdrop();
   });
 
   emojiPicker?.addEventListener("emoji-click", (event) => {
@@ -763,11 +806,20 @@ document.addEventListener("DOMContentLoaded", () => {
     messageInput.focus();
   });
 
+  /* -------------------------------------------------------
+     GIF PICKER
+  ------------------------------------------------------- */
   sheetGif?.addEventListener("click", (e) => {
     e.stopPropagation();
     bottomSheet?.classList.remove("visible");
     emojiPicker?.classList.add("hidden");
+
+    const isOpening = gifPicker.classList.contains("hidden") === true;
     gifPicker?.classList.toggle("hidden");
+
+    if (isOpening) showBackdrop();
+    else hideBackdrop();
+
     loadTrendingGIFs();
   });
 
@@ -816,11 +868,15 @@ document.addEventListener("DOMContentLoaded", () => {
       img.src = url;
       img.alt = "GIF";
 
+      // shimmer removal
+      img.onload = () => img.classList.add("loaded");
+
       img.addEventListener("click", () => {
         messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
         moveCaretToEnd(messageInput);
         messageInput.focus();
         gifPicker?.classList.add("hidden");
+        hideBackdrop();
       });
 
       gifResults.appendChild(img);
@@ -832,9 +888,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!q) loadTrendingGIFs();
     else searchGIFs(q);
   });
-
-  // IMPORTANT: no form submit handler here.
-  // messaging.js owns sending logic for #text_box_reply.
 });
 
 /* -------------------------------------------------------
@@ -873,6 +926,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu();
 });
+
 
 
 
