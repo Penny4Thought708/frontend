@@ -1007,4 +1007,156 @@ button:hover .material-symbols-outlined {
   0%, 100% { height: 6px; opacity: 0.6; }
   50% { height: 18px; opacity: 1; }
 }
+/* ============================================================
+   GLOBAL MOBILE LAYOUT
+============================================================ */
+
+@media (max-width: 900px) {
+
+  /* App Shell */
+  app-main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header collapses */
+  .app-header {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .header-nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .header-right {
+    order: 2;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Rail becomes bottom bar */
+  app-rail.app-rail {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    height: 60px;
+    width: 100%;
+    padding: 0 8px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+
+    border-top: 1px solid var(--border);
+    border-right: none;
+    background: var(--bg-panel);
+    z-index: 200;
+  }
+
+  .rail-spacer {
+    display: none;
+  }
+
+  .rail-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Workspace becomes vertical */
+  app-workspace.app-workspace {
+    flex-direction: column;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+  }
+
+  /* Directory panel becomes slide-over */
+  directory-panel.directory-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+    max-width: none;
+
+    background: var(--bg-panel);
+    z-index: 300;
+
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
+  }
+
+  directory-panel.directory-panel.active {
+    transform: translateX(0);
+  }
+
+  /* Messaging panel becomes full width */
+  messaging-panel.messaging-panel {
+    width: 100%;
+    max-width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Call window becomes full-screen */
+  call-window.call-window {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  /* Floating windows become centered sheets */
+  floating-window.floating-window {
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 16px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Modals scale for mobile */
+  modal.modal-1,
+  modal.voicemail-modal {
+    width: 90%;
+    max-width: 380px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Toasts reposition */
+  app-toasts {
+    bottom: 80px;
+  }
+}
+
+@media (max-width: 600px) {
+
+  /* Header nav becomes icons or collapses */
+  .header-nav a {
+    font-size: 14px;
+    padding: 4px 6px;
+  }
+
+  /* Directory list spacing */
+  .con-list {
+    padding: 6px;
+  }
+
+  /* Call window grid stacks */
+  .call-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
