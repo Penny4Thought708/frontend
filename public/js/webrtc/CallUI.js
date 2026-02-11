@@ -67,6 +67,25 @@ export function initCallUI(rtc) {
     remoteVideo: null,
     remoteAudio,
   });
+// -------------------------------------------------------
+// 🔥 Bind local stream to UI when the controller provides it
+// -------------------------------------------------------
+rtc.onLocalStream = (stream) => {
+  if (!localVideo) return;
+
+  localVideo.srcObject = stream;
+  localVideo.muted = true;
+  localVideo.playsInline = true;
+  localVideo.classList.add("show");
+
+  // Remove voice-only mode if video is active
+  document.getElementById("callWindow")?.classList.remove("voice-only");
+
+  // Autoplay reliability
+  localVideo.play().catch(() => {
+    setTimeout(() => localVideo.play().catch(()=>{}), 50);
+  });
+};
 
   // 🔧 Ensure local preview is always visible when we already have a stream
   if (rtc.localStream && localVideo) {
@@ -884,6 +903,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
