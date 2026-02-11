@@ -704,16 +704,27 @@
 
 /* Delete menu variant */
 
-.delete-menu {
-  max-width: 380px;
+/* DELETE SHEET — independent from bottomSheet */
+.delete-sheet {
+  position: fixed;
   left: 50%;
+  bottom: 0;
+  width: 100%;
+  max-width: 380px;
   transform: translate(-50%, 100%);
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  border-radius: 22px 22px 0 0;
+  padding: 18px 16px 26px;
   box-shadow: 0 -12px 40px rgba(0,0,0,0.55);
+  transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
+  z-index: 200; /* ABOVE the attachment sheet */
 }
 
-.delete-menu.visible {
+.delete-sheet.active {
   transform: translate(-50%, 0);
 }
+
 
 .sheet-title {
   font-size: 15px;
