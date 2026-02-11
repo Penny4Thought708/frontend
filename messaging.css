@@ -794,6 +794,7 @@
 
 .emoji-picker.hidden {
   display: none !important;
+   opacity:0;
 }
 
 .emoji-picker:not(.hidden) {
