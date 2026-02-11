@@ -240,76 +240,77 @@ window.currentUserAvatar = user.avatar;
 
 
 
-        <!-- ============================================================
-             MESSAGING PANEL (ALWAYS VISIBLE)
-        ============================================================ -->
-        <messaging-panel id="messagingPanel" class="messaging-panel">
+       <!-- ============================================================
+     MESSAGING PANEL (ALWAYS VISIBLE)
+============================================================ -->
+<messaging-panel id="messagingPanel" class="messaging-panel">
 
-          <header class="msg-header">
-            <h2 id="msgHeaderName"></h2>
+  <header class="msg-header">
+    <h2 id="msgHeaderName"></h2>
 
-            <div class="msg-actions">
-              <button id="voiceBtn" type="button">
-                <span class="material-symbols-outlined">mic</span>
-              </button>
+    <div class="msg-actions">
+      <button id="voiceBtn" type="button">
+        <span class="material-symbols-outlined">mic</span>
+      </button>
 
-              <button id="videoBtn" type="button" data-window-open="video-call">
-                <span class="material-symbols-outlined">videocam</span>
-              </button>
+      <button id="videoBtn" type="button" data-window-open="video-call">
+        <span class="material-symbols-outlined">videocam</span>
+      </button>
 
-              <button id="call-debug-toggle" type="button">
-                <span class="material-symbols-outlined">bug_report</span>
-              </button>
-            </div>
-          </header>
+      <button id="call-debug-toggle" type="button">
+        <span class="material-symbols-outlined">bug_report</span>
+      </button>
+    </div>
+  </header>
 
- 
+  <div id="messageWin" class="message-window">
+    <div id="newMessagesPill" class="new-messages-pill hidden">New Messages</div>
 
-          <div id="messageWin" class="message-window">
-       <div id="newMessagesPill" class="new-messages-pill hidden">New Messages</div>
-             <div id="messageEmptyState" class="empty-state">
-              <p>Select a contact to start messaging</p>
-            </div>
+    <div id="messageEmptyState" class="empty-state">
+      <p>Select a contact to start messaging</p>
+    </div>
 
-             <div class="typing-indicator">
-            <div class="typing-bubble"><span></span><span></span><span></span></div>
-          </div>
-          </div>
+    <!-- Typing indicator lives inside the scroll area, at the bottom -->
+    <div id="typingIndicator" class="typing-indicator">
+      <div class="typing-bubble">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
 
-         
+  <div class="recording-indicator">
+    <div class="recording-bubble">
+      <span class="mic-icon">🎤</span>
+      <span class="recording-text">Recording audio…</span>
+      <div class="pulse-ring"></div>
+    </div>
+  </div>
 
-          <div class="recording-indicator">
-            <div class="recording-bubble">
-              <span class="mic-icon">🎤</span>
-              <span class="recording-text">Recording audio…</span>
-              <div class="pulse-ring"></div>
-            </div>
-          </div>
+  <div id="img-viewer" class="img-viewer">
+    <img id="img-viewer-img" alt="Preview" />
+  </div>
 
-          <div id="img-viewer" class="img-viewer">
-            <img id="img-viewer-img" alt="Preview" />
-          </div>
+  <div id="attachmentPreview" class="attachment-preview hidden"></div>
 
-          <div id="attachmentPreview" class="attachment-preview hidden"></div>
+  <form id="text_box_reply" class="composer">
+    <button id="plusBtn" type="button">
+      <span class="material-symbols-outlined">add</span>
+    </button>
 
-          <form id="text_box_reply" class="composer">
-            <button id="plusBtn" type="button">
-              <span class="material-symbols-outlined">add</span>
-            </button>
+    <div id="message_input" class="msg-input" contenteditable="true"></div>
 
-            <div id="message_input" class="msg-input" contenteditable="true"></div>
+    <button id="micBtn" type="button">
+      <span class="material-symbols-outlined">mic</span>
+    </button>
 
-            <button id="micBtn" type="button">
-              <span class="material-symbols-outlined">mic</span>
-            </button>
+    <button type="submit">
+      <span class="material-symbols-outlined">send</span>
+    </button>
 
-            <button type="submit">
-              <span class="material-symbols-outlined">send</span>
-            </button>
+    <input id="attachment_input" type="file" multiple hidden />
+  </form>
 
-            <input id="attachment_input" type="file" multiple hidden />
-          </form>
-<!-- ============================================================
+  <!-- ============================================================
        BOTTOM SHEET
   ============================================================ -->
   <div id="bottomSheet" class="bottom-sheet">
@@ -331,12 +332,17 @@ window.currentUserAvatar = user.avatar;
        GIF PICKER
   ============================================================ -->
   <div id="gifPicker" class="gif-picker hidden">
-    <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+    <input
+      type="text"
+      id="gifSearch"
+      class="gif-search"
+      placeholder="Search GIFs..."
+    />
     <div id="gifResults" class="gif-results"></div>
   </div>
 
-</div>
-        </messaging-panel>
+</messaging-panel>
+
 
 
 
@@ -1425,6 +1431,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
