@@ -661,19 +661,23 @@ window.currentUserAvatar = user.avatar;
 
   </app-shell>
 <!-- Delete menu bottom sheet -->
-<div id="deleteMenuSheet"  delete-menu">
+<div id="deleteMenuSheet" class="delete-sheet">
   <div class="sheet-handle"></div>
   <div class="sheet-title">Delete message?</div>
+
   <button type="button" class="sheet-btn danger" id="btnDeleteForEveryone">
     Delete for everyone
   </button>
+
   <button type="button" class="sheet-btn" id="btnDeleteForMe">
     Delete for me
   </button>
+
   <button type="button" class="sheet-btn secondary" id="btnDeleteCancel">
     Cancel
   </button>
 </div>
+
 
 <!-- Undo toast -->
 <div id="undoToast" class="undo-toast">
@@ -1430,6 +1434,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
