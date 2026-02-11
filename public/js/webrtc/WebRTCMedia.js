@@ -419,6 +419,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   log("attachRemoteTrack:", {
     peerId,
     kind: evt.track.kind,
+    label: evt.track.label,
     readyState: evt.track.readyState,
   });
 
@@ -438,9 +439,88 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   };
 
-  evt.track.onmute   = () => { showAvatar(true); };
-  evt.track.onunmute = () => { showAvatar(false); };
-  evt.track.onended  = () => { showAvatar(true); };
+  evt.track.onmute   = () => showAvatar(true);
+  evt.track.onunmute = () => showAvatar(false);
+  evt.track.onended  = () => {
+    showAvatar(true);
+
+    // If a screen-share track ended, exit stage mode
+    if (evt.track.label.includes("screen")) {
+      log("Screen share track ended — exiting stage mode");
+      exitScreenShareMode();
+    }
+  };
+
+  /* -------------------------------------------------------
+     AUTO‑PROMOTE SCREEN SHARE (Meet‑style)
+     Detects screen-share tracks and promotes sharer to stage
+  ------------------------------------------------------- */
+  const isScreenShare =
+    evt.track.kind === "video" &&
+    evt.track.label &&
+    evt.track.label.toLowerCase().includes("screen");
+
+  if (isScreenShare) {
+    log("Detected SCREEN SHARE track — promoting to stage:", peerId);
+    enterScreenShareMode(peerId);
+  } else {
+    // If this is a normal camera video, ensure we exit screen share mode
+    // ONLY if no other peer is currently sharing
+    const someoneSharing = Object.values(rtcState.remoteStreams).some((s) =>
+      s.getVideoTracks().some((t) =>
+        t.label.toLowerCase().includes("screen")
+      )
+    );
+
+    if (!someoneSharing) {
+      exitScreenShareMode();
+    }
+  }
+
+  /* -----------------------------
+     Remote Video
+  ----------------------------- */
+  if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
+    log("Attaching remote VIDEO to participant:", peerId);
+
+    videoEl.srcObject = remoteStream;
+    videoEl.playsInline = true;
+    videoEl.muted = true; // helps autoplay on mobile
+    videoEl.style.display = "block";
+    videoEl.style.opacity = "1";
+    videoEl.classList.add("show");
+
+    videoEl
+      .play()
+      .then(() => {
+        showAvatar(false);
+        participantEl.classList.add("video-active");
+      })
+      .catch((err) => {
+        log("Remote video play blocked or failed:", err?.name || err);
+      });
+  }
+
+  /* -----------------------------
+     Remote Audio (shared element)
+  ----------------------------- */
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  if (evt.track.kind === "audio" && remoteAudioEl) {
+    log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
+
+    remoteAudioEl.srcObject = remoteStream;
+    remoteAudioEl.playsInline = true;
+    remoteAudioEl.muted = false;
+    remoteAudioEl.volume = 1;
+
+    remoteAudioEl
+      .play()
+      .catch(() => log("Remote audio autoplay blocked"));
+
+    startRemoteSpeakingDetection(remoteStream, participantEl);
+    attachAudioVisualizer(remoteStream, participantEl);
+  }
+}
 
   /* -----------------------------
      Remote Video
@@ -540,7 +620,7 @@ export function cleanupMedia() {
 }
 
 /* -------------------------------------------------------
-   Screen Share Tile Logic (Meet-style stage mode)
+   Screen Share Tile Logic (Meet-style stage mode + animation)
 ------------------------------------------------------- */
 export function enterScreenShareMode(peerId = "local") {
   const grid = document.getElementById("callGrid");
@@ -550,12 +630,19 @@ export function enterScreenShareMode(peerId = "local") {
 
   const tiles = grid.querySelectorAll(".participant");
   tiles.forEach((tile) => {
-    if (tile.dataset.peerId === peerId || tile.dataset.id === peerId) {
-      tile.classList.add("stage");
-      tile.classList.remove("filmstrip");
+    const isSharer =
+      tile.dataset.peerId === peerId || tile.dataset.id === peerId;
+
+    tile.classList.remove("filmstrip", "stage", "presenting");
+
+    if (isSharer) {
+      tile.classList.add("stage", "presenting");
+      tile.classList.add("animate-stage-in");
+      setTimeout(() => tile.classList.remove("animate-stage-in"), 350);
     } else {
       tile.classList.add("filmstrip");
-      tile.classList.remove("stage");
+      tile.classList.add("animate-filmstrip-in");
+      setTimeout(() => tile.classList.remove("animate-filmstrip-in"), 350);
     }
   });
 }
@@ -568,8 +655,29 @@ export function exitScreenShareMode() {
 
   const tiles = grid.querySelectorAll(".participant");
   tiles.forEach((tile) => {
-    tile.classList.remove("stage", "filmstrip");
+    tile.classList.remove("stage", "filmstrip", "presenting");
+    tile.classList.add("animate-stage-out");
+    setTimeout(() => tile.classList.remove("animate-stage-out"), 350);
   });
+}
+function showLocalPip() {
+  const pip = document.getElementById("localPip");
+  const pipVideo = document.getElementById("localPipVideo");
+
+  if (!pip || !pipVideo) return;
+
+  pipVideo.srcObject = rtcState.localStream;
+  pipVideo.play().catch(() => {});
+  pip.classList.remove("hidden");
+  pip.classList.add("show");
+}
+
+function hideLocalPip() {
+  const pip = document.getElementById("localPip");
+  if (!pip) return;
+
+  pip.classList.remove("show");
+  setTimeout(() => pip.classList.add("hidden"), 250);
 }
 
 /* -------------------------------------------------------
@@ -605,6 +713,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
