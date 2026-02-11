@@ -74,7 +74,7 @@ export class WebRTCController {
     this.onVoicemailPrompt = null;
     this.onScreenShareStarted = null;
     this.onScreenShareStopped = null;
-
+    this.onLocalStream = null;
     this._bindSocketEvents();
 
     // Wire call buttons
@@ -143,8 +143,7 @@ export class WebRTCController {
   async startCall(peerId, audioOnly) {
     return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
-
- /* ---------------------------------------------------
+/* ---------------------------------------------------
    Outgoing Call (Hybrid Google‑Meet + Discord Upgrade)
 --------------------------------------------------- */
 async _startCallInternal(peerId, audioOnly, { relayOnly }) {
@@ -163,26 +162,15 @@ async _startCallInternal(peerId, audioOnly, { relayOnly }) {
 
   const pc = await this._createPC({ relayOnly });
 
-  // 🔹 Ensure local media is acquired with video when not audioOnly
+  // Acquire local media
   const stream = await getLocalMedia(true, !audioOnly);
   this.localStream = stream;
   rtcState.localStream = stream;
 
-  // 🔹 Explicitly bind to controller's localVideo element if present
-  if (stream && this.localVideo) {
-    this.localVideo.srcObject = stream;
-    this.localVideo.muted = true;
-    this.localVideo.playsInline = true;
-    this.localVideo.classList.add("show");
+  // 🔥 Notify CallUI so it can bind the stream to #localVideo
+  this.onLocalStream?.(stream);
 
-    const callWindow = document.getElementById("callWindow");
-    callWindow?.classList.remove("voice-only");
-
-    this.localVideo.play().catch(() => {
-      setTimeout(() => this.localVideo.play().catch(() => {}), 50);
-    });
-  }
-
+  // Add tracks to PeerConnection
   if (stream) {
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
   } else {
@@ -237,6 +225,7 @@ async _startCallInternal(peerId, audioOnly, { relayOnly }) {
 
   ringback?.play().catch(() => {});
 }
+
 
   /* ---------------------------------------------------
      Resume after restore
@@ -847,6 +836,7 @@ async switchCamera() {
     });
   }
 }
+
 
 
 
