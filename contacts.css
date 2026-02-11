@@ -209,12 +209,7 @@
    CALL LOG — BASE LAYOUT
 ============================================================ */
 
-#dir-history {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-}
+
 
 .con-input {
   width: 100%;
