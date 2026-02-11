@@ -734,38 +734,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 /* ============================================================
-   DIRECTORY BOTTOM SHEET — FREE DRAG + SNAP + SWIPE-TO-CLOSE
-   ============================================================ */
+   DIRECTORY BOTTOM SHEET — MOBILE ONLY
+============================================================ */
 
 (function () {
+
+  // ⭐ Only run this on mobile screens
+  if (window.innerWidth > 900) {
+    console.log("Bottom sheet disabled on desktop");
+    return;
+  }
+
   const sheet = document.getElementById("directoryPanel");
   if (!sheet) return;
 
-  const railHeight = 60; // bottom rail height
-  const minY = 0;        // fully expanded
-  const midY = window.innerHeight * 0.30; // 70% height (B1)
-  const maxY = window.innerHeight - railHeight; // fully closed
+  const railHeight = 60;
+  const minY = 0;
+  const midY = window.innerHeight * 0.30; 
+  const maxY = window.innerHeight - railHeight;
 
   let startY = 0;
-  let currentY = maxY; // start closed
+  let currentY = maxY;
   let dragging = false;
   let velocity = 0;
   let lastY = 0;
   let lastTime = 0;
 
-  // Apply initial closed position
+  // Start closed on mobile
   sheet.style.transform = `translateY(${maxY}px)`;
 
-  /* -------------------------------
-     Utility: Clamp value
-  --------------------------------*/
   function clamp(v, min, max) {
     return Math.max(min, Math.min(v, max));
   }
 
-  /* -------------------------------
-     Start Drag (touch or mouse)
-  --------------------------------*/
   function startDrag(clientY) {
     dragging = true;
     startY = clientY - currentY;
@@ -774,9 +775,6 @@ document.addEventListener("DOMContentLoaded", () => {
     sheet.style.transition = "none";
   }
 
-  /* -------------------------------
-     During Drag
-  --------------------------------*/
   function onDrag(clientY) {
     if (!dragging) return;
 
@@ -784,7 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const deltaY = clientY - lastY;
     const deltaTime = now - lastTime;
 
-    velocity = deltaY / deltaTime; // px per ms
+    velocity = deltaY / deltaTime;
     lastY = clientY;
     lastTime = now;
 
@@ -792,16 +790,12 @@ document.addEventListener("DOMContentLoaded", () => {
     sheet.style.transform = `translateY(${currentY}px)`;
   }
 
-  /* -------------------------------
-     End Drag → Snap to nearest height (F1)
-  --------------------------------*/
   function endDrag() {
     if (!dragging) return;
     dragging = false;
 
     sheet.style.transition = "transform .28s cubic-bezier(.17,.89,.32,1.49)";
 
-    // Velocity-based flick close
     if (velocity > 0.8) {
       currentY = maxY;
       sheet.style.transform = `translateY(${maxY}px)`;
@@ -809,20 +803,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Snap logic (F1)
-    const threshold1 = maxY * 0.30; // close
-    const threshold2 = maxY * 0.85; // full
+    const threshold1 = maxY * 0.30;
+    const threshold2 = maxY * 0.85;
 
     let targetY;
 
     if (currentY > threshold2) {
-      targetY = maxY; // close
+      targetY = maxY;
       sheet.classList.remove("active");
     } else if (currentY < threshold1) {
-      targetY = minY; // full
+      targetY = minY;
       sheet.classList.add("active");
     } else {
-      targetY = midY; // settle at 70%
+      targetY = midY;
       sheet.classList.add("active");
     }
 
@@ -830,9 +823,6 @@ document.addEventListener("DOMContentLoaded", () => {
     sheet.style.transform = `translateY(${currentY}px)`;
   }
 
-  /* -------------------------------
-     Event Bindings (Touch + Mouse)
-  --------------------------------*/
   sheet.addEventListener("touchstart", (e) => startDrag(e.touches[0].clientY));
   sheet.addEventListener("touchmove", (e) => onDrag(e.touches[0].clientY));
   sheet.addEventListener("touchend", endDrag);
@@ -841,9 +831,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("mousemove", (e) => onDrag(e.clientY));
   window.addEventListener("mouseup", endDrag);
 
-  /* -------------------------------
-     Programmatic Open (Contacts button)
-  --------------------------------*/
   const contactBtn = document.getElementById("contact_widget");
   if (contactBtn) {
     contactBtn.addEventListener("click", () => {
@@ -853,22 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* -------------------------------
-     OPTIONAL: Tap outside to close
-     (Uncomment if you want it)
-  --------------------------------*/
-  /*
-  const backdrop = document.getElementById("pickerBackdrop");
-  if (backdrop) {
-    backdrop.addEventListener("click", () => {
-      sheet.classList.remove("active");
-      currentY = maxY;
-      sheet.style.transform = `translateY(${maxY}px)`;
-    });
-  }
-  */
 })();
-
 
 </script>
 
@@ -1575,6 +1547,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
