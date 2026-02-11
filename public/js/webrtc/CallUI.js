@@ -78,22 +78,26 @@ rtc.onLocalStream = (stream) => {
   localVideo.playsInline = true;
   localVideo.classList.add("show");
 
-  // Remove voice-only mode if video is active
+  // 🔥 clear the initial hidden inline style
+  localVideo.style.display = "block";
+  localVideo.style.opacity = "1";
+
   document.getElementById("callWindow")?.classList.remove("voice-only");
 
-  // Autoplay reliability
   localVideo.play().catch(() => {
     setTimeout(() => localVideo.play().catch(()=>{}), 50);
   });
 };
 
-  // 🔧 Ensure local preview is always visible when we already have a stream
-  if (rtc.localStream && localVideo) {
-    localVideo.srcObject = rtc.localStream;
-    localVideo.muted = true;
-    localVideo.playsInline = true;
-    localVideo.classList.add("show");
-  }
+if (rtc.localStream && localVideo) {
+  localVideo.srcObject = rtc.localStream;
+  localVideo.muted = true;
+  localVideo.playsInline = true;
+  localVideo.classList.add("show");
+  localVideo.style.display = "block";
+  localVideo.style.opacity = "1";
+}
+
 
   /* -------------------------------------------------------
      TIMER
@@ -903,6 +907,7 @@ rtc.onLocalStream = (stream) => {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
