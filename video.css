@@ -12,40 +12,29 @@
   opacity: 0;
   pointer-events: none;
   transform: scale(0.96);
-  transform-origin: 90% 10%; /* approximate position of call button */
-  transition:
-    opacity var(--med),
-    transform var(--med);
+  transform-origin: 90% 10%;
+  transition: opacity var(--med), transform var(--med);
 }
 
-/* global .hidden should be display:none; this keeps behavior consistent */
 .call-window.hidden {
   display: none;
 }
 
-/* visible state (JS must remove .hidden) */
 .call-window.is-open {
-display: flex;
-    opacity: 1;
-    z-index: 9999999;
-    pointer-events: auto;
-    transform: scale(1);
+  display: flex;
+  opacity: 1;
+  z-index: 9999999;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
-/* opening burst */
 .call-window.call-opening {
   animation: callExpand var(--med);
 }
 
 @keyframes callExpand {
-  0% {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 /* ============================================================
@@ -58,9 +47,7 @@ display: flex;
   backdrop-filter: blur(var(--blur-heavy));
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
-  box-shadow:
-    0 0 32px rgba(0,0,0,0.7),
-    var(--accent-glow);
+  box-shadow: 0 0 32px rgba(0,0,0,0.7), var(--accent-glow);
   display: grid;
   grid-template-rows: 1fr auto auto;
   overflow: hidden;
@@ -77,6 +64,7 @@ display: flex;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   align-items: stretch;
+  transition: grid-template-columns .25s ease;
 }
 
 .participant {
@@ -86,47 +74,26 @@ display: flex;
   background: var(--bg-3);
   border: 1px solid var(--border);
   isolation: isolate;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform .25s ease, opacity .25s ease;
 }
 
 .participant.local {
   box-shadow: 0 0 0 1px rgba(77,163,255,0.4);
 }
-/* Voice activity glow (Discord-style) */
+
+/* Voice activity glow */
 .participant.speaking {
   box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
-  transition: box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.participant {
-  transition: border-color 200ms ease, box-shadow 200ms ease;
-}
-
+/* Media wrapper */
 .media-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 160px;
   background: #000;
-}
-/* Screen share stage mode */
-#callGrid.screen-share-mode {
-  grid-template-columns: 1fr 200px;
-  grid-template-rows: 1fr;
-}
-
-.participant.stage {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  height: 100%;
-}
-
-.participant.filmstrip {
-  grid-column: 2;
-  width: 100%;
-  height: 120px;
-  opacity: 0.9;
 }
 
 .media-wrapper video {
@@ -135,7 +102,86 @@ display: flex;
   object-fit: cover;
 }
 
-/* avatar overlay */
+/* ============================================================
+   SCREEN SHARE — STAGE + FILMSTRIP (Meet-style)
+============================================================ */
+#callGrid.screen-share-mode {
+  grid-template-columns: 1fr 220px;
+}
+
+.participant.stage {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+}
+
+.participant.filmstrip {
+  grid-column: 2;
+  height: 140px;
+  opacity: 0.9;
+  transform: scale(.92);
+}
+
+/* Stage animate-in */
+.animate-stage-in {
+  animation: stageIn .35s ease forwards;
+}
+
+@keyframes stageIn {
+  0% { transform: scale(.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Filmstrip animate-in */
+.animate-filmstrip-in {
+  animation: filmstripIn .35s ease forwards;
+}
+
+@keyframes filmstripIn {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Stage animate-out */
+.animate-stage-out {
+  animation: stageOut .35s ease forwards;
+}
+
+@keyframes stageOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(.85); opacity: 0; }
+}
+
+/* ============================================================
+   PRESENTING BADGE
+============================================================ */
+.presenting-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(255,255,255,0.85);
+  color: #000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.participant.presenting .presenting-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   AVATAR OVERLAY
+============================================================ */
 .avatar-wrapper {
   position: absolute;
   inset: 0;
@@ -168,10 +214,13 @@ display: flex;
 }
 
 @keyframes voicePulse {
-  0%   { transform: scale(0.7); opacity: 0.9; }
+  0% { transform: scale(0.7); opacity: 0.9; }
   100% { transform: scale(1.4); opacity: 0; }
 }
 
+/* ============================================================
+   NAME TAG
+============================================================ */
 .name-tag {
   position: absolute;
   left: 10px;
@@ -183,8 +232,45 @@ display: flex;
   font-size: 13px;
 }
 
-/* voice-only mode: hide video, keep avatar */
-.call-window.voice-only .media-wrapper video {
+/* ============================================================
+   CAMERA FLIP ANIMATION
+============================================================ */
+#localVideo.camera-flip-anim {
+  animation: flipCam .35s ease;
+}
+
+@keyframes flipCam {
+  0% { transform: scaleX(1); opacity: 1; }
+  40% { transform: scaleX(0); opacity: 0.4; }
+  60% { transform: scaleX(0); opacity: 0.4; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+
+/* ============================================================
+   LOCAL PIP WINDOW (Meet-style)
+============================================================ */
+.local-pip {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 160px;
+  height: 90px;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  opacity: 0;
+  transform: scale(.85);
+  transition: opacity .25s ease, transform .25s ease;
+  z-index: 999;
+}
+
+.local-pip.show {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.local-pip.hidden {
   display: none;
 }
 
@@ -218,6 +304,7 @@ display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px 16px;
+  transition: opacity .25s ease;
 }
 
 .control-btn {
@@ -229,15 +316,7 @@ display: flex;
   justify-content: center;
   background: var(--glass);
   border: 1px solid var(--border);
-  transition:
-    background var(--fast),
-    transform var(--fast),
-    box-shadow var(--fast),
-    color var(--fast);
-}
-
-.control-btn .material-symbols-outlined {
-  font-size: 22px;
+  transition: background var(--fast), transform var(--fast), box-shadow var(--fast), color var(--fast);
 }
 
 .control-btn:hover {
@@ -245,7 +324,6 @@ display: flex;
   transform: translateY(-1px);
 }
 
-/* primary danger buttons */
 #end-call.control-btn,
 #decline-call.control-btn {
   background: #ff4b5c;
@@ -258,16 +336,10 @@ display: flex;
   box-shadow: 0 0 18px rgba(255,75,92,0.6);
 }
 
-/* inbound vs active modes */
-.call-window.inbound-mode .active-only {
-  display: none;
-}
+.call-window.inbound-mode .active-only { display: none; }
+.call-window.active-mode .inbound-only { display: none; }
 
-.call-window.active-mode .inbound-only {
-  display: none;
-}
-
-/* more controls */
+/* More controls menu */
 .more-controls {
   position: relative;
 }
@@ -293,25 +365,17 @@ display: flex;
   gap: 8px;
   font-size: 14px;
   background: transparent;
-  border-radius: 0;
   border: none;
   color: var(--text);
-  text-align: left;
-}
-
-.more-controls-menu button .material-symbols-outlined {
-  font-size: 20px;
 }
 
 .more-controls-menu button:hover {
   background: var(--glass);
 }
 
-/* active states */
 #ai-noise-toggle.active,
 #record-call.active {
   background: rgba(77,163,255,0.16);
-  border-radius: 0;
 }
 
 /* ============================================================
@@ -333,54 +397,17 @@ display: flex;
   background: rgba(0,0,0,0.6);
 }
 
-/* quality colors */
 .quality-indicator[data-level="excellent"] { color: #4cff8f; }
 .quality-indicator[data-level="good"]      { color: #a4ff4c; }
 .quality-indicator[data-level="fair"]      { color: #ffd24c; }
 .quality-indicator[data-level="poor"]      { color: #ff9b4c; }
 .quality-indicator[data-level="bad"]       { color: #ff4b5c; }
 
-.debug-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.6);
-}
-
 /* ============================================================
-   LIGHT MODE VARIANT
-============================================================ */
-body.light-mode .call-window {
-  background: radial-gradient(circle at top left, #f5f7ff 0, #dde3f5 45%, #cfd6ea 100%);
-}
-
-body.light-mode .call-body {
-  background: rgba(255,255,255,0.9);
-  border-color: rgba(0,0,0,0.08);
-}
-
-body.light-mode .participant {
-  background: #f3f5ff;
-  border-color: rgba(0,0,0,0.06);
-}
-
-body.light-mode .call-top-info {
-  background: linear-gradient(to right, rgba(255,255,255,0.9), transparent);
-}
-
-body.light-mode .quality-indicator {
-  background: rgba(255,255,255,0.9);
-}
-
-/* ============================================================
-   MOBILE CALL — GOOGLE MEET BEHAVIOR
+   MOBILE — GOOGLE MEET BEHAVIOR
 ============================================================ */
 @media (max-width: 900px) {
 
-  /* Fullscreen call body */
   .call-body {
     width: 100vw !important;
     height: 100vh !important;
@@ -391,7 +418,6 @@ body.light-mode .quality-indicator {
     overflow: hidden;
   }
 
-  /* Remove grid, use stacked layout */
   .call-grid {
     padding: 0 !important;
     gap: 0 !important;
@@ -399,23 +425,20 @@ body.light-mode .quality-indicator {
     flex-direction: row;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    scroll-snap-type: x mandatory;
     overflow-x: auto;
+    scroll-snap-type: x mandatory;
   }
 
-  /* Each participant = full screen slide */
   .participant {
     flex: 0 0 100%;
     width: 100%;
     height: 100%;
     scroll-snap-align: center;
-    position: relative;
     border-radius: 0 !important;
     border: none !important;
   }
 
-  /* Local video PIP */
+  /* Local PIP (mobile) */
   .participant.local {
     position: absolute;
     width: 120px;
@@ -425,7 +448,7 @@ body.light-mode .quality-indicator {
     border-radius: 14px !important;
     overflow: hidden;
     z-index: 20;
-    animation: pipFloat 0.35s ease-out;
+    animation: pipFloat .35s ease-out;
   }
 
   @keyframes pipFloat {
@@ -433,7 +456,6 @@ body.light-mode .quality-indicator {
     100% { transform: scale(1) translateY(0); opacity: 1; }
   }
 
-  /* Tap-to-show controls */
   .call-controls.hidden {
     opacity: 0;
     pointer-events: none;
@@ -449,10 +471,8 @@ body.light-mode .quality-indicator {
     backdrop-filter: blur(10px);
     border-radius: 999px;
     padding: 10px 16px;
-    transition: opacity .25s ease;
   }
 
-  /* Top info bar overlay */
   .call-top-info {
     position: absolute;
     top: 0;
@@ -463,7 +483,6 @@ body.light-mode .quality-indicator {
     background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
   }
 
-  /* Name tag reposition */
   .name-tag {
     top: 10px;
     left: 10px;
@@ -472,47 +491,18 @@ body.light-mode .quality-indicator {
     padding: 3px 8px;
     font-size: 12px;
   }
-.media-wrapper video.zoomable {
-  transform-origin: center center;
-  transition: transform 0.1s ease-out;
-}
-.participant.local.draggable {
-  touch-action: none;
-  transition: transform 0.15s ease-out;
-}
-/* LANDSCAPE MODE */
 
-  .call-grid.landscape-mode {
-    flex-direction: row;
+  .media-wrapper video.zoomable {
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
   }
 
-  .call-grid.landscape-mode .participant {
-    flex: 1 0 50%;
+  .participant.local.draggable {
+    touch-action: none;
+    transition: transform 0.15s ease-out;
   }
 
-  .call-grid.screen-share-mode {
-    flex-direction: column;
-  }
-
-  .participant.stage {
-    flex: 1 0 auto;
-    width: 100%;
-    height: 100%;
-  }
-
-  .participant.filmstrip {
-    display: none !important;
-  }
-
-
-  .participant.local {
-    width: 100px;
-    height: 150px;
-    bottom: 20px;
-    right: 20px;
-  }
-
-  /* Screen share mode */
+  /* Mobile screen share */
   .call-grid.screen-share-mode {
     flex-direction: column;
   }
