@@ -505,21 +505,21 @@ export class WebRTCController {
     return enabled;
   }
 
-  /* ---------------------------------------------------
-     Camera toggle
-  --------------------------------------------------- */
-  switchCamera() {
-    const stream = this.localStream || rtcState.localStream;
-    if (!stream) return;
+/* ---------------------------------------------------
+   Camera Flip (front/back) — delegates to WebRTCMedia.js
+--------------------------------------------------- */
+async switchCamera() {
+  try {
+    const ok = await import("./WebRTCMedia.js")
+      .then(m => m.flipLocalCamera(this));
 
-    const videoTracks = stream.getVideoTracks();
-    if (!videoTracks.length) return;
-
-    const enabled = videoTracks.some((t) => t.enabled);
-    videoTracks.forEach((t) => (t.enabled = !enabled));
-
-    return enabled;
+    return ok === true ? false : false; 
+    // Always return "camera ON" because flip ≠ disable
+  } catch (err) {
+    console.error("[WebRTC] switchCamera flip failed:", err);
+    return false;
   }
+}
 
   /* ---------------------------------------------------
      Screen Share (Hybrid Google‑Meet + Discord)
@@ -831,6 +831,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
