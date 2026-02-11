@@ -212,15 +212,18 @@
 
 
 .con-input {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-glass);
-  color: var(--text);
-  font-size: 14px;
-  outline: none;
-  transition: border .2s ease, background .2s ease;
+    width: 80%;
+    margin: 15px;
+    position: relative;
+    left: 25px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border-soft);
+    background: var(--bg-glass);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border .2s ease, background .2s ease;
 }
 
 .con-input:focus {
@@ -261,10 +264,17 @@
 /* ============================================================
    CALL ITEM
 ============================================================ */
-
+.con-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 460px;
+}
 .call-log-item {
-  position: relative;
-  overflow: hidden;
+     position: relative;
+    overflow: hidden;
+    display: grid;
+    margin: 10px;
 }
 
 .call-swipe-wrapper {
