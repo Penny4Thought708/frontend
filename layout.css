@@ -351,41 +351,8 @@ width: 520px;
   padding: 0;
 }
 
-.con-list li, #callLogList li  {
-  padding: 8px 10px;
-  border-radius: 10px;
-  margin-bottom: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition:
-    background 0.18s ease,
-    transform 0.12s ease,
-    box-shadow 0.18s ease;
-}
 
-.con-list li:hover {
-  background: var(--bg-glass);
-  transform: translateY(-1px);
-  box-shadow: var(--glow-soft);
-}
 
-.con-list li.active {
-  background: var(--accent-soft);
-  box-shadow: var(--glow-soft);
-}
-
-.con-input {
-  width: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-glass);
-  color: var(--text);
-  font-size: 13px;
-  margin-bottom: 6px;
-}
 /* ============================================================
    UNAVAILABLE TOAST — NEON VAPOR
    ============================================================ */
