@@ -152,38 +152,33 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
-function openWindowAnimated() {
-  if (!win) return;
 
-  // Prevent double-open flicker
-  if (win.classList.contains("is-open")) return;
+  function openWindowAnimated() {
+    if (!win) return;
+    if (win.classList.contains("is-open")) return;
 
-  win.classList.remove("hidden");
-  win.classList.add("is-open");
-  win.setAttribute("aria-hidden", "false");
+    win.classList.remove("hidden");
+    win.classList.add("is-open");
+    win.setAttribute("aria-hidden", "false");
 
-  win.classList.add("call-opening");
-  setTimeout(() => win.classList.remove("call-opening"), 300);
+    win.classList.add("call-opening");
+    setTimeout(() => win.classList.remove("call-opening"), 300);
 
-  document.body.classList.add("panel-open");
-}
+    document.body.classList.add("panel-open");
+  }
 
+  function hideWindow() {
+    if (!win) return;
+    if (!win.classList.contains("is-open")) return;
 
-function hideWindow() {
-  if (!win) return;
+    win.classList.remove("is-open");
+    win.setAttribute("aria-hidden", "true");
 
-  if (!win.classList.contains("is-open")) return;
-
-  win.classList.remove("is-open");
-  win.setAttribute("aria-hidden", "true");
-
-  setTimeout(() => {
-    win.classList.add("hidden");
-    document.body.classList.remove("panel-open");
-  }, 260);
-}
-
-
+    setTimeout(() => {
+      win.classList.add("hidden");
+      document.body.classList.remove("panel-open");
+    }, 260);
+  }
 
   /* -------------------------------------------------------
      TOAST HELPERS
@@ -259,7 +254,6 @@ function hideWindow() {
     showToast(toastUnavailable);
   }
 
-  // Expose for controller callbacks
   window.showUnavailableToastInternal = showUnavailableToastInternal;
   window.showSecondaryIncomingToastInternal = showSecondaryIncomingToastInternal;
 
@@ -474,9 +468,167 @@ function hideWindow() {
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
 
+  /* -------------------------------------------------------
+     MOBILE VIDEO BEHAVIOR — GOOGLE MEET STYLE
+  ------------------------------------------------------- */
+
+  (function initMobileCallBehavior() {
+    if (window.innerWidth > 900) return;
+    if (!win || !grid) return;
+
+    const callWindow = win;
+    const callGrid   = grid;
+    const controls   = document.querySelector(".call-controls");
+    let participants = Array.from(callGrid.querySelectorAll(".participant"));
+
+    let hideTimer = null;
+
+    // Auto-hide controls
+    function resetAutoHide() {
+      if (!controls) return;
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        controls.classList.add("hidden");
+      }, 3000);
+    }
+
+    // Tap to show/hide controls (ignore taps on controls themselves)
+    callWindow.addEventListener("click", (e) => {
+      if (controls && e.target.closest(".call-controls")) return;
+      if (!controls) return;
+
+      controls.classList.toggle("hidden");
+      if (!controls.classList.contains("hidden")) {
+        resetAutoHide();
+      }
+    });
+
+    if (controls) resetAutoHide();
+
+    // Swipe left/right to switch participants
+    let startX = 0;
+    let scrollStart = 0;
+
+    callGrid.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      scrollStart = callGrid.scrollLeft;
+    });
+
+    callGrid.addEventListener("touchmove", (e) => {
+      if (e.touches.length !== 1) return;
+      const dx = startX - e.touches[0].clientX;
+      callGrid.scrollLeft = scrollStart + dx;
+    });
+
+    // Active speaker auto-fullscreen
+    window.setActiveSpeaker = function (participantId) {
+      participants = Array.from(callGrid.querySelectorAll(".participant"));
+      const index = participants.findIndex(p => p.dataset.id === participantId);
+      if (index >= 0) {
+        callGrid.scrollTo({
+          left: index * callGrid.clientWidth,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    // Screen share mode hooks
+    window.enableScreenShareMode = function () {
+      callGrid.classList.add("screen-share-mode");
+    };
+
+    window.disableScreenShareMode = function () {
+      callGrid.classList.remove("screen-share-mode");
+    };
+
+    // Double-tap to switch camera
+    let lastTap = 0;
+    callWindow.addEventListener("touchend", (e) => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        rtc.switchCamera?.();
+      }
+      lastTap = now;
+    });
+
+    // Pinch-to-zoom on active video
+    function enablePinchZoom() {
+      const activeVideo =
+        callGrid.querySelector(".participant.active .media-wrapper video") ||
+        callGrid.querySelector(".participant .media-wrapper video");
+
+      if (!activeVideo) return;
+
+      activeVideo.classList.add("zoomable");
+
+      let initialDistance = 0;
+      let scale = 1;
+
+      activeVideo.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 2) {
+          const dx = e.touches[0].clientX - e.touches[1].clientX;
+          const dy = e.touches[0].clientY - e.touches[1].clientY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (!initialDistance) initialDistance = distance;
+
+          scale = Math.min(Math.max(distance / initialDistance, 1), 3);
+          activeVideo.style.transform = `scale(${scale})`;
+        }
+      });
+
+      activeVideo.addEventListener("touchend", () => {
+        if (scale <= 1.05) {
+          scale = 1;
+          activeVideo.style.transform = "scale(1)";
+        }
+        initialDistance = 0;
+      });
+    }
+
+    enablePinchZoom();
+
+    // Draggable PIP (local participant)
+    const pip = callGrid.querySelector(".participant.local");
+    if (pip) {
+      pip.classList.add("draggable");
+
+      let offsetX = 0, offsetY = 0;
+      let startX2 = 0, startY2 = 0;
+
+      pip.addEventListener("touchstart", (e) => {
+        const rect = pip.getBoundingClientRect();
+        startX2 = e.touches[0].clientX;
+        startY2 = e.touches[0].clientY;
+        offsetX = startX2 - rect.left;
+        offsetY = startY2 - rect.top;
+      });
+
+      pip.addEventListener("touchmove", (e) => {
+        const x = e.touches[0].clientX - offsetX;
+        const y = e.touches[0].clientY - offsetY;
+
+        pip.style.left = `${x}px`;
+        pip.style.top  = `${y}px`;
+      });
+    }
+
+    // Auto-switch layout on rotation
+    function updateLayout() {
+      if (window.innerWidth > window.innerHeight) {
+        callGrid.classList.add("landscape-mode");
+      } else {
+        callGrid.classList.remove("landscape-mode");
+      }
+    }
+
+    window.addEventListener("resize", updateLayout);
+    updateLayout();
+  })();
+
   console.log("[CallUI] Initialized");
 }
-
 
 
 
