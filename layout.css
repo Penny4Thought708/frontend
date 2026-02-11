@@ -1007,6 +1007,24 @@ button:hover .material-symbols-outlined {
   0%, 100% { height: 6px; opacity: 0.6; }
   50% { height: 18px; opacity: 1; }
 }
+/* Make custom layout components behave like real block containers */
+app-shell,
+app-main,
+app-header,
+app-rail,
+app-workspace,
+directory-panel,
+messaging-panel,
+call-window,
+floating-window,
+app-modals,
+app-toasts,
+app-footer {
+  display: block;
+  position: relative;
+}
+
+
 /* ============================================================
    GLOBAL MOBILE LAYOUT — FIXED + CLEANED
 ============================================================ */
@@ -1100,18 +1118,16 @@ button:hover .material-symbols-outlined {
     overflow: visible;
   }
 
-  /* DIRECTORY PANEL — now sits UNDER the rail */
+@media (max-width: 900px) {
   directory-panel.directory-panel {
     position: fixed;
     top: 0;
     left: 0;
-    bottom: 60px; /* sits under rail */
-    height: auto;
-
+    bottom: 60px; /* sits above rail */
     width: 100%;
+    height: auto;
     background: var(--bg-panel);
     z-index: 999;
-
     transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
   }
@@ -1119,6 +1135,8 @@ button:hover .material-symbols-outlined {
   directory-panel.directory-panel.active {
     transform: translateX(0);
   }
+}
+
 
   /* MESSAGING PANEL */
   messaging-panel.messaging-panel {
