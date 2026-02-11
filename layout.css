@@ -1069,80 +1069,8 @@ html, body,
   transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top left, #1b2338 0, #05070b 45%, #020308 100%);
-  color: var(--text);
-}
 
-/* ============================================================
-   DESKTOP LAYOUT (UNCHANGED)
-============================================================ */
 
-app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-app-header.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 18px;
-  background: linear-gradient(120deg, rgba(10, 12, 20, 0.96), rgba(18, 22, 36, 0.96));
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-app-main {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-
-.app-workspace {
-  display: flex;
-  flex-direction: row;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.app-rail {
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
-  background: linear-gradient(180deg, rgba(10, 12, 20, 0.98), rgba(8, 10, 16, 0.98));
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 6px;
-  gap: 6px;
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.6);
-  position: relative;
-  z-index: 20;
-}
-
-.directory-panel {
-  width: 520px;
-  min-width: 320px;
-  max-width: 520px;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4);
-  position: relative;
-  z-index: 10;
-}
-
-/* Messaging panel, call window, floating windows, modals, toasts remain unchanged */
 
 /* ============================================================
    MOBILE LAYOUT — CLEAN, CORRECT, PRODUCTION READY
@@ -1240,11 +1168,17 @@ app-main {
      DIRECTORY PANEL → BOTTOM SHEET (70vh, GLASS BLUR)
   ============================================================ */
 
-  directory-panel.directory-panel {
+ directory-panel.directory-panel {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 60px; /* stops above rail */
+
+    /* ⭐ FIX: Make it fit the screen */
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
     height: 70vh;
     max-height: calc(100vh - 60px);
 
@@ -1261,7 +1195,8 @@ app-main {
 
     z-index: 999;
     overflow: hidden;
-  }
+}
+
 
   /* DRAG HANDLE INDICATOR */
   directory-panel.directory-panel::before {
