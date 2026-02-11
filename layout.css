@@ -1013,32 +1013,57 @@ button:hover .material-symbols-outlined {
 
 @media (max-width: 900px) {
 
-  /* App Shell */
-  app-main {
+  /* HEADER */
+  .app-header {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+    text-align: center;
   }
 
-  /* Header collapses */
-  .app-header {
-    flex-wrap: wrap;
-    padding: 10px 12px;
-    gap: 10px;
+  .header-left {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .brand-logo {
+    font-size: 26px;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
   }
 
   .header-nav {
-    order: 3;
+    order: 2;
     width: 100%;
+    display: flex;
     justify-content: space-around;
+    padding: 6px 0;
   }
 
   .header-right {
-    order: 2;
+    order: 3;
     width: 100%;
-    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
   }
 
-  /* Rail becomes bottom bar */
+  .header-search {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  /* FOOTER HIDDEN */
+  app-footer.site-footer {
+    display: none;
+  }
+
+  /* RAIL → BOTTOM BAR */
   app-rail.app-rail {
     position: fixed;
     bottom: 0;
@@ -1055,7 +1080,6 @@ button:hover .material-symbols-outlined {
     align-items: center;
 
     border-top: 1px solid var(--border);
-    border-right: none;
     background: var(--bg-panel);
     z-index: 200;
   }
@@ -1069,25 +1093,24 @@ button:hover .material-symbols-outlined {
     height: 40px;
   }
 
-@media (max-width: 900px) {
-
+  /* WORKSPACE */
   app-workspace.app-workspace {
     flex-direction: column;
     height: calc(100vh - 60px);
-    overflow: visible; /* FIX */
+    overflow: visible;
   }
 
+  /* DIRECTORY PANEL UNDER RAIL */
   directory-panel.directory-panel {
     position: fixed;
     top: 0;
     left: 0;
+    bottom: 60px; /* sits under rail */
+    height: auto;
 
     width: 100%;
-    height: 100%;
-    max-width: none;
-
     background: var(--bg-panel);
-    z-index: 999; /* FIX */
+    z-index: 999;
 
     transform: translateX(-100%);
     transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
@@ -1096,9 +1119,8 @@ button:hover .material-symbols-outlined {
   directory-panel.directory-panel.active {
     transform: translateX(0);
   }
-}
 
-  /* Messaging panel becomes full width */
+  /* MESSAGING PANEL */
   messaging-panel.messaging-panel {
     width: 100%;
     max-width: 100%;
@@ -1106,7 +1128,7 @@ button:hover .material-symbols-outlined {
     border-top: 1px solid var(--border);
   }
 
-  /* Call window becomes full-screen */
+  /* CALL WINDOW */
   call-window.call-window {
     position: fixed;
     inset: 0;
@@ -1115,7 +1137,7 @@ button:hover .material-symbols-outlined {
     border-radius: 0;
   }
 
-  /* Floating windows become centered sheets */
+  /* FLOATING WINDOWS */
   floating-window.floating-window {
     width: 95%;
     max-height: 90vh;
@@ -1126,36 +1148,22 @@ button:hover .material-symbols-outlined {
     transform: translate(-50%, -50%);
   }
 
-  /* Modals scale for mobile */
-  modal.modal-1,
-  modal.voicemail-modal {
-    width: 90%;
-    max-width: 380px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  /* Toasts reposition */
+  /* TOASTS */
   app-toasts {
     bottom: 80px;
   }
 }
 
 @media (max-width: 600px) {
-
-  /* Header nav becomes icons or collapses */
   .header-nav a {
     font-size: 14px;
     padding: 4px 6px;
   }
 
-  /* Directory list spacing */
   .con-list {
     padding: 6px;
   }
 
-  /* Call window grid stacks */
   .call-grid {
     grid-template-columns: 1fr;
   }
