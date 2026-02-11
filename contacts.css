@@ -1,54 +1,40 @@
 /* ============================================================
-   CONTACT CARD — NEBULA‑SYNTH STYLE
+   CONTACT CARD — BASE
 ============================================================ */
 
 .contact-card {
   display: flex;
   align-items: center;
   gap: 14px;
-
-  padding: 12px 16px;
-  margin-bottom: 10px;
-
-  background:
-    linear-gradient(145deg, rgba(15,15,30,0.96), rgba(10,10,20,0.98));
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-
-  box-shadow:
-    0 10px 22px rgba(0,0,0,0.45),
-    0 0 0 1px rgba(255,255,255,0.03);
-
+  padding: 12px 14px;
+  border-radius: 12px;
   cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+  background: transparent;
+  transition: background .18s ease, transform .15s ease;
+  position: relative;
 }
 
+/* Hover effect */
 .contact-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(120,255,210,0.35);
-  box-shadow:
-    0 16px 32px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(120,255,210,0.2);
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-1px);
 }
 
+/* Selected state */
 .contact-card.selected {
-  border-color: rgba(120,255,210,0.6);
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.6),
-    0 0 0 1px rgba(120,255,210,0.35);
+  background: rgba(88,101,242,0.22);
+  border: 1px solid rgba(88,101,242,0.35);
+  box-shadow: 0 0 12px rgba(88,101,242,0.25);
 }
 
-/* ------------------------------------------------------------
-   AVATAR + STATUS
------------------------------------------------------------- */
+/* ============================================================
+   AVATAR
+============================================================ */
 
 .avatar-wrapper {
   position: relative;
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
 }
 
 .contact-avatar {
@@ -56,67 +42,61 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-
-  border: 2px solid rgba(255,255,255,0.12);
-  box-shadow:
-    0 0 12px rgba(0,0,0,0.4),
-    0 0 0 1px rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.1);
+  box-shadow: 0 0 6px rgba(0,0,0,0.35);
 }
 
+/* Status dot */
 .contact-status {
   position: absolute;
-  bottom: 2px;
-  right: 2px;
-
-  width: 12px;
-  height: 12px;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-
-  border: 2px solid rgba(10,10,20,0.9);
+  border: 2px solid var(--bg-panel);
 }
 
 .contact-status.online {
-  background: #78ffd2;
-  box-shadow: 0 0 8px rgba(120,255,210,0.8);
+  background: #3ba55d;
 }
 
 .contact-status.offline {
-  background: #ff6b6b;
-  box-shadow: 0 0 8px rgba(255,107,107,0.7);
+  background: #6b7280;
 }
 
-/* ------------------------------------------------------------
+/* ============================================================
    CONTACT INFO
------------------------------------------------------------- */
+============================================================ */
 
 .contact-info {
-flex: 1;
-    margin-left: 60px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .contact-name {
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255,255,255,0.95);
+  color: var(--fg);
 }
 
 .contact-email {
-  font-size: 0.82rem;
-  color: rgba(255,255,255,0.55);
+  font-size: 13px;
+  color: var(--text-soft);
+  opacity: 0.85;
 }
 
 .contact-last {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.38);
-  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-soft);
+  opacity: 0.6;
 }
 
-/* ------------------------------------------------------------
+/* ============================================================
    ACTION BUTTONS
------------------------------------------------------------- */
+============================================================ */
 
 .contact-actions {
   display: flex;
@@ -124,41 +104,56 @@ flex: 1;
 }
 
 .contact-actions button {
-  width: 34px;
-  height: 34px;
-
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-glass);
   display: flex;
   align-items: center;
   justify-content: center;
-
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
-
-  font-size: 18px;
+  color: var(--text-soft);
   cursor: pointer;
-
-  transition:
-    background 140ms ease,
-    transform 140ms cubic-bezier(0.22,1.4,0.36,1),
-    border-color 160ms ease;
+  transition: background .18s ease, transform .12s ease, box-shadow .18s ease;
 }
 
+/* Hover */
 .contact-actions button:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(120,255,210,0.4);
-  transform: translateY(-2px);
+  background: var(--accent-soft);
+  color: var(--fg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px var(--shadow);
 }
 
-.contact-actions button:active {
-  transform: scale(0.88);
-}
-
-/* Special button accents */
-.block-btn:hover {
-  border-color: #ff6b6b;
-}
-
+/* Danger button */
 .delete-btn:hover {
-  border-color: #ff3b3b;
+  background: rgba(255,80,80,0.25);
+  border-color: rgba(255,80,80,0.5);
+  color: #ff8080;
 }
+/* ============================================================
+   MOBILE CONTACT CARD — RESPONSIVE LAYOUT
+============================================================ */
+
+@media (max-width: 900px) {
+  .contact-card {
+    padding: 10px 12px;
+    gap: 12px;
+  }
+
+  .avatar-wrapper {
+    width: 42px;
+    height: 42px;
+  }
+
+  .contact-name {
+    font-size: 14.5px;
+  }
+
+  .contact-email {
+    font-size: 12.5px;
+  }
+
+  .contact-actions button {
+    width: 30px;
+    height:
