@@ -563,7 +563,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
   }
-}
+
 
 /* -------------------------------------------------------
    Cleanup on call end
@@ -713,6 +713,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
