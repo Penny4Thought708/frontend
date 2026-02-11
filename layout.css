@@ -540,7 +540,7 @@ width: 520px;
 /* Message window */
 
 .message-window {
-  flex: 1;
+
   overflow-y: auto;
   padding: 16px;
   background: var(--bg);
@@ -548,9 +548,10 @@ width: 520px;
 }
 
 #messageWin.message-window {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+     display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 620px;
 }
 
 #messageWin {
