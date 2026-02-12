@@ -14,7 +14,6 @@ import {
 
 import { getVoiceBtn, getVideoBtn } from "../session.js";  // 🔥 REQUIRED
 
-
 export function initCallUI(rtc) {
   if (!rtc) {
     console.warn("[CallUI] No RTC controller provided");
@@ -101,7 +100,7 @@ export function initCallUI(rtc) {
     win?.classList.remove("voice-only");
 
     localVideo.play().catch(() => {
-      setTimeout(() => localVideo.play().catch(()=>{}), 50);
+      setTimeout(() => localVideo.play().catch(() => {}), 50);
     });
   };
 
@@ -113,9 +112,6 @@ export function initCallUI(rtc) {
     localVideo.style.display = "block";
     localVideo.style.opacity = "1";
   }
-
-
-
 
   /* -------------------------------------------------------
      TIMER
@@ -350,24 +346,22 @@ export function initCallUI(rtc) {
      BUTTON BINDINGS
   ------------------------------------------------------- */
 
-if (declineBtn) {
-  declineBtn.onclick = () => {
-    disableCallButtons();        // 🔥 REQUIRED
-    setStatus("Declining…");
-    rtc.declineIncomingCall?.();
-  };
-}
+  if (declineBtn) {
+    declineBtn.onclick = () => {
+      disableCallButtons();        // 🔥 REQUIRED
+      setStatus("Declining…");
+      rtc.declineIncomingCall?.();
+    };
+  }
 
-
-if (answerBtn) {
-  answerBtn.onclick = () => {
-    disableCallButtons();        // 🔥 REQUIRED
-    setStatus("Answering…");
-    setMode("active");
-    rtc.answerIncomingCall?.();
-  };
-}
-
+  if (answerBtn) {
+    answerBtn.onclick = () => {
+      disableCallButtons();        // 🔥 REQUIRED
+      setStatus("Answering…");
+      setMode("active");
+      rtc.answerIncomingCall?.();  // emits webrtc:signal answer + call:accept
+    };
+  }
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -444,6 +438,7 @@ if (answerBtn) {
     setVoiceOnly(voiceOnly);
     setMode("active");
 
+    disableCallButtons(); // prevent double-call while ringing
     openWindowAnimated();
   };
 
@@ -483,6 +478,7 @@ if (answerBtn) {
     clearAllParticipants();
     demoteStage();
     hideWindow();
+    enableCallButtons(); // ✅ re-enable voice/video buttons
   };
 
   rtc.onCallFailed = (reason) => {
@@ -493,6 +489,7 @@ if (answerBtn) {
     clearAllParticipants();
     demoteStage();
     hideWindow();
+    enableCallButtons(); // ✅ re-enable on failure
   };
 
   rtc.onQualityChange = (level, info) => {
@@ -523,8 +520,11 @@ if (answerBtn) {
   rtc.onRecordingChanged = ({ active }) =>
     recordBtn?.classList.toggle("active", !!active);
 
-  rtc.onVoicemailPrompt = (data) =>
+  rtc.onVoicemailPrompt = (data) => {
+    // Call never connected → user should be able to call again
+    enableCallButtons();
     showUnavailableToastInternal(data);
+  };
 
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
@@ -929,6 +929,7 @@ if (answerBtn) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
