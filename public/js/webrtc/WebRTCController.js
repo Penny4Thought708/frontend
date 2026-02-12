@@ -422,37 +422,41 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Remote Answer (Mesh‑ready)
   --------------------------------------------------- */
-  async handleAnswer(data) {
-    if (!data?.answer) return;
-    if (!rtcState.isCaller) return;
+async handleAnswer(data) {
+  if (!data?.answer) return;
+  if (!rtcState.isCaller) return;
 
-    const from = data.from;
-    if (!from) return;
+  const from = data.from;
+  if (!from) return;
 
-    const pc = this.pcMap.get(from);
-    if (!pc) return;
-    if (pc.signalingState !== "have-local-offer") return;
+  const pc = this.pcMap.get(from);
+  if (!pc) return;
+  if (pc.signalingState !== "have-local-offer") return;
 
-    rtcState.answering = true;
-    setTimeout(() => (rtcState.answering = false), 800);
+  rtcState.answering = true;
+  setTimeout(() => (rtcState.answering = false), 800);
 
-    // VP9 priority on remote answer
-    if (data.answer.sdp) {
-      data.answer.sdp = data.answer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-    await this._flushPendingRemoteCandidates(from, pc);
-
-    rtcState.inCall = true;
-    rtcState.busy = true;
-
-    stopAllTones();
-    this.onCallStarted?.();
+  // VP9 priority on remote answer
+  if (data.answer.sdp) {
+    data.answer.sdp = data.answer.sdp.replace(
+      /(m=video .*?)(96 97 98)/,
+      (match, prefix, list) => `${prefix}98 96 97`
+    );
   }
+
+  await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+  await this._flushPendingRemoteCandidates(from, pc);
+
+  rtcState.inCall = true;
+  rtcState.busy = true;
+
+  // ⭐ CRITICAL: caller must confirm acceptance too
+  this.socket.emit("call:accept", { to: from });
+
+  stopAllTones();
+  this.onCallStarted?.();
+}
+
 
   /* ---------------------------------------------------
      ICE Candidate (Mesh‑ready)
@@ -1085,6 +1089,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
