@@ -3,7 +3,11 @@
 // CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
-import { resumeRemoteMediaPlayback } from "./WebRTCMedia.js";
+import {
+  resumeRemoteMediaPlayback,
+  flipLocalCamera,          // ✅ add this
+} from "./WebRTCMedia.js";
+
 
 import {
   initRemoteParticipants,
@@ -348,64 +352,66 @@ export function initCallUI(rtc) {
     debugPanel.scrollTop = debugPanel.scrollHeight;
   }
 
-  /* -------------------------------------------------------
-     BUTTON BINDINGS
-  ------------------------------------------------------- */
+/* -------------------------------------------------------
+   BUTTON BINDINGS
+------------------------------------------------------- */
 
-  if (declineBtn) {
-    declineBtn.onclick = () => {
-      disableCallButtons();
-      setStatus("Declining…");
-      rtc.declineIncomingCall?.();
-    };
-  }
+if (declineBtn) {
+  declineBtn.onclick = () => {
+    disableCallButtons();
+    setStatus("Declining…");
+    rtc.declineIncomingCall?.();
+  };
+}
 
-  if (answerBtn) {
-    answerBtn.onclick = async () => {
-      disableCallButtons();
-      setStatus("Answering…");
+if (answerBtn) {
+  answerBtn.onclick = async () => {
+    disableCallButtons();
+    setStatus("Answering…");
 
-      // 1. Start opening the window under user gesture
-      openWindowAnimated();
-      setMode("active");
+    // 1. Start opening the window
+    openWindowAnimated();
+    setMode("active");
 
-      // 2. Let layout/render settle so autoplay policies are happy
-      await new Promise(requestAnimationFrame);
-      await new Promise(requestAnimationFrame);
+    // 2. Wait for the window to actually become visible
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
 
-      // 3. Answer the call (this will trigger ontrack, etc.)
-      await rtc.answerIncomingCall?.();
+    // 3. Now answer the call
+    await rtc.answerIncomingCall?.();
 
-      // 4. Now remote media playback is allowed under same gesture
-      resumeRemoteMediaPlayback();
-    };
-  }
+    // 4. Remote media under user gesture
+    resumeRemoteMediaPlayback();
+  };
+}
 
-  if (endBtn) {
-    endBtn.onclick = () => {
-      setStatus("Call ended");
-      rtc.endCall?.(true);
-    };
-  }
+if (endBtn) {
+  endBtn.onclick = () => {
+    setStatus("Call ended");
+    rtc.endCall?.(true);
+  };
+}
 
-  if (muteBtn) {
-    muteBtn.onclick = () => {
-      const muted = rtc.toggleMute?.();
-      muteBtn.innerHTML = muted
-        ? `<span class="material-symbols-outlined">mic_off</span>`
-        : `<span class="material-symbols-outlined">mic</span>`;
-    };
-  }
+if (muteBtn) {
+  muteBtn.onclick = () => {
+    const muted = rtc.toggleMute?.();
+    muteBtn.innerHTML = muted
+      ? `<span class="material-symbols-outlined">mic_off</span>`
+      : `<span class="material-symbols-outlined">mic</span>`;
+  };
+}
 
-  if (cameraBtn) {
-    cameraBtn.onclick = () => {
-      const off = rtc.switchCamera?.(); // flip camera; returns false (camera on)
-      cameraBtn.classList.toggle("flipped");
-      cameraBtn.innerHTML =
-        `<span class="material-symbols-outlined">videocam</span>`;
-      setCameraOff(false);
-    };
-  }
+if (cameraBtn) {
+  cameraBtn.onclick = async () => {
+    const ok = await flipLocalCamera(rtc);   // ✅ use shared media helper
+    if (!ok) return;                         // don’t lie to the UI if it failed
+
+    cameraBtn.classList.toggle("flipped");
+    cameraBtn.innerHTML =
+      `<span class="material-symbols-outlined">videocam</span>`;
+    setCameraOff(false);
+  };
+}
 
   if (shareBtn) {
     shareBtn.onclick = () => rtc.startScreenShare?.();
@@ -938,6 +944,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
