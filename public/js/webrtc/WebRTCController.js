@@ -2,7 +2,7 @@
 // Premium, production‑grade WebRTC controller
 // Aligned with:
 // - node-backend/src/sockets/webrtc.js (webrtc:signal + call:* events)
-// - WebRTCMedia.js (getLocalMedia, attachRemoteTrack, cleanupMedia)
+// - WebRTCMedia.js (getLocalMedia, attachRemoteTrack, cleanupMedia, flipLocalCamera)
 // - CallUI.js (Aurora‑Orbit Call UI)
 
 import { rtcState } from "./WebRTCState.js";
@@ -11,6 +11,7 @@ import {
   attachRemoteTrack,
   cleanupMedia,
   refreshLocalAvatarVisibility,
+  flipLocalCamera,
 } from "./WebRTCMedia.js";
 
 const log = (...args) => console.log("[WebRTC]", ...args);
@@ -67,6 +68,12 @@ export class WebRTCController {
     this._voiceOnly = false;
     this._statsTimer = null;
 
+    // Audio processing / recording
+    this._noiseSuppression = false;
+    this._recording = false;
+    this._recorder = null;
+    this._recordedChunks = [];
+
     this._wireSocketEvents();
   }
 
@@ -83,6 +90,8 @@ export class WebRTCController {
       localVideo.muted = true;
       localVideo.playsInline = true;
       localVideo.classList.add("show");
+      localVideo.style.display = "block";
+      localVideo.style.opacity = "1";
     }
   }
 
@@ -186,7 +195,7 @@ export class WebRTCController {
         answer,
       });
 
-      // Also emit explicit call:accept for backend path
+      // Explicit backend accept path
       this.socket.emit("call:accept", { to: peerId });
 
       this.callState.active = true;
@@ -260,6 +269,152 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
+     Public: camera flip (front/back) — used by CallUI
+  ------------------------------------------------------- */
+  async switchCamera() {
+    try {
+      const ok = await flipLocalCamera(this);
+      return !ok ? false : false; // keep API: returns false (camera logically "on")
+    } catch (err) {
+      log("switchCamera failed:", err);
+      return false;
+    }
+  }
+
+  /* -------------------------------------------------------
+     Public: audio processing (echo, AGC, noise suppression)
+  ------------------------------------------------------- */
+  applyAudioProcessing() {
+    try {
+      this.localStream?.getAudioTracks().forEach((track) => {
+        track.applyConstraints({
+          echoCancellation: true,
+          autoGainControl: true,
+          noiseSuppression: this._noiseSuppression,
+        });
+      });
+
+      this.onNoiseSuppressionChanged?.(this._noiseSuppression);
+    } catch (err) {
+      log("applyAudioProcessing failed:", err);
+    }
+  }
+
+  toggleNoiseSuppression() {
+    this._noiseSuppression = !this._noiseSuppression;
+    this.applyAudioProcessing();
+    return this._noiseSuppression;
+  }
+
+  /* -------------------------------------------------------
+     Public: screen share (local) — used by CallUI
+  ------------------------------------------------------- */
+  async startScreenShare() {
+    if (!this.peerConnection) return;
+
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        log("getDisplayMedia not supported");
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+
+      const track = stream.getVideoTracks()[0];
+      if (!track) {
+        log("startScreenShare: no video track");
+        return;
+      }
+
+      const sender = this.peerConnection
+        .getSenders()
+        .find((s) => s.track && s.track.kind === "video");
+
+      if (sender) {
+        await sender.replaceTrack(track);
+      }
+
+      track.onended = () => this.stopScreenShare();
+
+      this.onScreenShareStarted?.(this.localPeerId);
+    } catch (err) {
+      log("Screen share failed:", err);
+    }
+  }
+
+  async stopScreenShare() {
+    if (!this.peerConnection) return;
+
+    try {
+      const camTrack = this.localStream?.getVideoTracks()[0];
+      const sender = this.peerConnection
+        .getSenders()
+        .find((s) => s.track && s.track.kind === "video");
+
+      if (sender && camTrack) {
+        await sender.replaceTrack(camTrack);
+      }
+
+      this.onScreenShareStopped?.(this.localPeerId);
+    } catch (err) {
+      log("stopScreenShare failed:", err);
+    }
+  }
+
+  /* -------------------------------------------------------
+     Public: recording (local + remote mixed) — used by CallUI
+  ------------------------------------------------------- */
+  toggleRecording() {
+    try {
+      if (!this._recording) {
+        const mixed = new MediaStream();
+
+        this.localStream?.getTracks().forEach((t) => mixed.addTrack(t));
+
+        if (rtcState.remoteStreams) {
+          Object.values(rtcState.remoteStreams).forEach((s) => {
+            s.getTracks().forEach((t) => mixed.addTrack(t));
+          });
+        }
+
+        this._recordedChunks = [];
+        this._recorder = new MediaRecorder(mixed, {
+          mimeType: "video/webm; codecs=vp9",
+        });
+
+        this._recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) this._recordedChunks.push(e.data);
+        };
+
+        this._recorder.onstop = () => {
+          const blob = new Blob(this._recordedChunks, {
+            type: "video/webm",
+          });
+          const url = URL.createObjectURL(blob);
+          log("Recording ready:", url);
+          // hook for upload/save if desired
+        };
+
+        this._recorder.start();
+        this._recording = true;
+        this.onRecordingChanged?.({ active: true });
+        return true;
+      }
+
+      this._recorder?.stop();
+      this._recording = false;
+      this.onRecordingChanged?.({ active: false });
+      return false;
+    } catch (err) {
+      log("toggleRecording failed:", err);
+      return false;
+    }
+  }
+
+  /* -------------------------------------------------------
      Internal: ensure RTCPeerConnection
   ------------------------------------------------------- */
   async _ensurePeerConnection(peerId) {
@@ -289,7 +444,6 @@ export class WebRTCController {
       const pid = this.remotePeerId || peerId || "default";
       attachRemoteTrack(pid, evt);
 
-      // For recording convenience, keep a reference
       if (!this.remoteStream) {
         this.remoteStream = new MediaStream();
       }
@@ -598,7 +752,12 @@ export class WebRTCController {
 
     if (!fireCallbacks) return;
 
-    if (reason === "failed" || reason === "timeout" || reason === "declined" || reason === "missed") {
+    if (
+      reason === "failed" ||
+      reason === "timeout" ||
+      reason === "declined" ||
+      reason === "missed"
+    ) {
       if (this.onCallFailed) this.onCallFailed(reason);
     } else {
       if (this.onCallEnded) this.onCallEnded();
@@ -644,7 +803,6 @@ export class WebRTCController {
      Internal: disconnect fallback
   ------------------------------------------------------- */
   _handleDisconnectFallback() {
-    // For now, just end the call gracefully
     this._endCallInternal("failed", true);
   }
 
@@ -704,6 +862,12 @@ export class WebRTCController {
     }, 3000);
   }
 }
+
+export function createWebRTCController(socket, currentUserId, helpers = {}) {
+  return new WebRTCController(socket, currentUserId, helpers);
+}
+
+
 
 
 
