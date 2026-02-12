@@ -203,6 +203,7 @@ export function initCallUI(rtc) {
 
     win.classList.remove("hidden");
     win.classList.add("is-open");
+    win.removeAttribute("inert");
     win.setAttribute("aria-hidden", "false");
 
     win.classList.add("call-opening");
@@ -215,8 +216,14 @@ export function initCallUI(rtc) {
     if (!win) return;
     if (!win.classList.contains("is-open")) return;
 
+    // Fix ARIA warning: don't hide a focused subtree
+    if (win.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+
     win.classList.remove("is-open");
     win.setAttribute("aria-hidden", "true");
+    win.setAttribute("inert", "");
 
     setTimeout(() => {
       win.classList.add("hidden");
@@ -352,29 +359,27 @@ export function initCallUI(rtc) {
       rtc.declineIncomingCall?.();
     };
   }
-if (answerBtn) {
-answerBtn.onclick = async () => {
-  disableCallButtons();
-  setStatus("Answering…");
 
-  // 1. Start opening the window
-  openWindowAnimated();
-  setMode("active");
+  if (answerBtn) {
+    answerBtn.onclick = async () => {
+      disableCallButtons();
+      setStatus("Answering…");
 
-  // 2. Wait for the window to actually become visible
-  await new Promise(requestAnimationFrame);
-  await new Promise(requestAnimationFrame);
+      // 1. Start opening the window under user gesture
+      openWindowAnimated();
+      setMode("active");
 
-  // 3. Now answer the call
-  await rtc.answerIncomingCall?.();
+      // 2. Let layout/render settle so autoplay policies are happy
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
 
-  // 4. NOW remote media playback is allowed
-  resumeRemoteMediaPlayback();
-};
+      // 3. Answer the call (this will trigger ontrack, etc.)
+      await rtc.answerIncomingCall?.();
 
-}
-
-
+      // 4. Now remote media playback is allowed under same gesture
+      resumeRemoteMediaPlayback();
+    };
+  }
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -479,6 +484,9 @@ answerBtn.onclick = async () => {
       localVideo.playsInline = true;
       localVideo.classList.add("show");
     }
+
+    // In case autoplay still needs a nudge after negotiation
+    resumeRemoteMediaPlayback();
   };
 
   rtc.onCallEnded = () => {
@@ -671,12 +679,23 @@ answerBtn.onclick = async () => {
         const mixedStream = new MediaStream();
 
         rtc.localStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
-        rtc.remoteStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
+        rtc.remoteStream?.getTracks?.().forEach((t) => mixedStream.addTrack(t));
+
+        if (!mixedStream.getTracks().length) {
+          console.warn(
+            "[CallUI] toggleRecording: no audio or video tracks available for recording"
+          );
+          return false;
+        }
 
         rtc._state.recordedChunks = [];
-        rtc._state.recorder = new MediaRecorder(mixedStream, {
-          mimeType: "video/webm; codecs=vp9",
-        });
+
+        let options = {};
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported?.("video/webm; codecs=vp9")) {
+          options.mimeType = "video/webm; codecs=vp9";
+        }
+
+        rtc._state.recorder = new MediaRecorder(mixedStream, options);
 
         rtc._state.recorder.ondataavailable = (e) => {
           if (e.data.size > 0) rtc._state.recordedChunks.push(e.data);
@@ -919,6 +938,7 @@ answerBtn.onclick = async () => {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
