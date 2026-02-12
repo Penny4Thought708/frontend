@@ -398,7 +398,7 @@ export async function flipLocalCamera(rtc) {
   }
 }
 
-/* -------------------------------------------------------
+/*-------------------------------------------------------
    Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
@@ -436,6 +436,26 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     readyState: evt.track.readyState,
   });
 
+  // 🔊 ALWAYS wire audio, even if we don't have a tile yet
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  if (evt.track.kind === "audio" && remoteAudioEl) {
+    log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
+
+    if (!remoteAudioEl.srcObject) {
+      remoteAudioEl.srcObject = new MediaStream();
+    }
+    remoteAudioEl.srcObject.addTrack(evt.track);
+
+    remoteAudioEl.playsInline = true;
+    remoteAudioEl.muted = false;
+    remoteAudioEl.volume = 1;
+
+    remoteAudioEl.play().catch((err) =>
+      log("Remote audio autoplay blocked:", err?.name || err)
+    );
+  }
+
+  // Now deal with tiles / avatars / video
   const participantEl = getRemoteParticipant(peerId);
   if (!participantEl) {
     log("No participant element for peer:", peerId);
@@ -510,23 +530,13 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
       });
   }
 
-  const remoteAudioEl = document.getElementById("remoteAudio");
-  if (evt.track.kind === "audio" && remoteAudioEl) {
-    log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
-
-    remoteAudioEl.srcObject = remoteStream;
-    remoteAudioEl.playsInline = true;
-    remoteAudioEl.muted = false;
-    remoteAudioEl.volume = 1;
-
-    remoteAudioEl.play().catch((err) =>
-      log("Remote audio autoplay blocked:", err?.name || err)
-    );
-
+  // 🔊 Start speaking detection + visualizer only if we have a tile
+  if (evt.track.kind === "audio" && remoteAudioEl && participantEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
   }
 }
+
 
 /* -------------------------------------------------------
    Helper: resume remote media after user gesture
@@ -703,6 +713,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
