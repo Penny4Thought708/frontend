@@ -33,8 +33,9 @@ import {
 
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
-ringtone.loop = true;
-ringback.loop = true;
+
+if (ringtone) ringtone.loop = true;
+if (ringback) ringback.loop = true;
 
 /* -------------------------------------------------------
    Helpers
@@ -73,7 +74,7 @@ export class WebRTCController {
     this.pendingRemoteCandidates = new Map(); // peerId -> [candidates]
 
     // Network behavior + monitor
-    this.networkMode = "meet";      // "meet" | "discord"
+    this.networkMode = "meet"; // "meet" | "discord"
     this._networkInterval = null;
 
     // UI callbacks (wired by CallUI)
@@ -218,11 +219,13 @@ export class WebRTCController {
 
     if (videoSender) {
       const params = videoSender.getParameters();
-      params.encodings = [{
-        maxBitrate: 1_500_000,
-        minBitrate:   300_000,
-        maxFramerate: 30,
-      }];
+      params.encodings = [
+        {
+          maxBitrate: 1_500_000,
+          minBitrate: 300_000,
+          maxFramerate: 30,
+        },
+      ];
       try {
         await videoSender.setParameters(params);
       } catch (err) {
@@ -345,11 +348,13 @@ export class WebRTCController {
 
     if (videoSender) {
       const params = videoSender.getParameters();
-      params.encodings = [{
-        maxBitrate: 1_500_000,
-        minBitrate:   300_000,
-        maxFramerate: 30,
-      }];
+      params.encodings = [
+        {
+          maxBitrate: 1_500_000,
+          minBitrate: 300_000,
+          maxFramerate: 30,
+        },
+      ];
       try {
         await videoSender.setParameters(params);
       } catch (err) {
@@ -397,6 +402,11 @@ export class WebRTCController {
     rtcState.inCall = false;
     rtcState.busy = false;
 
+    this.onVoicemailPrompt?.({
+      reason: "declined",
+      from: callerId,
+    });
+
     this.onCallEnded?.();
   }
 
@@ -425,9 +435,7 @@ export class WebRTCController {
       );
     }
 
-    await pc.setRemoteDescription(
-      new RTCSessionDescription(data.answer)
-    );
+    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     await this._flushPendingRemoteCandidates(from, pc);
 
     rtcState.inCall = true;
@@ -470,7 +478,9 @@ export class WebRTCController {
     if (from && this.pcMap.has(from)) {
       // End just this peer’s connection
       const pc = this.pcMap.get(from);
-      try { pc.close(); } catch {}
+      try {
+        pc.close();
+      } catch {}
       this.pcMap.delete(from);
     }
 
@@ -561,8 +571,9 @@ export class WebRTCController {
   --------------------------------------------------- */
   async switchCamera() {
     try {
-      const ok = await import("./WebRTCMedia.js")
-        .then(m => m.flipLocalCamera(this));
+      const ok = await import("./WebRTCMedia.js").then((m) =>
+        m.flipLocalCamera(this)
+      );
 
       return ok === true ? false : false;
       // Always return "camera ON" because flip ≠ disable
@@ -605,11 +616,13 @@ export class WebRTCController {
           await sender.replaceTrack(screenTrack);
 
           const params = sender.getParameters();
-          params.encodings = [{
-            maxBitrate: 2_500_000,
-            minBitrate:   500_000,
-            maxFramerate: 30,
-          }];
+          params.encodings = [
+            {
+              maxBitrate: 2_500_000,
+              minBitrate: 500_000,
+              maxFramerate: 30,
+            },
+          ];
           await sender.setParameters(params);
         }
       }
@@ -625,11 +638,13 @@ export class WebRTCController {
             await sender.replaceTrack(camTrack);
 
             const params = sender.getParameters();
-            params.encodings = [{
-              maxBitrate: 1_500_000,
-              minBitrate:   300_000,
-              maxFramerate: 30,
-            }];
+            params.encodings = [
+              {
+                maxBitrate: 1_500_000,
+                minBitrate: 300_000,
+                maxFramerate: 30,
+              },
+            ];
             await sender.setParameters(params);
           }
         }
@@ -677,7 +692,9 @@ export class WebRTCController {
     /* TURN Keepalive */
     const startTurnKeepAlive = (pcInstance) => {
       let keepAliveTimer = setInterval(() => {
-        try { pcInstance.getStats(null); } catch {}
+        try {
+          pcInstance.getStats(null);
+        } catch {}
       }, 3000);
 
       pcInstance.addEventListener("connectionstatechange", () => {
@@ -759,16 +776,20 @@ export class WebRTCController {
       if (state === "disconnected") {
         console.warn("[WebRTC] Disconnected — applying fallback");
 
-        try { pc.restartIce(); } catch {}
+        try {
+          pc.restartIce();
+        } catch {}
 
-        const sender = pc.getSenders().find(s => s.track?.kind === "video");
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
         if (sender) {
           const params = sender.getParameters();
-          params.encodings = [{
-            maxBitrate: 800_000,
-            minBitrate: 150_000,
-            maxFramerate: 24,
-          }];
+          params.encodings = [
+            {
+              maxBitrate: 800_000,
+              minBitrate: 150_000,
+              maxFramerate: 24,
+            },
+          ];
           sender.setParameters(params).catch(() => {});
         }
       }
@@ -881,7 +902,11 @@ export class WebRTCController {
         let candidatePair = null;
 
         stats.forEach((report) => {
-          if (report.type === "outbound-rtp" && report.kind === "video" && !report.isRemote) {
+          if (
+            report.type === "outbound-rtp" &&
+            report.kind === "video" &&
+            !report.isRemote
+          ) {
             videoOutbound = report;
           }
           if (report.type === "remote-inbound-rtp" && report.kind === "video") {
@@ -894,7 +919,8 @@ export class WebRTCController {
 
         const videoLoss =
           videoRemoteInbound && videoRemoteInbound.packetsReceived > 0
-            ? videoRemoteInbound.packetsLost / videoRemoteInbound.packetsReceived
+            ? videoRemoteInbound.packetsLost /
+              videoRemoteInbound.packetsReceived
             : 0;
 
         const rtt = candidatePair?.currentRoundTripTime || 0;
@@ -905,7 +931,9 @@ export class WebRTCController {
 
         this.onQualityChange?.(
           level,
-          `loss=${(videoLoss * 100 || 0).toFixed(1)}% rtt=${(rtt || 0).toFixed(3)}s`
+          `loss=${(videoLoss * 100 || 0).toFixed(1)}% rtt=${(rtt || 0).toFixed(
+            3
+          )}s`
         );
 
         this._applyAdaptiveBitrate(pc, level);
@@ -923,9 +951,9 @@ export class WebRTCController {
   _applyAdaptiveBitrate(pc, level) {
     if (!pc) return;
 
-    const sender = pc.getSenders().find(
-      (s) => s.track && s.track.kind === "video"
-    );
+    const sender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
     if (!sender) return;
 
     const params = sender.getParameters();
@@ -962,122 +990,119 @@ export class WebRTCController {
     });
   }
 
-
-/* ---------------------------------------------------
-   Socket bindings (Mesh‑aware + Voicemail + Looping)
---------------------------------------------------- */
-_bindSocketEvents() {
-  if (!this.socket) {
-    console.warn("[WebRTC] No socket provided");
-    return;
-  }
-
-  // Ensure tones loop like real calling apps
-  if (ringtone) ringtone.loop = true;
-  if (ringback) ringback.loop = true;
-
-  // Clear old listeners
-  this.socket.off("webrtc:signal");
-  this.socket.off("call:voicemail");
-  this.socket.off("call:restore");
-  this.socket.off("call:timeout");
-  this.socket.off("call:declined");
-  this.socket.off("call:missed");
-  this.socket.off("call:dnd");
-
   /* ---------------------------------------------------
-     CORE SIGNALING
+     Socket bindings (Mesh‑aware + Voicemail + Looping)
   --------------------------------------------------- */
-  this.socket.on("webrtc:signal", async (data) => {
-    console.log("[WebRTC] webrtc:signal received", data?.type, data);
-    if (!data || !data.type) return;
-
-    // Update remote avatar + name
-    if (data.fromUser) {
-      const { avatar, fullname } = data.fromUser;
-
-      if (avatar) {
-        rtcState.peerAvatar = avatar;
-        setRemoteAvatar(avatar);
-        showRemoteAvatar();
-      }
-
-      if (!rtcState.peerName && fullname) {
-        rtcState.peerName = fullname;
-      }
+  _bindSocketEvents() {
+    if (!this.socket) {
+      console.warn("[WebRTC] No socket provided");
+      return;
     }
 
-    switch (data.type) {
-      case "offer":
-        await this.handleOffer(data);
-        break;
+    // Ensure tones loop like real calling apps
+    if (ringtone) ringtone.loop = true;
+    if (ringback) ringback.loop = true;
 
-      case "answer":
-        await this.handleAnswer(data);
-        break;
+    // Clear old listeners
+    this.socket.off("webrtc:signal");
+    this.socket.off("call:voicemail");
+    this.socket.off("call:restore");
+    this.socket.off("call:timeout");
+    this.socket.off("call:declined");
+    this.socket.off("call:missed");
+    this.socket.off("call:dnd");
 
-      case "ice":
-        await this.handleRemoteIceCandidate(data);
-        break;
+    /* ---------------------------------------------------
+       CORE SIGNALING
+    --------------------------------------------------- */
+    this.socket.on("webrtc:signal", async (data) => {
+      console.log("[WebRTC] webrtc:signal received", data?.type, data);
+      if (!data || !data.type) return;
 
-      case "end":
-        this.handleRemoteEnd(data.from);
-        break;
+      if (data.fromUser) {
+        const { avatar, fullname } = data.fromUser;
 
-      default:
-        break;
-    }
-  });
+        if (avatar) {
+          rtcState.peerAvatar = avatar;
+          setRemoteAvatar(avatar);
+          showRemoteAvatar();
+        }
 
-  /* ---------------------------------------------------
-     VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
-  --------------------------------------------------- */
+        if (!rtcState.peerName && fullname) {
+          rtcState.peerName = fullname;
+        }
+      }
 
-  const stopAllTones = () => {
-    stopAudio(ringback);
-    stopAudio(ringtone);
-  };
+      switch (data.type) {
+        case "offer":
+          await this.handleOffer(data);
+          break;
 
-  const triggerVoicemailFlow = (from, reason) => {
-    stopAllTones();
+        case "answer":
+          await this.handleAnswer(data);
+          break;
 
-    // Notify UI
-    this.onVoicemailPrompt?.({
-      reason,
-      from
+        case "ice":
+          await this.handleRemoteIceCandidate(data);
+          break;
+
+        case "end":
+          this.handleRemoteEnd(data.from);
+          break;
+
+        default:
+          break;
+      }
     });
 
-    // End call locally
-    this.endCall(false);
-  };
+    /* ---------------------------------------------------
+       VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
+    --------------------------------------------------- */
 
-  this.socket.on("call:declined", ({ from }) => {
-    console.log("[WebRTC] call declined by", from);
-    triggerVoicemailFlow(from, "declined");
-  });
+    const stopAllTones = () => {
+      stopAudio(ringback);
+      stopAudio(ringtone);
+    };
 
-  this.socket.on("call:timeout", ({ from }) => {
-    console.log("[WebRTC] call timeout from", from);
-    triggerVoicemailFlow(from, "timeout");
-  });
+    const triggerVoicemailFlow = (from, reason) => {
+      stopAllTones();
 
-  this.socket.on("call:missed", ({ from }) => {
-    console.log("[WebRTC] call missed by", from);
-    triggerVoicemailFlow(from, "missed");
-  });
+      this.onVoicemailPrompt?.({
+        reason,
+        from,
+      });
 
-  this.socket.on("call:dnd", ({ from }) => {
-    console.log("[WebRTC] user in DND", from);
-    triggerVoicemailFlow(from, "dnd");
-  });
+      this.endCall(false);
+    };
 
-  this.socket.on("call:voicemail", ({ from, reason }) => {
-    console.log("[WebRTC] voicemail event", from, reason);
-    triggerVoicemailFlow(from, reason || "voicemail");
-  });
+    this.socket.on("call:declined", ({ from }) => {
+      console.log("[WebRTC] call declined by", from);
+      triggerVoicemailFlow(from, "declined");
+    });
+
+    this.socket.on("call:timeout", ({ from }) => {
+      console.log("[WebRTC] call timeout from", from);
+      triggerVoicemailFlow(from, "timeout");
+    });
+
+    this.socket.on("call:missed", ({ from }) => {
+      console.log("[WebRTC] call missed by", from);
+      triggerVoicemailFlow(from, "missed");
+    });
+
+    this.socket.on("call:dnd", ({ from }) => {
+      console.log("[WebRTC] user in DND", from);
+      triggerVoicemailFlow(from, "dnd");
+    });
+
+    this.socket.on("call:voicemail", ({ from, reason }) => {
+      console.log("[WebRTC] voicemail event", from, reason);
+      triggerVoicemailFlow(from, reason || "voicemail");
+    });
+  }
 }
 
-}
+
 
 
 
