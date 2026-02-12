@@ -53,6 +53,11 @@ export const rtcState = {
   --------------------------------------------------- */
   callTimerSeconds: 0,
   callTimerInterval: null,
+  /* ---------------------------------------------------
+     Network Quality + Stats
+  --------------------------------------------------- */
+  networkQuality: "unknown",   // "excellent" | "good" | "fair" | "poor" | "bad" | "unknown"
+  lastStats: null,             // raw snapshot from getStats
 
   /* ---------------------------------------------------
      Internal Guards
@@ -205,6 +210,41 @@ export const rtcState = {
 
     this.resetInProgress = false;
   },
+  /* ---------------------------------------------------
+     Network Quality Helpers
+  --------------------------------------------------- */
+  setNetworkQuality(level, info = "") {
+    const allowed = ["excellent", "good", "fair", "poor", "bad", "unknown"];
+    if (!allowed.includes(level)) level = "unknown";
+
+    this.networkQuality = level;
+    this.log("Network quality:", level, info);
+  },
+
+  updateFromStats(statsSnapshot) {
+    // statsSnapshot is a plain object you build in the controller
+    this.lastStats = statsSnapshot;
+
+    const { videoLoss, rtt, outgoingBitrate } = statsSnapshot;
+
+    let level = "unknown";
+
+    if (videoLoss == null && rtt == null) {
+      level = "unknown";
+    } else if (videoLoss > 0.20 || rtt > 0.8) {
+      level = "bad";
+    } else if (videoLoss > 0.10 || rtt > 0.5) {
+      level = "poor";
+    } else if (videoLoss > 0.05 || rtt > 0.3) {
+      level = "fair";
+    } else {
+      level = "good";
+    }
+
+    this.setNetworkQuality(level, `loss=${(videoLoss*100||0).toFixed(1)}% rtt=${(rtt||0).toFixed(3)}s bitrate=${Math.round((outgoingBitrate||0)/1000)}kbps`);
+
+    return this.networkQuality;
+  },
 
   /* ---------------------------------------------------
      Debug Snapshot
@@ -229,13 +269,19 @@ export const rtcState = {
       hasLocalStream: !!this.localStream,
       hasRemoteStream: !!this.remoteStream,
       remoteTrackCount: this.remoteTracks.size,
-      callTimerSeconds: this.callTimerSeconds
+      callTimerSeconds: this.callTimerSeconds,
+      callTimerSeconds: this.callTimerSeconds,
+      networkQuality: this.networkQuality,
+      hasLastStats: !!this.lastStats
+
+      
     };
 
     this.log("State snapshot:", snapshot);
     return snapshot;
   }
 };
+
 
 
 
