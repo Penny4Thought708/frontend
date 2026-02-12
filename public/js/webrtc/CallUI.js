@@ -8,8 +8,6 @@ import {
   clearAllParticipants,
   setParticipantSpeaking,
   setParticipantCameraOff,
-  promoteToStage,
-  demoteStage,
 } from "./RemoteParticipants.js";
 
 import { getVoiceBtn, getVideoBtn } from "../session.js";  // 🔥 REQUIRED
@@ -53,7 +51,7 @@ export function initCallUI(rtc) {
   const toastUnavailable = document.getElementById("unavailableToast");
 
   /* -------------------------------------------------------
-     CALL BUTTON SAFETY HELPERS  (PLACE HERE)
+     CALL BUTTON SAFETY HELPERS
   ------------------------------------------------------- */
   function disableCallButtons() {
     const voiceBtn = getVoiceBtn?.();
@@ -79,7 +77,6 @@ export function initCallUI(rtc) {
   ------------------------------------------------------- */
   rtc.attachMediaElements?.({
     localVideo,
-    remoteVideo: null,
     remoteAudio,
   });
 
@@ -348,7 +345,7 @@ export function initCallUI(rtc) {
 
   if (declineBtn) {
     declineBtn.onclick = () => {
-      disableCallButtons();        // 🔥 REQUIRED
+      disableCallButtons();
       setStatus("Declining…");
       rtc.declineIncomingCall?.();
     };
@@ -356,10 +353,10 @@ export function initCallUI(rtc) {
 
   if (answerBtn) {
     answerBtn.onclick = () => {
-      disableCallButtons();        // 🔥 REQUIRED
+      disableCallButtons();
       setStatus("Answering…");
       setMode("active");
-      rtc.answerIncomingCall?.();  // emits webrtc:signal answer + call:accept
+      rtc.answerIncomingCall?.();
     };
   }
 
@@ -385,7 +382,6 @@ export function initCallUI(rtc) {
       cameraBtn.classList.toggle("flipped");
       cameraBtn.innerHTML =
         `<span class="material-symbols-outlined">videocam</span>`;
-      // we keep camera logically "on" for flip behavior; no hard off here
       setCameraOff(false);
     };
   }
@@ -438,7 +434,7 @@ export function initCallUI(rtc) {
     setVoiceOnly(voiceOnly);
     setMode("active");
 
-    disableCallButtons(); // prevent double-call while ringing
+    disableCallButtons();
     openWindowAnimated();
   };
 
@@ -461,7 +457,6 @@ export function initCallUI(rtc) {
     setMode("active");
     openWindowAnimated();
 
-    // 🔧 Ensure local preview is bound once call is live
     if (rtc.localStream && localVideo && !localVideo.srcObject) {
       localVideo.srcObject = rtc.localStream;
       localVideo.muted = true;
@@ -476,9 +471,8 @@ export function initCallUI(rtc) {
     setStatus("Call ended");
     setMode(null);
     clearAllParticipants();
-    demoteStage();
     hideWindow();
-    enableCallButtons(); // ✅ re-enable voice/video buttons
+    enableCallButtons();
   };
 
   rtc.onCallFailed = (reason) => {
@@ -487,9 +481,8 @@ export function initCallUI(rtc) {
     setStatus(`Call failed: ${reason}`);
     setMode(null);
     clearAllParticipants();
-    demoteStage();
     hideWindow();
-    enableCallButtons(); // ✅ re-enable on failure
+    enableCallButtons();
   };
 
   rtc.onQualityChange = (level, info) => {
@@ -504,14 +497,12 @@ export function initCallUI(rtc) {
     setParticipantSpeaking(peerId, active, level);
   };
 
-  rtc.onScreenShareStarted = (peerId) => {
+  rtc.onScreenShareStarted = () => {
     setScreenShare(true);
-    promoteToStage?.(peerId);
   };
 
-  rtc.onScreenShareStopped = (peerId) => {
+  rtc.onScreenShareStopped = () => {
     setScreenShare(false);
-    demoteStage?.(peerId);
   };
 
   rtc.onNoiseSuppressionChanged = (enabled) =>
@@ -521,7 +512,6 @@ export function initCallUI(rtc) {
     recordBtn?.classList.toggle("active", !!active);
 
   rtc.onVoicemailPrompt = (data) => {
-    // Call never connected → user should be able to call again
     enableCallButtons();
     showUnavailableToastInternal(data);
   };
@@ -531,14 +521,10 @@ export function initCallUI(rtc) {
 
   /* ============================================================
      ENHANCED INLINE RTC FEATURE IMPLEMENTATIONS
-     - Camera flip (front/back)
-     - Echo cancellation + AGC + Noise suppression
-     - Recording local + remote
-     - Waveform visualization
   ============================================================ */
 
   rtc._state = rtc._state || {};
-  rtc._state.cameraFacing = rtc._state.cameraFacing || "user"; // "user" | "environment"
+  rtc._state.cameraFacing = rtc._state.cameraFacing || "user";
   rtc._state.noiseSuppression = !!rtc._state.noiseSuppression;
   rtc._state.recording = !!rtc._state.recording;
   rtc._state.recorder = rtc._state.recorder || null;
@@ -567,14 +553,12 @@ export function initCallUI(rtc) {
       const videoSender = senders.find(
         (s) => s.track && s.track.kind === "video"
       );
-      if (videoSender) {
+      if (videoSender && newTrack) {
         await videoSender.replaceTrack(newTrack);
       }
 
-      // Stop old video tracks
       rtc.localStream?.getVideoTracks().forEach((t) => t.stop());
 
-      // Replace track in localStream
       if (rtc.localStream) {
         const oldVideo = rtc.localStream.getVideoTracks()[0];
         if (oldVideo) rtc.localStream.removeTrack(oldVideo);
@@ -583,7 +567,6 @@ export function initCallUI(rtc) {
         rtc.localStream = newStream;
       }
 
-      // 🔧 Always re-bind local preview to the updated localStream
       if (localVideo) {
         localVideo.srcObject = rtc.localStream;
         localVideo.muted = true;
@@ -591,7 +574,7 @@ export function initCallUI(rtc) {
         localVideo.classList.add("show");
       }
 
-      return false; // camera is ON (flip, not off)
+      return false;
     } catch (err) {
       console.error("switchCamera (flip) failed:", err);
       return false;
@@ -599,7 +582,7 @@ export function initCallUI(rtc) {
   };
 
   /* ------------------------------------------------------------
-     AUDIO PROCESSING: Echo cancellation + AGC + Noise suppression
+     AUDIO PROCESSING
   ------------------------------------------------------------ */
   rtc.applyAudioProcessing = function () {
     try {
@@ -709,7 +692,7 @@ export function initCallUI(rtc) {
   };
 
   /* ------------------------------------------------------------
-     WAVEFORM VISUALIZATION (Noise / Mic)
+     WAVEFORM VISUALIZATION
   ------------------------------------------------------------ */
   (function initWaveform() {
     try {
@@ -783,7 +766,6 @@ export function initCallUI(rtc) {
 
     let hideTimer = null;
 
-    // Auto-hide controls
     function resetAutoHide() {
       if (!controls) return;
       clearTimeout(hideTimer);
@@ -792,7 +774,6 @@ export function initCallUI(rtc) {
       }, 3000);
     }
 
-    // Tap to show/hide controls (ignore taps on controls themselves)
     callWindow.addEventListener("click", (e) => {
       if (controls && e.target.closest(".call-controls")) return;
       if (!controls) return;
@@ -805,7 +786,6 @@ export function initCallUI(rtc) {
 
     if (controls) resetAutoHide();
 
-    // Swipe left/right to switch participants
     let startX = 0;
     let scrollStart = 0;
 
@@ -821,7 +801,6 @@ export function initCallUI(rtc) {
       callGrid.scrollLeft = scrollStart + dx;
     });
 
-    // Active speaker auto-fullscreen
     window.setActiveSpeaker = function (participantId) {
       participants = Array.from(callGrid.querySelectorAll(".participant"));
       const index = participants.findIndex((p) => p.dataset.id === participantId);
@@ -833,7 +812,6 @@ export function initCallUI(rtc) {
       }
     };
 
-    // Screen share mode hooks
     window.enableScreenShareMode = function () {
       callGrid.classList.add("screen-share-mode");
     };
@@ -842,7 +820,6 @@ export function initCallUI(rtc) {
       callGrid.classList.remove("screen-share-mode");
     };
 
-    // Double-tap to switch camera
     let lastTap = 0;
     callWindow.addEventListener("touchend", () => {
       const now = Date.now();
@@ -852,7 +829,6 @@ export function initCallUI(rtc) {
       lastTap = now;
     });
 
-    // Pinch-to-zoom on active video
     function enablePinchZoom() {
       const activeVideo =
         callGrid.querySelector(".participant.active .media-wrapper video") ||
@@ -889,7 +865,6 @@ export function initCallUI(rtc) {
 
     enablePinchZoom();
 
-    // Draggable PIP (local participant)
     const pip = callGrid.querySelector(".participant.local");
     if (pip) {
       pip.classList.add("draggable");
@@ -914,7 +889,6 @@ export function initCallUI(rtc) {
       });
     }
 
-    // Auto-switch layout on rotation
     function updateLayout() {
       if (window.innerWidth > window.innerHeight) {
         callGrid.classList.add("landscape-mode");
@@ -929,6 +903,8 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
+
 
 
 
