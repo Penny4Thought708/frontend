@@ -73,10 +73,11 @@ function createRemoteParticipant(peerId = "default") {
     avatarImg.src = "img/defaultUser.png";
   }
 
-  if (rtcState.voiceOnly && videoEl) {
-    videoEl.style.display = "none";
-    videoEl.removeAttribute("srcObject");
-  }
+if (rtcState.voiceOnly && videoEl) {
+  videoEl.style.display = "none";
+  videoEl.srcObject = null;
+}
+
 
   grid.appendChild(clone);
   map[peerId] = clone;
@@ -702,6 +703,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
