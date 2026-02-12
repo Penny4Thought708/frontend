@@ -785,7 +785,7 @@
   border: 1px solid var(--border-soft);
   box-shadow: 0 12px 40px rgba(0,0,0,0.45);
   padding: 8px;
-  display: none;
+   
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px) scale(.96);
@@ -793,8 +793,9 @@
 }
 
 .emoji-picker.hidden {
-  display: none !important;
-   opacity:0;
+ visibility: hidden;
+   opacity: 0; 
+   pointer-events: none;
 }
 
 
