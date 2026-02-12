@@ -69,12 +69,10 @@ function createRemoteParticipant(peerId = "default") {
 
   if (nameTag) nameTag.textContent = peerId || "Guest";
 
-  // Remote avatar fallback
   if (avatarImg && !avatarImg.src) {
     avatarImg.src = "img/defaultUser.png";
   }
 
-  // Voice‑only: hide video element entirely
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
     videoEl.removeAttribute("srcObject");
@@ -104,7 +102,7 @@ function updateLocalAvatarVisibility() {
 
   const stream = rtcState.localStream;
 
-  if (rtcState.voiceOnly || !stream) {
+  if (rtcState.voiceOnly || rtcState.audioOnly || !stream) {
     avatarWrapper.style.display = "flex";
     return;
   }
@@ -185,7 +183,6 @@ function startRemoteSpeakingDetection(stream, participantEl) {
 
     smoothed = smoothed * 0.8 + avg * 0.2;
 
-    // Hybrid threshold tuned for Meet+Discord
     const threshold = rtcState.voiceOnly ? 0.035 : 0.055;
     const speaking = smoothed > threshold;
 
@@ -215,12 +212,19 @@ export async function getLocalMedia(audio = true, video = true) {
     const empty = new MediaStream();
     rtcState.localStream = empty;
     rtcState.voiceOnly = true;
+    rtcState.audioOnly = true;
     updateLocalAvatarVisibility();
     return empty;
   }
 
   rtcState.voiceOnly = !!audio && !video;
-  log("getLocalMedia requested with:", { audio, video, voiceOnly: rtcState.voiceOnly });
+  rtcState.audioOnly = !!audio && !video;
+
+  log("getLocalMedia requested with:", {
+    audio,
+    video,
+    voiceOnly: rtcState.voiceOnly,
+  });
 
   const constraints = {
     audio: audio
@@ -247,9 +251,16 @@ export async function getLocalMedia(audio = true, video = true) {
 
     rtcState.localStream = stream;
 
-    // Apply content hints
-    stream.getVideoTracks().forEach((t) => { try { t.contentHint = "motion"; } catch {} });
-    stream.getAudioTracks().forEach((t) => { try { t.contentHint = "speech"; } catch {} });
+    stream.getVideoTracks().forEach((t) => {
+      try {
+        t.contentHint = "motion";
+      } catch {}
+    });
+    stream.getAudioTracks().forEach((t) => {
+      try {
+        t.contentHint = "speech";
+      } catch {}
+    });
 
     const localVideo = document.getElementById("localVideo");
     const localTile =
@@ -262,7 +273,9 @@ export async function getLocalMedia(audio = true, video = true) {
       localVideo.playsInline = true;
       localVideo.classList.add("show");
 
-      localVideo.play().catch((err) => log("Local video play blocked:", err));
+      localVideo.play().catch((err) =>
+        log("Local video play blocked:", err?.name || err)
+      );
     }
 
     updateLocalAvatarVisibility();
@@ -273,7 +286,6 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // Try audio-only fallback
     if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
       log("Retrying getUserMedia with audio-only…");
       try {
@@ -284,6 +296,7 @@ export async function getLocalMedia(audio = true, video = true) {
 
         rtcState.localStream = audioOnlyStream;
         rtcState.voiceOnly = true;
+        rtcState.audioOnly = true;
 
         updateLocalAvatarVisibility();
 
@@ -296,11 +309,11 @@ export async function getLocalMedia(audio = true, video = true) {
       }
     }
 
-    // FINAL FALLBACK — ALWAYS RETURN A SAFE EMPTY STREAM
     log("Falling back to empty MediaStream (avatar-only mode)");
     const empty = new MediaStream();
     rtcState.localStream = empty;
     rtcState.voiceOnly = true;
+    rtcState.audioOnly = true;
 
     updateLocalAvatarVisibility();
     return empty;
@@ -312,12 +325,6 @@ export async function getLocalMedia(audio = true, video = true) {
 ------------------------------------------------------- */
 rtcState.cameraFacing = rtcState.cameraFacing || "user"; // "user" | "environment"
 
-/**
- * Flip local camera between front/back and update:
- * - rtcState.localStream
- * - peerConnection video sender
- * - #localVideo preview
- */
 export async function flipLocalCamera(rtc) {
   try {
     if (!rtc) {
@@ -343,7 +350,13 @@ export async function flipLocalCamera(rtc) {
       return false;
     }
 
-    const senders = rtc.peerConnection?.getSenders() || [];
+    const pc =
+      (typeof rtc._getPrimaryPC === "function" && rtc._getPrimaryPC()) ||
+      (rtc.pcMap && rtc.pcMap.size
+        ? [...rtc.pcMap.values()][0]
+        : rtc.peerConnection || null);
+
+    const senders = pc?.getSenders() || [];
     const videoSender = senders.find(
       (s) => s.track && s.track.kind === "video"
     );
@@ -351,12 +364,12 @@ export async function flipLocalCamera(rtc) {
       await videoSender.replaceTrack(newTrack);
     }
 
-    // Stop old video tracks
     rtcState.localStream?.getVideoTracks().forEach((t) => {
-      try { t.stop(); } catch {}
+      try {
+        t.stop();
+      } catch {}
     });
 
-    // Replace track in localStream
     if (rtcState.localStream) {
       const oldVideo = rtcState.localStream.getVideoTracks()[0];
       if (oldVideo) rtcState.localStream.removeTrack(oldVideo);
@@ -365,7 +378,6 @@ export async function flipLocalCamera(rtc) {
       rtcState.localStream = newStream;
     }
 
-    // Re-bind local preview
     const localVideo = document.getElementById("localVideo");
     if (localVideo) {
       localVideo.srcObject = rtcState.localStream;
@@ -373,7 +385,7 @@ export async function flipLocalCamera(rtc) {
       localVideo.playsInline = true;
       localVideo.classList.add("show");
       localVideo.play().catch((err) =>
-        log("flipLocalCamera: local video play blocked:", err)
+        log("flipLocalCamera: local video play blocked:", err?.name || err)
       );
     }
 
@@ -434,7 +446,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 
   const showAvatar = (show) => {
     if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
-    if (videoEl && !rtcState.voiceOnly) {
+    if (videoEl && !rtcState.voiceOnly && !rtcState.audioOnly) {
       videoEl.style.display = show ? "none" : "block";
     }
   };
@@ -451,9 +463,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   };
 
-  /* -------------------------------------------------------
-     SCREEN SHARE DETECTION (Meet‑style)
-  ------------------------------------------------------- */
   const isScreenShare =
     evt.track.kind === "video" &&
     evt.track.label &&
@@ -468,8 +477,8 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   } else {
     const someoneSharing = Object.values(rtcState.remoteStreams).some((s) =>
-      s.getVideoTracks().some((t) =>
-        t.label && t.label.toLowerCase().includes("screen")
+      s.getVideoTracks().some(
+        (t) => t.label && t.label.toLowerCase().includes("screen")
       )
     );
 
@@ -479,10 +488,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   }
 
-  /* -----------------------------
-     Remote Video
-  ----------------------------- */
-  if (!rtcState.voiceOnly && evt.track.kind === "video" && videoEl) {
+  if (!rtcState.voiceOnly && !rtcState.audioOnly && evt.track.kind === "video" && videoEl) {
     log("Attaching remote VIDEO to participant:", peerId);
 
     videoEl.srcObject = remoteStream;
@@ -502,9 +508,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
       });
   }
 
-  /* -----------------------------
-     Remote Audio
-  ----------------------------- */
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
     log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
@@ -514,11 +517,33 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     remoteAudioEl.muted = false;
     remoteAudioEl.volume = 1;
 
-    remoteAudioEl.play().catch(() => log("Remote audio autoplay blocked"));
+    remoteAudioEl.play().catch((err) =>
+      log("Remote audio autoplay blocked:", err?.name || err)
+    );
 
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
   }
+}
+
+/* -------------------------------------------------------
+   Helper: resume remote media after user gesture
+------------------------------------------------------- */
+export function resumeRemoteMediaPlayback() {
+  const remoteAudioEl = document.getElementById("remoteAudio");
+  if (remoteAudioEl && remoteAudioEl.srcObject) {
+    remoteAudioEl.play().catch(() => {});
+  }
+
+  const grid = document.getElementById("callGrid");
+  if (!grid) return;
+
+  const videos = grid.querySelectorAll(".participant video");
+  videos.forEach((v) => {
+    if (v.srcObject) {
+      v.play().catch(() => {});
+    }
+  });
 }
 
 /* -------------------------------------------------------
@@ -530,7 +555,9 @@ export function cleanupMedia() {
   if (rtcState.remoteStreams) {
     Object.values(rtcState.remoteStreams).forEach((stream) => {
       stream.getTracks().forEach((t) => {
-        try { t.stop(); } catch {}
+        try {
+          t.stop();
+        } catch {}
       });
     });
     rtcState.remoteStreams = {};
@@ -538,12 +565,15 @@ export function cleanupMedia() {
 
   if (rtcState.localStream) {
     rtcState.localStream.getTracks().forEach((t) => {
-      try { t.stop(); } catch {}
+      try {
+        t.stop();
+      } catch {}
     });
     rtcState.localStream = null;
   }
 
   rtcState.voiceOnly = false;
+  rtcState.audioOnly = false;
 
   const localVideo = document.getElementById("localVideo");
   if (localVideo) {
