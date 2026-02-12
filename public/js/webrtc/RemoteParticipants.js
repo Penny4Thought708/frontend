@@ -1,16 +1,9 @@
 // public/js/webrtc/RemoteParticipants.js
-// Aurora‑Prime Multi‑Party Participant Manager
-// -------------------------------------------------------
-// Supports:
-// - Multi‑track per peer (camera, screen, audio)
-// - Renegotiation‑safe track replacement
-// - Screen‑share stage mode (camera tile hidden)
-// - Speaking indicator + active speaker
-// - Camera‑off avatars
-// - Smooth join/leave animations
-// - Dynamic grid layout
-// - SFU‑ready architecture
-// -------------------------------------------------------
+// PURE TILE MANAGER — no media logic, no track logic, no stage logic.
+// CallUI handles window + screen share UI.
+// WebRTCMedia handles media streams.
+// Controller routes events.
+// This file ONLY manages participant tiles and tile state.
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -25,6 +18,7 @@ export function initRemoteParticipants() {
     console.warn("[RemoteParticipants] #callGrid not found");
     return;
   }
+
   localTileEl = document.getElementById("localParticipant") || null;
 }
 
@@ -39,30 +33,7 @@ export function registerLocalTile(el) {
 }
 
 /* -------------------------------------------------------
-   Dynamic Grid Layout
-------------------------------------------------------- */
-export function updateGridLayout() {
-  if (!gridEl) return;
-
-  const count =
-    participants.size +
-    (localTileEl && !localTileEl.classList.contains("hidden") ? 1 : 0);
-
-  gridEl.classList.remove(
-    "grid-1", "grid-2", "grid-3", "grid-4",
-    "grid-6", "grid-9", "grid-16"
-  );
-
-  if (count <= 1) gridEl.classList.add("grid-1");
-  else if (count === 2) gridEl.classList.add("grid-2");
-  else if (count <= 4) gridEl.classList.add("grid-4");
-  else if (count <= 6) gridEl.classList.add("grid-6");
-  else if (count <= 9) gridEl.classList.add("grid-9");
-  else gridEl.classList.add("grid-16");
-}
-
-/* -------------------------------------------------------
-   Tile Creation
+   Create Tile
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
   if (!gridEl) initRemoteParticipants();
@@ -104,21 +75,11 @@ function createTile(peerId, displayName, avatarUrl) {
     nameEl,
     displayName,
     avatarUrl,
-
-    // Multi‑track support
-    tracks: {
-      camera: null,
-      screen: null,
-      audio: null
-    },
-
-    // State flags
-    isScreenSharing: false,
+    stream: null,        // MediaStream assigned by controller
     cameraOff: false
   };
 
   participants.set(peerId, entry);
-  updateGridLayout();
   return entry;
 }
 
@@ -129,136 +90,33 @@ export function removeParticipant(peerId) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  const { el } = entry;
-  el.classList.add("leaving");
-  setTimeout(() => el.remove(), 220);
+  entry.el.classList.add("leaving");
+  setTimeout(() => entry.el.remove(), 220);
 
   participants.delete(peerId);
-  updateGridLayout();
 }
 
 /* -------------------------------------------------------
-   Multi‑Track Attachment (camera / screen / audio)
+   Attach MediaStream (from controller)
 ------------------------------------------------------- */
-export function attachRemoteTrack(peerId, evt, opts = {}) {
-  const { displayName, avatarUrl } = opts;
-  const track = evt.track;
-  const kind = track.kind;
-
-  const entry = createTile(peerId, displayName, avatarUrl);
+export function attachStream(peerId, stream) {
+  const entry = participants.get(peerId) || createTile(peerId);
   if (!entry) return;
 
-  // Ensure video element has a MediaStream
-  if (!entry.videoEl.srcObject) {
-    entry.videoEl.srcObject = new MediaStream();
-  }
+  entry.stream = stream;
 
-  // Remove stale tracks of same kind
-  const ms = entry.videoEl.srcObject;
-  ms.getTracks()
-    .filter(t => t.kind === kind)
-    .forEach(t => ms.removeTrack(t));
+  if (entry.videoEl) {
+    entry.videoEl.srcObject = stream;
+    entry.videoEl.playsInline = true;
+    entry.videoEl.muted = true;
 
-  // Add new track
-  ms.addTrack(track);
-
-  // Track bookkeeping
-  if (kind === "video") {
-    if (track.label.toLowerCase().includes("screen")) {
-      entry.tracks.screen = track;
-      entry.isScreenSharing = true;
-      promoteScreenShare(peerId);
-    } else {
-      entry.tracks.camera = track;
-      if (!entry.isScreenSharing) {
-        showCameraTile(entry);
-      }
-    }
-  }
-
-  if (kind === "audio") {
-    entry.tracks.audio = track;
-  }
-
-  entry.videoEl.classList.add("show");
-  entry.avatarEl?.classList.add("hidden");
-
-  entry.videoEl.onloadedmetadata = () => {
-    entry.videoEl.play().catch(() => {});
-  };
-
-  updateGridLayout();
-}
-
-/* -------------------------------------------------------
-   Screen Share Promotion (Option 2)
-   - Hide camera tile
-   - Show only screen share tile
-------------------------------------------------------- */
-function promoteScreenShare(peerId) {
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  // Hide camera tile
-  entry.el.classList.add("screen-share-active");
-  entry.el.classList.add("stage-primary");
-
-  // Hide camera video if present
-  if (entry.tracks.camera) {
     entry.videoEl.classList.add("show");
+    entry.avatarEl?.classList.add("hidden");
+
+    entry.videoEl.onloadedmetadata = () => {
+      entry.videoEl.play().catch(() => {});
+    };
   }
-
-  // Enable stage mode
-  gridEl.classList.add("stage-mode");
-
-  // Hide local tile if needed
-  if (localTileEl) {
-    localTileEl.classList.add("hidden");
-  }
-
-  updateGridLayout();
-}
-
-/* -------------------------------------------------------
-   Screen Share Stop
-------------------------------------------------------- */
-export function stopScreenShare(peerId) {
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  entry.isScreenSharing = false;
-  entry.tracks.screen = null;
-
-  entry.el.classList.remove("screen-share-active");
-  entry.el.classList.remove("stage-primary");
-
-  // Restore camera tile if camera exists
-  if (entry.tracks.camera) {
-    showCameraTile(entry);
-  }
-
-  // Remove stage mode if no one else is staged
-  const anyStaged = [...participants.values()].some(p =>
-    p.el.classList.contains("stage-primary")
-  );
-
-  if (!anyStaged) {
-    gridEl.classList.remove("stage-mode");
-  }
-
-  if (localTileEl) {
-    localTileEl.classList.remove("hidden");
-  }
-
-  updateGridLayout();
-}
-
-/* -------------------------------------------------------
-   Camera Tile Restore
-------------------------------------------------------- */
-function showCameraTile(entry) {
-  entry.videoEl.classList.add("show");
-  entry.avatarEl?.classList.add("hidden");
 }
 
 /* -------------------------------------------------------
@@ -271,10 +129,10 @@ export function setParticipantCameraOff(peerId, off) {
   entry.cameraOff = off;
 
   if (off) {
-    entry.videoEl.classList.remove("show");
+    entry.videoEl?.classList.remove("show");
     entry.avatarEl?.classList.remove("hidden");
   } else {
-    entry.videoEl.classList.add("show");
+    entry.videoEl?.classList.add("show");
     entry.avatarEl?.classList.add("hidden");
   }
 }
@@ -314,6 +172,16 @@ export function setParticipantName(peerId, name) {
 }
 
 /* -------------------------------------------------------
+   Update Avatar
+------------------------------------------------------- */
+export function setParticipantAvatar(peerId, url) {
+  const entry = participants.get(peerId);
+  if (!entry) return;
+
+  if (entry.imgEl && url) entry.imgEl.src = url;
+}
+
+/* -------------------------------------------------------
    Clear All Participants (on call end)
 ------------------------------------------------------- */
 export function clearAllParticipants() {
@@ -322,13 +190,9 @@ export function clearAllParticipants() {
   }
   participants.clear();
 
-  if (gridEl) {
-    gridEl.classList.remove("stage-mode");
-  }
-
   if (localTileEl) {
+    localTileEl.classList.remove("active-speaker");
     localTileEl.classList.remove("hidden");
   }
-
-  updateGridLayout();
 }
+
