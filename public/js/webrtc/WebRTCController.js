@@ -594,7 +594,7 @@ async switchCamera() {
     }
   }
 
- /* ---------------------------------------------------
+/* ---------------------------------------------------
      PeerConnection Factory (Hybrid Meet + Discord)
 --------------------------------------------------- */
 async _createPC({ relayOnly = false } = {}) {
@@ -602,6 +602,11 @@ async _createPC({ relayOnly = false } = {}) {
     try { this.pc.close(); } catch {}
     this.pc = null;
   }
+
+  // Choose network behavior
+  // "meet" = start monitor on connected
+  // "discord" = start monitor on checking
+  this.networkMode = this.networkMode || "meet";
 
   const iceServers = await getIceServers({ relayOnly });
 
@@ -688,6 +693,11 @@ async _createPC({ relayOnly = false } = {}) {
 
     this.onQualityChange?.(level, `ICE: ${state}`);
 
+    // Discord-style: start monitor early
+    if (this.networkMode === "discord" && state === "checking") {
+      this.startNetworkMonitor();
+    }
+
     if (rtcState.answering) return;
 
     if (state === "disconnected") {
@@ -708,7 +718,7 @@ async _createPC({ relayOnly = false } = {}) {
     }
 
     if (state === "failed") {
-      this.stopNetworkMonitor();     // 🔥 NEW
+      this.stopNetworkMonitor();
       this.onCallFailed?.("ice failed");
       this.endCall(false);
     }
@@ -720,11 +730,15 @@ async _createPC({ relayOnly = false } = {}) {
 
     if (state === "connected") {
       this.onQualityChange?.("excellent", "Connected");
-      this.startNetworkMonitor();     // 🔥 NEW — start adaptive bitrate + stats
+
+      // Meet-style: start monitor only when fully connected
+      if (this.networkMode === "meet") {
+        this.startNetworkMonitor();
+      }
     }
 
     if (state === "failed" || state === "closed") {
-      this.stopNetworkMonitor();      // 🔥 NEW — stop when dead
+      this.stopNetworkMonitor();
       this.onCallFailed?.("connection failed");
       this.endCall(false);
     }
@@ -880,6 +894,7 @@ _applyAdaptiveBitrate(level) {
   });
 }
 
+
   /* ---------------------------------------------------
      Socket bindings
   --------------------------------------------------- */
@@ -938,6 +953,7 @@ _applyAdaptiveBitrate(level) {
     });
   }
 }
+
 
 
 
