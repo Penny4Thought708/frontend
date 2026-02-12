@@ -24,10 +24,10 @@ export const rtcState = {
   callEstablished: false,
   mediaReady: false,
 
-  // 🔥 NEW — used by controller + voicemail logic
-  inCall: false,   // true only once call is connected
-  busy: false,     // true from ringing/connecting through active
-  voiceOnly: false,
+  // Used by controller + voicemail logic
+  inCall: false,     // true only once call is connected
+  busy: false,       // true from ringing/connecting through active
+  voiceOnly: false,  // UI-level audio-only mode
 
   /* ---------------------------------------------------
      Fallback + Recovery
@@ -53,6 +53,7 @@ export const rtcState = {
   --------------------------------------------------- */
   callTimerSeconds: 0,
   callTimerInterval: null,
+
   /* ---------------------------------------------------
      Network Quality + Stats
   --------------------------------------------------- */
@@ -125,7 +126,7 @@ export const rtcState = {
 
   markCallEstablished() {
     this.callEstablished = true;
-    this.inCall = true;     // 🔥 mark connected
+    this.inCall = true;
     this.setPhase("active");
     this.log("Call established");
   },
@@ -210,6 +211,7 @@ export const rtcState = {
 
     this.resetInProgress = false;
   },
+
   /* ---------------------------------------------------
      Network Quality Helpers
   --------------------------------------------------- */
@@ -222,7 +224,6 @@ export const rtcState = {
   },
 
   updateFromStats(statsSnapshot) {
-    // statsSnapshot is a plain object you build in the controller
     this.lastStats = statsSnapshot;
 
     const { videoLoss, rtt, outgoingBitrate } = statsSnapshot;
@@ -241,7 +242,10 @@ export const rtcState = {
       level = "good";
     }
 
-    this.setNetworkQuality(level, `loss=${(videoLoss*100||0).toFixed(1)}% rtt=${(rtt||0).toFixed(3)}s bitrate=${Math.round((outgoingBitrate||0)/1000)}kbps`);
+    this.setNetworkQuality(
+      level,
+      `loss=${(videoLoss * 100 || 0).toFixed(1)}% rtt=${(rtt || 0).toFixed(3)}s bitrate=${Math.round((outgoingBitrate || 0) / 1000)}kbps`
+    );
 
     return this.networkQuality;
   },
@@ -270,17 +274,15 @@ export const rtcState = {
       hasRemoteStream: !!this.remoteStream,
       remoteTrackCount: this.remoteTracks.size,
       callTimerSeconds: this.callTimerSeconds,
-      callTimerSeconds: this.callTimerSeconds,
       networkQuality: this.networkQuality,
       hasLastStats: !!this.lastStats
-
-      
     };
 
     this.log("State snapshot:", snapshot);
     return snapshot;
   }
 };
+
 
 
 
