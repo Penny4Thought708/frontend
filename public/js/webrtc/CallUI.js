@@ -3,11 +3,8 @@
 // CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
-import {
-  resumeRemoteMediaPlayback,
-  flipLocalCamera,          // ✅ add this
-} from "./WebRTCMedia.js";
-
+import { resumeRemoteMediaPlayback } from "./WebRTCMedia.js";
+import { flipLocalCamera } from "./WebRTCMedia.js";
 
 import {
   initRemoteParticipants,
@@ -207,7 +204,6 @@ export function initCallUI(rtc) {
 
     win.classList.remove("hidden");
     win.classList.add("is-open");
-    win.removeAttribute("inert");
     win.setAttribute("aria-hidden", "false");
 
     win.classList.add("call-opening");
@@ -220,14 +216,8 @@ export function initCallUI(rtc) {
     if (!win) return;
     if (!win.classList.contains("is-open")) return;
 
-    // Fix ARIA warning: don't hide a focused subtree
-    if (win.contains(document.activeElement)) {
-      document.activeElement.blur();
-    }
-
     win.classList.remove("is-open");
     win.setAttribute("aria-hidden", "true");
-    win.setAttribute("inert", "");
 
     setTimeout(() => {
       win.classList.add("hidden");
@@ -352,66 +342,69 @@ export function initCallUI(rtc) {
     debugPanel.scrollTop = debugPanel.scrollHeight;
   }
 
-/* -------------------------------------------------------
-   BUTTON BINDINGS
-------------------------------------------------------- */
+  /* -------------------------------------------------------
+     BUTTON BINDINGS
+  ------------------------------------------------------- */
 
-if (declineBtn) {
-  declineBtn.onclick = () => {
-    disableCallButtons();
-    setStatus("Declining…");
-    rtc.declineIncomingCall?.();
-  };
-}
+  if (declineBtn) {
+    declineBtn.onclick = () => {
+      disableCallButtons();
+      setStatus("Declining…");
+      rtc.declineIncomingCall?.();
+    };
+  }
 
-if (answerBtn) {
-  answerBtn.onclick = async () => {
-    disableCallButtons();
-    setStatus("Answering…");
+  if (answerBtn) {
+    answerBtn.onclick = async () => {
+      disableCallButtons();
+      setStatus("Answering…");
 
-    // 1. Start opening the window
-    openWindowAnimated();
-    setMode("active");
+      // 1. Start opening the window
+      openWindowAnimated();
+      setMode("active");
 
-    // 2. Wait for the window to actually become visible
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
+      // 2. Wait for the window to actually become visible
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
 
-    // 3. Now answer the call
-    await rtc.answerIncomingCall?.();
+      // 3. Now answer the call
+      await rtc.answerIncomingCall?.();
 
-    // 4. Remote media under user gesture
-    resumeRemoteMediaPlayback();
-  };
-}
+      // 4. NOW remote media playback is allowed
+      resumeRemoteMediaPlayback();
+    };
+  }
 
-if (endBtn) {
-  endBtn.onclick = () => {
-    setStatus("Call ended");
-    rtc.endCall?.(true);
-  };
-}
+  if (endBtn) {
+    endBtn.onclick = () => {
+      setStatus("Call ended");
+      rtc.endCall?.(true);
+    };
+  }
 
-if (muteBtn) {
-  muteBtn.onclick = () => {
-    const muted = rtc.toggleMute?.();
-    muteBtn.innerHTML = muted
-      ? `<span class="material-symbols-outlined">mic_off</span>`
-      : `<span class="material-symbols-outlined">mic</span>`;
-  };
-}
+  if (muteBtn) {
+    muteBtn.onclick = () => {
+      const muted = rtc.toggleMute?.();
+      muteBtn.innerHTML = muted
+        ? `<span class="material-symbols-outlined">mic_off</span>`
+        : `<span class="material-symbols-outlined">mic</span>`;
+    };
+  }
 
-if (cameraBtn) {
-  cameraBtn.onclick = async () => {
-    const ok = await flipLocalCamera(rtc);   // ✅ use shared media helper
-    if (!ok) return;                         // don’t lie to the UI if it failed
+  // Wire rtc.switchCamera to media engine flipLocalCamera
+  rtc.switchCamera = () => flipLocalCamera(rtc);
 
-    cameraBtn.classList.toggle("flipped");
-    cameraBtn.innerHTML =
-      `<span class="material-symbols-outlined">videocam</span>`;
-    setCameraOff(false);
-  };
-}
+  if (cameraBtn) {
+    cameraBtn.onclick = async () => {
+      const ok = await rtc.switchCamera?.();
+      if (ok) {
+        cameraBtn.classList.toggle("flipped");
+        cameraBtn.innerHTML =
+          `<span class="material-symbols-outlined">videocam</span>`;
+        setCameraOff(false);
+      }
+    };
+  }
 
   if (shareBtn) {
     shareBtn.onclick = () => rtc.startScreenShare?.();
@@ -490,9 +483,6 @@ if (cameraBtn) {
       localVideo.playsInline = true;
       localVideo.classList.add("show");
     }
-
-    // In case autoplay still needs a nudge after negotiation
-    resumeRemoteMediaPlayback();
   };
 
   rtc.onCallEnded = () => {
@@ -559,57 +549,6 @@ if (cameraBtn) {
   rtc._state.recording = !!rtc._state.recording;
   rtc._state.recorder = rtc._state.recorder || null;
   rtc._state.recordedChunks = rtc._state.recordedChunks || [];
-
-  /* ------------------------------------------------------------
-     CAMERA FLIP (front/back)
-  ------------------------------------------------------------ */
-  rtc.switchCamera = async function () {
-    try {
-      rtc._state.cameraFacing =
-        rtc._state.cameraFacing === "user" ? "environment" : "user";
-
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: rtc._state.cameraFacing,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-
-      const newTrack = newStream.getVideoTracks()[0];
-
-      const senders = rtc.peerConnection?.getSenders() || [];
-      const videoSender = senders.find(
-        (s) => s.track && s.track.kind === "video"
-      );
-      if (videoSender && newTrack) {
-        await videoSender.replaceTrack(newTrack);
-      }
-
-      rtc.localStream?.getVideoTracks().forEach((t) => t.stop());
-
-      if (rtc.localStream) {
-        const oldVideo = rtc.localStream.getVideoTracks()[0];
-        if (oldVideo) rtc.localStream.removeTrack(oldVideo);
-        rtc.localStream.addTrack(newTrack);
-      } else {
-        rtc.localStream = newStream;
-      }
-
-      if (localVideo) {
-        localVideo.srcObject = rtc.localStream;
-        localVideo.muted = true;
-        localVideo.playsInline = true;
-        localVideo.classList.add("show");
-      }
-
-      return false;
-    } catch (err) {
-      console.error("switchCamera (flip) failed:", err);
-      return false;
-    }
-  };
 
   /* ------------------------------------------------------------
      AUDIO PROCESSING
@@ -685,23 +624,12 @@ if (cameraBtn) {
         const mixedStream = new MediaStream();
 
         rtc.localStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
-        rtc.remoteStream?.getTracks?.().forEach((t) => mixedStream.addTrack(t));
-
-        if (!mixedStream.getTracks().length) {
-          console.warn(
-            "[CallUI] toggleRecording: no audio or video tracks available for recording"
-          );
-          return false;
-        }
+        rtc.remoteStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
 
         rtc._state.recordedChunks = [];
-
-        let options = {};
-        if (window.MediaRecorder && MediaRecorder.isTypeSupported?.("video/webm; codecs=vp9")) {
-          options.mimeType = "video/webm; codecs=vp9";
-        }
-
-        rtc._state.recorder = new MediaRecorder(mixedStream, options);
+        rtc._state.recorder = new MediaRecorder(mixedStream, {
+          mimeType: "video/webm; codecs=vp9",
+        });
 
         rtc._state.recorder.ondataavailable = (e) => {
           if (e.data.size > 0) rtc._state.recordedChunks.push(e.data);
@@ -944,6 +872,7 @@ if (cameraBtn) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
