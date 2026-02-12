@@ -1,19 +1,22 @@
 // public/js/webrtc/WebRTCMedia.js
 // PURE MEDIA ENGINE — no UI, no tile creation, no stage mode.
-// CallUI handles UI. RemoteParticipants handles tiles.
+// CallUI owns the window. RemoteParticipants owns tiles.
 // This file handles ONLY:
-// - local media
-// - remote tracks
+// - local media acquisition
+// - remote track aggregation per peer
 // - speaking detection
 // - audio visualization
 // - cleanup
 
 import { rtcState } from "./WebRTCState.js";
 
+const log = (...args) => console.log("[WebRTCMedia]", ...args);
+
 /* -------------------------------------------------------
    Shared AudioContext
 ------------------------------------------------------- */
 let sharedAudioCtx = null;
+
 function getAudioCtx() {
   if (!sharedAudioCtx) {
     const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -22,8 +25,6 @@ function getAudioCtx() {
   }
   return sharedAudioCtx;
 }
-
-const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
 /* -------------------------------------------------------
    Audio Visualizer (CSS variable --audio-level)
@@ -65,7 +66,9 @@ export function attachAudioVisualizer(stream, target, cssVar = "--audio-level") 
 }
 
 /* -------------------------------------------------------
-   Speaking Detection (remote)
+   Speaking Detection (remote, DOM-agnostic)
+   - caller passes the participant tile element
+   - we only toggle .speaking and CSS var
 ------------------------------------------------------- */
 const speakingLoops = new Map();
 
@@ -92,6 +95,10 @@ export function startRemoteSpeakingDetection(stream, participantEl) {
     const speaking = smoothed > 0.055;
 
     participantEl.classList.toggle("speaking", speaking);
+    participantEl.style.setProperty(
+      "--audio-level",
+      speaking ? smoothed.toFixed(3) : "0"
+    );
 
     const id = requestAnimationFrame(loop);
     speakingLoops.set(participantEl, id);
@@ -104,12 +111,15 @@ export function stopSpeakingDetection() {
   for (const [el, id] of speakingLoops.entries()) {
     cancelAnimationFrame(id);
     el.classList.remove("speaking");
+    el.style.removeProperty("--audio-level");
   }
   speakingLoops.clear();
 }
 
 /* -------------------------------------------------------
    Local Media Acquisition
+   - audio: echoCancellation + NS + AGC
+   - video: 1280x720@30 ideal
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -144,6 +154,7 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err);
 
+    // Fallback: audio-only if full A/V fails
     if (video && audio) {
       try {
         const audioOnly = await navigator.mediaDevices.getUserMedia({
@@ -152,7 +163,9 @@ export async function getLocalMedia(audio = true, video = true) {
         });
         rtcState.localStream = audioOnly;
         return audioOnly;
-      } catch {}
+      } catch (err2) {
+        log("Audio-only fallback failed:", err2);
+      }
     }
 
     const empty = new MediaStream();
@@ -163,9 +176,11 @@ export async function getLocalMedia(audio = true, video = true) {
 
 /* -------------------------------------------------------
    Remote Track Handling (NO UI)
+   - Aggregates tracks per peer into rtcState.remoteStreams[peerId]
+   - Returns the MediaStream for controller / tiles to bind
 ------------------------------------------------------- */
-export function attachRemoteTrack(peerId, evt) {
-  if (!evt || !evt.track) return;
+export function attachRemoteTrack(peerId = "default", evt) {
+  if (!evt || !evt.track) return null;
 
   if (!rtcState.remoteStreams) rtcState.remoteStreams = {};
   let remoteStream = rtcState.remoteStreams[peerId];
@@ -177,27 +192,42 @@ export function attachRemoteTrack(peerId, evt) {
 
   remoteStream.addTrack(evt.track);
 
-  log("Remote track:", peerId, evt.track.kind);
+  log("Remote track attached:", {
+    peerId,
+    kind: evt.track.kind,
+    label: evt.track.label,
+    readyState: evt.track.readyState,
+  });
 
-  // Controller or RemoteParticipants will bind this stream to UI
   return remoteStream;
 }
 
 /* -------------------------------------------------------
-   Cleanup
+   Cleanup (on call end)
 ------------------------------------------------------- */
 export function cleanupMedia() {
   stopSpeakingDetection();
 
   if (rtcState.remoteStreams) {
     Object.values(rtcState.remoteStreams).forEach((stream) => {
-      stream.getTracks().forEach((t) => t.stop());
+      stream.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
     });
     rtcState.remoteStreams = {};
   }
 
   if (rtcState.localStream) {
-    rtcState.localStream.getTracks().forEach((t) => t.stop());
+    rtcState.localStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch {}
+    });
     rtcState.localStream = null;
   }
+
+  log("Media cleaned up");
 }
+
