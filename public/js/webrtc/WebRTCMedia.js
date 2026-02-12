@@ -488,25 +488,27 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   }
 
-  if (!rtcState.voiceOnly && !rtcState.audioOnly && evt.track.kind === "video" && videoEl) {
-    log("Attaching remote VIDEO to participant:", peerId);
+if (evt.track.kind === "video" && videoEl) {
+  log("Attaching remote VIDEO to participant:", peerId);
 
-    videoEl.srcObject = remoteStream;
-    videoEl.playsInline = true;
-    videoEl.muted = true;
-    videoEl.style.display = "block";
-    videoEl.style.opacity = "1";
-    videoEl.classList.add("show");
+  videoEl.srcObject = remoteStream;
+  videoEl.playsInline = true;
+  videoEl.muted = true; // keep muted for autoplay
 
-    videoEl.play()
-      .then(() => {
-        showAvatar(false);
-        participantEl.classList.add("video-active");
-      })
-      .catch((err) => {
-        log("Remote video play blocked or failed:", err?.name || err);
-      });
-  }
+  videoEl.style.display = "block";
+  videoEl.style.opacity = "1";
+  videoEl.classList.add("show");
+
+  videoEl.play()
+    .then(() => {
+      showAvatar(false);
+      participantEl.classList.add("video-active");
+    })
+    .catch((err) => {
+      log("Remote video play blocked or failed:", err?.name || err);
+    });
+}
+
 
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
@@ -701,5 +703,6 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
