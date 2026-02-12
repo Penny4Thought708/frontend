@@ -1,6 +1,7 @@
 // public/js/webrtc/WebRTCController.js
 // Mesh‑ready WebRTC controller aligned with new Call UI + media engine.
-// 1:1 compatible, but internally supports per‑peer RTCPeerConnections.
+// 1:1 compatible, but internally supports per‑peer RTCPeerConnections,
+// polite peer logic, adaptive bitrate, and clean call lifecycle.
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
@@ -56,7 +57,7 @@ function stopAllTones() {
 }
 
 /* -------------------------------------------------------
-   WebRTC Controller (Mesh‑ready)
+   WebRTC Controller (Mesh‑ready, polite peer)
 ------------------------------------------------------- */
 
 export class WebRTCController {
@@ -82,6 +83,11 @@ export class WebRTCController {
     // Network behavior + monitor
     this.networkMode = "meet"; // "meet" | "discord"
     this._networkInterval = null;
+
+    // Polite peer / glare handling
+    this.isPolite = false; // set per call based on role
+    this.makingOffer = false;
+    this.ignoreOffer = false;
 
     // UI callbacks (wired by CallUI)
     this.onOutgoingCall = null;
@@ -166,7 +172,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Outgoing Call (Mesh‑ready, still 1:1 friendly)
+     Outgoing Call (Mesh‑ready, polite caller)
   --------------------------------------------------- */
   async _startCallInternal(peerId, audioOnly, { relayOnly }) {
     console.log("[WebRTC] _startCallInternal", { peerId, audioOnly, relayOnly });
@@ -184,6 +190,11 @@ export class WebRTCController {
     rtcState.inCall = false;
     rtcState.incomingOffer = null;
     rtcState.usedRelayFallback = !!relayOnly;
+
+    // Caller is impolite (polite = false) in glare handling
+    this.isPolite = false;
+    this.makingOffer = false;
+    this.ignoreOffer = false;
 
     const pc = await this._getOrCreatePC(peerId, { relayOnly });
 
@@ -208,7 +219,9 @@ export class WebRTCController {
     });
 
     // Create offer
+    this.makingOffer = true;
     let offer = await pc.createOffer();
+    this.makingOffer = false;
 
     // VP9 priority
     if (offer.sdp) {
@@ -263,10 +276,10 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Incoming Offer (Mesh‑ready)
+     Incoming Offer (Mesh‑ready, polite callee)
   --------------------------------------------------- */
   async handleOffer(data) {
-    const { from, offer, fromName, audioOnly, fromUser } = data || {};
+    const { from, offer, fromName, audioOnly, fromUser, renegotiate } = data || {};
     console.log("[WebRTC] handleOffer", data);
     if (!from || !offer) return;
 
@@ -279,16 +292,68 @@ export class WebRTCController {
     rtcState.peerAvatar = fromUser?.avatar || null;
     rtcState.audioOnly = !!audioOnly;
     rtcState.isCaller = false;
-
-    rtcState.busy = true;
-    rtcState.inCall = false;
-    rtcState.incomingOffer = data;
     rtcState.usedRelayFallback = false;
 
+    // Callee is polite in glare handling
+    this.isPolite = true;
+
     if (fromUser?.avatar) {
+      rtcState.peerAvatar = fromUser.avatar;
       setRemoteAvatar(fromUser.avatar);
       showRemoteAvatar();
     }
+
+    const pc = await this._getOrCreatePC(from, { relayOnly: false });
+
+    // Polite peer glare handling
+    const offerCollision =
+      offer.type === "offer" &&
+      (this.makingOffer || pc.signalingState !== "stable");
+
+    this.ignoreOffer = !this.isPolite && offerCollision;
+    if (this.ignoreOffer) {
+      console.warn("[WebRTC] Ignoring offer due to glare (impolite side)");
+      return;
+    }
+
+    // VP9 priority on remote offer
+    if (offer.sdp) {
+      offer.sdp = offer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    await this._flushPendingRemoteCandidates(from, pc);
+
+    // If this is a renegotiation, we don't re‑ring or re‑prompt
+    if (renegotiate) {
+      console.log("[WebRTC] Renegotiation offer handled");
+      const answer = await pc.createAnswer();
+      if (answer.sdp) {
+        answer.sdp = answer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
+      }
+      await pc.setLocalDescription(answer);
+
+      this.socket.emit("webrtc:signal", {
+        type: "answer",
+        to: from,
+        from: getMyUserId(),
+        answer,
+        renegotiate: true,
+      });
+
+      return;
+    }
+
+    // Fresh incoming call
+    rtcState.busy = true;
+    rtcState.inCall = false;
+    rtcState.incomingOffer = data;
 
     stopAllTones();
     ringtone?.play().catch(() => {});
@@ -315,11 +380,6 @@ export class WebRTCController {
 
     // stop ringing on this side
     stopAllTones();
-
-    // tell backend this call is accepted (extra safety vs timeout)
-    if (this.socket && from) {
-      this.socket.emit("call:accept", { to: from });
-    }
 
     const pc = await this._getOrCreatePC(from, { relayOnly: false });
 
@@ -382,6 +442,9 @@ export class WebRTCController {
       answer,
     });
 
+    // Callee confirms acceptance to backend (clears timeout)
+    this.socket.emit("call:accept", { to: from, from: getMyUserId() });
+
     rtcState.incomingOffer = null;
 
     this.onCallStarted?.();
@@ -395,7 +458,10 @@ export class WebRTCController {
     const callerId = offerData?.from || rtcState.currentCallerId;
 
     if (callerId && this.socket) {
-      this.socket.emit("call:decline", { to: callerId });
+      this.socket.emit("call:decline", {
+        to: callerId,
+        from: getMyUserId(),
+      });
     }
 
     addCallLogEntry({
@@ -422,41 +488,45 @@ export class WebRTCController {
   /* ---------------------------------------------------
      Remote Answer (Mesh‑ready)
   --------------------------------------------------- */
-async handleAnswer(data) {
-  if (!data?.answer) return;
-  if (!rtcState.isCaller) return;
+  async handleAnswer(data) {
+    if (!data?.answer) return;
+    if (!rtcState.isCaller) return;
 
-  const from = data.from;
-  if (!from) return;
+    const from = data.from;
+    if (!from) return;
 
-  const pc = this.pcMap.get(from);
-  if (!pc) return;
-  if (pc.signalingState !== "have-local-offer") return;
+    const pc = this.pcMap.get(from);
+    if (!pc) return;
 
-  rtcState.answering = true;
-  setTimeout(() => (rtcState.answering = false), 800);
+    // Ignore answer if we are ignoring offers (glare)
+    if (this.ignoreOffer) {
+      console.warn("[WebRTC] Ignoring answer due to previous glare decision");
+      return;
+    }
 
-  // VP9 priority on remote answer
-  if (data.answer.sdp) {
-    data.answer.sdp = data.answer.sdp.replace(
-      /(m=video .*?)(96 97 98)/,
-      (match, prefix, list) => `${prefix}98 96 97`
-    );
+    rtcState.answering = true;
+    setTimeout(() => (rtcState.answering = false), 800);
+
+    // VP9 priority on remote answer
+    if (data.answer.sdp) {
+      data.answer.sdp = data.answer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    await this._flushPendingRemoteCandidates(from, pc);
+
+    rtcState.inCall = true;
+    rtcState.busy = true;
+
+    // Caller confirms acceptance to backend (clears timeout)
+    this.socket.emit("call:accept", { to: from, from: getMyUserId() });
+
+    stopAllTones();
+    this.onCallStarted?.();
   }
-
-  await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-  await this._flushPendingRemoteCandidates(from, pc);
-
-  rtcState.inCall = true;
-  rtcState.busy = true;
-
-  // ⭐ CRITICAL: caller must confirm acceptance too
-  this.socket.emit("call:accept", { to: from });
-
-  stopAllTones();
-  this.onCallStarted?.();
-}
-
 
   /* ---------------------------------------------------
      ICE Candidate (Mesh‑ready)
@@ -479,7 +549,9 @@ async handleAnswer(data) {
 
     try {
       await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch {}
+    } catch (err) {
+      console.warn("[ICE] Error adding remote candidate:", err);
+    }
   }
 
   /* ---------------------------------------------------
@@ -489,15 +561,14 @@ async handleAnswer(data) {
     if (rtcState.answering) return;
 
     if (from && this.pcMap.has(from)) {
-      // End just this peer’s connection
       const pc = this.pcMap.get(from);
       try {
         pc.close();
       } catch {}
       this.pcMap.delete(from);
+      this.pendingRemoteCandidates.delete(from);
     }
 
-    // If no more peers, end full call
     if (this.pcMap.size === 0) {
       this.endCall(false);
     }
@@ -511,11 +582,11 @@ async handleAnswer(data) {
 
     const peerId = rtcState.peerId;
 
-    // Close all peer connections
-    for (const pc of this.pcMap.values()) {
+    for (const [id, pc] of this.pcMap.entries()) {
       try {
         pc.close();
       } catch {}
+      this.pendingRemoteCandidates.delete(id);
     }
     this.pcMap.clear();
 
@@ -588,7 +659,6 @@ async handleAnswer(data) {
       );
 
       return ok === true ? false : false;
-      // Always return "camera ON" because flip ≠ disable
     } catch (err) {
       console.error("[WebRTC] switchCamera flip failed:", err);
       return false;
@@ -617,7 +687,6 @@ async handleAnswer(data) {
       const screenTrack = screenStream.getVideoTracks()[0];
       screenTrack.contentHint = "detail";
 
-      // Replace video track on all peer connections
       const senders = [];
       for (const pc of this.pcMap.values()) {
         const sender = pc
@@ -687,9 +756,6 @@ async handleAnswer(data) {
      PeerConnection Factory (per‑peer, Mesh‑ready)
   --------------------------------------------------- */
   async _createPC(peerId, { relayOnly = false } = {}) {
-    // Choose network behavior
-    // "meet" = start monitor on connected
-    // "discord" = start monitor on checking
     this.networkMode = this.networkMode || "meet";
 
     const iceServers = await getIceServers({ relayOnly });
@@ -778,7 +844,6 @@ async handleAnswer(data) {
 
       this.onQualityChange?.(level, `ICE: ${state}`);
 
-      // Discord-style: start monitor early
       if (this.networkMode === "discord" && state === "checking") {
         this.startNetworkMonitor();
       }
@@ -820,7 +885,6 @@ async handleAnswer(data) {
       if (state === "connected") {
         this.onQualityChange?.("excellent", "Connected");
 
-        // Meet-style: start monitor only when fully connected
         if (this.networkMode === "meet") {
           this.startNetworkMonitor();
         }
@@ -833,12 +897,14 @@ async handleAnswer(data) {
       }
     };
 
-    /* Renegotiation (Discord-style) */
+    /* Renegotiation (Discord-style, polite) */
     pc.onnegotiationneeded = async () => {
       try {
         console.log("[WebRTC] Renegotiation needed for", peerId);
 
+        this.makingOffer = true;
         let offer = await pc.createOffer();
+        this.makingOffer = false;
 
         if (offer.sdp) {
           offer.sdp = offer.sdp.replace(
@@ -857,6 +923,7 @@ async handleAnswer(data) {
           renegotiate: true,
         });
       } catch (err) {
+        this.makingOffer = false;
         console.warn("[WebRTC] Renegotiation failed:", err);
       }
     };
@@ -909,18 +976,10 @@ async handleAnswer(data) {
     this._networkInterval = setInterval(async () => {
       try {
         const stats = await pc.getStats();
-        let videoOutbound = null;
         let videoRemoteInbound = null;
         let candidatePair = null;
 
         stats.forEach((report) => {
-          if (
-            report.type === "outbound-rtp" &&
-            report.kind === "video" &&
-            !report.isRemote
-          ) {
-            videoOutbound = report;
-          }
           if (report.type === "remote-inbound-rtp" && report.kind === "video") {
             videoRemoteInbound = report;
           }
@@ -1089,6 +1148,8 @@ async handleAnswer(data) {
     });
   }
 }
+
+
 
 
 
