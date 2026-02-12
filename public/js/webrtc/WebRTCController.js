@@ -92,6 +92,7 @@ export class WebRTCController {
     // Call identity
     this.localPeerId = getMyUserId();
     this.currentPeerId = null;
+    this.peerConnection = null;
 
     // UI callbacks (wired by CallUI)
     this.onOutgoingCall = null;
@@ -771,7 +772,7 @@ export class WebRTCController {
           return;
         }
 
-        const remoteStream = attachRemoteTrack(peerId, evt);
+        attachRemoteTrack(peerId, evt);
 
         // Merge into unified remoteStream for recording
         if (!this.remoteStream) {
@@ -900,6 +901,7 @@ export class WebRTCController {
     }
   }
 }
+
 
 
 
