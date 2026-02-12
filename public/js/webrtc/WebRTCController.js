@@ -34,6 +34,7 @@ import {
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
 
+/* Ensure tones loop */
 if (ringtone) ringtone.loop = true;
 if (ringback) ringback.loop = true;
 
@@ -47,6 +48,11 @@ function stopAudio(el) {
     el.pause();
     el.currentTime = 0;
   } catch {}
+}
+
+function stopAllTones() {
+  stopAudio(ringtone);
+  stopAudio(ringback);
 }
 
 /* -------------------------------------------------------
@@ -167,6 +173,8 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) return;
 
+    stopAllTones();
+
     // Primary peer for UI / state
     rtcState.peerId = peerId;
     rtcState.peerName = rtcState.peerName || `User ${peerId}`;
@@ -282,6 +290,7 @@ export class WebRTCController {
       showRemoteAvatar();
     }
 
+    stopAllTones();
     ringtone?.play().catch(() => {});
 
     this.onIncomingCall?.({
@@ -298,6 +307,14 @@ export class WebRTCController {
     if (!offerData) return;
 
     const { from, offer, audioOnly } = offerData;
+
+    // Tell backend this call is accepted so it stops timeout/voicemail
+    if (this.socket && from) {
+      this.socket.emit("call:accept", {
+        to: from,
+        from: getMyUserId(),
+      });
+    }
 
     rtcState.audioOnly = !!audioOnly;
     rtcState.inCall = true;
@@ -381,8 +398,8 @@ export class WebRTCController {
     const offerData = rtcState.incomingOffer;
     const callerId = offerData?.from || rtcState.currentCallerId;
 
-    if (callerId) {
-      this.socket.emit("call:decline", { to: callerId });
+    if (callerId && this.socket) {
+      this.socket.emit("call:decline", { to: callerId, from: getMyUserId() });
     }
 
     addCallLogEntry({
@@ -402,11 +419,7 @@ export class WebRTCController {
     rtcState.inCall = false;
     rtcState.busy = false;
 
-    this.onVoicemailPrompt?.({
-      reason: "declined",
-      from: callerId,
-    });
-
+    stopAllTones();
     this.onCallEnded?.();
   }
 
@@ -494,8 +507,7 @@ export class WebRTCController {
      End Call (closes all PCs)
   --------------------------------------------------- */
   endCall(local = true) {
-    stopAudio(ringback);
-    stopAudio(ringtone);
+    stopAllTones();
 
     const peerId = rtcState.peerId;
 
@@ -991,7 +1003,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Socket bindings (Mesh‑aware + Voicemail + Looping)
+     Socket bindings (Mesh‑aware + voicemail)
   --------------------------------------------------- */
   _bindSocketEvents() {
     if (!this.socket) {
@@ -999,11 +1011,13 @@ export class WebRTCController {
       return;
     }
 
-    // Ensure tones loop like real calling apps
-    if (ringtone) ringtone.loop = true;
-    if (ringback) ringback.loop = true;
+    const triggerVoicemail = (from, reason) => {
+      console.log("[WebRTC] voicemail event", from, reason);
+      stopAllTones();
+      this.onVoicemailPrompt?.({ from, reason });
+      this.endCall(false);
+    };
 
-    // Clear old listeners
     this.socket.off("webrtc:signal");
     this.socket.off("call:voicemail");
     this.socket.off("call:restore");
@@ -1012,9 +1026,6 @@ export class WebRTCController {
     this.socket.off("call:missed");
     this.socket.off("call:dnd");
 
-    /* ---------------------------------------------------
-       CORE SIGNALING
-    --------------------------------------------------- */
     this.socket.on("webrtc:signal", async (data) => {
       console.log("[WebRTC] webrtc:signal received", data?.type, data);
       if (!data || !data.type) return;
@@ -1055,52 +1066,33 @@ export class WebRTCController {
       }
     });
 
-    /* ---------------------------------------------------
-       VOICEMAIL + DECLINE + TIMEOUT + MISSED + DND
-    --------------------------------------------------- */
-
-    const stopAllTones = () => {
-      stopAudio(ringback);
-      stopAudio(ringtone);
-    };
-
-    const triggerVoicemailFlow = (from, reason) => {
-      stopAllTones();
-
-      this.onVoicemailPrompt?.({
-        reason,
-        from,
-      });
-
-      this.endCall(false);
-    };
-
-    this.socket.on("call:declined", ({ from }) => {
-      console.log("[WebRTC] call declined by", from);
-      triggerVoicemailFlow(from, "declined");
+    this.socket.on("call:timeout", (data) => {
+      console.log("[WebRTC] call timeout from", data?.from);
+      triggerVoicemail(data?.from, "timeout");
     });
 
-    this.socket.on("call:timeout", ({ from }) => {
-      console.log("[WebRTC] call timeout from", from);
-      triggerVoicemailFlow(from, "timeout");
+    this.socket.on("call:voicemail", (data) => {
+      console.log("[WebRTC] call voicemail from", data?.from);
+      triggerVoicemail(data?.from, "voicemail");
     });
 
-    this.socket.on("call:missed", ({ from }) => {
-      console.log("[WebRTC] call missed by", from);
-      triggerVoicemailFlow(from, "missed");
+    this.socket.on("call:declined", (data) => {
+      console.log("[WebRTC] call declined from", data?.from);
+      triggerVoicemail(data?.from, "declined");
     });
 
-    this.socket.on("call:dnd", ({ from }) => {
-      console.log("[WebRTC] user in DND", from);
-      triggerVoicemailFlow(from, "dnd");
+    this.socket.on("call:missed", (data) => {
+      console.log("[WebRTC] call missed from", data?.from);
+      triggerVoicemail(data?.from, "missed");
     });
 
-    this.socket.on("call:voicemail", ({ from, reason }) => {
-      console.log("[WebRTC] voicemail event", from, reason);
-      triggerVoicemailFlow(from, reason || "voicemail");
+    this.socket.on("call:dnd", (data) => {
+      console.log("[WebRTC] call DND from", data?.from);
+      triggerVoicemail(data?.from, "dnd");
     });
   }
 }
+
 
 
 
