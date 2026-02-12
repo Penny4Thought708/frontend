@@ -353,16 +353,22 @@ export function initCallUI(rtc) {
     };
   }
 if (answerBtn) {
-  answerBtn.onclick = () => {
+  answerBtn.onclick = async () => {
     disableCallButtons();
     setStatus("Answering…");
-    setMode("active");
-    rtc.answerIncomingCall?.();
 
-    // 🔥 Force remote media to start under a user gesture
+    // 🔥 Unhide the call window BEFORE answering
+    openWindowAnimated();
+
+    setMode("active");
+
+    await rtc.answerIncomingCall?.();
+
+    // 🔥 Force remote media to start under user gesture
     resumeRemoteMediaPlayback();
   };
 }
+
 
 
   if (endBtn) {
@@ -908,6 +914,7 @@ if (answerBtn) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
