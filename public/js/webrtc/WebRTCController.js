@@ -1,6 +1,6 @@
 // public/js/webrtc/WebRTCController.js
-// Mesh‑ready WebRTC controller aligned with Aurora‑Orbit CallUI,
-// pure WebRTCMedia, and tile‑only RemoteParticipants.
+// Mesh‑ready WebRTC controller aligned with Aurora‑Orbit CallUI + WebRTCMedia.
+// Primary‑device mode: first device handles the call, others auto‑decline → voicemail.
 
 import { rtcState } from "./WebRTCState.js";
 rtcState.answering = false;
@@ -17,10 +17,6 @@ import {
   attachRemoteTrack,
   cleanupMedia,
 } from "./WebRTCMedia.js";
-
-import {
-  attachStream as attachParticipantStream,
-} from "./RemoteParticipants.js";
 
 import { addCallLogEntry } from "../call-log.js";
 
@@ -296,6 +292,7 @@ export class WebRTCController {
       relayOnly: rtcState.usedRelayFallback,
     });
 
+    // Get local media
     const stream = await getLocalMedia(true, !audioOnly);
     this.localStream = stream;
     rtcState.localStream = stream;
@@ -308,10 +305,12 @@ export class WebRTCController {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     }
 
+    // Perfect negotiation: set remote, then answer
     await pc.setRemoteDescription(offer);
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
+    // Flush pending candidates
     this._flushPendingCandidates(peerId, pc);
 
     this.socket.emit("webrtc:signal", {
@@ -321,8 +320,10 @@ export class WebRTCController {
       answer,
     });
 
+    // Explicit accept for backend call state
     this.socket.emit("call:accept", { to: peerId });
 
+    // Stop ringtone
     stopAudio(ringtone);
 
     rtcState.incomingOffer = null;
@@ -368,6 +369,7 @@ export class WebRTCController {
     stopAllTones();
     this._stopNetworkMonitor();
 
+    // Close all PCs
     for (const [peerId, pc] of this.pcMap.entries()) {
       try {
         pc.onicecandidate = null;
@@ -381,13 +383,6 @@ export class WebRTCController {
 
     cleanupMedia();
 
-    this.localStream = null;
-    this.remoteStream = null;
-
-    if (this.remoteAudio) {
-      this.remoteAudio.srcObject = null;
-    }
-
     rtcState.busy = false;
     rtcState.inCall = false;
     rtcState.incomingOffer = null;
@@ -399,6 +394,7 @@ export class WebRTCController {
       this.onCallFailed?.(reason);
     }
 
+    // Log call
     try {
       addCallLogEntry?.({
         peerId: rtcState.peerId,
@@ -450,6 +446,7 @@ export class WebRTCController {
       }
     });
 
+    // Backend call state events
     this.socket.on("call:timeout", ({ from } = {}) => {
       if (from && from === rtcState.peerId) {
         this.onCallFailed?.("timeout");
@@ -489,6 +486,7 @@ export class WebRTCController {
     });
 
     this.socket.on("call:accept", ({ from } = {}) => {
+      // Remote explicitly accepted; treat as call started if not already
       if (from && from === rtcState.peerId) {
         stopAllTones();
         if (!rtcState.inCall) {
@@ -507,12 +505,14 @@ export class WebRTCController {
     const { from, offer, audioOnly, fromName } = msg;
     if (!from || !offer) return;
 
+    // Primary‑device mode: if already busy or in call, auto‑decline → voicemail
     if (rtcState.busy || rtcState.inCall || rtcState.incomingOffer) {
       console.log("[WebRTC] Secondary device received offer — auto‑decline");
       this.socket.emit("call:decline", { to: from });
       return;
     }
 
+    // This device becomes the primary endpoint
     rtcState.peerId = from;
     rtcState.peerName = fromName || `User ${from}`;
     rtcState.audioOnly = !!audioOnly;
@@ -522,19 +522,22 @@ export class WebRTCController {
     rtcState.incomingOffer = { from, offer, audioOnly };
 
     this.currentPeerId = from;
-    this.isPolite = true;
+    this.isPolite = true; // callee is polite
     this.makingOffer = false;
     this.ignoreOffer = false;
 
+    // Ringtone for incoming call
     try {
       if (ringtone) ringtone.play().catch(() => {});
     } catch {}
 
+    // UI callback
     this.onIncomingCall?.({
       fromName: rtcState.peerName,
       audioOnly: !!audioOnly,
     });
 
+    // Pre‑create PC so ICE candidates can be queued
     await this._getOrCreatePC(from, { relayOnly: rtcState.usedRelayFallback });
   }
 
@@ -558,6 +561,7 @@ export class WebRTCController {
       return;
     }
 
+    // Flush pending candidates
     this._flushPendingCandidates(from, pc);
 
     stopAllTones();
@@ -578,6 +582,7 @@ export class WebRTCController {
 
     const pc = this.pcMap.get(from);
     if (!pc || pc.remoteDescription == null) {
+      // Queue until PC and remoteDescription are ready
       if (!this.pendingRemoteCandidates.has(from)) {
         this.pendingRemoteCandidates.set(from, []);
       }
@@ -629,7 +634,7 @@ export class WebRTCController {
 
     this.pcMap.set(peerId, pc);
     this.currentPeerId = peerId;
-    this.peerConnection = pc; // primary PC for stats
+    this.peerConnection = pc; // for CallUI screen share helpers
 
     pc.onicecandidate = (evt) => {
       if (!evt.candidate) return;
@@ -642,13 +647,16 @@ export class WebRTCController {
     };
 
     pc.ontrack = (evt) => {
-      const remoteStream = attachRemoteTrack(peerId, evt);
-      if (remoteStream) {
-        this.remoteStream = remoteStream;
-        attachParticipantStream(peerId, remoteStream);
-      }
+      attachRemoteTrack(peerId, evt);
 
-      if (this.remoteAudio && this.remoteStream) {
+      // For recording: keep a merged remote stream reference
+      if (!this.remoteStream) {
+        this.remoteStream = new MediaStream();
+      }
+      this.remoteStream.addTrack(evt.track);
+
+      // Bind remote audio element
+      if (this.remoteAudio) {
         this.remoteAudio.srcObject = this.remoteStream;
         this.remoteAudio.playsInline = true;
         this.remoteAudio.muted = false;
@@ -656,6 +664,7 @@ export class WebRTCController {
         this.remoteAudio.play().catch(() => {});
       }
 
+      // Avatar fallback
       setRemoteAvatar(peerId, null);
       showRemoteAvatar(peerId, false);
     };
@@ -761,6 +770,8 @@ export class WebRTCController {
     }
   }
 }
+
+
 
 
 
