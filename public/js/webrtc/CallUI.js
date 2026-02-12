@@ -20,9 +20,8 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     DOM ELEMENTS
+     DOM ELEMENTS  (KEEP ONLY THIS BLOCK)
   ------------------------------------------------------- */
-
   const win              = document.getElementById("callWindow");
   const grid             = document.getElementById("callGrid");
 
@@ -53,50 +52,67 @@ export function initCallUI(rtc) {
   const toastUnavailable = document.getElementById("unavailableToast");
 
   /* -------------------------------------------------------
-     INITIALIZE REMOTE PARTICIPANT SYSTEM
+     CALL BUTTON SAFETY HELPERS  (PLACE HERE)
   ------------------------------------------------------- */
+  function disableCallButtons() {
+    const voiceBtn = getVoiceBtn?.();
+    const videoBtn = getVideoBtn?.();
+    if (voiceBtn) voiceBtn.disabled = true;
+    if (videoBtn) videoBtn.disabled = true;
+  }
 
+  function enableCallButtons() {
+    const voiceBtn = getVoiceBtn?.();
+    const videoBtn = getVideoBtn?.();
+    if (voiceBtn) voiceBtn.disabled = false;
+    if (videoBtn) videoBtn.disabled = false;
+  }
+
+  /* -------------------------------------------------------
+     INITIALIZE REMOTE PARTICIPANTS
+  ------------------------------------------------------- */
   initRemoteParticipants();
 
   /* -------------------------------------------------------
      WIRE MEDIA ELEMENTS INTO CONTROLLER
   ------------------------------------------------------- */
-
   rtc.attachMediaElements?.({
     localVideo,
     remoteVideo: null,
     remoteAudio,
   });
-// -------------------------------------------------------
-// 🔥 Bind local stream to UI when the controller provides it
-// -------------------------------------------------------
-rtc.onLocalStream = (stream) => {
-  if (!localVideo) return;
 
-  localVideo.srcObject = stream;
-  localVideo.muted = true;
-  localVideo.playsInline = true;
-  localVideo.classList.add("show");
+  /* -------------------------------------------------------
+     LOCAL STREAM BINDING
+  ------------------------------------------------------- */
+  rtc.onLocalStream = (stream) => {
+    if (!localVideo) return;
 
-  // 🔥 clear the initial hidden inline style
-  localVideo.style.display = "block";
-  localVideo.style.opacity = "1";
+    localVideo.srcObject = stream;
+    localVideo.muted = true;
+    localVideo.playsInline = true;
+    localVideo.classList.add("show");
 
-  document.getElementById("callWindow")?.classList.remove("voice-only");
+    localVideo.style.display = "block";
+    localVideo.style.opacity = "1";
 
-  localVideo.play().catch(() => {
-    setTimeout(() => localVideo.play().catch(()=>{}), 50);
-  });
-};
+    win?.classList.remove("voice-only");
 
-if (rtc.localStream && localVideo) {
-  localVideo.srcObject = rtc.localStream;
-  localVideo.muted = true;
-  localVideo.playsInline = true;
-  localVideo.classList.add("show");
-  localVideo.style.display = "block";
-  localVideo.style.opacity = "1";
-}
+    localVideo.play().catch(() => {
+      setTimeout(() => localVideo.play().catch(()=>{}), 50);
+    });
+  };
+
+  if (rtc.localStream && localVideo) {
+    localVideo.srcObject = rtc.localStream;
+    localVideo.muted = true;
+    localVideo.playsInline = true;
+    localVideo.classList.add("show");
+    localVideo.style.display = "block";
+    localVideo.style.opacity = "1";
+  }
+
+
 
 
   /* -------------------------------------------------------
@@ -907,6 +923,7 @@ if (rtc.localStream && localVideo) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
