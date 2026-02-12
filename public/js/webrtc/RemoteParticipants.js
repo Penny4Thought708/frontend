@@ -9,6 +9,9 @@ const participants = new Map(); // peerId -> entry
 let gridEl = null;
 let localTileEl = null;
 
+let screenShareActive = false;
+let screenSharePeer = null;
+
 /* -------------------------------------------------------
    Initialization
 ------------------------------------------------------- */
@@ -75,8 +78,9 @@ function createTile(peerId, displayName, avatarUrl) {
     nameEl,
     displayName,
     avatarUrl,
-    stream: null,        // MediaStream assigned by controller
-    cameraOff: false
+    stream: null,
+    cameraOff: false,
+    speaking: false
   };
 
   participants.set(peerId, entry);
@@ -94,6 +98,11 @@ export function removeParticipant(peerId) {
   setTimeout(() => entry.el.remove(), 220);
 
   participants.delete(peerId);
+
+  // If the sharer leaves, exit screen-share mode
+  if (screenShareActive && screenSharePeer === peerId) {
+    clearScreenShareMode();
+  }
 }
 
 /* -------------------------------------------------------
@@ -144,14 +153,26 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
+  entry.speaking = active;
+
   entry.el.classList.toggle("speaking", !!active);
   entry.el.style.setProperty("--audio-level", active ? String(level) : "0");
+
+  // If screen-share mode is active, do NOT auto-switch stage
+  if (screenShareActive) return;
+
+  // Otherwise, active speaker highlight
+  if (active) {
+    setActiveSpeaker(peerId);
+  }
 }
 
 /* -------------------------------------------------------
    Active Speaker Highlight
 ------------------------------------------------------- */
 export function setActiveSpeaker(peerId) {
+  if (screenShareActive) return; // stage mode overrides this
+
   for (const [id, entry] of participants.entries()) {
     entry.el.classList.toggle("active-speaker", id === peerId);
   }
@@ -182,6 +203,51 @@ export function setParticipantAvatar(peerId, url) {
 }
 
 /* -------------------------------------------------------
+   SCREEN SHARE MODE
+------------------------------------------------------- */
+export function setScreenShareMode(peerId) {
+  if (!gridEl) return;
+
+  screenShareActive = true;
+  screenSharePeer = peerId;
+
+  gridEl.classList.add("screen-share-mode");
+
+  for (const [id, entry] of participants.entries()) {
+    const isSharer = id === peerId;
+
+    entry.el.classList.toggle("screen-share-stage", isSharer);
+    entry.el.classList.toggle("screen-share-thumb", !isSharer);
+  }
+
+  if (localTileEl) {
+    const isLocalSharer = peerId === "local";
+    localTileEl.classList.toggle("screen-share-stage", isLocalSharer);
+    localTileEl.classList.toggle("screen-share-thumb", !isLocalSharer);
+  }
+}
+
+/* -------------------------------------------------------
+   EXIT SCREEN SHARE MODE
+------------------------------------------------------- */
+export function clearScreenShareMode() {
+  if (!gridEl) return;
+
+  screenShareActive = false;
+  screenSharePeer = null;
+
+  gridEl.classList.remove("screen-share-mode");
+
+  for (const [, entry] of participants.entries()) {
+    entry.el.classList.remove("screen-share-stage", "screen-share-thumb");
+  }
+
+  if (localTileEl) {
+    localTileEl.classList.remove("screen-share-stage", "screen-share-thumb");
+  }
+}
+
+/* -------------------------------------------------------
    Clear All Participants (on call end)
 ------------------------------------------------------- */
 export function clearAllParticipants() {
@@ -190,9 +256,12 @@ export function clearAllParticipants() {
   }
   participants.clear();
 
+  clearScreenShareMode();
+
   if (localTileEl) {
     localTileEl.classList.remove("active-speaker");
     localTileEl.classList.remove("hidden");
   }
 }
+
 
