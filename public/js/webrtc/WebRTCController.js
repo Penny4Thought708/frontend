@@ -70,7 +70,7 @@ export class WebRTCController {
     // Local media
     this.localStream = null;
 
-    // Remote audio element
+    // Media elements
     this.localVideo = null;
     this.remoteAudio = remoteAudioEl || document.getElementById("remoteAudio");
     if (!this.remoteAudio) {
@@ -196,11 +196,17 @@ export class WebRTCController {
 
     const pc = await this._getOrCreatePC(peerId, { relayOnly });
 
-    const stream = await getLocalMedia(true, !audioOnly);
+    let stream = null;
+    try {
+      stream = await getLocalMedia(true, !audioOnly);
+    } catch (err) {
+      console.warn("[WebRTCMedia] getLocalMedia failed in _startCallInternal:", err);
+    }
+
     this.localStream = stream;
     rtcState.localStream = stream;
 
-    this.onLocalStream?.(stream);
+    this.onLocalStream?.(stream || null);
 
     if (stream) {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
@@ -382,22 +388,21 @@ export class WebRTCController {
     await this._flushPendingRemoteCandidates(from, pc);
 
     let stream = null;
-try {
-  stream = await getLocalMedia(true, !rtcState.audioOnly);
-} catch (err) {
-  console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
-}
+    try {
+      stream = await getLocalMedia(true, !rtcState.audioOnly);
+    } catch (err) {
+      console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
+    }
 
-this.localStream = stream;
-rtcState.localStream = stream;
+    this.localStream = stream;
+    rtcState.localStream = stream;
 
-// Notify UI even if null (avatar-only mode)
-this.onLocalStream?.(stream || null);
+    // Notify UI even if null (avatar-only mode)
+    this.onLocalStream?.(stream || null);
 
-if (stream) {
-  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-}
-
+    if (stream) {
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    }
 
     let answer = await pc.createAnswer();
 
@@ -633,10 +638,11 @@ if (stream) {
   --------------------------------------------------- */
   async switchCamera() {
     try {
-      const ok = await import("./WebRTCMedia.js").then((m) =>
+      await import("./WebRTCMedia.js").then((m) =>
         m.flipLocalCamera(this)
       );
-      return ok === true ? false : false;
+      // CallUI expects "isCameraOff" style boolean; flipping keeps camera ON
+      return false;
     } catch (err) {
       console.error("[WebRTC] switchCamera flip failed:", err);
       return false;
@@ -663,7 +669,14 @@ if (stream) {
       });
 
       const screenTrack = screenStream.getVideoTracks()[0];
-      screenTrack.contentHint = "detail";
+      if (!screenTrack) {
+        console.warn("[WebRTC] No screen track from getDisplayMedia");
+        return;
+      }
+
+      try {
+        screenTrack.contentHint = "detail";
+      } catch {}
 
       const senders = [];
       for (const pc of this.pcMap.values()) {
@@ -796,56 +809,24 @@ if (stream) {
       }
     };
 
-pc.ontrack = (event) => {
-  const id = peerId || rtcState.peerId || "default";
-  const track = event.track;
+    pc.ontrack = (event) => {
+      const id = peerId || rtcState.peerId || "default";
+      const track = event.track;
 
-  // Existing behavior: let WebRTCMedia do its thing (tiles, logging, etc.)
-  attachRemoteTrack(id, event);
+      // Single source of truth: WebRTCMedia owns tiles, avatars, audio visualizer, speaking, etc.
+      attachRemoteTrack(id, event);
 
-  // 🔊 Ensure remote AUDIO is actually played
-  if (track.kind === "audio") {
-    const remoteAudio = document.getElementById("remoteAudio");
-    if (remoteAudio) {
-      if (!remoteAudio.srcObject) {
-        remoteAudio.srcObject = new MediaStream();
+      // Detect REMOTE screen share (labels usually contain "screen", "window", or "application")
+      if (
+        track.kind === "video" &&
+        /screen|window|application/i.test(track.label || "")
+      ) {
+        this.onScreenShareStarted?.(id);
+        track.onended = () => {
+          this.onScreenShareStopped?.(id);
+        };
       }
-      remoteAudio.srcObject.addTrack(track);
-      remoteAudio.play().catch(() => {});
-    }
-  }
-
-  // 🎥 Ensure remote VIDEO is actually visible
-  if (track.kind === "video") {
-    // Prefer a dedicated remote video element if you have one
-    const remoteVideo =
-      document.getElementById("remoteVideo") ||
-      document.getElementById("remoteScreenVideo");
-
-    if (remoteVideo) {
-      if (!remoteVideo.srcObject) {
-        remoteVideo.srcObject = new MediaStream();
-      }
-      remoteVideo.srcObject.addTrack(track);
-      remoteVideo.playsInline = true;
-      remoteVideo.muted = false;
-      remoteVideo.play().catch(() => {});
-    }
-  }
-
-  // 🖥 Detect REMOTE screen share (Chrome labels usually contain "screen", "window", or "application")
-  if (
-    track.kind === "video" &&
-    /screen|window|application/i.test(track.label || "")
-  ) {
-    this.onScreenShareStarted?.(id);
-
-    track.onended = () => {
-      this.onScreenShareStopped?.(id);
     };
-  }
-};
-
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -1171,6 +1152,8 @@ pc.ontrack = (event) => {
     });
   }
 }
+
+
 
 
 
