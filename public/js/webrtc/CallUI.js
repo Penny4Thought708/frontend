@@ -3,8 +3,11 @@
 // CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
-import { resumeRemoteMediaPlayback } from "./WebRTCMedia.js";
-import { flipLocalCamera } from "./WebRTCMedia.js";
+import {
+  resumeRemoteMediaPlayback,
+  flipLocalCamera,
+  cleanupMedia,
+} from "./WebRTCMedia.js";
 
 import {
   initRemoteParticipants,
@@ -391,18 +394,23 @@ export function initCallUI(rtc) {
     };
   }
 
-  // Wire rtc.switchCamera to media engine flipLocalCamera
-  rtc.switchCamera = () => flipLocalCamera(rtc);
+  // Expose switchCamera API but delegate to WebRTCMedia.flipLocalCamera
+  rtc.switchCamera = async function () {
+    const ok = await flipLocalCamera(rtc);
+    if (!ok) {
+      console.warn("[CallUI] switchCamera failed");
+      return false;
+    }
+    return false; // keep semantics: false = camera on
+  };
 
   if (cameraBtn) {
     cameraBtn.onclick = async () => {
-      const ok = await rtc.switchCamera?.();
-      if (ok) {
-        cameraBtn.classList.toggle("flipped");
-        cameraBtn.innerHTML =
-          `<span class="material-symbols-outlined">videocam</span>`;
-        setCameraOff(false);
-      }
+      const off = await rtc.switchCamera?.(); // flip camera; returns false (camera on)
+      cameraBtn.classList.toggle("flipped");
+      cameraBtn.innerHTML =
+        `<span class="material-symbols-outlined">videocam</span>`;
+      setCameraOff(!!off);
     };
   }
 
@@ -491,6 +499,7 @@ export function initCallUI(rtc) {
     setStatus("Call ended");
     setMode(null);
     clearAllParticipants();
+    cleanupMedia();
     hideWindow();
     enableCallButtons();
   };
@@ -501,6 +510,7 @@ export function initCallUI(rtc) {
     setStatus(`Call failed: ${reason}`);
     setMode(null);
     clearAllParticipants();
+    cleanupMedia();
     hideWindow();
     enableCallButtons();
   };
@@ -872,6 +882,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
