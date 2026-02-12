@@ -353,20 +353,25 @@ export function initCallUI(rtc) {
     };
   }
 if (answerBtn) {
-  answerBtn.onclick = async () => {
-    disableCallButtons();
-    setStatus("Answering…");
+answerBtn.onclick = async () => {
+  disableCallButtons();
+  setStatus("Answering…");
 
-    // 🔥 Unhide the call window BEFORE answering
-    openWindowAnimated();
+  // 1. Start opening the window
+  openWindowAnimated();
+  setMode("active");
 
-    setMode("active");
+  // 2. Wait for the window to actually become visible
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
 
-    await rtc.answerIncomingCall?.();
+  // 3. Now answer the call
+  await rtc.answerIncomingCall?.();
 
-    // 🔥 Force remote media to start under user gesture
-    resumeRemoteMediaPlayback();
-  };
+  // 4. NOW remote media playback is allowed
+  resumeRemoteMediaPlayback();
+};
+
 }
 
 
@@ -914,6 +919,7 @@ if (answerBtn) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
