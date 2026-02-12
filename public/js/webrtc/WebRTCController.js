@@ -788,10 +788,56 @@ export class WebRTCController {
       }
     };
 
-    pc.ontrack = (event) => {
-      const id = peerId || rtcState.peerId || "default";
-      attachRemoteTrack(id, event);
+pc.ontrack = (event) => {
+  const id = peerId || rtcState.peerId || "default";
+  const track = event.track;
+
+  // Existing behavior: let WebRTCMedia do its thing (tiles, logging, etc.)
+  attachRemoteTrack(id, event);
+
+  // 🔊 Ensure remote AUDIO is actually played
+  if (track.kind === "audio") {
+    const remoteAudio = document.getElementById("remoteAudio");
+    if (remoteAudio) {
+      if (!remoteAudio.srcObject) {
+        remoteAudio.srcObject = new MediaStream();
+      }
+      remoteAudio.srcObject.addTrack(track);
+      remoteAudio.play().catch(() => {});
+    }
+  }
+
+  // 🎥 Ensure remote VIDEO is actually visible
+  if (track.kind === "video") {
+    // Prefer a dedicated remote video element if you have one
+    const remoteVideo =
+      document.getElementById("remoteVideo") ||
+      document.getElementById("remoteScreenVideo");
+
+    if (remoteVideo) {
+      if (!remoteVideo.srcObject) {
+        remoteVideo.srcObject = new MediaStream();
+      }
+      remoteVideo.srcObject.addTrack(track);
+      remoteVideo.playsInline = true;
+      remoteVideo.muted = false;
+      remoteVideo.play().catch(() => {});
+    }
+  }
+
+  // 🖥 Detect REMOTE screen share (Chrome labels usually contain "screen", "window", or "application")
+  if (
+    track.kind === "video" &&
+    /screen|window|application/i.test(track.label || "")
+  ) {
+    this.onScreenShareStarted?.(id);
+
+    track.onended = () => {
+      this.onScreenShareStopped?.(id);
     };
+  }
+};
+
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -1117,6 +1163,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
