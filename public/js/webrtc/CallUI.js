@@ -3,7 +3,6 @@
 // CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
-
 import {
   initRemoteParticipants,
   clearAllParticipants,
@@ -12,6 +11,9 @@ import {
   promoteToStage,
   demoteStage,
 } from "./RemoteParticipants.js";
+
+import { getVoiceBtn, getVideoBtn } from "../session.js";  // 🔥 REQUIRED
+
 
 export function initCallUI(rtc) {
   if (!rtc) {
@@ -927,6 +929,7 @@ if (answerBtn) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
