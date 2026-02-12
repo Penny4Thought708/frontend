@@ -348,20 +348,24 @@ export function initCallUI(rtc) {
      BUTTON BINDINGS
   ------------------------------------------------------- */
 
-  if (declineBtn) {
-    declineBtn.onclick = () => {
-      setStatus("Declining…");
-      rtc.declineIncomingCall?.();
-    };
-  }
+if (declineBtn) {
+  declineBtn.onclick = () => {
+    disableCallButtons();        // 🔥 REQUIRED
+    setStatus("Declining…");
+    rtc.declineIncomingCall?.();
+  };
+}
 
-  if (answerBtn) {
-    answerBtn.onclick = () => {
-      setStatus("Answering…");
-      setMode("active");
-      rtc.answerIncomingCall?.();
-    };
-  }
+
+if (answerBtn) {
+  answerBtn.onclick = () => {
+    disableCallButtons();        // 🔥 REQUIRED
+    setStatus("Answering…");
+    setMode("active");
+    rtc.answerIncomingCall?.();
+  };
+}
+
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -923,6 +927,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
