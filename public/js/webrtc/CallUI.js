@@ -3,6 +3,8 @@
 // CallUI is the SOLE owner of call window visibility.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
+import { resumeRemoteMediaPlayback } from "./WebRTCMedia.js";
+
 import {
   initRemoteParticipants,
   clearAllParticipants,
@@ -350,15 +352,18 @@ export function initCallUI(rtc) {
       rtc.declineIncomingCall?.();
     };
   }
+if (answerBtn) {
+  answerBtn.onclick = () => {
+    disableCallButtons();
+    setStatus("Answering…");
+    setMode("active");
+    rtc.answerIncomingCall?.();
 
-  if (answerBtn) {
-    answerBtn.onclick = () => {
-      disableCallButtons();
-      setStatus("Answering…");
-      setMode("active");
-      rtc.answerIncomingCall?.();
-    };
-  }
+    // 🔥 Force remote media to start under a user gesture
+    resumeRemoteMediaPlayback();
+  };
+}
+
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -903,6 +908,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
