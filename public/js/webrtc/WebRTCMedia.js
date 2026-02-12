@@ -75,10 +75,7 @@ function createRemoteParticipant(peerId = "default") {
 
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
-    // srcObject is a property, but removing attribute is harmless; keep it safe:
-    try {
-      videoEl.srcObject = null;
-    } catch {}
+    videoEl.removeAttribute("srcObject");
   }
 
   grid.appendChild(clone);
