@@ -1,9 +1,10 @@
 // public/js/webrtc/RemoteParticipants.js
 // Multi‑party participant manager for Aurora‑Prime.
 // Handles: tile creation, join/leave animations, stage mode,
-// speaking glow, camera‑off avatars, and per‑peer state.
+// speaking glow, camera‑off avatars, active speaker, dynamic grid,
+// SFU-ready track attachment, and per‑peer metadata.
 
-const participants = new Map(); // peerId -> { el, videoEl, avatarEl, nameEl, imgEl }
+const participants = new Map(); // peerId -> entry
 let gridEl = null;
 let localTileEl = null;
 
@@ -17,6 +18,37 @@ export function initRemoteParticipants() {
     return;
   }
   localTileEl = document.getElementById("localParticipant") || null;
+}
+
+/* -------------------------------------------------------
+   Register Local Tile
+------------------------------------------------------- */
+export function registerLocalTile(el) {
+  localTileEl = el;
+  if (localTileEl) {
+    localTileEl.dataset.peerId = "local";
+  }
+}
+
+/* -------------------------------------------------------
+   Dynamic Grid Layout
+------------------------------------------------------- */
+export function updateGridLayout() {
+  if (!gridEl) return;
+
+  const count = participants.size + (localTileEl ? 1 : 0);
+
+  gridEl.classList.remove(
+    "grid-1", "grid-2", "grid-3", "grid-4",
+    "grid-6", "grid-9", "grid-16"
+  );
+
+  if (count <= 1) gridEl.classList.add("grid-1");
+  else if (count === 2) gridEl.classList.add("grid-2");
+  else if (count <= 4) gridEl.classList.add("grid-4");
+  else if (count <= 6) gridEl.classList.add("grid-6");
+  else if (count <= 9) gridEl.classList.add("grid-9");
+  else gridEl.classList.add("grid-16");
 }
 
 /* -------------------------------------------------------
@@ -53,8 +85,21 @@ function createTile(peerId, displayName, avatarUrl) {
     node.classList.add("joined");
   });
 
-  const entry = { el: node, videoEl, avatarEl, nameEl, imgEl };
+  const entry = {
+    el: node,
+    videoEl,
+    avatarEl,
+    nameEl,
+    imgEl,
+    peerId,
+    displayName,
+    avatarUrl,
+    isLocal: false,
+    isScreenShare: false
+  };
+
   participants.set(peerId, entry);
+  updateGridLayout();
   return entry;
 }
 
@@ -70,10 +115,11 @@ export function removeParticipant(peerId) {
   setTimeout(() => el.remove(), 220);
 
   participants.delete(peerId);
+  updateGridLayout();
 }
 
 /* -------------------------------------------------------
-   Attach Remote Stream
+   Attach Remote Stream (Mesh mode)
 ------------------------------------------------------- */
 export function attachRemoteStream(peerId, stream, opts = {}) {
   const { displayName, avatarUrl } = opts;
@@ -89,7 +135,27 @@ export function attachRemoteStream(peerId, stream, opts = {}) {
   };
 
   videoEl.classList.add("show");
-  if (avatarEl) avatarEl.classList.add("hidden");
+  avatarEl?.classList.add("hidden");
+}
+
+/* -------------------------------------------------------
+   Attach Single Remote Track (SFU-ready)
+------------------------------------------------------- */
+export function attachRemoteTrack(peerId, track, opts = {}) {
+  const { displayName, avatarUrl } = opts;
+  const entry = createTile(peerId, displayName, avatarUrl);
+  if (!entry) return;
+
+  const { videoEl, avatarEl } = entry;
+
+  if (!videoEl.srcObject) {
+    videoEl.srcObject = new MediaStream();
+  }
+
+  videoEl.srcObject.addTrack(track);
+
+  videoEl.classList.add("show");
+  avatarEl?.classList.add("hidden");
 }
 
 /* -------------------------------------------------------
@@ -102,6 +168,19 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
   const { el } = entry;
   el.classList.toggle("speaking", !!active);
   el.style.setProperty("--audio-level", active ? String(level) : "0");
+}
+
+/* -------------------------------------------------------
+   Active Speaker Highlight
+------------------------------------------------------- */
+export function setActiveSpeaker(peerId) {
+  for (const [id, entry] of participants.entries()) {
+    entry.el.classList.toggle("active-speaker", id === peerId);
+  }
+
+  if (localTileEl) {
+    localTileEl.classList.toggle("active-speaker", peerId === "local");
+  }
 }
 
 /* -------------------------------------------------------
@@ -160,7 +239,6 @@ export function demoteStage(peerId) {
   const entry = participants.get(peerId);
   if (entry) entry.el.classList.remove("stage-primary");
 
-  // If no one is staged, remove stage-mode entirely
   const anyStaged = [...participants.values()].some((p) =>
     p.el.classList.contains("stage-primary")
   );
@@ -168,6 +246,23 @@ export function demoteStage(peerId) {
   if (!anyStaged) {
     gridEl.classList.remove("stage-mode");
   }
+}
+
+/* -------------------------------------------------------
+   Sort Participants (active speaker first)
+------------------------------------------------------- */
+export function sortParticipants(order = []) {
+  if (!gridEl) return;
+
+  const tiles = [...participants.values()].map(p => p.el);
+
+  tiles.sort((a, b) => {
+    const idA = a.dataset.peerId;
+    const idB = b.dataset.peerId;
+    return order.indexOf(idA) - order.indexOf(idB);
+  });
+
+  tiles.forEach(tile => gridEl.appendChild(tile));
 }
 
 /* -------------------------------------------------------
@@ -182,4 +277,6 @@ export function clearAllParticipants() {
   if (gridEl) {
     gridEl.classList.remove("stage-mode");
   }
+
+  updateGridLayout();
 }
