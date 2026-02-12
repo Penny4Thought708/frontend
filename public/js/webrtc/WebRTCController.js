@@ -594,192 +594,291 @@ async switchCamera() {
     }
   }
 
-  /* ---------------------------------------------------
+ /* ---------------------------------------------------
      PeerConnection Factory (Hybrid Meet + Discord)
-  --------------------------------------------------- */
-  async _createPC({ relayOnly = false } = {}) {
-    if (this.pc) {
-      try { this.pc.close(); } catch {}
-      this.pc = null;
+--------------------------------------------------- */
+async _createPC({ relayOnly = false } = {}) {
+  if (this.pc) {
+    try { this.pc.close(); } catch {}
+    this.pc = null;
+  }
+
+  const iceServers = await getIceServers({ relayOnly });
+
+  const config = {
+    iceServers,
+    iceTransportPolicy: relayOnly ? "relay" : "all",
+  };
+
+  const pc = new RTCPeerConnection(config);
+  this.pc = pc;
+
+  /* TURN Keepalive */
+  const startTurnKeepAlive = (pcInstance) => {
+    let keepAliveTimer = setInterval(() => {
+      try { pcInstance.getStats(null); } catch {}
+    }, 3000);
+
+    pcInstance.addEventListener("connectionstatechange", () => {
+      if (
+        pcInstance.connectionState === "closed" ||
+        pcInstance.connectionState === "failed"
+      ) {
+        clearInterval(keepAliveTimer);
+      }
+    });
+  };
+
+  startTurnKeepAlive(pc);
+
+  /* DataChannel Keepalive */
+  try {
+    const keepAliveChannel = pc.createDataChannel("keepalive");
+    keepAliveChannel.onopen = () => {
+      setInterval(() => {
+        if (keepAliveChannel.readyState === "open") {
+          keepAliveChannel.send("ping");
+        }
+      }, 5000);
+    };
+  } catch {}
+
+  /* ICE Candidate */
+  pc.onicecandidate = (event) => {
+    if (!event.candidate) return;
+
+    const c = event.candidate.candidate || "";
+    let type = "unknown";
+    if (c.includes("relay")) type = "TURN relay";
+    else if (c.includes("srflx")) type = "STUN srflx";
+    else if (c.includes("host")) type = "Host";
+
+    this.onQualityChange?.("good", `Candidate: ${type}`);
+
+    if (rtcState.peerId && this.socket) {
+      this.socket.emit("webrtc:signal", {
+        type: "ice",
+        to: rtcState.peerId,
+        from: getMyUserId(),
+        candidate: event.candidate,
+      });
+    }
+  };
+
+  /* Remote Track */
+  pc.ontrack = (event) => {
+    const peerId = rtcState.peerId || "default";
+    attachRemoteTrack(peerId, event);
+  };
+
+  /* ICE State */
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+
+    const level =
+      state === "connected"
+        ? "excellent"
+        : state === "checking"
+        ? "fair"
+        : state === "disconnected"
+        ? "poor"
+        : state === "failed"
+        ? "bad"
+        : "unknown";
+
+    this.onQualityChange?.(level, `ICE: ${state}`);
+
+    if (rtcState.answering) return;
+
+    if (state === "disconnected") {
+      console.warn("[WebRTC] Disconnected — applying fallback");
+
+      try { pc.restartIce(); } catch {}
+
+      const sender = pc.getSenders().find(s => s.track?.kind === "video");
+      if (sender) {
+        const params = sender.getParameters();
+        params.encodings = [{
+          maxBitrate: 800_000,
+          minBitrate: 150_000,
+          maxFramerate: 24,
+        }];
+        sender.setParameters(params).catch(() => {});
+      }
     }
 
-    const iceServers = await getIceServers({ relayOnly });
+    if (state === "failed") {
+      this.stopNetworkMonitor();     // 🔥 NEW
+      this.onCallFailed?.("ice failed");
+      this.endCall(false);
+    }
+  };
 
-    const config = {
-      iceServers,
-      iceTransportPolicy: relayOnly ? "relay" : "all",
-    };
+  /* Connection State */
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
 
-    const pc = new RTCPeerConnection(config);
-    this.pc = pc;
+    if (state === "connected") {
+      this.onQualityChange?.("excellent", "Connected");
+      this.startNetworkMonitor();     // 🔥 NEW — start adaptive bitrate + stats
+    }
 
-    /* TURN Keepalive */
-    const startTurnKeepAlive = (pcInstance) => {
-      let keepAliveTimer = setInterval(() => {
-        try { pcInstance.getStats(null); } catch {}
-      }, 3000);
+    if (state === "failed" || state === "closed") {
+      this.stopNetworkMonitor();      // 🔥 NEW — stop when dead
+      this.onCallFailed?.("connection failed");
+      this.endCall(false);
+    }
+  };
 
-      pcInstance.addEventListener("connectionstatechange", () => {
-        if (
-          pcInstance.connectionState === "closed" ||
-          pcInstance.connectionState === "failed"
-        ) {
-          clearInterval(keepAliveTimer);
+  /* Renegotiation (Discord-style) */
+  pc.onnegotiationneeded = async () => {
+    try {
+      console.log("[WebRTC] Renegotiation needed");
+
+      let offer = await pc.createOffer();
+
+      if (offer.sdp) {
+        offer.sdp = offer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
+      }
+
+      await pc.setLocalDescription(offer);
+
+      this.socket.emit("webrtc:signal", {
+        type: "offer",
+        to: rtcState.peerId,
+        from: getMyUserId(),
+        offer,
+        renegotiate: true,
+      });
+    } catch (err) {
+      console.warn("[WebRTC] Renegotiation failed:", err);
+    }
+  };
+
+  return pc;
+}
+
+/* ---------------------------------------------------
+   Flush queued remote ICE
+--------------------------------------------------- */
+async _flushPendingRemoteCandidates() {
+  if (!this.pc || !this.pc.remoteDescription) return;
+  if (!this.pendingRemoteCandidates?.length) return;
+
+  console.log(
+    "[ICE] Flushing queued remote candidates:",
+    this.pendingRemoteCandidates.length
+  );
+
+  for (const c of this.pendingRemoteCandidates) {
+    try {
+      await this.pc.addIceCandidate(new RTCIceCandidate(c));
+    } catch (err) {
+      console.warn("[ICE] Error adding queued candidate:", err);
+    }
+  }
+
+  this.pendingRemoteCandidates = [];
+}
+
+/* ---------------------------------------------------
+   Network Monitor + Adaptive Bitrate (NEW)
+--------------------------------------------------- */
+startNetworkMonitor() {
+  if (!this.pc) return;
+  if (this._networkInterval) clearInterval(this._networkInterval);
+
+  this._networkInterval = setInterval(async () => {
+    try {
+      const stats = await this.pc.getStats();
+      let videoOutbound = null;
+      let videoRemoteInbound = null;
+      let candidatePair = null;
+
+      stats.forEach((report) => {
+        if (report.type === "outbound-rtp" && report.kind === "video" && !report.isRemote) {
+          videoOutbound = report;
+        }
+        if (report.type === "remote-inbound-rtp" && report.kind === "video") {
+          videoRemoteInbound = report;
+        }
+        if (report.type === "candidate-pair" && report.state === "succeeded") {
+          candidatePair = report;
         }
       });
-    };
 
-    startTurnKeepAlive(pc);
+      const videoLoss =
+        videoRemoteInbound && videoRemoteInbound.packetsReceived > 0
+          ? videoRemoteInbound.packetsLost / videoRemoteInbound.packetsReceived
+          : 0;
 
-    /* DataChannel Keepalive */
-    try {
-      const keepAliveChannel = pc.createDataChannel("keepalive");
-      keepAliveChannel.onopen = () => {
-        setInterval(() => {
-          if (keepAliveChannel.readyState === "open") {
-            keepAliveChannel.send("ping");
-          }
-        }, 5000);
-      };
-    } catch {}
+      const rtt = candidatePair?.currentRoundTripTime || 0;
+      const outgoingBitrate = candidatePair?.availableOutgoingBitrate || 0;
 
-    /* ICE Candidate */
-    pc.onicecandidate = (event) => {
-      if (!event.candidate) return;
+      const snapshot = { videoLoss, rtt, outgoingBitrate };
+      const level = rtcState.updateFromStats(snapshot);
 
-      const c = event.candidate.candidate || "";
-      let type = "unknown";
-      if (c.includes("relay")) type = "TURN relay";
-      else if (c.includes("srflx")) type = "STUN srflx";
-      else if (c.includes("host")) type = "Host";
+      this.onQualityChange?.(
+        level,
+        `loss=${(videoLoss * 100 || 0).toFixed(1)}% rtt=${(rtt || 0).toFixed(3)}s`
+      );
 
-      this.onQualityChange?.("good", `Candidate: ${type}`);
-
-      if (rtcState.peerId && this.socket) {
-        this.socket.emit("webrtc:signal", {
-          type: "ice",
-          to: rtcState.peerId,
-          from: getMyUserId(),
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    /* Remote Track */
-    pc.ontrack = (event) => {
-      const peerId = rtcState.peerId || "default";
-      attachRemoteTrack(peerId, event);
-    };
-
-    /* ICE State */
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-
-      const level =
-        state === "connected"
-          ? "excellent"
-          : state === "checking"
-          ? "fair"
-          : state === "disconnected"
-          ? "poor"
-          : state === "failed"
-          ? "bad"
-          : "unknown";
-
-      this.onQualityChange?.(level, `ICE: ${state}`);
-
-      if (rtcState.answering) return;
-
-      if (state === "disconnected") {
-        console.warn("[WebRTC] Disconnected — applying fallback");
-
-        try { pc.restartIce(); } catch {}
-
-        const sender = pc.getSenders().find(s => s.track?.kind === "video");
-        if (sender) {
-          const params = sender.getParameters();
-          params.encodings = [{
-            maxBitrate: 800_000,
-            minBitrate: 150_000,
-            maxFramerate: 24,
-          }];
-          sender.setParameters(params).catch(() => {});
-        }
-      }
-
-      if (state === "failed") {
-        this.onCallFailed?.("ice failed");
-        this.endCall(false);
-      }
-    };
-
-    /* Connection State */
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-
-      if (state === "connected") {
-        this.onQualityChange?.("excellent", "Connected");
-      }
-
-      if (state === "failed") {
-        this.onCallFailed?.("connection failed");
-        this.endCall(false);
-      }
-    };
-
-    /* Renegotiation (Discord-style) */
-    pc.onnegotiationneeded = async () => {
-      try {
-        console.log("[WebRTC] Renegotiation needed");
-
-        let offer = await pc.createOffer();
-
-        if (offer.sdp) {
-          offer.sdp = offer.sdp.replace(
-            /(m=video .*?)(96 97 98)/,
-            (match, prefix, list) => `${prefix}98 96 97`
-          );
-        }
-
-        await pc.setLocalDescription(offer);
-
-        this.socket.emit("webrtc:signal", {
-          type: "offer",
-          to: rtcState.peerId,
-          from: getMyUserId(),
-          offer,
-          renegotiate: true,
-        });
-      } catch (err) {
-        console.warn("[WebRTC] Renegotiation failed:", err);
-      }
-    };
-
-    return pc;
-  }
-
-  /* ---------------------------------------------------
-     Flush queued remote ICE
-  --------------------------------------------------- */
-  async _flushPendingRemoteCandidates() {
-    if (!this.pc || !this.pc.remoteDescription) return;
-    if (!this.pendingRemoteCandidates?.length) return;
-
-    console.log(
-      "[ICE] Flushing queued remote candidates:",
-      this.pendingRemoteCandidates.length
-    );
-
-    for (const c of this.pendingRemoteCandidates) {
-      try {
-        await this.pc.addIceCandidate(new RTCIceCandidate(c));
-      } catch (err) {
-        console.warn("[ICE] Error adding queued candidate:", err);
-      }
+      this._applyAdaptiveBitrate(level);
+    } catch (err) {
+      console.warn("[WebRTC] stats monitor failed", err);
     }
+  }, 2000);
+}
 
-    this.pendingRemoteCandidates = [];
+stopNetworkMonitor() {
+  if (this._networkInterval) clearInterval(this._networkInterval);
+  this._networkInterval = null;
+}
+
+_applyAdaptiveBitrate(level) {
+  if (!this.pc) return;
+
+  const sender = this.pc.getSenders().find(
+    (s) => s.track && s.track.kind === "video"
+  );
+  if (!sender) return;
+
+  const params = sender.getParameters();
+  if (!params.encodings || !params.encodings.length) {
+    params.encodings = [{}];
   }
+
+  const enc = params.encodings[0];
+
+  switch (level) {
+    case "excellent":
+    case "good":
+      enc.maxBitrate = 1_500_000;
+      enc.scaleResolutionDownBy = 1;
+      break;
+    case "fair":
+      enc.maxBitrate = 800_000;
+      enc.scaleResolutionDownBy = 1.5;
+      break;
+    case "poor":
+      enc.maxBitrate = 400_000;
+      enc.scaleResolutionDownBy = 2;
+      break;
+    case "bad":
+      enc.maxBitrate = 200_000;
+      enc.scaleResolutionDownBy = 3;
+      break;
+    default:
+      break;
+  }
+
+  sender.setParameters(params).catch((err) => {
+    console.warn("[WebRTC] adaptive bitrate setParameters failed", err);
+  });
+}
 
   /* ---------------------------------------------------
      Socket bindings
@@ -839,6 +938,7 @@ async switchCamera() {
     });
   }
 }
+
 
 
 
