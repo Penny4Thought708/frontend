@@ -1118,6 +1118,21 @@ export class WebRTCController {
       }
     });
 
+    
+      this.socket.on("call:accept", ({ from }) => {
+        console.log("[WebRTC] call accepted by", from);
+      
+        // Stop ringback immediately
+        stopAllTones();
+      
+        // Mark call as active
+        rtcState.inCall = true;
+        rtcState.busy = true;
+      
+        // Trigger UI transition
+        this.onCallStarted?.();
+      });
+
     // timeout → stop tones
     this.socket.on("call:timeout", ({ from }) => {
       console.log("[WebRTC] call timeout from", from);
@@ -1148,6 +1163,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
