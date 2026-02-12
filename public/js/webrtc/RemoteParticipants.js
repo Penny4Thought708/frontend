@@ -1,8 +1,16 @@
 // public/js/webrtc/RemoteParticipants.js
-// Multi‑party participant manager for Aurora‑Prime.
-// Handles: tile creation, join/leave animations, stage mode,
-// speaking glow, camera‑off avatars, active speaker, dynamic grid,
-// SFU-ready track attachment, and per‑peer metadata.
+// Aurora‑Prime Multi‑Party Participant Manager
+// -------------------------------------------------------
+// Supports:
+// - Multi‑track per peer (camera, screen, audio)
+// - Renegotiation‑safe track replacement
+// - Screen‑share stage mode (camera tile hidden)
+// - Speaking indicator + active speaker
+// - Camera‑off avatars
+// - Smooth join/leave animations
+// - Dynamic grid layout
+// - SFU‑ready architecture
+// -------------------------------------------------------
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -36,7 +44,9 @@ export function registerLocalTile(el) {
 export function updateGridLayout() {
   if (!gridEl) return;
 
-  const count = participants.size + (localTileEl ? 1 : 0);
+  const count =
+    participants.size +
+    (localTileEl && !localTileEl.classList.contains("hidden") ? 1 : 0);
 
   gridEl.classList.remove(
     "grid-1", "grid-2", "grid-3", "grid-4",
@@ -86,16 +96,25 @@ function createTile(peerId, displayName, avatarUrl) {
   });
 
   const entry = {
+    peerId,
     el: node,
     videoEl,
     avatarEl,
-    nameEl,
     imgEl,
-    peerId,
+    nameEl,
     displayName,
     avatarUrl,
-    isLocal: false,
-    isScreenShare: false
+
+    // Multi‑track support
+    tracks: {
+      camera: null,
+      screen: null,
+      audio: null
+    },
+
+    // State flags
+    isScreenSharing: false,
+    cameraOff: false
   };
 
   participants.set(peerId, entry);
@@ -119,43 +138,145 @@ export function removeParticipant(peerId) {
 }
 
 /* -------------------------------------------------------
-   Attach Remote Stream (Mesh mode)
+   Multi‑Track Attachment (camera / screen / audio)
 ------------------------------------------------------- */
-export function attachRemoteStream(peerId, stream, opts = {}) {
+export function attachRemoteTrack(peerId, evt, opts = {}) {
   const { displayName, avatarUrl } = opts;
+  const track = evt.track;
+  const kind = track.kind;
+
   const entry = createTile(peerId, displayName, avatarUrl);
   if (!entry) return;
 
-  const { videoEl, avatarEl } = entry;
-  if (!videoEl) return;
+  // Ensure video element has a MediaStream
+  if (!entry.videoEl.srcObject) {
+    entry.videoEl.srcObject = new MediaStream();
+  }
 
-  videoEl.srcObject = stream;
-  videoEl.onloadedmetadata = () => {
-    videoEl.play().catch(() => {});
+  // Remove stale tracks of same kind
+  const ms = entry.videoEl.srcObject;
+  ms.getTracks()
+    .filter(t => t.kind === kind)
+    .forEach(t => ms.removeTrack(t));
+
+  // Add new track
+  ms.addTrack(track);
+
+  // Track bookkeeping
+  if (kind === "video") {
+    if (track.label.toLowerCase().includes("screen")) {
+      entry.tracks.screen = track;
+      entry.isScreenSharing = true;
+      promoteScreenShare(peerId);
+    } else {
+      entry.tracks.camera = track;
+      if (!entry.isScreenSharing) {
+        showCameraTile(entry);
+      }
+    }
+  }
+
+  if (kind === "audio") {
+    entry.tracks.audio = track;
+  }
+
+  entry.videoEl.classList.add("show");
+  entry.avatarEl?.classList.add("hidden");
+
+  entry.videoEl.onloadedmetadata = () => {
+    entry.videoEl.play().catch(() => {});
   };
 
-  videoEl.classList.add("show");
-  avatarEl?.classList.add("hidden");
+  updateGridLayout();
 }
 
 /* -------------------------------------------------------
-   Attach Single Remote Track (SFU-ready)
+   Screen Share Promotion (Option 2)
+   - Hide camera tile
+   - Show only screen share tile
 ------------------------------------------------------- */
-export function attachRemoteTrack(peerId, track, opts = {}) {
-  const { displayName, avatarUrl } = opts;
-  const entry = createTile(peerId, displayName, avatarUrl);
+function promoteScreenShare(peerId) {
+  const entry = participants.get(peerId);
   if (!entry) return;
 
-  const { videoEl, avatarEl } = entry;
+  // Hide camera tile
+  entry.el.classList.add("screen-share-active");
+  entry.el.classList.add("stage-primary");
 
-  if (!videoEl.srcObject) {
-    videoEl.srcObject = new MediaStream();
+  // Hide camera video if present
+  if (entry.tracks.camera) {
+    entry.videoEl.classList.add("show");
   }
 
-  videoEl.srcObject.addTrack(track);
+  // Enable stage mode
+  gridEl.classList.add("stage-mode");
 
-  videoEl.classList.add("show");
-  avatarEl?.classList.add("hidden");
+  // Hide local tile if needed
+  if (localTileEl) {
+    localTileEl.classList.add("hidden");
+  }
+
+  updateGridLayout();
+}
+
+/* -------------------------------------------------------
+   Screen Share Stop
+------------------------------------------------------- */
+export function stopScreenShare(peerId) {
+  const entry = participants.get(peerId);
+  if (!entry) return;
+
+  entry.isScreenSharing = false;
+  entry.tracks.screen = null;
+
+  entry.el.classList.remove("screen-share-active");
+  entry.el.classList.remove("stage-primary");
+
+  // Restore camera tile if camera exists
+  if (entry.tracks.camera) {
+    showCameraTile(entry);
+  }
+
+  // Remove stage mode if no one else is staged
+  const anyStaged = [...participants.values()].some(p =>
+    p.el.classList.contains("stage-primary")
+  );
+
+  if (!anyStaged) {
+    gridEl.classList.remove("stage-mode");
+  }
+
+  if (localTileEl) {
+    localTileEl.classList.remove("hidden");
+  }
+
+  updateGridLayout();
+}
+
+/* -------------------------------------------------------
+   Camera Tile Restore
+------------------------------------------------------- */
+function showCameraTile(entry) {
+  entry.videoEl.classList.add("show");
+  entry.avatarEl?.classList.add("hidden");
+}
+
+/* -------------------------------------------------------
+   Camera Off / On
+------------------------------------------------------- */
+export function setParticipantCameraOff(peerId, off) {
+  const entry = participants.get(peerId);
+  if (!entry) return;
+
+  entry.cameraOff = off;
+
+  if (off) {
+    entry.videoEl.classList.remove("show");
+    entry.avatarEl?.classList.remove("hidden");
+  } else {
+    entry.videoEl.classList.add("show");
+    entry.avatarEl?.classList.add("hidden");
+  }
 }
 
 /* -------------------------------------------------------
@@ -165,9 +286,8 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  const { el } = entry;
-  el.classList.toggle("speaking", !!active);
-  el.style.setProperty("--audio-level", active ? String(level) : "0");
+  entry.el.classList.toggle("speaking", !!active);
+  entry.el.style.setProperty("--audio-level", active ? String(level) : "0");
 }
 
 /* -------------------------------------------------------
@@ -184,25 +304,6 @@ export function setActiveSpeaker(peerId) {
 }
 
 /* -------------------------------------------------------
-   Camera Off / On
-------------------------------------------------------- */
-export function setParticipantCameraOff(peerId, off) {
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  const { videoEl, avatarEl } = entry;
-  if (!videoEl || !avatarEl) return;
-
-  if (off) {
-    videoEl.classList.remove("show");
-    avatarEl.classList.remove("hidden");
-  } else {
-    videoEl.classList.add("show");
-    avatarEl.classList.add("hidden");
-  }
-}
-
-/* -------------------------------------------------------
    Update Display Name
 ------------------------------------------------------- */
 export function setParticipantName(peerId, name) {
@@ -210,59 +311,6 @@ export function setParticipantName(peerId, name) {
   if (!entry) return;
 
   if (entry.nameEl && name) entry.nameEl.textContent = name;
-}
-
-/* -------------------------------------------------------
-   Stage Mode (Screen Share / Dominant Speaker)
-------------------------------------------------------- */
-export function promoteToStage(peerId) {
-  if (!gridEl) return;
-
-  // Clear previous stage-primary
-  for (const [, entry] of participants.entries()) {
-    entry.el.classList.remove("stage-primary");
-  }
-  if (localTileEl) localTileEl.classList.remove("stage-primary");
-
-  // Apply stage mode
-  gridEl.classList.add("stage-mode");
-
-  const entry = participants.get(peerId);
-  if (entry) {
-    entry.el.classList.add("stage-primary");
-  }
-}
-
-export function demoteStage(peerId) {
-  if (!gridEl) return;
-
-  const entry = participants.get(peerId);
-  if (entry) entry.el.classList.remove("stage-primary");
-
-  const anyStaged = [...participants.values()].some((p) =>
-    p.el.classList.contains("stage-primary")
-  );
-
-  if (!anyStaged) {
-    gridEl.classList.remove("stage-mode");
-  }
-}
-
-/* -------------------------------------------------------
-   Sort Participants (active speaker first)
-------------------------------------------------------- */
-export function sortParticipants(order = []) {
-  if (!gridEl) return;
-
-  const tiles = [...participants.values()].map(p => p.el);
-
-  tiles.sort((a, b) => {
-    const idA = a.dataset.peerId;
-    const idB = b.dataset.peerId;
-    return order.indexOf(idA) - order.indexOf(idB);
-  });
-
-  tiles.forEach(tile => gridEl.appendChild(tile));
 }
 
 /* -------------------------------------------------------
@@ -276,6 +324,10 @@ export function clearAllParticipants() {
 
   if (gridEl) {
     gridEl.classList.remove("stage-mode");
+  }
+
+  if (localTileEl) {
+    localTileEl.classList.remove("hidden");
   }
 
   updateGridLayout();
