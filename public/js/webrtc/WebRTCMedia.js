@@ -75,7 +75,10 @@ function createRemoteParticipant(peerId = "default") {
 
   if (rtcState.voiceOnly && videoEl) {
     videoEl.style.display = "none";
-    videoEl.removeAttribute("srcObject");
+    // srcObject is a property, but removing attribute is harmless; keep it safe:
+    try {
+      videoEl.srcObject = null;
+    } catch {}
   }
 
   grid.appendChild(clone);
@@ -488,27 +491,26 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     }
   }
 
-if (evt.track.kind === "video" && videoEl) {
-  log("Attaching remote VIDEO to participant:", peerId);
+  if (evt.track.kind === "video" && videoEl) {
+    log("Attaching remote VIDEO to participant:", peerId);
 
-  videoEl.srcObject = remoteStream;
-  videoEl.playsInline = true;
-  videoEl.muted = true; // keep muted for autoplay
+    videoEl.srcObject = remoteStream;
+    videoEl.playsInline = true;
+    videoEl.muted = true; // keep muted for autoplay
 
-  videoEl.style.display = "block";
-  videoEl.style.opacity = "1";
-  videoEl.classList.add("show");
+    videoEl.style.display = "block";
+    videoEl.style.opacity = "1";
+    videoEl.classList.add("show");
 
-  videoEl.play()
-    .then(() => {
-      showAvatar(false);
-      participantEl.classList.add("video-active");
-    })
-    .catch((err) => {
-      log("Remote video play blocked or failed:", err?.name || err);
-    });
-}
-
+    videoEl.play()
+      .then(() => {
+        showAvatar(false);
+        participantEl.classList.add("video-active");
+      })
+      .catch((err) => {
+        log("Remote video play blocked or failed:", err?.name || err);
+      });
+  }
 
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
