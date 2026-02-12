@@ -381,15 +381,23 @@ export class WebRTCController {
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
     await this._flushPendingRemoteCandidates(from, pc);
 
-    const stream = await getLocalMedia(true, !rtcState.audioOnly);
-    this.localStream = stream;
-    rtcState.localStream = stream;
+    let stream = null;
+try {
+  stream = await getLocalMedia(true, !rtcState.audioOnly);
+} catch (err) {
+  console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
+}
 
-    this.onLocalStream?.(stream);
+this.localStream = stream;
+rtcState.localStream = stream;
 
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-    }
+// Notify UI even if null (avatar-only mode)
+this.onLocalStream?.(stream || null);
+
+if (stream) {
+  stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+}
+
 
     let answer = await pc.createAnswer();
 
@@ -1163,6 +1171,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
