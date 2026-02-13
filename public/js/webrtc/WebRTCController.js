@@ -766,6 +766,16 @@ export class WebRTCController {
         this.startNetworkMonitor();
       }
 
+      // 🔴 If we're using a fake local stream (no real devices),
+      // do NOT restart ICE or tear the call down. Let it stay up.
+      if (rtcState.localStream && rtcState.localStream._isFake) {
+        console.warn(
+          "[WebRTC] ICE state changed but local stream is fake — skipping fallback:",
+          state
+        );
+        return;
+      }
+
       if (rtcState.answering) return;
 
       if (state === "disconnected") {
@@ -821,7 +831,7 @@ export class WebRTCController {
       }
     };
 
-       /* ---------------------------------------------------
+    /* ---------------------------------------------------
        Renegotiation
     --------------------------------------------------- */
     pc.onnegotiationneeded = async () => {
@@ -1094,6 +1104,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
