@@ -1,7 +1,10 @@
 // public/js/webrtc/RemoteParticipants.js
-// PURE TILE MANAGER — no layout logic, no screen-share logic, no active-speaker logic.
-// CallUI.js now owns ALL layout classes and UI behavior.
-// This file ONLY manages participant tiles, media binding, and basic state.
+// PURE TILE MANAGER — no layout logic, no screen-share logic, no active-speaker layout.
+// CallUI.js owns ALL layout classes and UI behavior.
+// This file ONLY manages:
+//   - participant tiles
+//   - media binding
+//   - basic state (cameraOff, speaking, avatar/name)
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -24,10 +27,22 @@ export function initRemoteParticipants() {
    Register Local Tile
 ------------------------------------------------------- */
 export function registerLocalTile(el) {
-  localTileEl = el;
+  localTileEl = el || null;
   if (localTileEl) {
     localTileEl.dataset.peerId = "local";
   }
+}
+
+/* -------------------------------------------------------
+   Internal: Safe Template Clone
+------------------------------------------------------- */
+function safeCloneTemplate(tplId) {
+  const tpl = document.getElementById(tplId);
+  if (!tpl || !tpl.content || !tpl.content.firstElementChild) {
+    console.warn(`[RemoteParticipants] Template #${tplId} missing or invalid`);
+    return null;
+  }
+  return tpl.content.firstElementChild.cloneNode(true);
 }
 
 /* -------------------------------------------------------
@@ -35,28 +50,32 @@ export function registerLocalTile(el) {
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
   if (!gridEl) initRemoteParticipants();
-  if (!gridEl) return null;
-
-  if (participants.has(peerId)) return participants.get(peerId);
-
-  const tpl = document.getElementById("remoteParticipantTemplate");
-  if (!tpl) {
-    console.warn("[RemoteParticipants] remoteParticipantTemplate missing");
+  if (!gridEl) {
+    console.warn("[RemoteParticipants] createTile aborted — no gridEl");
     return null;
   }
 
-  const node = tpl.content.firstElementChild.cloneNode(true);
-  node.dataset.peerId = peerId;
+  if (!peerId && peerId !== 0) {
+    console.warn("[RemoteParticipants] createTile called without peerId");
+    return null;
+  }
+
+  if (participants.has(peerId)) return participants.get(peerId);
+
+  const node = safeCloneTemplate("remoteParticipantTemplate");
+  if (!node) return null;
+
+  node.dataset.peerId = String(peerId);
 
   const videoEl  = node.querySelector("video");
   const avatarEl = node.querySelector(".avatar-wrapper");
   const imgEl    = node.querySelector(".avatar-img");
   const nameEl   = node.querySelector(".name-tag");
 
-  if (displayName) nameEl.textContent = displayName;
+  if (nameEl && displayName) nameEl.textContent = displayName;
   if (avatarUrl && imgEl) imgEl.src = avatarUrl;
 
-  // Join animation
+  // Join animation (CSS can handle .joining/.joined)
   node.classList.add("joining");
   gridEl.appendChild(node);
   requestAnimationFrame(() => {
@@ -71,11 +90,11 @@ function createTile(peerId, displayName, avatarUrl) {
     avatarEl,
     imgEl,
     nameEl,
-    displayName,
-    avatarUrl,
+    displayName: displayName || "",
+    avatarUrl: avatarUrl || "",
     stream: null,
     cameraOff: false,
-    speaking: false
+    speaking: false,
   };
 
   participants.set(peerId, entry);
@@ -89,8 +108,18 @@ export function removeParticipant(peerId) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  entry.el.classList.add("leaving");
-  setTimeout(() => entry.el.remove(), 220);
+  try {
+    entry.el.classList.add("leaving");
+    setTimeout(() => {
+      try {
+        entry.el.remove();
+      } catch {}
+    }, 220);
+  } catch {
+    try {
+      entry.el.remove();
+    } catch {}
+  }
 
   participants.delete(peerId);
 }
@@ -99,19 +128,40 @@ export function removeParticipant(peerId) {
    Attach MediaStream (from controller)
 ------------------------------------------------------- */
 export function attachStream(peerId, stream) {
+  if (!stream) {
+    console.warn("[RemoteParticipants] attachStream called with null stream for peer:", peerId);
+  }
+
   const entry = participants.get(peerId) || createTile(peerId);
-  if (!entry) return null;
+  if (!entry) {
+    console.warn("[RemoteParticipants] attachStream: no entry for peer:", peerId);
+    return null;
+  }
 
-  entry.stream = stream;
+  entry.stream = stream || null;
 
-  if (entry.videoEl) {
-    entry.videoEl.srcObject = stream;
-    entry.videoEl.playsInline = true;
-    entry.videoEl.muted = true;
+  if (entry.videoEl && stream) {
+    try {
+      entry.videoEl.srcObject = stream;
+      entry.videoEl.playsInline = true;
+      entry.videoEl.muted = true; // remote video muted in tile; audio is via #remoteAudio
 
-    entry.videoEl.onloadedmetadata = () => {
-      entry.videoEl.play().catch(() => {});
-    };
+      // Ensure CSS shows the video element
+      entry.videoEl.classList.add("show");
+
+      entry.videoEl.onloadedmetadata = () => {
+        entry.videoEl
+          .play()
+          .catch((err) => {
+            console.warn(
+              "[RemoteParticipants] remote video play blocked:",
+              err?.name || err
+            );
+          });
+      };
+    } catch (err) {
+      console.error("[RemoteParticipants] Failed to bind remote video:", err);
+    }
   }
 
   return entry;
@@ -124,15 +174,23 @@ export function setParticipantCameraOff(peerId, off) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  entry.cameraOff = off;
+  entry.cameraOff = !!off;
 
-  // CallUI.js handles .voice-only class
-  if (off) {
-    entry.videoEl?.classList.remove("show");
-    entry.avatarEl?.classList.remove("hidden");
-  } else {
-    entry.videoEl?.classList.add("show");
-    entry.avatarEl?.classList.add("hidden");
+  // This only toggles raw media visibility; CallUI handles .voice-only, layout, etc.
+  if (entry.videoEl) {
+    if (off) {
+      entry.videoEl.classList.remove("show");
+    } else {
+      entry.videoEl.classList.add("show");
+    }
+  }
+
+  if (entry.avatarEl) {
+    if (off) {
+      entry.avatarEl.classList.remove("hidden");
+    } else {
+      entry.avatarEl.classList.add("hidden");
+    }
   }
 }
 
@@ -143,13 +201,19 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  entry.speaking = active;
+  const isActive = !!active;
+  entry.speaking = isActive;
 
   // CSS handles glow animation
-  entry.el.classList.toggle("speaking", !!active);
+  try {
+    entry.el.classList.toggle("speaking", isActive);
+  } catch {}
 
-  // Audio level for CSS animations
-  entry.el.style.setProperty("--audio-level", active ? String(level) : "0");
+  // Audio level for CSS animations (e.g., voice pulse)
+  const safeLevel = isActive ? Number(level) || 1 : 0;
+  try {
+    entry.el.style.setProperty("--audio-level", String(safeLevel));
+  } catch {}
 }
 
 /* -------------------------------------------------------
@@ -159,7 +223,10 @@ export function setParticipantName(peerId, name) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  if (entry.nameEl && name) entry.nameEl.textContent = name;
+  if (entry.nameEl && typeof name === "string") {
+    entry.nameEl.textContent = name;
+    entry.displayName = name;
+  }
 }
 
 /* -------------------------------------------------------
@@ -169,7 +236,10 @@ export function setParticipantAvatar(peerId, url) {
   const entry = participants.get(peerId);
   if (!entry) return;
 
-  if (entry.imgEl && url) entry.imgEl.src = url;
+  if (entry.imgEl && typeof url === "string" && url.length > 0) {
+    entry.imgEl.src = url;
+    entry.avatarUrl = url;
+  }
 }
 
 /* -------------------------------------------------------
@@ -177,15 +247,21 @@ export function setParticipantAvatar(peerId, url) {
 ------------------------------------------------------- */
 export function clearAllParticipants() {
   for (const [, entry] of participants.entries()) {
-    entry.el.remove();
+    try {
+      entry.el.remove();
+    } catch {}
   }
   participants.clear();
 
   if (localTileEl) {
-    localTileEl.classList.remove("active-speaker");
-    localTileEl.classList.remove("voice-only");
+    try {
+      localTileEl.classList.remove("active-speaker");
+      localTileEl.classList.remove("voice-only");
+      localTileEl.style.removeProperty("--audio-level");
+    } catch {}
   }
 }
+
 
 
 
