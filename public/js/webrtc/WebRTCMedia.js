@@ -29,72 +29,6 @@ function getAudioCtx() {
 ------------------------------------------------------- */
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
-/* -------------------------------------------------------
-   DOM Helpers for Group Layout
-------------------------------------------------------- */
-function getCallGrid() {
-  return document.getElementById("callGrid");
-}
-
-function getRemoteTemplate() {
-  return document.getElementById("remoteParticipantTemplate");
-}
-
-function ensureRemoteMap() {
-  if (!rtcState.remoteParticipants) {
-    rtcState.remoteParticipants = {};
-  }
-  return rtcState.remoteParticipants;
-}
-
-/* -------------------------------------------------------
-   Create Remote Participant Tile (Meet‑style)
-------------------------------------------------------- */
-function createRemoteParticipant(peerId = "default") {
-  const grid = getCallGrid();
-  const tpl = getRemoteTemplate();
-
-  if (!grid || !tpl) {
-    log("createRemoteParticipant: missing grid or template");
-    return null;
-  }
-
-  const map = ensureRemoteMap();
-  if (map[peerId]) return map[peerId];
-
-  const clone = tpl.content.firstElementChild.cloneNode(true);
-
-  // Match CallUI mobile behavior: use both peerId and id
-  clone.dataset.peerId = peerId;
-  clone.dataset.id = peerId;
-
-  const videoEl   = clone.querySelector("video");
-  const avatarImg = clone.querySelector(".avatar-img");
-  const nameTag   = clone.querySelector(".name-tag");
-
-  if (nameTag) nameTag.textContent = peerId || "Guest";
-
-  if (avatarImg && !avatarImg.src) {
-    avatarImg.src = "img/defaultUser.png";
-  }
-
-if (rtcState.voiceOnly && videoEl) {
-  videoEl.style.display = "none";
-  videoEl.srcObject = null;
-}
-
-
-  grid.appendChild(clone);
-  map[peerId] = clone;
-
-  log("createRemoteParticipant: created tile for peer:", peerId);
-  return clone;
-}
-
-function getRemoteParticipant(peerId = "default") {
-  const map = ensureRemoteMap();
-  return map[peerId] || createRemoteParticipant(peerId);
-}
 
 /* -------------------------------------------------------
    Local Avatar Visibility
@@ -691,6 +625,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
