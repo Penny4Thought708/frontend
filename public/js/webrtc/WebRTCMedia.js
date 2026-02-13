@@ -486,8 +486,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let evt;
 
   // Support both signatures:
-  //  - attachRemoteTrack(event)
-  //  - attachRemoteTrack(peerId, event)
   if (maybeEvt) {
     peerId = peerOrEvt || "default";
     evt = maybeEvt;
@@ -523,22 +521,38 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     readyState: evt.track.readyState,
   });
 
-  // 🔊 ALWAYS wire audio to the shared remoteAudio element
+  /* -------------------------------------------------------
+     🔊 AUDIO — attach + unlock autoplay
+  ------------------------------------------------------- */
   const remoteAudioEl = document.getElementById("remoteAudio");
+
   if (evt.track.kind === "audio" && remoteAudioEl) {
     log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
 
     remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.playsInline = true;
     remoteAudioEl.muted = false;
-    if (remoteAudioEl.volume === 0) remoteAudioEl.volume = 1;
+    remoteAudioEl.volume = 1;
 
-    remoteAudioEl.play().catch((err) =>
-      log("Remote audio autoplay blocked:", err?.name || err)
-    );
+    // Try immediately
+    remoteAudioEl.play().catch(() => {
+      log("Remote audio autoplay blocked — waiting for user gesture");
+
+      // One‑time unlock on first click/tap
+      const unlock = () => {
+        remoteAudioEl.play().catch(() => {});
+        window.removeEventListener("click", unlock);
+        window.removeEventListener("touchstart", unlock);
+      };
+
+      window.addEventListener("click", unlock, { once: true });
+      window.addEventListener("touchstart", unlock, { once: true });
+    });
   }
 
-  // 🔁 Hand stream to tile manager (it will bind <video>)
+  /* -------------------------------------------------------
+     🎥 VIDEO — hand stream to tile manager
+  ------------------------------------------------------- */
   const entry = attachParticipantStream(peerId, remoteStream);
   if (!entry || !entry.el) {
     log("No participant entry for peer:", peerId);
@@ -549,21 +563,24 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   const videoEl       = entry.videoEl;
   const avatarWrapper = entry.avatarEl;
 
+  // Force video playback (Safari/Chrome sometimes need this)
+  if (evt.track.kind === "video" && videoEl) {
+    videoEl.srcObject = remoteStream;
+    videoEl.play().catch(() => {});
+  }
+
   const showAvatar = (show) => {
     if (avatarWrapper) avatarWrapper.classList.toggle("hidden", !show);
-    if (videoEl) {
-      videoEl.classList.toggle("show", !show);
-    }
+    if (videoEl) videoEl.classList.toggle("show", !show);
   };
 
-  // Track events → avatar vs video
   evt.track.onmute   = () => showAvatar(true);
   evt.track.onunmute = () => showAvatar(false);
-  evt.track.onended  = () => {
-    showAvatar(true);
-  };
+  evt.track.onended  = () => showAvatar(true);
 
-  // 🔊 Start speaking detection + visualizer for this participant
+  /* -------------------------------------------------------
+     🔊 Speaking detection + visualizer
+  ------------------------------------------------------- */
   if (evt.track.kind === "audio" && remoteAudioEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
@@ -657,6 +674,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
