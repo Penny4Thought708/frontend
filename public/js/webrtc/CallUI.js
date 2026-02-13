@@ -1,7 +1,6 @@
 // public/js/webrtc/CallUI.js
 // Aurora‑Orbit Call UI — Production Version
 // CallUI is the SOLE owner of call window visibility + layout classes.
-
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 import {
   resumeRemoteMediaPlayback,
@@ -97,7 +96,6 @@ export function initCallUI(rtc) {
     localVideo.playsInline = true;
 
     if (stream) {
-      // Video available: ensure local tile is NOT voice-only
       localParticipant?.classList.remove("voice-only");
       win?.classList.remove("voice-only-call");
 
@@ -105,13 +103,11 @@ export function initCallUI(rtc) {
         .play()
         .catch(() => setTimeout(() => localVideo.play().catch(() => {}), 50));
     } else {
-      // No video: treat as voice-only for local
       localParticipant?.classList.add("voice-only");
       win?.classList.add("voice-only-call");
     }
   };
 
-  // If RTC already has a local stream when UI initializes
   if (rtc.localStream && localVideo) {
     localVideo.srcObject = rtc.localStream;
     localVideo.muted = true;
@@ -160,7 +156,6 @@ export function initCallUI(rtc) {
     callStatus.textContent = text || "";
   }
 
-  // Audio-only call mode (for whole call)
   function setVoiceOnly(on) {
     const isOn = !!on;
     if (win) win.classList.toggle("voice-only-call", isOn);
@@ -244,12 +239,11 @@ export function initCallUI(rtc) {
     setScreenShare(false);
   }
 
-  // Expose for any external modules (desktop + mobile)
   window.setScreenShareMode = setScreenShareMode;
   window.clearScreenShareMode = clearScreenShareMode;
 
   /* -------------------------------------------------------
-     WINDOW OPEN/CLOSE — CallUI is sole owner
+     WINDOW OPEN/CLOSE
   ------------------------------------------------------- */
   function openWindowAnimated() {
     if (!win) return;
@@ -360,7 +354,7 @@ export function initCallUI(rtc) {
   window.showSecondaryIncomingToastInternal = showSecondaryIncomingToastInternal;
 
   /* -------------------------------------------------------
-     DEBUG PANEL (CALL LOG)
+     DEBUG PANEL
   ------------------------------------------------------- */
   const debugPanel = (() => {
     const el = document.createElement("div");
@@ -482,7 +476,6 @@ export function initCallUI(rtc) {
     historyBtn.onclick = () => window.toggleCallHistoryPanel?.();
   }
 
-  // More-controls menu: no flash, smooth toggle
   if (moreBtn && moreMenu) {
     moreMenu.classList.add("hidden");
 
@@ -532,6 +525,7 @@ export function initCallUI(rtc) {
       resumeRemoteMediaPlayback();
     };
   }
+
   /* -------------------------------------------------------
      RTC EVENT WIRING
   ------------------------------------------------------- */
@@ -645,9 +639,7 @@ export function initCallUI(rtc) {
     showSecondaryIncomingToastInternal(data);
 
   rtc.onActiveSpeaker = (peerId) => {
-    // Desktop: let RemoteParticipants handle speaking visuals
     setParticipantSpeaking(peerId, true, 1);
-    // Mobile + layout: delegate to global handler if present
     if (window.setActiveSpeaker) {
       window.setActiveSpeaker(peerId);
     }
@@ -689,7 +681,7 @@ export function initCallUI(rtc) {
   };
 
   /* ------------------------------------------------------------
-     RECORDING: Local + Remote mixed
+     RECORDING: Local + Remote mixed (DOM-aligned)
   ------------------------------------------------------------ */
   rtc.toggleRecording = function () {
     try {
@@ -697,7 +689,13 @@ export function initCallUI(rtc) {
         const mixedStream = new MediaStream();
 
         rtc.localStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
-        rtc.remoteStream?.getTracks().forEach((t) => mixedStream.addTrack(t));
+
+        const remoteSrc =
+          (remoteAudio && remoteAudio.srcObject instanceof MediaStream
+            ? remoteAudio.srcObject
+            : null);
+
+        remoteSrc?.getTracks().forEach((t) => mixedStream.addTrack(t));
 
         rtc._state.recordedChunks = [];
         rtc._state.recorder = new MediaRecorder(mixedStream, {
@@ -714,7 +712,6 @@ export function initCallUI(rtc) {
           });
           const url = URL.createObjectURL(blob);
           console.log("Recording ready:", url);
-          // TODO: upload or save
         };
 
         rtc._state.recorder.start();
@@ -739,11 +736,19 @@ export function initCallUI(rtc) {
   (function initWaveform() {
     try {
       const canvas = document.getElementById("noiseWaveform");
-      if (!canvas || !rtc.localStream) return;
+      if (!canvas) return;
+
+      const baseStream =
+        rtc.localStream ||
+        (localVideo && localVideo.srcObject instanceof MediaStream
+          ? localVideo.srcObject
+          : null);
+
+      if (!baseStream) return;
 
       const ctx = canvas.getContext("2d");
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(rtc.localStream);
+      const source = audioCtx.createMediaStreamSource(baseStream);
       const analyser = audioCtx.createAnalyser();
 
       analyser.fftSize = 256;
@@ -842,7 +847,6 @@ export function initCallUI(rtc) {
       callGrid.scrollLeft = scrollStart + dx;
     });
 
-    // Active speaker scroll + class toggle
     window.setActiveSpeaker = function (participantId) {
       participants = Array.from(callGrid.querySelectorAll(".participant"));
 
@@ -946,7 +950,6 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
-
 
 
 
