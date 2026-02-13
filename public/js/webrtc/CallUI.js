@@ -1,6 +1,18 @@
 // public/js/webrtc/CallUI.js
-// Aurora‑Orbit Call UI — Production Version
-// CallUI is the SOLE owner of call window visibility + layout classes.
+// Aurora‑Orbit Call UI — Production Version (Google‑Meet–grade)
+//
+// Sole owner of:
+//  - Call window visibility
+//  - Layout classes (inbound/active, voice-only, camera-off, screen-share, PIP)
+//  - Ringer / ringback / notification behavior
+//  - Mobile Meet-style behavior
+//
+// Integrates with:
+//  - WebRTCMedia.js (resumeRemoteMediaPlayback, flipLocalCamera, cleanupMedia)
+//  - RemoteParticipants.js (initRemoteParticipants, clearAllParticipants, setParticipantSpeaking, setParticipantCameraOff)
+//  - messaging.js (getReceiver)
+//  - session.js (getVoiceBtn, getVideoBtn)
+
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 import {
   resumeRemoteMediaPlayback,
@@ -14,6 +26,7 @@ import {
   setParticipantSpeaking,
   setParticipantCameraOff,
 } from "./RemoteParticipants.js";
+
 import { getReceiver } from "../messaging.js";
 import { getVoiceBtn, getVideoBtn } from "../session.js";
 
@@ -59,6 +72,19 @@ export function initCallUI(rtc) {
   const voiceBtn         = getVoiceBtn?.();
   const videoBtn         = getVideoBtn?.();
 
+  // Footer audio elements (ringers + notification)
+  const ringtoneEl       = document.getElementById("ringtone");
+  const ringbackEl       = document.getElementById("ringback");
+  const notificationEl   = document.getElementById("notification");
+
+  /* -------------------------------------------------------
+     SAFETY GUARDS
+  ------------------------------------------------------- */
+  if (!win || !grid) {
+    console.warn("[CallUI] Missing core call window elements");
+    return;
+  }
+
   /* -------------------------------------------------------
      CALL BUTTON SAFETY HELPERS
   ------------------------------------------------------- */
@@ -73,20 +99,102 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     INITIALIZE REMOTE PARTICIPANTS
+     MEDIA ELEMENT WIRING
   ------------------------------------------------------- */
   initRemoteParticipants();
 
-  /* -------------------------------------------------------
-     WIRE MEDIA ELEMENTS INTO CONTROLLER
-  ------------------------------------------------------- */
   rtc.attachMediaElements?.({
     localVideo,
     remoteAudio,
   });
 
   /* -------------------------------------------------------
-     LOCAL STREAM BINDING
+     AUTOPLAY RECOVERY (GLOBAL)
+  ------------------------------------------------------- */
+  let autoplayArmed = false;
+
+  function primeAudioElement(el) {
+    if (!el) return;
+    try {
+      el.muted = false;
+      if (el.volume === 0) el.volume = 1;
+      el.play().then(() => {
+        el.pause();
+        el.currentTime = 0;
+      }).catch(() => {});
+    } catch {}
+  }
+
+  function enableAutoplayRecovery() {
+    if (autoplayArmed) return;
+    autoplayArmed = true;
+
+    const handler = () => {
+      resumeRemoteMediaPlayback();
+
+      primeAudioElement(ringtoneEl);
+      primeAudioElement(ringbackEl);
+      primeAudioElement(notificationEl);
+
+      document.removeEventListener("pointerdown", handler);
+    };
+
+    document.addEventListener("pointerdown", handler, { once: true });
+
+    // Any click inside the call window should also try to resume media
+    win.addEventListener("click", () => {
+      resumeRemoteMediaPlayback();
+    });
+  }
+
+  enableAutoplayRecovery();
+
+  /* -------------------------------------------------------
+     RINGER / RINGBACK / NOTIFICATION HELPERS
+  ------------------------------------------------------- */
+  function playSafe(el, loop = false) {
+    if (!el) return;
+    try {
+      el.loop = !!loop;
+      el.muted = false;
+      if (el.volume === 0) el.volume = 1;
+      el.play().catch(() => {});
+    } catch {}
+  }
+
+  function stopSafe(el) {
+    if (!el) return;
+    try {
+      el.pause();
+      el.currentTime = 0;
+      el.loop = false;
+    } catch {}
+  }
+
+  function playRingtone() {
+    stopSafe(ringbackEl);
+    playSafe(ringtoneEl, true);
+  }
+
+  function stopRingtone() {
+    stopSafe(ringtoneEl);
+  }
+
+  function playRingback() {
+    stopSafe(ringtoneEl);
+    playSafe(ringbackEl, true);
+  }
+
+  function stopRingback() {
+    stopSafe(ringbackEl);
+  }
+
+  function playNotification() {
+    playSafe(notificationEl, false);
+  }
+
+  /* -------------------------------------------------------
+     LOCAL STREAM BINDING (DEFENSIVE)
   ------------------------------------------------------- */
   rtc.onLocalStream = (stream) => {
     if (!localVideo) return;
@@ -97,14 +205,16 @@ export function initCallUI(rtc) {
 
     if (stream) {
       localParticipant?.classList.remove("voice-only");
-      win?.classList.remove("voice-only-call");
+      win.classList.remove("voice-only-call");
 
       localVideo
         .play()
-        .catch(() => setTimeout(() => localVideo.play().catch(() => {}), 50));
+        .catch(() =>
+          setTimeout(() => localVideo.play().catch(() => {}), 80)
+        );
     } else {
       localParticipant?.classList.add("voice-only");
-      win?.classList.add("voice-only-call");
+      win.classList.add("voice-only-call");
     }
   };
 
@@ -113,7 +223,7 @@ export function initCallUI(rtc) {
     localVideo.muted = true;
     localVideo.playsInline = true;
     localParticipant?.classList.remove("voice-only");
-    win?.classList.remove("voice-only-call");
+    win.classList.remove("voice-only-call");
   }
 
   /* -------------------------------------------------------
@@ -145,7 +255,6 @@ export function initCallUI(rtc) {
      UI MODE + LAYOUT HELPERS
   ------------------------------------------------------- */
   function setMode(mode) {
-    if (!win) return;
     win.classList.remove("inbound-mode", "active-mode");
     if (mode === "inbound") win.classList.add("inbound-mode");
     if (mode === "active")  win.classList.add("active-mode");
@@ -158,28 +267,25 @@ export function initCallUI(rtc) {
 
   function setVoiceOnly(on) {
     const isOn = !!on;
-    if (win) win.classList.toggle("voice-only-call", isOn);
-    if (localParticipant) localParticipant.classList.toggle("voice-only", isOn);
+    win.classList.toggle("voice-only-call", isOn);
+    localParticipant?.classList.toggle("voice-only", isOn);
 
-    if (cameraBtn) cameraBtn.classList.toggle("hidden-soft", isOn);
-    if (shareBtn)  shareBtn.classList.toggle("hidden-soft", isOn);
+    cameraBtn?.classList.toggle("hidden-soft", isOn);
+    shareBtn?.classList.toggle("hidden-soft", isOn);
   }
 
   function setCameraOff(on) {
-    if (!win || !localParticipant) return;
     const off = !!on;
     win.classList.toggle("camera-off", off);
-    localParticipant.classList.toggle("voice-only", off);
+    localParticipant?.classList.toggle("voice-only", off);
   }
 
   function setScreenShare(on) {
-    if (!grid) return;
     grid.classList.toggle("screen-share-mode", !!on);
   }
 
   function setNoiseSuppression(on) {
-    if (!noiseBtn) return;
-    noiseBtn.classList.toggle("active", !!on);
+    noiseBtn?.classList.toggle("active", !!on);
   }
 
   function setQuality(level, info) {
@@ -201,8 +307,6 @@ export function initCallUI(rtc) {
      SCREEN SHARE LAYOUT HELPERS (STAGE + FILMSTRIP)
   ------------------------------------------------------- */
   function setScreenShareMode(peerId) {
-    if (!grid) return;
-
     const participants = Array.from(
       grid.querySelectorAll(".participant")
     );
@@ -226,8 +330,6 @@ export function initCallUI(rtc) {
   }
 
   function clearScreenShareMode() {
-    if (!grid) return;
-
     const participants = Array.from(
       grid.querySelectorAll(".participant")
     );
@@ -246,7 +348,6 @@ export function initCallUI(rtc) {
      WINDOW OPEN/CLOSE
   ------------------------------------------------------- */
   function openWindowAnimated() {
-    if (!win) return;
     if (win.classList.contains("is-open")) return;
 
     win.classList.remove("hidden");
@@ -260,7 +361,6 @@ export function initCallUI(rtc) {
   }
 
   function hideWindow() {
-    if (!win) return;
     if (!win.classList.contains("is-open")) return;
 
     const active = document.activeElement;
@@ -399,6 +499,8 @@ export function initCallUI(rtc) {
     declineBtn.onclick = () => {
       disableCallButtons();
       setStatus("Declining…");
+      stopRingtone();
+      stopRingback();
       rtc.declineIncomingCall?.();
     };
   }
@@ -407,6 +509,8 @@ export function initCallUI(rtc) {
     answerBtn.onclick = async () => {
       disableCallButtons();
       setStatus("Answering…");
+      stopRingtone();
+      stopRingback();
 
       openWindowAnimated();
       setMode("active");
@@ -422,6 +526,8 @@ export function initCallUI(rtc) {
   if (endBtn) {
     endBtn.onclick = () => {
       setStatus("Call ended");
+      stopRingtone();
+      stopRingback();
       rtc.endCall?.(true);
     };
   }
@@ -504,6 +610,7 @@ export function initCallUI(rtc) {
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
 
+      playRingback();
       rtc.startCall(peerId, true);
       resumeRemoteMediaPlayback();
     };
@@ -521,6 +628,7 @@ export function initCallUI(rtc) {
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
 
+      playRingback();
       rtc.startCall(peerId, false);
       resumeRemoteMediaPlayback();
     };
@@ -540,6 +648,7 @@ export function initCallUI(rtc) {
 
     disableCallButtons();
     openWindowAnimated();
+    playRingback();
   };
 
   rtc.onIncomingCall = ({ fromName, audioOnly }) => {
@@ -552,6 +661,7 @@ export function initCallUI(rtc) {
     setMode("inbound");
 
     openWindowAnimated();
+    playRingtone();
   };
 
   rtc.onCallStarted = () => {
@@ -561,6 +671,8 @@ export function initCallUI(rtc) {
     setMode("active");
     openWindowAnimated();
     resumeRemoteMediaPlayback();
+    stopRingtone();
+    stopRingback();
 
     if (rtc.localStream && localVideo && !localVideo.srcObject) {
       localVideo.srcObject = rtc.localStream;
@@ -570,28 +682,26 @@ export function initCallUI(rtc) {
     }
   };
 
-  rtc.onCallEnded = () => {
-    debug("Call ended");
+  function finalizeCallEnd(statusText) {
+    debug(statusText);
     stopTimer();
-    setStatus("Call ended");
+    setStatus(statusText);
     setMode(null);
     clearAllParticipants();
     cleanupMedia();
     clearScreenShareMode();
     hideWindow();
     enableCallButtons();
+    stopRingtone();
+    stopRingback();
+  }
+
+  rtc.onCallEnded = () => {
+    finalizeCallEnd("Call ended");
   };
 
   rtc.onCallFailed = (reason) => {
-    debug(`Call failed: ${reason}`);
-    stopTimer();
-    setStatus(`Call failed: ${reason}`);
-    setMode(null);
-    clearAllParticipants();
-    cleanupMedia();
-    clearScreenShareMode();
-    hideWindow();
-    enableCallButtons();
+    finalizeCallEnd(`Call failed: ${reason}`);
   };
 
   rtc.onQualityChange = (level, info) => {
@@ -612,6 +722,7 @@ export function initCallUI(rtc) {
 
     const pip = document.getElementById("localPip");
     if (pip && peerId !== "local") {
+      pip.classList.remove("hidden");
       pip.classList.add("show");
     }
   };
@@ -621,7 +732,10 @@ export function initCallUI(rtc) {
     clearScreenShareMode();
 
     const pip = document.getElementById("localPip");
-    if (pip) pip.classList.remove("show");
+    if (pip) {
+      pip.classList.remove("show");
+      pip.classList.add("hidden");
+    }
   };
 
   rtc.onNoiseSuppressionChanged = (enabled) =>
@@ -632,7 +746,10 @@ export function initCallUI(rtc) {
 
   rtc.onVoicemailPrompt = (data) => {
     enableCallButtons();
+    stopRingback();
+    stopRingtone();
     showUnavailableToastInternal(data);
+    playNotification();
   };
 
   rtc.onSecondaryIncomingCall = (data) =>
@@ -681,7 +798,7 @@ export function initCallUI(rtc) {
   };
 
   /* ------------------------------------------------------------
-     RECORDING: Local + Remote mixed (DOM-aligned)
+     RECORDING: Local + Remote mixed
   ------------------------------------------------------------ */
   rtc.toggleRecording = function () {
     try {
@@ -731,7 +848,7 @@ export function initCallUI(rtc) {
   };
 
   /* ------------------------------------------------------------
-     WAVEFORM VISUALIZATION
+     WAVEFORM VISUALIZATION (optional, noise indicator)
   ------------------------------------------------------------ */
   (function initWaveform() {
     try {
