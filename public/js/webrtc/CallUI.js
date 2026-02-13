@@ -13,6 +13,7 @@
 //  - messaging.js (getReceiver)
 //  - session.js (getVoiceBtn, getVideoBtn)
 
+// public/js/webrtc/CallUI.js
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 import {
   resumeRemoteMediaPlayback,
@@ -72,7 +73,6 @@ export function initCallUI(rtc) {
   const voiceBtn         = getVoiceBtn?.();
   const videoBtn         = getVideoBtn?.();
 
-  // Footer audio elements (ringers + notification)
   const ringtoneEl       = document.getElementById("ringtone");
   const ringbackEl       = document.getElementById("ringback");
   const notificationEl   = document.getElementById("notification");
@@ -84,6 +84,12 @@ export function initCallUI(rtc) {
     console.warn("[CallUI] Missing core call window elements");
     return;
   }
+
+  if (win.dataset.callUiInitialized === "true") {
+    console.warn("[CallUI] initCallUI called more than once — skipping rebind");
+    return;
+  }
+  win.dataset.callUiInitialized = "true";
 
   /* -------------------------------------------------------
      CALL BUTTON SAFETY HELPERS
@@ -458,6 +464,9 @@ export function initCallUI(rtc) {
      DEBUG PANEL
   ------------------------------------------------------- */
   const debugPanel = (() => {
+    const existing = document.getElementById("call-debug-overlay");
+    if (existing) return existing;
+
     const el = document.createElement("div");
     el.id = "call-debug-overlay";
     el.style.position = "fixed";
@@ -586,17 +595,20 @@ export function initCallUI(rtc) {
   if (moreBtn && moreMenu) {
     moreMenu.classList.add("hidden");
 
-    moreBtn.addEventListener("click", (e) => {
+    const toggleMenu = (e) => {
       e.stopPropagation();
       const isOpen = moreMenu.classList.contains("show");
       moreMenu.classList.toggle("show", !isOpen);
       moreMenu.classList.toggle("hidden", isOpen);
-    });
+    };
 
-    document.addEventListener("click", () => {
+    const closeMenu = () => {
       moreMenu.classList.remove("show");
       moreMenu.classList.add("hidden");
-    });
+    };
+
+    moreBtn.addEventListener("click", toggleMenu);
+    document.addEventListener("click", closeMenu);
   }
 
   if (voiceBtn) {
@@ -861,7 +873,10 @@ export function initCallUI(rtc) {
       if (!baseStream) return;
 
       const ctx = canvas.getContext("2d");
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const audioCtx = new AudioCtx();
       const source = audioCtx.createMediaStreamSource(baseStream);
       const analyser = audioCtx.createAnalyser();
 
@@ -916,8 +931,11 @@ export function initCallUI(rtc) {
      MOBILE VIDEO BEHAVIOR — GOOGLE MEET STYLE
   ------------------------------------------------------- */
   (function initMobileCallBehavior() {
+    if (window.__callUiMobileInit) return;
     if (window.innerWidth > 900) return;
     if (!win || !grid) return;
+
+    window.__callUiMobileInit = true;
 
     const callWindow = win;
     const callGrid   = grid;
@@ -1064,7 +1082,6 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
-
 
 
 
