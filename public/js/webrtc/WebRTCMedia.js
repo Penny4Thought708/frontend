@@ -1,10 +1,11 @@
 // public/js/webrtc/WebRTCMedia.js
 // Production‑grade media engine for the new call window:
-// - Local/remote media
-// - Audio visualization
-// - Speaking detection
-// - Voice‑only optimization
-// Layout is owned by CallUI.js.
+//  - Local/remote media wiring
+//  - Audio visualization + speaking detection
+//  - Voice‑only + camera‑off avatar behavior
+//  - Fake tracks when devices are missing (stable PC, avatar‑only)
+//
+// Layout is owned by CallUI.js. This file NEVER changes layout structure.
 
 import { rtcState } from "./WebRTCState.js";
 import {
@@ -23,7 +24,7 @@ function getAudioCtx() {
     try {
       sharedAudioCtx = new Ctx();
     } catch {
-      return null;
+      sharedAudioCtx = null;
     }
   }
   return sharedAudioCtx;
@@ -33,59 +34,6 @@ function getAudioCtx() {
    Logging Helper
 ------------------------------------------------------- */
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
-
-/* -------------------------------------------------------
-   Fake Tracks Fallback (for devices with no mic/cam)
-   Ensures WebRTC always has at least one audio + video track.
-------------------------------------------------------- */
-function createFakeMediaStream() {
-  try {
-    const streamTracks = [];
-
-    // Silent audio track
-    const ACtx = window.AudioContext || window.webkitAudioContext;
-    if (ACtx) {
-      const audioCtx = new ACtx();
-      const oscillator = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0.00001; // effectively silent
-      oscillator.connect(gain);
-      const dst = gain.connect(audioCtx.createMediaStreamDestination());
-      oscillator.start();
-      const fakeAudioTrack = dst.stream.getAudioTracks()[0];
-      if (fakeAudioTrack) {
-        fakeAudioTrack.enabled = false;
-        streamTracks.push(fakeAudioTrack);
-      }
-    }
-
-    // Blank video track (black canvas)
-    const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 360;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const canvasStream = canvas.captureStream(1);
-      const fakeVideoTrack = canvasStream.getVideoTracks()[0];
-      if (fakeVideoTrack) {
-        fakeVideoTrack.enabled = false;
-        streamTracks.push(fakeVideoTrack);
-      }
-    }
-
-    const fallbackStream = new MediaStream(streamTracks);
-    log("Created fake media stream with tracks:", {
-      audio: fallbackStream.getAudioTracks().length,
-      video: fallbackStream.getVideoTracks().length,
-    });
-    return fallbackStream;
-  } catch (err) {
-    log("Failed to create fake media stream:", err);
-    return new MediaStream();
-  }
-}
 
 /* -------------------------------------------------------
    Local Avatar Visibility (class-based, no layout logic)
@@ -100,19 +48,19 @@ function updateLocalAvatarVisibility() {
 
   const stream = rtcState.localStream;
 
-  // Voice-only or no stream → show avatar
+  // Voice-only, audio-only, or no usable stream → show avatar
   if (rtcState.voiceOnly || rtcState.audioOnly || !stream) {
     avatarWrapper.classList.remove("hidden");
     if (videoEl) videoEl.classList.remove("show");
     return;
   }
 
-  const hasVideo =
-    stream.getVideoTracks().some((t) => t.enabled) &&
-    stream.getVideoTracks().length > 0;
+  const hasVideoTrack =
+    stream.getVideoTracks &&
+    stream.getVideoTracks().some((t) => t.enabled && t.readyState === "live");
 
-  avatarWrapper.classList.toggle("hidden", hasVideo);
-  if (videoEl) videoEl.classList.toggle("show", hasVideo);
+  avatarWrapper.classList.toggle("hidden", !!hasVideoTrack);
+  if (videoEl) videoEl.classList.toggle("show", !!hasVideoTrack);
 }
 
 /* -------------------------------------------------------
@@ -123,48 +71,70 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 
   const ctx = getAudioCtx();
   if (!ctx) {
-    log("AudioContext not supported for visualizer");
+    log("AudioContext not supported");
     return;
   }
 
+  let src;
   try {
-    const src = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-
-    analyser.fftSize = 256;
-    const buf = new Uint8Array(analyser.frequencyBinCount);
-    src.connect(analyser);
-
-    const tick = () => {
-      analyser.getByteTimeDomainData(buf);
-
-      let sum = 0;
-      for (let i = 0; i < buf.length; i++) {
-        const v = (buf[i] - 128) / 128;
-        sum += v * v;
-      }
-
-      const rms = Math.sqrt(sum / buf.length);
-      const factor = rtcState.voiceOnly ? 5 : 4;
-      const level = Math.min(1, rms * factor);
-
-      try {
-        target.style.setProperty(cssVar, level.toFixed(3));
-      } catch {}
-
-      requestAnimationFrame(tick);
-    };
-
-    tick();
+    src = ctx.createMediaStreamSource(stream);
   } catch (err) {
-    log("Visualizer error:", err);
+    log("Visualizer source error:", err);
+    return;
   }
+
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  src.connect(analyser);
+
+  let stopped = false;
+
+  const tick = () => {
+    if (stopped) return;
+
+    try {
+      analyser.getByteTimeDomainData(buf);
+    } catch (err) {
+      log("Visualizer analyser error:", err);
+      return;
+    }
+
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) {
+      const v = (buf[i] - 128) / 128;
+      sum += v * v;
+    }
+
+    const rms = Math.sqrt(sum / buf.length);
+    const factor = rtcState.voiceOnly ? 5 : 4;
+    const level = Math.min(1, rms * factor);
+
+    try {
+      target.style.setProperty(cssVar, level.toFixed(3));
+    } catch {}
+
+    requestAnimationFrame(tick);
+  };
+
+  tick();
+
+  // Defensive: if stream ends, stop updating
+  stream.getTracks().forEach((t) => {
+    t.addEventListener("ended", () => {
+      stopped = true;
+      try {
+        target.style.removeProperty(cssVar);
+      } catch {}
+    });
+  });
 }
 
 /* -------------------------------------------------------
    Remote Speaking Detection (no layout, just .speaking)
 ------------------------------------------------------- */
-const speakingLoops = new Map(); // key: participantEl
+const speakingLoops = new Map(); // key: participantEl -> rAF id
 
 function startRemoteSpeakingDetection(stream, participantEl) {
   if (!participantEl || !stream) return;
@@ -175,57 +145,144 @@ function startRemoteSpeakingDetection(stream, participantEl) {
     return;
   }
 
+  let src;
   try {
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
-
-    const src = ctx.createMediaStreamSource(stream);
-    src.connect(analyser);
-
-    const buf = new Uint8Array(analyser.frequencyBinCount);
-    let smoothed = 0;
-
-    const loop = () => {
-      analyser.getByteFrequencyData(buf);
-      const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
-
-      smoothed = smoothed * 0.8 + avg * 0.2;
-
-      const threshold = rtcState.voiceOnly ? 0.035 : 0.055;
-      const speaking = smoothed > threshold;
-
-      try {
-        participantEl.classList.toggle("speaking", speaking);
-      } catch {}
-
-      const id = requestAnimationFrame(loop);
-      speakingLoops.set(participantEl, id);
-    };
-
-    loop();
+    src = ctx.createMediaStreamSource(stream);
   } catch (err) {
-    log("startRemoteSpeakingDetection error:", err);
+    log("Speaking detection source error:", err);
+    return;
   }
+
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+
+  src.connect(analyser);
+
+  const buf = new Uint8Array(analyser.frequencyBinCount);
+  let smoothed = 0;
+  let stopped = false;
+
+  const loop = () => {
+    if (stopped) return;
+
+    try {
+      analyser.getByteFrequencyData(buf);
+    } catch (err) {
+      log("Speaking detection analyser error:", err);
+      return;
+    }
+
+    const avg = buf.reduce((a, b) => a + b, 0) / buf.length / 255;
+    smoothed = smoothed * 0.8 + avg * 0.2;
+
+    const threshold = rtcState.voiceOnly ? 0.035 : 0.055;
+    const speaking = smoothed > threshold;
+
+    participantEl.classList.toggle("speaking", speaking);
+
+    const id = requestAnimationFrame(loop);
+    speakingLoops.set(participantEl, id);
+  };
+
+  loop();
+
+  // Stop when stream ends
+  stream.getTracks().forEach((t) => {
+    t.addEventListener("ended", () => {
+      stopped = true;
+      participantEl.classList.remove("speaking");
+      const id = speakingLoops.get(participantEl);
+      if (id) cancelAnimationFrame(id);
+      speakingLoops.delete(participantEl);
+    });
+  });
 }
 
 export function stopSpeakingDetection() {
   for (const [el, id] of speakingLoops.entries()) {
     cancelAnimationFrame(id);
-    try {
-      el.classList.remove("speaking");
-    } catch {}
+    el.classList.remove("speaking");
   }
   speakingLoops.clear();
 }
 
 /* -------------------------------------------------------
-   Local Media Acquisition (Meet+Discord tuned + fake fallback)
+   Fake MediaStream (when devices are missing)
+   - Keeps PC stable
+   - Behaves "as if" user had mic/camera
+   - UI stays avatar-only via rtcState.voiceOnly/audioOnly
+------------------------------------------------------- */
+function createFakeMediaStream() {
+  const stream = new MediaStream();
+
+  // Try to create a silent audio track via AudioContext + oscillator
+  try {
+    const ctx = getAudioCtx();
+    if (ctx) {
+      const osc = ctx.createOscillator();
+      const dst = ctx.createMediaStreamDestination();
+      osc.frequency.value = 0; // effectively silence
+      osc.connect(dst);
+      osc.start();
+      const audioTrack = dst.stream.getAudioTracks()[0];
+      if (audioTrack) {
+        stream.addTrack(audioTrack);
+      }
+    }
+  } catch (err) {
+    log("Fake audio track creation failed:", err);
+  }
+
+  // Try to create a dummy video track via canvas
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 360;
+    const ctx2d = canvas.getContext("2d");
+    if (ctx2d) {
+      ctx2d.fillStyle = "#000000";
+      ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    const vStream = canvas.captureStream(1);
+    const videoTrack = vStream.getVideoTracks()[0];
+    if (videoTrack) {
+      stream.addTrack(videoTrack);
+    }
+  } catch (err) {
+    log("Fake video track creation failed:", err);
+  }
+
+  const audioCount = stream.getAudioTracks().length;
+  const videoCount = stream.getVideoTracks().length;
+
+  log("Created fake media stream with tracks:", {
+    audio: audioCount,
+    video: videoCount,
+  });
+
+  return stream;
+}
+
+/* -------------------------------------------------------
+   Local Media Acquisition (Meet+Discord tuned + avatar fallback)
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
-  const hasGetUserMedia = !!navigator.mediaDevices?.getUserMedia;
+  // Normalize booleans
+  audio = !!audio;
+  video = !!video;
 
-  rtcState.voiceOnly = !!audio && !video;
-  rtcState.audioOnly = !!audio && !video;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    log("getUserMedia not supported — using fake stream fallback");
+    const fake = createFakeMediaStream();
+    rtcState.localStream = fake;
+    rtcState.voiceOnly = audio && !video;
+    rtcState.audioOnly = audio && !video;
+    updateLocalAvatarVisibility();
+    return fake;
+  }
+
+  rtcState.voiceOnly = audio && !video;
+  rtcState.audioOnly = audio && !video;
 
   log("getLocalMedia requested with:", {
     audio,
@@ -252,22 +309,13 @@ export async function getLocalMedia(audio = true, video = true) {
       : false,
   };
 
-  if (!hasGetUserMedia) {
-    log("getUserMedia not supported — using fake media fallback");
-    const fake = createFakeMediaStream();
-    rtcState.localStream = fake;
-    rtcState.voiceOnly = !video;
-    rtcState.audioOnly = !video;
-    bindLocalStreamToDOM(fake, video);
-    return fake;
-  }
-
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     log("Got local media with constraints:", constraints);
 
     rtcState.localStream = stream;
 
+    // Content hints for better quality
     stream.getVideoTracks().forEach((t) => {
       try {
         t.contentHint = "motion";
@@ -279,13 +327,36 @@ export async function getLocalMedia(audio = true, video = true) {
       } catch {}
     });
 
-    bindLocalStreamToDOM(stream, video);
+    const localVideo = document.getElementById("localVideo");
+    const localTile =
+      localVideo?.closest(".participant.local") ||
+      document.getElementById("localParticipant");
+
+    if (localVideo && video && !rtcState.voiceOnly) {
+      localVideo.srcObject = stream;
+      localVideo.muted = true;
+      localVideo.playsInline = true;
+      localVideo.classList.add("show");
+
+      localVideo.play().catch((err) =>
+        log("Local video play blocked:", err?.name || err)
+      );
+    }
+
+    updateLocalAvatarVisibility();
+
+    if (localTile) attachAudioVisualizer(stream, localTile);
+
     return stream;
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // Retry audio-only if both requested and device missing/overconstrained
-    if (video && audio && (err.name === "NotFoundError" || err.name === "OverconstrainedError")) {
+    // Retry audio-only if both requested and device set is bad/missing
+    if (
+      video &&
+      audio &&
+      (err.name === "NotFoundError" || err.name === "OverconstrainedError")
+    ) {
       log("Retrying getUserMedia with audio-only…");
       try {
         const audioOnlyStream = await navigator.mediaDevices.getUserMedia({
@@ -297,53 +368,26 @@ export async function getLocalMedia(audio = true, video = true) {
         rtcState.voiceOnly = true;
         rtcState.audioOnly = true;
 
-        bindLocalStreamToDOM(audioOnlyStream, false);
+        updateLocalAvatarVisibility();
+
+        const localTile = document.getElementById("localParticipant");
+        if (localTile) attachAudioVisualizer(audioOnlyStream, localTile);
+
         return audioOnlyStream;
       } catch (err2) {
         log("Audio-only also failed:", err2.name, err2.message);
       }
     }
 
-    // Final fallback: fake tracks so WebRTC still behaves like a real call
+    // Final fallback: fake stream with tracks so PC is stable
     log("Falling back to fake MediaStream (avatar-only mode, but stable PC)");
     const fake = createFakeMediaStream();
     rtcState.localStream = fake;
     rtcState.voiceOnly = true;
     rtcState.audioOnly = true;
 
-    bindLocalStreamToDOM(fake, false);
+    updateLocalAvatarVisibility();
     return fake;
-  }
-}
-
-/* -------------------------------------------------------
-   Bind Local Stream to DOM + Visualizer
-------------------------------------------------------- */
-function bindLocalStreamToDOM(stream, hasVideoRequested) {
-  const localVideo = document.getElementById("localVideo");
-  const localTile =
-    localVideo?.closest(".participant.local") ||
-    document.getElementById("localParticipant");
-
-  if (localVideo && hasVideoRequested && stream.getVideoTracks().length > 0) {
-    try {
-      localVideo.srcObject = stream;
-      localVideo.muted = true;
-      localVideo.playsInline = true;
-      localVideo.classList.add("show");
-
-      localVideo.play().catch((err) =>
-        log("Local video play blocked:", err?.name || err)
-      );
-    } catch (err) {
-      log("Failed to bind local video element:", err);
-    }
-  }
-
-  updateLocalAvatarVisibility();
-
-  if (localTile && stream.getAudioTracks().length > 0) {
-    attachAudioVisualizer(stream, localTile);
   }
 }
 
@@ -396,6 +440,7 @@ export async function flipLocalCamera(rtc) {
       await videoSender.replaceTrack(newTrack);
     }
 
+    // Stop old video tracks
     rtcState.localStream?.getVideoTracks().forEach((t) => {
       try {
         t.stop();
@@ -436,6 +481,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
   let evt;
 
+  // Support both signatures:
+  //  - attachRemoteTrack(event)
+  //  - attachRemoteTrack(peerId, event)
   if (maybeEvt) {
     peerId = peerOrEvt || "default";
     evt = maybeEvt;
@@ -459,7 +507,10 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     rtcState.remoteStreams[peerId] = remoteStream;
   }
 
-  remoteStream.addTrack(evt.track);
+  // Avoid duplicate tracks
+  if (!remoteStream.getTracks().includes(evt.track)) {
+    remoteStream.addTrack(evt.track);
+  }
 
   log("attachRemoteTrack:", {
     peerId,
@@ -468,23 +519,19 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     readyState: evt.track.readyState,
   });
 
-  // 🔊 ALWAYS wire audio
+  // 🔊 ALWAYS wire audio to the shared remoteAudio element
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
-    try {
-      log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
+    log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
 
-      remoteAudioEl.srcObject = remoteStream;
-      remoteAudioEl.playsInline = true;
-      remoteAudioEl.muted = false;
-      remoteAudioEl.volume = 1;
+    remoteAudioEl.srcObject = remoteStream;
+    remoteAudioEl.playsInline = true;
+    remoteAudioEl.muted = false;
+    if (remoteAudioEl.volume === 0) remoteAudioEl.volume = 1;
 
-      remoteAudioEl.play().catch((err) =>
-        log("Remote audio autoplay blocked:", err?.name || err)
-      );
-    } catch (err) {
-      log("Failed to bind remote audio element:", err);
-    }
+    remoteAudioEl.play().catch((err) =>
+      log("Remote audio autoplay blocked:", err?.name || err)
+    );
   }
 
   // 🔁 Hand stream to tile manager (it will bind <video>)
@@ -499,14 +546,13 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   const avatarWrapper = entry.avatarEl;
 
   const showAvatar = (show) => {
-    try {
-      if (avatarWrapper) avatarWrapper.classList.toggle("hidden", !show);
-      if (videoEl) {
-        videoEl.classList.toggle("show", !show);
-      }
-    } catch {}
+    if (avatarWrapper) avatarWrapper.classList.toggle("hidden", !show);
+    if (videoEl) {
+      videoEl.classList.toggle("show", !show);
+    }
   };
 
+  // Track events → avatar vs video
   evt.track.onmute   = () => showAvatar(true);
   evt.track.onunmute = () => showAvatar(false);
   evt.track.onended  = () => {
