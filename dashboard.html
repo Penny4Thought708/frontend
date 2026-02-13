@@ -350,7 +350,12 @@ window.currentUserAvatar = user.avatar;
         <!-- ============================================================
      FULL-WINDOW CALL MODE (EXPANDS FROM CALL BUTTON)
 ============================================================ -->
-<call-window id="callWindow" class="call-window hidden" data-window-id="video-call">
+<call-window
+  id="callWindow"
+  class="call-window hidden"
+  data-window-id="video-call"
+  aria-hidden="true"
+>
 
   <div class="call-body">
 
@@ -362,12 +367,28 @@ window.currentUserAvatar = user.avatar;
       <!-- ===========================
            LOCAL PARTICIPANT TILE
       ============================ -->
-      <div class="participant local" id="localParticipant" data-peer-id="local" data-id="local">
+      <div
+        class="participant local"
+        id="localParticipant"
+        data-peer-id="local"
+        data-id="local"
+      >
         <div class="media-wrapper">
-          <video id="localVideo" autoplay playsinline muted></video>
+
+          <!-- Local video MUST be muted for autoplay -->
+          <video
+            id="localVideo"
+            autoplay
+            playsinline
+            muted
+          ></video>
 
           <div class="avatar-wrapper">
-            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
+            <img
+              id="localAvatarImg"
+              src="img/defaultUser.png"
+              alt="Local Avatar"
+            >
             <div class="voice-pulse"></div>
           </div>
         </div>
@@ -384,10 +405,21 @@ window.currentUserAvatar = user.avatar;
       <template id="remoteParticipantTemplate">
         <div class="participant remote">
           <div class="media-wrapper">
-            <video class="remoteVideo" autoplay playsinline></video>
+
+            <!-- Remote video MUST be muted for autoplay -->
+            <video
+              class="remoteVideo"
+              autoplay
+              playsinline
+              muted
+            ></video>
 
             <div class="avatar-wrapper">
-              <img class="avatar-img" src="img/defaultUser.png" alt="Avatar">
+              <img
+                class="avatar-img"
+                src="img/defaultUser.png"
+                alt="Avatar"
+              >
               <div class="voice-pulse"></div>
             </div>
           </div>
@@ -405,7 +437,7 @@ window.currentUserAvatar = user.avatar;
          CALL STATUS + TIMER
     ============================================================ -->
     <div class="call-top-info">
-      <div id="call-status" class="call-status">Calling…</div>
+      <div id="call-status" class="call-status">Call ended</div>
       <div id="call-timer" class="call-timer">00:00</div>
     </div>
 
@@ -414,6 +446,7 @@ window.currentUserAvatar = user.avatar;
     ============================================================ -->
     <div id="call-controls" class="call-controls">
 
+      <!-- Inbound-only controls -->
       <button id="decline-call" class="control-btn inbound-only">
         <span class="material-symbols-outlined">call_end</span>
       </button>
@@ -422,6 +455,7 @@ window.currentUserAvatar = user.avatar;
         <span class="material-symbols-outlined">call</span>
       </button>
 
+      <!-- Active-call controls -->
       <button id="mute-call" class="control-btn active-only">
         <span class="material-symbols-outlined">mic_off</span>
       </button>
@@ -470,14 +504,23 @@ window.currentUserAvatar = user.avatar;
     <!-- ============================================================
          REMOTE AUDIO ELEMENT
     ============================================================ -->
-    <audio id="remoteAudio" autoplay playsinline></audio>
+    <audio
+      id="remoteAudio"
+      autoplay
+      playsinline
+    ></audio>
 
     <!-- ============================================================
          CALL INFO BAR (QUALITY + DEBUG)
     ============================================================ -->
     <div class="call-info-bar">
-      <div id="call-quality-indicator" class="quality-indicator" data-level="unknown">
-        Unknown
+      <div
+        id="call-quality-indicator"
+        class="quality-indicator"
+        data-level="poor"
+        title="ICE: disconnected"
+      >
+        Poor
       </div>
 
       <button id="call-debug-toggle" class="debug-toggle">
@@ -491,10 +534,16 @@ window.currentUserAvatar = user.avatar;
        LOCAL PIP WINDOW (MEET-STYLE)
   ============================================================ -->
   <div id="localPip" class="local-pip hidden">
-    <video id="localPipVideo" autoplay playsinline muted></video>
+    <video
+      id="localPipVideo"
+      autoplay
+      playsinline
+      muted
+    ></video>
   </div>
 
 </call-window>
+
 
 
       </app-workspace>
@@ -1596,6 +1645,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
