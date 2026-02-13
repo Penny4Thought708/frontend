@@ -12,12 +12,7 @@ import {
 } from "./WebRTCMedia.js";
 
 import { addCallLogEntry } from "../call-log.js";
-
-import {
-  getMyUserId,
-  getMyFullname,
-} from "../session.js";
-
+import { getMyUserId, getMyFullname } from "../session.js";
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
 
@@ -36,6 +31,14 @@ function stopAudio(el) {
 function stopAllTones() {
   // Intentionally empty in pure engine mode.
   // Higher-level UI can wire ringtone/ringback and call this if desired.
+}
+
+function preferH264(sdp) {
+  if (!sdp) return sdp;
+  return sdp.replace(
+    /(m=video .*?)(96 97 98)/,
+    (match, prefix, list) => `${prefix}98 96 97`
+  );
 }
 
 /* -------------------------------------------------------
@@ -173,10 +176,7 @@ export class WebRTCController {
     this.makingOffer = false;
 
     if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
+      offer.sdp = preferH264(offer.sdp);
     }
 
     await pc.setLocalDescription(offer);
@@ -199,6 +199,11 @@ export class WebRTCController {
       } catch (err) {
         console.warn("[WebRTC] setParameters failed", err);
       }
+    }
+
+    if (!this.socket) {
+      console.warn("[WebRTC] No socket when sending offer");
+      return;
     }
 
     this.socket.emit("webrtc:signal", {
@@ -257,10 +262,7 @@ export class WebRTCController {
     }
 
     if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
+      offer.sdp = preferH264(offer.sdp);
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -270,20 +272,19 @@ export class WebRTCController {
       console.log("[WebRTC] Renegotiation offer handled");
       const answer = await pc.createAnswer();
       if (answer.sdp) {
-        answer.sdp = answer.sdp.replace(
-          /(m=video .*?)(96 97 98)/,
-          (match, prefix, list) => `${prefix}98 96 97`
-        );
+        answer.sdp = preferH264(answer.sdp);
       }
       await pc.setLocalDescription(answer);
 
-      this.socket.emit("webrtc:signal", {
-        type: "answer",
-        to: from,
-        from: getMyUserId(),
-        answer,
-        renegotiate: true,
-      });
+      if (this.socket) {
+        this.socket.emit("webrtc:signal", {
+          type: "answer",
+          to: from,
+          from: getMyUserId(),
+          answer,
+          renegotiate: true,
+        });
+      }
 
       return;
     }
@@ -319,10 +320,7 @@ export class WebRTCController {
     const pc = await this._getOrCreatePC(from, { relayOnly: false });
 
     if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
+      offer.sdp = preferH264(offer.sdp);
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -347,10 +345,7 @@ export class WebRTCController {
     let answer = await pc.createAnswer();
 
     if (answer.sdp) {
-      answer.sdp = answer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
+      answer.sdp = preferH264(answer.sdp);
     }
 
     await pc.setLocalDescription(answer);
@@ -373,6 +368,11 @@ export class WebRTCController {
       } catch (err) {
         console.warn("[WebRTC] setParameters failed", err);
       }
+    }
+
+    if (!this.socket) {
+      console.warn("[WebRTC] No socket when sending answer");
+      return;
     }
 
     this.socket.emit("webrtc:signal", {
@@ -437,10 +437,7 @@ export class WebRTCController {
     setTimeout(() => (rtcState.answering = false), 800);
 
     if (data.answer.sdp) {
-      data.answer.sdp = data.answer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
+      data.answer.sdp = preferH264(data.answer.sdp);
     }
 
     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -489,13 +486,14 @@ export class WebRTCController {
     if (from && this.pcMap.has(from)) {
       const pc = this.pcMap.get(from);
       try {
+        if (pc._turnKeepAlive) clearInterval(pc._turnKeepAlive);
         pc.close();
       } catch {}
       this.pcMap.delete(from);
       this.pendingRemoteCandidates.delete(from);
     }
 
-    if (this.pcMap.size === 0) {
+    if (this.pcMap.size === 0 && rtcState.inCall) {
       this.endCall(false);
     }
   }
@@ -510,6 +508,7 @@ export class WebRTCController {
 
     for (const [id, pc] of this.pcMap.entries()) {
       try {
+        if (pc._turnKeepAlive) clearInterval(pc._turnKeepAlive);
         pc.close();
       } catch {}
       this.pendingRemoteCandidates.delete(id);
@@ -677,6 +676,16 @@ export class WebRTCController {
     }
 
     const pc = await this._createPC(peerId, { relayOnly });
+
+    // Guard against race: if another path created it while we awaited
+    if (this.pcMap.has(peerId)) {
+      try {
+        if (pc._turnKeepAlive) clearInterval(pc._turnKeepAlive);
+        pc.close();
+      } catch {}
+      return this.pcMap.get(peerId);
+    }
+
     this.pcMap.set(peerId, pc);
     return pc;
   }
@@ -740,6 +749,8 @@ export class WebRTCController {
     --------------------------------------------------- */
     pc.ontrack = (event) => {
       const id = peerId || rtcState.peerId || "default";
+      const kind = event.track?.kind || "unknown";
+      console.log("[WebRTC] ontrack from", id, "kind:", kind);
       attachRemoteTrack(id, event);
     };
 
@@ -766,7 +777,7 @@ export class WebRTCController {
         this.startNetworkMonitor();
       }
 
-      // 🔴 If we're using a fake local stream (no real devices),
+      // If we're using a fake local stream (no real devices),
       // do NOT restart ICE or tear the call down. Let it stay up.
       if (rtcState.localStream && rtcState.localStream._isFake) {
         console.warn(
@@ -835,7 +846,7 @@ export class WebRTCController {
        Renegotiation
     --------------------------------------------------- */
     pc.onnegotiationneeded = async () => {
-      // 🔴 If we're using a fake local stream (no real devices),
+      // If we're using a fake local stream (no real devices),
       // skip renegotiation to avoid glare / ICE storms.
       if (rtcState.localStream && rtcState.localStream._isFake) {
         console.warn("[WebRTC] Skipping renegotiation — fake local stream");
@@ -855,21 +866,20 @@ export class WebRTCController {
         this.makingOffer = false;
 
         if (offer.sdp) {
-          offer.sdp = offer.sdp.replace(
-            /(m=video .*?)(96 97 98)/,
-            (match, prefix, list) => `${prefix}98 96 97`
-          );
+          offer.sdp = preferH264(offer.sdp);
         }
 
         await pc.setLocalDescription(offer);
 
-        this.socket.emit("webrtc:signal", {
-          type: "offer",
-          to: peerId,
-          from: getMyUserId(),
-          offer,
-          renegotiate: true,
-        });
+        if (this.socket) {
+          this.socket.emit("webrtc:signal", {
+            type: "offer",
+            to: peerId,
+            from: getMyUserId(),
+            offer,
+            renegotiate: true,
+          });
+        }
       } catch (err) {
         this.makingOffer = false;
         console.warn("[WebRTC] Renegotiation failed:", err);
@@ -1086,7 +1096,6 @@ export class WebRTCController {
     this.socket.on("call:voicemail", ({ from, reason }) => {
       console.log("[WebRTC] voicemail event", from, reason);
       stopAllTones();
-      // Normalize to the shape CallUI expects: { peerId, message }
       this.onVoicemailPrompt?.({
         peerId: from,
         message: reason,
@@ -1104,6 +1113,8 @@ export class WebRTCController {
     });
   }
 }
+
+
 
 
 
