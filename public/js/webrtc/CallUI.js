@@ -16,7 +16,7 @@ import {
   setParticipantCameraOff,
 } from "./RemoteParticipants.js";
 
-import { getVoiceBtn, getVideoBtn } from "../session.js";  // 🔥 REQUIRED
+import { getVoiceBtn, getVideoBtn, getReceiver } from "../session.js";
 
 export function initCallUI(rtc) {
   if (!rtc) {
@@ -25,7 +25,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     DOM ELEMENTS  (KEEP ONLY THIS BLOCK)
+     DOM ELEMENTS
   ------------------------------------------------------- */
   const win              = document.getElementById("callWindow");
   const grid             = document.getElementById("callGrid");
@@ -56,19 +56,18 @@ export function initCallUI(rtc) {
   const toastSecondary   = document.getElementById("secondaryIncomingToast");
   const toastUnavailable = document.getElementById("unavailableToast");
 
+  const voiceBtn         = getVoiceBtn?.();
+  const videoBtn         = getVideoBtn?.();
+
   /* -------------------------------------------------------
      CALL BUTTON SAFETY HELPERS
   ------------------------------------------------------- */
   function disableCallButtons() {
-    const voiceBtn = getVoiceBtn?.();
-    const videoBtn = getVideoBtn?.();
     if (voiceBtn) voiceBtn.disabled = true;
     if (videoBtn) videoBtn.disabled = true;
   }
 
   function enableCallButtons() {
-    const voiceBtn = getVoiceBtn?.();
-    const videoBtn = getVideoBtn?.();
     if (voiceBtn) voiceBtn.disabled = false;
     if (videoBtn) videoBtn.disabled = false;
   }
@@ -92,19 +91,24 @@ export function initCallUI(rtc) {
   rtc.onLocalStream = (stream) => {
     if (!localVideo) return;
 
-    localVideo.srcObject = stream;
+    localVideo.srcObject = stream || null;
     localVideo.muted = true;
     localVideo.playsInline = true;
-    localVideo.classList.add("show");
 
-    localVideo.style.display = "block";
-    localVideo.style.opacity = "1";
+    if (stream) {
+      localVideo.classList.add("show");
+      localVideo.style.display = "block";
+      localVideo.style.opacity = "1";
+      win?.classList.remove("voice-only");
 
-    win?.classList.remove("voice-only");
-
-    localVideo.play().catch(() => {
-      setTimeout(() => localVideo.play().catch(() => {}), 50);
-    });
+      localVideo.play().catch(() => {
+        setTimeout(() => localVideo.play().catch(() => {}), 50);
+      });
+    } else {
+      localVideo.classList.remove("show");
+      localVideo.style.display = "none";
+      localVideo.style.opacity = "0";
+    }
   };
 
   if (rtc.localStream && localVideo) {
@@ -119,7 +123,6 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      TIMER
   ------------------------------------------------------- */
-
   let timerId = null;
   let callStart = null;
 
@@ -145,7 +148,6 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      UI MODE HELPERS
   ------------------------------------------------------- */
-
   function setMode(mode) {
     if (!win) return;
     win.classList.remove("inbound-mode", "active-mode");
@@ -200,7 +202,6 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
-
   function openWindowAnimated() {
     if (!win) return;
     if (win.classList.contains("is-open")) return;
@@ -215,30 +216,27 @@ export function initCallUI(rtc) {
     document.body.classList.add("panel-open");
   }
 
-function hideWindow() {
-  if (!win) return;
-  if (!win.classList.contains("is-open")) return;
+  function hideWindow() {
+    if (!win) return;
+    if (!win.classList.contains("is-open")) return;
 
-  // Blur any focused control inside the window before hiding it
-  const active = document.activeElement;
-  if (active && win.contains(active)) {
-    active.blur();
+    const active = document.activeElement;
+    if (active && win.contains(active)) {
+      active.blur();
+    }
+
+    win.classList.remove("is-open");
+    win.setAttribute("aria-hidden", "true");
+
+    setTimeout(() => {
+      win.classList.add("hidden");
+      document.body.classList.remove("panel-open");
+    }, 260);
   }
-
-  win.classList.remove("is-open");
-  win.setAttribute("aria-hidden", "true");
-
-  setTimeout(() => {
-    win.classList.add("hidden");
-    document.body.classList.remove("panel-open");
-  }, 260);
-}
-
 
   /* -------------------------------------------------------
      TOAST HELPERS
   ------------------------------------------------------- */
-
   function showToast(el) {
     if (!el) return;
     el.classList.remove("hidden");
@@ -315,7 +313,6 @@ function hideWindow() {
   /* -------------------------------------------------------
      DEBUG PANEL (CALL LOG)
   ------------------------------------------------------- */
-
   const debugPanel = (() => {
     const el = document.createElement("div");
     el.id = "call-debug-overlay";
@@ -355,7 +352,6 @@ function hideWindow() {
   /* -------------------------------------------------------
      BUTTON BINDINGS
   ------------------------------------------------------- */
-
   if (declineBtn) {
     declineBtn.onclick = () => {
       disableCallButtons();
@@ -364,27 +360,21 @@ function hideWindow() {
     };
   }
 
-if (answerBtn) {
-  answerBtn.onclick = async () => {
-    disableCallButtons();
-    setStatus("Answering…");
+  if (answerBtn) {
+    answerBtn.onclick = async () => {
+      disableCallButtons();
+      setStatus("Answering…");
 
-    // 1. Make the call window visible immediately
-    openWindowAnimated();
-    setMode("active");
+      openWindowAnimated();
+      setMode("active");
 
-    // 2. Wait for the window to fully render (2 frames)
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
 
-    // 3. Now answer the call (safe to request media)
-    await rtc.answerIncomingCall?.();
-
-    // 4. Allow remote media to start playing
-    resumeRemoteMediaPlayback();
-  };
-}
-
+      await rtc.answerIncomingCall?.();
+      resumeRemoteMediaPlayback();
+    };
+  }
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -402,19 +392,18 @@ if (answerBtn) {
     };
   }
 
-  // Expose switchCamera API but delegate to WebRTCMedia.flipLocalCamera
   rtc.switchCamera = async function () {
     const ok = await flipLocalCamera(rtc);
     if (!ok) {
       console.warn("[CallUI] switchCamera failed");
       return false;
     }
-    return false; // keep semantics: false = camera on
+    return false;
   };
 
   if (cameraBtn) {
     cameraBtn.onclick = async () => {
-      const off = await rtc.switchCamera?.(); // flip camera; returns false (camera on)
+      const off = await rtc.switchCamera?.();
       cameraBtn.classList.toggle("flipped");
       cameraBtn.innerHTML =
         `<span class="material-symbols-outlined">videocam</span>`;
@@ -456,49 +445,42 @@ if (answerBtn) {
       }
     });
   }
-if (voiceBtn) {
-  voiceBtn.onclick = async () => {
-    const peerId = getReceiver();
-    if (!peerId) return;
 
-    // 1. Open the call window BEFORE WebRTC starts
-    openWindowAnimated();
-    setMode("active");
+  if (voiceBtn) {
+    voiceBtn.onclick = async () => {
+      const peerId = getReceiver?.();
+      if (!peerId) return;
 
-    // 2. Wait 2 frames so the window is fully visible
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
+      openWindowAnimated();
+      setMode("active");
 
-    // 3. Start the call (safe to request media now)
-    rtc.startCall(peerId, true);
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
 
-    // 4. Allow remote media to play
-    resumeRemoteMediaPlayback();
-  };
-}
+      rtc.startCall(peerId, true);
+      resumeRemoteMediaPlayback();
+    };
+  }
 
-if (videoBtn) {
-  videoBtn.onclick = async () => {
-    const peerId = getReceiver();
-    if (!peerId) return;
+  if (videoBtn) {
+    videoBtn.onclick = async () => {
+      const peerId = getReceiver?.();
+      if (!peerId) return;
 
-    openWindowAnimated();
-    setMode("active");
+      openWindowAnimated();
+      setMode("active");
 
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
 
-    rtc.startCall(peerId, false);
-
-    resumeRemoteMediaPlayback();
-  };
-}
-
+      rtc.startCall(peerId, false);
+      resumeRemoteMediaPlayback();
+    };
+  }
 
   /* -------------------------------------------------------
      RTC EVENT WIRING
   ------------------------------------------------------- */
-
   rtc.onOutgoingCall = ({ targetName, voiceOnly }) => {
     const kind = voiceOnly ? "voice" : "video";
 
@@ -530,6 +512,7 @@ if (videoBtn) {
     startTimer();
     setMode("active");
     openWindowAnimated();
+    resumeRemoteMediaPlayback();
 
     if (rtc.localStream && localVideo && !localVideo.srcObject) {
       localVideo.srcObject = rtc.localStream;
@@ -573,12 +556,28 @@ if (videoBtn) {
     setParticipantSpeaking(peerId, active, level);
   };
 
-  rtc.onScreenShareStarted = () => {
+  rtc.onScreenShareStarted = (peerId) => {
     setScreenShare(true);
+
+    if (window.setScreenShareMode) {
+      window.setScreenShareMode(peerId);
+    }
+
+    const pip = document.getElementById("localPip");
+    if (pip && peerId !== "local") {
+      pip.classList.add("show");
+    }
   };
 
   rtc.onScreenShareStopped = () => {
     setScreenShare(false);
+
+    if (window.clearScreenShareMode) {
+      window.clearScreenShareMode();
+    }
+
+    const pip = document.getElementById("localPip");
+    if (pip) pip.classList.remove("show");
   };
 
   rtc.onNoiseSuppressionChanged = (enabled) =>
@@ -595,10 +594,15 @@ if (videoBtn) {
   rtc.onSecondaryIncomingCall = (data) =>
     showSecondaryIncomingToastInternal(data);
 
+  rtc.onActiveSpeaker = (peerId) => {
+    if (window.setActiveSpeaker) {
+      window.setActiveSpeaker(peerId);
+    }
+  };
+
   /* ============================================================
      ENHANCED INLINE RTC FEATURE IMPLEMENTATIONS
   ============================================================ */
-
   rtc._state = rtc._state || {};
   rtc._state.cameraFacing = rtc._state.cameraFacing || "user";
   rtc._state.noiseSuppression = !!rtc._state.noiseSuppression;
@@ -629,46 +633,6 @@ if (videoBtn) {
     rtc._state.noiseSuppression = !rtc._state.noiseSuppression;
     rtc.applyAudioProcessing();
     return rtc._state.noiseSuppression;
-  };
-
-  /* ------------------------------------------------------------
-     SCREEN SHARE
-  ------------------------------------------------------------ */
-  rtc.startScreenShare = async function () {
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
-
-      const track = stream.getVideoTracks()[0];
-      const sender = rtc.peerConnection
-        ?.getSenders()
-        .find((s) => s.track && s.track.kind === "video");
-
-      if (sender && track) await sender.replaceTrack(track);
-
-      track.onended = () => rtc.stopScreenShare();
-
-      rtc.onScreenShareStarted?.(rtc.localPeerId);
-    } catch (err) {
-      console.error("Screen share failed:", err);
-    }
-  };
-
-  rtc.stopScreenShare = async function () {
-    try {
-      const camTrack = rtc.localStream?.getVideoTracks()[0];
-      const sender = rtc.peerConnection
-        ?.getSenders()
-        .find((s) => s.track && s.track.kind === "video");
-
-      if (sender && camTrack) await sender.replaceTrack(camTrack);
-
-      rtc.onScreenShareStopped?.(rtc.localPeerId);
-    } catch (err) {
-      console.error("stopScreenShare failed:", err);
-    }
   };
 
   /* ------------------------------------------------------------
@@ -779,7 +743,6 @@ if (videoBtn) {
   /* -------------------------------------------------------
      MOBILE VIDEO BEHAVIOR — GOOGLE MEET STYLE
   ------------------------------------------------------- */
-
   (function initMobileCallBehavior() {
     if (window.innerWidth > 900) return;
     if (!win || !grid) return;
@@ -828,7 +791,9 @@ if (videoBtn) {
 
     window.setActiveSpeaker = function (participantId) {
       participants = Array.from(callGrid.querySelectorAll(".participant"));
-      const index = participants.findIndex((p) => p.dataset.id === participantId);
+      const index = participants.findIndex(
+        (p) => p.dataset.peerId === String(participantId)
+      );
       if (index >= 0) {
         callGrid.scrollTo({
           left: index * callGrid.clientWidth,
@@ -856,7 +821,7 @@ if (videoBtn) {
 
     function enablePinchZoom() {
       const activeVideo =
-        callGrid.querySelector(".participant.active .media-wrapper video") ||
+        callGrid.querySelector(".participant.active-speaker .media-wrapper video") ||
         callGrid.querySelector(".participant .media-wrapper video");
 
       if (!activeVideo) return;
