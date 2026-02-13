@@ -203,19 +203,29 @@ export function initCallUI(rtc) {
   /* -------------------------------------------------------
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
-  function openWindowAnimated() {
-    if (!win) return;
-    if (win.classList.contains("is-open")) return;
+function openWindowAnimated() {
+  if (!win) return;
+  if (win.classList.contains("is-open")) return;
 
-    win.classList.remove("hidden");
-    win.classList.add("is-open");
-    win.setAttribute("aria-hidden", "false");
+  win.classList.remove("hidden");
+  win.classList.add("is-open");
+  win.setAttribute("aria-hidden", "false");
 
-    win.classList.add("call-opening");
-    setTimeout(() => win.classList.remove("call-opening"), 300);
+  win.classList.add("call-opening");
+  setTimeout(() => win.classList.remove("call-opening"), 300);
 
-    document.body.classList.add("panel-open");
-  }
+  document.body.classList.add("panel-open");
+
+  // 🔥 NEW: ensure DOM is ready for participant tiles
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      // This guarantees #callGrid exists and is rendered
+      if (window.initRemoteParticipants) {
+        window.initRemoteParticipants();
+      }
+    });
+  });
+}
 
   function hideWindow() {
     if (!win) return;
@@ -894,6 +904,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
