@@ -43,12 +43,11 @@ function updateLocalAvatarVisibility() {
   if (!localTile) return;
 
   const avatarWrapper = localTile.querySelector(".avatar-wrapper");
-  const videoEl       = localTile.querySelector("video");
+  const videoEl = localTile.querySelector("video");
   if (!avatarWrapper) return;
 
   const stream = rtcState.localStream;
 
-  // Voice-only, audio-only, or no usable stream → show avatar
   if (rtcState.voiceOnly || rtcState.audioOnly || !stream) {
     avatarWrapper.classList.remove("hidden");
     if (videoEl) videoEl.classList.remove("show");
@@ -57,7 +56,9 @@ function updateLocalAvatarVisibility() {
 
   const hasVideoTrack =
     stream.getVideoTracks &&
-    stream.getVideoTracks().some((t) => t.enabled && t.readyState === "live");
+    stream.getVideoTracks().some(
+      (t) => t.enabled && t.readyState === "live"
+    );
 
   avatarWrapper.classList.toggle("hidden", !!hasVideoTrack);
   if (videoEl) videoEl.classList.toggle("show", !!hasVideoTrack);
@@ -71,7 +72,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 
   const ctx = getAudioCtx();
   if (!ctx) {
-    log("AudioContext not supported");
+    log("AudioContext not supported for visualizer");
     return;
   }
 
@@ -120,7 +121,6 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 
   tick();
 
-  // Defensive: if stream ends, stop updating
   stream.getTracks().forEach((t) => {
     t.addEventListener("ended", () => {
       stopped = true;
@@ -186,7 +186,6 @@ function startRemoteSpeakingDetection(stream, participantEl) {
 
   loop();
 
-  // Stop when stream ends
   stream.getTracks().forEach((t) => {
     t.addEventListener("ended", () => {
       stopped = true;
@@ -208,20 +207,16 @@ export function stopSpeakingDetection() {
 
 /* -------------------------------------------------------
    Fake MediaStream (when devices are missing)
-   - Keeps PC stable
-   - Behaves "as if" user had mic/camera
-   - UI stays avatar-only via rtcState.voiceOnly/audioOnly
 ------------------------------------------------------- */
 function createFakeMediaStream() {
   const stream = new MediaStream();
 
-  // Try to create a silent audio track via AudioContext + oscillator
   try {
     const ctx = getAudioCtx();
     if (ctx) {
       const osc = ctx.createOscillator();
       const dst = ctx.createMediaStreamDestination();
-      osc.frequency.value = 0; // effectively silence
+      osc.frequency.value = 0;
       osc.connect(dst);
       osc.start();
       const audioTrack = dst.stream.getAudioTracks()[0];
@@ -233,7 +228,6 @@ function createFakeMediaStream() {
     log("Fake audio track creation failed:", err);
   }
 
-  // Try to create a dummy video track via canvas
   try {
     const canvas = document.createElement("canvas");
     canvas.width = 640;
@@ -260,18 +254,15 @@ function createFakeMediaStream() {
     video: videoCount,
   });
 
- 
   stream._isFake = true;
 
   return stream;
 }
 
-
 /* -------------------------------------------------------
-   Local Media Acquisition (Meet+Discord tuned + avatar fallback)
+   Local Media Acquisition
 ------------------------------------------------------- */
 export async function getLocalMedia(audio = true, video = true) {
-  // Normalize booleans
   audio = !!audio;
   video = !!video;
 
@@ -319,12 +310,12 @@ export async function getLocalMedia(audio = true, video = true) {
 
     rtcState.localStream = stream;
 
-    // Content hints for better quality
     stream.getVideoTracks().forEach((t) => {
       try {
         t.contentHint = "motion";
       } catch {}
     });
+
     stream.getAudioTracks().forEach((t) => {
       try {
         t.contentHint = "speech";
@@ -355,7 +346,6 @@ export async function getLocalMedia(audio = true, video = true) {
   } catch (err) {
     log("Local media error:", err.name, err.message);
 
-    // Retry audio-only if both requested and device set is bad/missing
     if (
       video &&
       audio &&
@@ -383,7 +373,6 @@ export async function getLocalMedia(audio = true, video = true) {
       }
     }
 
-    // Final fallback: fake stream with tracks so PC is stable
     log("Falling back to fake MediaStream (avatar-only mode, but stable PC)");
     const fake = createFakeMediaStream();
     rtcState.localStream = fake;
@@ -396,7 +385,7 @@ export async function getLocalMedia(audio = true, video = true) {
 }
 
 /* -------------------------------------------------------
-   CAMERA FLIP SUPPORT (front/back) — used by CallUI rtc.switchCamera
+   CAMERA FLIP SUPPORT (front/back)
 ------------------------------------------------------- */
 rtcState.cameraFacing = rtcState.cameraFacing || "user"; // "user" | "environment"
 
@@ -444,7 +433,6 @@ export async function flipLocalCamera(rtc) {
       await videoSender.replaceTrack(newTrack);
     }
 
-    // Stop old video tracks
     rtcState.localStream?.getVideoTracks().forEach((t) => {
       try {
         t.stop();
@@ -479,13 +467,12 @@ export async function flipLocalCamera(rtc) {
 }
 
 /* -------------------------------------------------------
-   Remote Track Handling (GROUP‑AWARE media, no layout)
+   Remote Track Handling
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
   let evt;
 
-  // Support both signatures:
   if (maybeEvt) {
     peerId = peerOrEvt || "default";
     evt = maybeEvt;
@@ -509,7 +496,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     rtcState.remoteStreams[peerId] = remoteStream;
   }
 
-  // Avoid duplicate tracks
   if (!remoteStream.getTracks().includes(evt.track)) {
     remoteStream.addTrack(evt.track);
   }
@@ -521,9 +507,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     readyState: evt.track.readyState,
   });
 
-  /* -------------------------------------------------------
-     🔊 AUDIO — attach + unlock autoplay
-  ------------------------------------------------------- */
   const remoteAudioEl = document.getElementById("remoteAudio");
 
   if (evt.track.kind === "audio" && remoteAudioEl) {
@@ -534,11 +517,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     remoteAudioEl.muted = false;
     remoteAudioEl.volume = 1;
 
-    // Try immediately
     remoteAudioEl.play().catch(() => {
       log("Remote audio autoplay blocked — waiting for user gesture");
 
-      // One‑time unlock on first click/tap
       const unlock = () => {
         remoteAudioEl.play().catch(() => {});
         window.removeEventListener("click", unlock);
@@ -550,9 +531,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     });
   }
 
-  /* -------------------------------------------------------
-     🎥 VIDEO — hand stream to tile manager
-  ------------------------------------------------------- */
   const entry = attachParticipantStream(peerId, remoteStream);
   if (!entry || !entry.el) {
     log("No participant entry for peer:", peerId);
@@ -560,10 +538,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   }
 
   const participantEl = entry.el;
-  const videoEl       = entry.videoEl;
+  const videoEl = entry.videoEl;
   const avatarWrapper = entry.avatarEl;
 
-  // Force video playback (Safari/Chrome sometimes need this)
   if (evt.track.kind === "video" && videoEl) {
     videoEl.srcObject = remoteStream;
     videoEl.play().catch(() => {});
@@ -574,13 +551,10 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     if (videoEl) videoEl.classList.toggle("show", !show);
   };
 
-  evt.track.onmute   = () => showAvatar(true);
+  evt.track.onmute = () => showAvatar(true);
   evt.track.onunmute = () => showAvatar(false);
-  evt.track.onended  = () => showAvatar(true);
+  evt.track.onended = () => showAvatar(true);
 
-  /* -------------------------------------------------------
-     🔊 Speaking detection + visualizer
-  ------------------------------------------------------- */
   if (evt.track.kind === "audio" && remoteAudioEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
@@ -608,7 +582,7 @@ export function resumeRemoteMediaPlayback() {
 }
 
 /* -------------------------------------------------------
-   Cleanup on call end (no layout, just media + classes)
+   Cleanup on call end
 ------------------------------------------------------- */
 export function cleanupMedia() {
   stopSpeakingDetection();
@@ -674,6 +648,8 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
+
 
 
 
