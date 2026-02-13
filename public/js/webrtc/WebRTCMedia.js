@@ -1,15 +1,13 @@
 // public/js/webrtc/WebRTCMedia.js
 // Production‑grade media engine for the new call window:
 // local/remote media, audio visualization, speaking detection,
-// voice‑only optimization, and group‑aware layout.
+// voice‑only optimization. Layout is owned by CallUI.js.
 
 import { rtcState } from "./WebRTCState.js";
-// WebRTCMedia.js (or wherever this lives)
 import {
   attachStream as attachParticipantStream,
-  setScreenShareMode,
-  clearScreenShareMode,
 } from "./RemoteParticipants.js";
+
 /* -------------------------------------------------------
    Shared AudioContext (Safari‑safe, mobile‑safe)
 ------------------------------------------------------- */
@@ -29,26 +27,29 @@ function getAudioCtx() {
 ------------------------------------------------------- */
 const log = (...args) => console.log("[WebRTCMedia]", ...args);
 
-
 /* -------------------------------------------------------
-   Local Avatar Visibility
+   Local Avatar Visibility (class-based, no layout logic)
 ------------------------------------------------------- */
 function updateLocalAvatarVisibility() {
   const localTile = document.getElementById("localParticipant");
   if (!localTile) return;
 
   const avatarWrapper = localTile.querySelector(".avatar-wrapper");
+  const videoEl       = localTile.querySelector("video");
   if (!avatarWrapper) return;
 
   const stream = rtcState.localStream;
 
+  // Voice-only or no stream → show avatar
   if (rtcState.voiceOnly || rtcState.audioOnly || !stream) {
-    avatarWrapper.style.display = "flex";
+    avatarWrapper.classList.remove("hidden");
+    if (videoEl) videoEl.classList.remove("show");
     return;
   }
 
   const hasVideo = stream.getVideoTracks().some((t) => t.enabled);
-  avatarWrapper.style.display = hasVideo ? "none" : "flex";
+  avatarWrapper.classList.toggle("hidden", hasVideo);
+  if (videoEl) videoEl.classList.toggle("show", hasVideo);
 }
 
 /* -------------------------------------------------------
@@ -95,7 +96,7 @@ function attachAudioVisualizer(stream, target, cssVar = "--audio-level") {
 }
 
 /* -------------------------------------------------------
-   Remote Speaking Detection
+   Remote Speaking Detection (no layout, just .speaking)
 ------------------------------------------------------- */
 const speakingLoops = new Map(); // key: participantEl
 
@@ -337,10 +338,8 @@ export async function flipLocalCamera(rtc) {
   }
 }
 
-
-
 /* -------------------------------------------------------
-   Remote Track Handling (GROUP‑AWARE + voice‑only)
+   Remote Track Handling (GROUP‑AWARE media, no layout)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   let peerId;
@@ -383,7 +382,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   if (evt.track.kind === "audio" && remoteAudioEl) {
     log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
 
-    // Use the SAME remoteStream we’re tracking
     remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.playsInline = true;
     remoteAudioEl.muted = false;
@@ -416,34 +414,9 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   evt.track.onunmute = () => showAvatar(false);
   evt.track.onended  = () => {
     showAvatar(true);
-
-    if (evt.track.label && evt.track.label.toLowerCase().includes("screen")) {
-      log("Screen share track ended — exiting stage mode");
-      clearScreenShareMode();
-    }
   };
 
-  const isScreenShare =
-    evt.track.kind === "video" &&
-    evt.track.label &&
-    /screen|window|application/i.test(evt.track.label);
-
-  if (isScreenShare) {
-    log("Detected SCREEN SHARE track — promoting to stage:", peerId);
-    setScreenShareMode(peerId);
-  } else {
-    const someoneSharing = Object.values(rtcState.remoteStreams).some((s) =>
-      s.getVideoTracks().some(
-        (t) => t.label && /screen|window|application/i.test(t.label)
-      )
-    );
-
-    if (!someoneSharing) {
-      clearScreenShareMode();
-    }
-  }
-
-  // 🔊 Start speaking detection + visualizer
+  // 🔊 Start speaking detection + visualizer for this participant
   if (evt.track.kind === "audio" && remoteAudioEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
@@ -471,7 +444,7 @@ export function resumeRemoteMediaPlayback() {
 }
 
 /* -------------------------------------------------------
-   Cleanup on call end
+   Cleanup on call end (no layout, just media + classes)
 ------------------------------------------------------- */
 export function cleanupMedia() {
   stopSpeakingDetection();
@@ -502,24 +475,26 @@ export function cleanupMedia() {
   const localVideo = document.getElementById("localVideo");
   if (localVideo) {
     localVideo.srcObject = null;
-    localVideo.style.display = "none";
-    localVideo.style.opacity = "0";
     localVideo.classList.remove("show");
   }
 
-  const map = rtcState.remoteParticipants || {};
-  Object.values(map).forEach((participantEl) => {
-    const videoEl = participantEl.querySelector("video");
-    if (videoEl) {
-      videoEl.srcObject = null;
-      videoEl.style.display = "none";
-      videoEl.style.opacity = "0";
-      videoEl.classList.remove("show");
-    }
-    const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
-    if (avatarWrapper) avatarWrapper.style.display = "flex";
-    participantEl.classList.remove("video-active", "speaking");
-  });
+  const grid = document.getElementById("callGrid");
+  if (grid) {
+    const participants = grid.querySelectorAll(".participant");
+    participants.forEach((p) => {
+      const videoEl = p.querySelector("video");
+      const avatarWrapper = p.querySelector(".avatar-wrapper");
+      if (videoEl) {
+        videoEl.srcObject = null;
+        videoEl.classList.remove("show");
+      }
+      if (avatarWrapper) {
+        avatarWrapper.classList.remove("hidden");
+      }
+      p.classList.remove("speaking");
+      p.style.removeProperty("--audio-level");
+    });
+  }
 
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (remoteAudioEl) {
@@ -527,96 +502,6 @@ export function cleanupMedia() {
   }
 
   updateLocalAvatarVisibility();
-}
-
-/* -------------------------------------------------------
-   Screen Share Tile Logic (Meet-style stage mode + animation)
-------------------------------------------------------- */
-export function enterScreenShareMode(peerId = "local") {
-  const grid = document.getElementById("callGrid");
-  if (!grid) return;
-
-  grid.classList.add("screen-share-mode");
-
-  const tiles = grid.querySelectorAll(".participant");
-  tiles.forEach((tile) => {
-    const isSharer =
-      tile.dataset.peerId === peerId || tile.dataset.id === peerId;
-
-    tile.classList.remove("filmstrip", "stage", "presenting");
-
-    if (isSharer) {
-      tile.classList.add("stage", "presenting", "animate-stage-in");
-      setTimeout(() => tile.classList.remove("animate-stage-in"), 350);
-    } else {
-      tile.classList.add("filmstrip", "animate-filmstrip-in");
-      setTimeout(() => tile.classList.remove("animate-filmstrip-in"), 350);
-    }
-  });
-}
-
-export function exitScreenShareMode() {
-  const grid = document.getElementById("callGrid");
-  if (!grid) return;
-
-  grid.classList.remove("screen-share-mode");
-
-  const tiles = grid.querySelectorAll(".participant");
-  tiles.forEach((tile) => {
-    tile.classList.remove("stage", "filmstrip", "presenting");
-    tile.classList.add("animate-stage-out");
-    setTimeout(() => tile.classList.remove("animate-stage-out"), 350);
-  });
-}
-
-/* -------------------------------------------------------
-   Local PIP helpers
-------------------------------------------------------- */
-function showLocalPip() {
-  const pip = document.getElementById("localPip");
-  const pipVideo = document.getElementById("localPipVideo");
-
-  if (!pip || !pipVideo) return;
-
-  pipVideo.srcObject = rtcState.localStream;
-  pipVideo.play().catch(() => {});
-  pip.classList.remove("hidden");
-  pip.classList.add("show");
-}
-
-function hideLocalPip() {
-  const pip = document.getElementById("localPip");
-  if (!pip) return;
-
-  pip.classList.remove("show");
-  setTimeout(() => pip.classList.add("hidden"), 250);
-}
-
-/* -------------------------------------------------------
-   Active Speaker Helper (Meet-style auto-focus)
-------------------------------------------------------- */
-export function setActiveSpeaker(peerId) {
-  const grid = document.getElementById("callGrid");
-  if (!grid) return;
-
-  const participants = Array.from(grid.querySelectorAll(".participant"));
-  const index = participants.findIndex(
-    (p) => p.dataset.peerId === peerId || p.dataset.id === peerId
-  );
-
-  participants.forEach((p) =>
-    p.classList.toggle(
-      "active",
-      p.dataset.peerId === peerId || p.dataset.id === peerId
-    )
-  );
-
-  if (index >= 0) {
-    grid.scrollTo({
-      left: index * grid.clientWidth,
-      behavior: "smooth",
-    });
-  }
 }
 
 /* -------------------------------------------------------
