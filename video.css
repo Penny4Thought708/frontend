@@ -589,6 +589,23 @@ body.light-mode {
 .more-controls-menu button:hover {
   background: var(--glass);
 }
+.more-controls-menu {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity var(--fast), transform var(--fast);
+}
+
+.more-controls-menu.hidden {
+  display: none !important;
+}
+
+.more-controls-menu.show {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
 
 #ai-noise-toggle.active,
 #record-call.active {
