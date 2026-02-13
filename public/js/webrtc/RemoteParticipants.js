@@ -139,7 +139,7 @@ export function removeParticipant(peerId) {
 
 /* -------------------------------------------------------
    Core: attach a MediaStream to a participant tile
-   (this is what attachRemoteTrack() calls via attachParticipantStream)
+   (called by WebRTCMedia.attachRemoteTrack via attachParticipantStream)
 ------------------------------------------------------- */
 export function attachParticipantStream(peerId, stream) {
   if (!stream) {
