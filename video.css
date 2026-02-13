@@ -14,16 +14,16 @@
 
   --accent: #4da3ff;
   --accent-strong: #1e8bff;
-  --accent-glow: 0 0 24px rgba(77,163,255,0.45);
+  --accent-glow: 0 0 24px rgba(77, 163, 255, 0.45);
 
   --danger: #ff4b5c;
-  --danger-glow: 0 0 24px rgba(255,75,92,0.45);
+  --danger-glow: 0 0 24px rgba(255, 75, 92, 0.45);
 
-  --border: rgba(255,255,255,0.08);
-  --border-strong: rgba(255,255,255,0.16);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
 
-  --glass: rgba(255,255,255,0.06);
-  --glass-heavy: rgba(255,255,255,0.12);
+  --glass: rgba(255, 255, 255, 0.06);
+  --glass-heavy: rgba(255, 255, 255, 0.12);
 
   --blur: 12px;
   --blur-heavy: 22px;
@@ -32,8 +32,8 @@
   --radius-md: 14px;
   --radius-lg: 20px;
 
-  --shadow-soft: 0 4px 12px rgba(0,0,0,0.25);
-  --shadow-strong: 0 8px 32px rgba(0,0,0,0.45);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.45);
 
   --fast: 120ms;
   --med: 240ms;
@@ -67,16 +67,16 @@ body.light-mode {
 
   --accent: #1e8bff;
   --accent-strong: #006be6;
-  --accent-glow: 0 0 24px rgba(30,139,255,0.35);
+  --accent-glow: 0 0 24px rgba(30, 139, 255, 0.35);
 
-  --border: rgba(0,0,0,0.08);
-  --border-strong: rgba(0,0,0,0.14);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
 
-  --glass: rgba(255,255,255,0.55);
-  --glass-heavy: rgba(255,255,255,0.75);
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-heavy: rgba(255, 255, 255, 0.75);
 
-  --shadow-soft: 0 4px 12px rgba(0,0,0,0.12);
-  --shadow-strong: 0 8px 32px rgba(0,0,0,0.18);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 
 /* ============================================================
@@ -124,6 +124,28 @@ body.light-mode {
   }
 }
 
+/* Voice-only whole-call mode (CallUI toggles .voice-only-call) */
+.call-window.voice-only-call .participant.local .media-wrapper video {
+  display: none !important;
+}
+.call-window.voice-only-call .participant.local .avatar-wrapper {
+  display: flex !important;
+}
+
+/* Camera-off state (CallUI toggles .camera-off) */
+.call-window.camera-off .participant.local .media-wrapper video {
+  display: none !important;
+}
+.call-window.camera-off .participant.local .avatar-wrapper {
+  display: flex !important;
+}
+
+/* Soft hide utility used by CallUI (hidden-soft) */
+.hidden-soft {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
 /* ============================================================
    CALL BODY
 ============================================================ */
@@ -139,6 +161,7 @@ body.light-mode {
   grid-template-rows: 1fr auto auto;
   overflow: hidden;
   position: relative;
+  font-family: var(--font-body);
 }
 
 /* ============================================================
@@ -147,6 +170,7 @@ body.light-mode {
 .call-grid {
   position: relative;
   padding: 16px;
+  padding-bottom: 96px; /* ensures controls never overlap tiles */
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
@@ -196,10 +220,12 @@ body.light-mode {
     opacity 0.25s ease;
 }
 
+/* Local tile emphasis */
 .participant.local {
   box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.4);
 }
 
+/* Speaking state (WebRTCMedia + RemoteParticipants) */
 .participant.speaking {
   box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
@@ -218,6 +244,13 @@ body.light-mode {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* JS toggles .show on video elements */
+.media-wrapper video.show {
+  opacity: 1;
 }
 
 /* ============================================================
@@ -230,6 +263,8 @@ body.light-mode {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
 }
 
 .avatar-wrapper img {
@@ -245,6 +280,12 @@ body.light-mode {
   height: 64px;
 }
 
+/* JS toggles .hidden on avatar wrapper */
+.avatar-wrapper.hidden {
+  opacity: 0;
+}
+
+/* Voice pulse ring (driven by --audio-level from WebRTCMedia) */
 .voice-pulse {
   position: absolute;
   width: 90px;
@@ -252,6 +293,7 @@ body.light-mode {
   border-radius: 50%;
   border: 2px solid rgba(77, 163, 255, 0.6);
   animation: voicePulse 1.4s infinite ease-out;
+  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
 }
 
 @keyframes voicePulse {
@@ -263,6 +305,23 @@ body.light-mode {
     transform: scale(1.4);
     opacity: 0;
   }
+}
+
+/* ============================================================
+   NAME TAG
+============================================================ */
+.name-tag {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 4;
 }
 
 /* ============================================================
@@ -296,23 +355,22 @@ body.light-mode {
    UNIFIED DESKTOP LAYOUT (MEET-STYLE + SCREEN SHARE + PIP)
 ============================================================ */
 @media (min-width: 901px) {
-  /* Grid auto-layout */
   .call-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     grid-auto-rows: minmax(180px, 1fr);
     gap: 14px;
     padding: 16px;
+    padding-bottom: 96px;
   }
 
-  /* Remote tiles stay in grid */
   .participant.remote {
     position: relative;
     z-index: 1;
     border-radius: var(--radius-lg);
   }
 
-  /* Local tile as floating PIP (unified PIP system) */
+  /* Local tile as floating PIP */
   .participant.local {
     position: absolute;
     bottom: 20px;
@@ -337,7 +395,7 @@ body.light-mode {
     }
   }
 
-  /* Unified screen-share layout: stage + filmstrip */
+  /* Screen-share stage + filmstrip layout (WebRTCMedia + CallUI) */
   .call-grid.screen-share-mode {
     display: grid;
     grid-template-columns: 1fr 260px;
@@ -387,7 +445,7 @@ body.light-mode {
     }
   }
 
-  /* Active speaker highlight */
+  /* Active speaker highlight (CallUI.onActiveSpeaker / RemoteParticipants) */
   .participant.active-speaker:not(.stage) {
     box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
     border-color: rgba(0, 200, 255, 0.9);
@@ -508,6 +566,7 @@ body.light-mode {
   transition:
     opacity var(--med),
     transform var(--med);
+  z-index: 40;
 }
 
 .call-controls.hidden {
@@ -525,10 +584,13 @@ body.light-mode {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text);
+  cursor: pointer;
   transition:
     background var(--fast),
     transform var(--fast),
-    box-shadow var(--fast);
+    box-shadow var(--fast),
+    color var(--fast);
 }
 
 .control-btn:hover {
@@ -549,6 +611,7 @@ body.light-mode {
   box-shadow: var(--danger-glow);
 }
 
+/* Inbound vs active mode (CallUI toggles on .call-window) */
 .call-window.inbound-mode .active-only {
   display: none;
 }
@@ -572,6 +635,10 @@ body.light-mode {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   padding: 6px 0;
   z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity var(--fast), transform var(--fast);
 }
 
 .more-controls-menu button {
@@ -584,16 +651,11 @@ body.light-mode {
   background: transparent;
   border: none;
   color: var(--text);
+  cursor: pointer;
 }
 
 .more-controls-menu button:hover {
   background: var(--glass);
-}
-.more-controls-menu {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(6px);
-  transition: opacity var(--fast), transform var(--fast);
 }
 
 .more-controls-menu.hidden {
@@ -607,15 +669,15 @@ body.light-mode {
   transform: translateY(0);
 }
 
+/* Toggle states for noise + recording */
 #ai-noise-toggle.active,
 #record-call.active {
   background: rgba(77, 163, 255, 0.16);
 }
+
 /* ============================================================
    VOICE-ONLY MODE (Unified)
 ============================================================ */
-
-/* When a participant is voice-only */
 .participant.voice-only .media-wrapper video {
   display: none !important;
   opacity: 0 !important;
@@ -632,8 +694,8 @@ body.light-mode {
 
 /* Keep speaking glow visible even without video */
 .participant.voice-only.speaking {
-  box-shadow: 0 0 12px 3px rgba(0,200,255,0.75);
-  border-color: rgba(0,200,255,0.9);
+  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
 }
 
 /* Voice-only in stage mode (screen share) */
@@ -663,6 +725,7 @@ body.light-mode {
   display: flex;
   align-items: center;
   gap: 8px;
+  z-index: 30;
 }
 
 .quality-indicator {
@@ -670,6 +733,7 @@ body.light-mode {
   border-radius: 999px;
   font-size: 12px;
   background: rgba(0, 0, 0, 0.6);
+  color: var(--text);
 }
 
 .quality-indicator[data-level="excellent"] {
@@ -689,10 +753,35 @@ body.light-mode {
 }
 
 /* ============================================================
-   MOBILE — GOOGLE MEET BEHAVIOR (UNCHANGED)
+   SCREEN SHARE ANIMATION CLASSES (used by WebRTCMedia)
+============================================================ */
+.participant.animate-stage-in {
+  animation: stageInDesktop 0.35s ease forwards;
+}
+
+.participant.animate-filmstrip-in {
+  animation: filmstripInDesktop 0.35s ease forwards;
+}
+
+.participant.animate-stage-out {
+  animation: stageOutDesktop 0.25s ease forwards;
+}
+
+@keyframes stageOutDesktop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   MOBILE — GOOGLE MEET BEHAVIOR
 ============================================================ */
 @media (max-width: 900px) {
-
   .call-body {
     width: 100vw !important;
     height: 100vh !important;
@@ -732,17 +821,23 @@ body.light-mode {
     border-radius: 14px !important;
     overflow: hidden;
     z-index: 20;
-    animation: pipFloat .35s ease-out;
+    animation: pipFloat 0.35s ease-out;
   }
 
   @keyframes pipFloat {
-    0% { transform: scale(0.8) translateY(20px); opacity: 0; }
-    100% { transform: scale(1) translateY(0); opacity: 1; }
+    0% {
+      transform: scale(0.8) translateY(20px);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
   }
 
   .call-controls {
     bottom: 20px;
-    background: rgba(0,0,0,0.35);
+    background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(10px);
     padding: 10px 16px;
   }
@@ -754,14 +849,14 @@ body.light-mode {
     right: 0;
     padding: 8px 14px;
     z-index: 30;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent);
   }
 
-   .name-tag {
+  .name-tag {
     top: 10px;
     left: 10px;
     bottom: auto;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     padding: 3px 8px;
     font-size: 12px;
   }
@@ -790,6 +885,13 @@ body.light-mode {
   .participant.filmstrip {
     display: none !important;
   }
+
+  /* Active speaker highlight on mobile */
+  .participant.active-speaker:not(.stage) {
+    box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
+    border-color: rgba(0, 200, 255, 0.9);
+  }
 }
+
 
 
