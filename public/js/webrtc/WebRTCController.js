@@ -15,6 +15,7 @@ import { addCallLogEntry } from "../call-log.js";
 import { getMyUserId, getMyFullname } from "../session.js";
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
+import { attachParticipantStream } from "./RemoteParticipants.js";
 
 /* -------------------------------------------------------
    Helpers
@@ -747,20 +748,21 @@ export class WebRTCController {
     /* ---------------------------------------------------
        Track Routing (single source of truth)
     --------------------------------------------------- */
- pc.ontrack = (event) => {
+pc.ontrack = (event) => {
   const id = peerId || rtcState.peerId || "default";
   const stream = event.streams[0];
 
   console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
 
-  // 1. Attach to participant tile (video)
+  // Attach remote VIDEO to UI
   attachParticipantStream(id, stream);
 
-  // 2. Attach audio to remoteAudio element
+  // Attach remote AUDIO to the audio element
   if (event.track.kind === "audio" && rtc.remoteAudioEl) {
     rtc.remoteAudioEl.srcObject = stream;
   }
 };
+;
 
 
     /* ---------------------------------------------------
@@ -1122,6 +1124,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
