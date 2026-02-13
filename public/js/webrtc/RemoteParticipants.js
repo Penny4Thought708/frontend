@@ -11,16 +11,29 @@ let gridEl = null;
 let localTileEl = null;
 
 /* -------------------------------------------------------
-   Initialization
+   Internal: ensure grid + local tile are wired
 ------------------------------------------------------- */
-export function initRemoteParticipants() {
-  gridEl = document.getElementById("callGrid");
+function ensureInitialized() {
   if (!gridEl) {
-    console.warn("[RemoteParticipants] #callGrid not found");
-    return;
+    gridEl = document.getElementById("callGrid");
+    if (!gridEl) {
+      console.warn("[RemoteParticipants] #callGrid not found");
+    }
   }
 
-  localTileEl = document.getElementById("localParticipant") || null;
+  if (!localTileEl) {
+    localTileEl = document.getElementById("localParticipant") || null;
+    if (localTileEl) {
+      localTileEl.dataset.peerId = "local";
+    }
+  }
+}
+
+/* -------------------------------------------------------
+   Initialization (optional external call)
+------------------------------------------------------- */
+export function initRemoteParticipants() {
+  ensureInitialized();
 }
 
 /* -------------------------------------------------------
@@ -49,13 +62,13 @@ function safeCloneTemplate(tplId) {
    Create Tile
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
-  if (!gridEl) initRemoteParticipants();
+  ensureInitialized();
   if (!gridEl) {
     console.warn("[RemoteParticipants] createTile aborted — no gridEl");
     return null;
   }
 
-  if (!peerId && peerId !== 0) {
+  if (peerId === undefined || peerId === null) {
     console.warn("[RemoteParticipants] createTile called without peerId");
     return null;
   }
@@ -125,16 +138,17 @@ export function removeParticipant(peerId) {
 }
 
 /* -------------------------------------------------------
-   Attach MediaStream (from controller)
+   Core: attach a MediaStream to a participant tile
+   (this is what attachRemoteTrack() calls via attachParticipantStream)
 ------------------------------------------------------- */
-export function attachStream(peerId, stream) {
+export function attachParticipantStream(peerId, stream) {
   if (!stream) {
-    console.warn("[RemoteParticipants] attachStream called with null stream for peer:", peerId);
+    console.warn("[RemoteParticipants] attachParticipantStream called with null stream for peer:", peerId);
   }
 
   const entry = participants.get(peerId) || createTile(peerId);
   if (!entry) {
-    console.warn("[RemoteParticipants] attachStream: no entry for peer:", peerId);
+    console.warn("[RemoteParticipants] attachParticipantStream: no entry for peer:", peerId);
     return null;
   }
 
@@ -144,7 +158,9 @@ export function attachStream(peerId, stream) {
     try {
       entry.videoEl.srcObject = stream;
       entry.videoEl.playsInline = true;
-      entry.videoEl.muted = true; // remote video muted in tile; audio is via #remoteAudio
+
+      // Remote video element stays muted; audio is routed via #remoteAudio
+      entry.videoEl.muted = true;
 
       // Ensure CSS shows the video element
       entry.videoEl.classList.add("show");
@@ -168,6 +184,13 @@ export function attachStream(peerId, stream) {
 }
 
 /* -------------------------------------------------------
+   Backwards‑compat alias (if anything still calls attachStream)
+------------------------------------------------------- */
+export function attachStream(peerId, stream) {
+  return attachParticipantStream(peerId, stream);
+}
+
+/* -------------------------------------------------------
    Camera Off / On (CallUI handles layout classes)
 ------------------------------------------------------- */
 export function setParticipantCameraOff(peerId, off) {
@@ -176,7 +199,6 @@ export function setParticipantCameraOff(peerId, off) {
 
   entry.cameraOff = !!off;
 
-  // This only toggles raw media visibility; CallUI handles .voice-only, layout, etc.
   if (entry.videoEl) {
     if (off) {
       entry.videoEl.classList.remove("show");
@@ -204,12 +226,10 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
   const isActive = !!active;
   entry.speaking = isActive;
 
-  // CSS handles glow animation
   try {
     entry.el.classList.toggle("speaking", isActive);
   } catch {}
 
-  // Audio level for CSS animations (e.g., voice pulse)
   const safeLevel = isActive ? Number(level) || 1 : 0;
   try {
     entry.el.style.setProperty("--audio-level", String(safeLevel));
@@ -261,6 +281,7 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
+
 
 
 
