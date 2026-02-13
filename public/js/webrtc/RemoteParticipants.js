@@ -80,15 +80,14 @@ function createTile(peerId, displayName, avatarUrl) {
 
   node.dataset.peerId = String(peerId);
 
-  const videoEl  = node.querySelector("video");
+  const videoEl = node.querySelector("video");
   const avatarEl = node.querySelector(".avatar-wrapper");
-  const imgEl    = node.querySelector(".avatar-img");
-  const nameEl   = node.querySelector(".name-tag");
+  const imgEl = node.querySelector(".avatar-img");
+  const nameEl = node.querySelector(".name-tag");
 
   if (nameEl && displayName) nameEl.textContent = displayName;
   if (avatarUrl && imgEl) imgEl.src = avatarUrl;
 
-  // Join animation (CSS can handle .joining/.joined)
   node.classList.add("joining");
   gridEl.appendChild(node);
   requestAnimationFrame(() => {
@@ -139,12 +138,16 @@ export function removeParticipant(peerId) {
 
 /* -------------------------------------------------------
    Core: attach a MediaStream to a participant tile
-   (called by WebRTCMedia.attachRemoteTrack via attachParticipantStream)
 ------------------------------------------------------- */
 export function attachParticipantStream(peerId, stream) {
+  if (!peerId && peerId !== 0) {
+    console.warn("[RemoteParticipants] attachParticipantStream called without peerId");
+  }
   if (!stream) {
     console.warn("[RemoteParticipants] attachParticipantStream called with null stream for peer:", peerId);
   }
+
+  ensureInitialized();
 
   const entry = participants.get(peerId) || createTile(peerId);
   if (!entry) {
@@ -158,14 +161,10 @@ export function attachParticipantStream(peerId, stream) {
     try {
       entry.videoEl.srcObject = stream;
       entry.videoEl.playsInline = true;
-
-      // Remote video element stays muted; audio is routed via #remoteAudio
       entry.videoEl.muted = true;
-
-      // Ensure CSS shows the video element
       entry.videoEl.classList.add("show");
 
-      entry.videoEl.onloadedmetadata = () => {
+      const tryPlay = () => {
         entry.videoEl
           .play()
           .catch((err) => {
@@ -175,6 +174,14 @@ export function attachParticipantStream(peerId, stream) {
             );
           });
       };
+
+      if (entry.videoEl.readyState >= 2) {
+        tryPlay();
+      } else {
+        entry.videoEl.onloadedmetadata = () => {
+          tryPlay();
+        };
+      }
     } catch (err) {
       console.error("[RemoteParticipants] Failed to bind remote video:", err);
     }
@@ -184,14 +191,14 @@ export function attachParticipantStream(peerId, stream) {
 }
 
 /* -------------------------------------------------------
-   Backwards‑compat alias (if anything still calls attachStream)
+   Backwards‑compat alias
 ------------------------------------------------------- */
 export function attachStream(peerId, stream) {
   return attachParticipantStream(peerId, stream);
 }
 
 /* -------------------------------------------------------
-   Camera Off / On (CallUI handles layout classes)
+   Camera Off / On
 ------------------------------------------------------- */
 export function setParticipantCameraOff(peerId, off) {
   const entry = participants.get(peerId);
@@ -217,7 +224,7 @@ export function setParticipantCameraOff(peerId, off) {
 }
 
 /* -------------------------------------------------------
-   Speaking Indicator (CallUI handles active-speaker layout)
+   Speaking Indicator
 ------------------------------------------------------- */
 export function setParticipantSpeaking(peerId, active, level = 1) {
   const entry = participants.get(peerId);
@@ -281,8 +288,3 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
-
-
-
-
-
