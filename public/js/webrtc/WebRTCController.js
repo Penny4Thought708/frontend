@@ -821,10 +821,17 @@ export class WebRTCController {
       }
     };
 
-    /* ---------------------------------------------------
+       /* ---------------------------------------------------
        Renegotiation
     --------------------------------------------------- */
     pc.onnegotiationneeded = async () => {
+      // 🔴 If we're using a fake local stream (no real devices),
+      // skip renegotiation to avoid glare / ICE storms.
+      if (rtcState.localStream && rtcState.localStream._isFake) {
+        console.warn("[WebRTC] Skipping renegotiation — fake local stream");
+        return;
+      }
+
       if (this.makingOffer) {
         console.warn("[WebRTC] Skipping renegotiation — already making offer");
         return;
@@ -1087,6 +1094,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
