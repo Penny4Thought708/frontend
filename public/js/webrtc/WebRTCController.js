@@ -35,7 +35,7 @@ function stopAudio(el) {
 
 function stopAllTones() {
   // Intentionally empty in pure engine mode.
-  // CallUI owns ringtone/ringback/notification and may call this via hooks.
+  // CallUI wires tones and can call this via callbacks if needed.
 }
 
 /* -------------------------------------------------------
@@ -116,8 +116,7 @@ export class WebRTCController {
   }
 
   async startCall(peerId, audioOnly) {
-    if (!peerId) return;
-    return this._startCallInternal(peerId, !!audioOnly, { relayOnly: false });
+    return this._startCallInternal(peerId, audioOnly, { relayOnly: false });
   }
 
   /* ---------------------------------------------------
@@ -129,13 +128,9 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) return;
 
-    // Prevent duplicate call starts / race with incoming
-    if (rtcState.busy && !rtcState.inCall) {
-      console.warn("[WebRTC] _startCallInternal aborted — already busy starting a call");
-      return;
-    }
-    if (rtcState.inCall) {
-      console.warn("[WebRTC] _startCallInternal aborted — already in a call");
+    // Prevent double-start to same peer while busy
+    if (rtcState.busy && rtcState.peerId === peerId && this.pcMap.has(peerId)) {
+      console.warn("[WebRTC] _startCallInternal ignored — already busy with this peer");
       return;
     }
 
@@ -166,17 +161,17 @@ export class WebRTCController {
     this.localStream = stream;
     rtcState.localStream = stream;
 
-    // Let CallUI bind local preview / avatar logic
     this.onLocalStream?.(stream || null);
 
     if (stream) {
-      try {
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-      } catch (err) {
-        console.warn("[WebRTC] Failed to add local tracks to PC:", err);
+      // Avoid double-adding tracks: clear existing senders first
+      const existingSenders = pc.getSenders();
+      for (const s of existingSenders) {
+        if (s.track && stream.getTracks().includes(s.track)) continue;
       }
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     } else {
-      console.warn("[WebRTC] No local media — continuing call anyway (fake/empty stream)");
+      console.warn("[WebRTC] No local media — continuing call anyway");
     }
 
     this.onOutgoingCall?.({
@@ -184,13 +179,12 @@ export class WebRTCController {
       voiceOnly: audioOnly,
     });
 
-    // Initial offer (caller side)
-    try {
-      if (this.makingOffer) {
-        console.warn("[WebRTC] Already making offer, skipping initial offer");
-        return;
-      }
+    if (this.makingOffer) {
+      console.warn("[WebRTC] _startCallInternal: already making offer, skipping");
+      return;
+    }
 
+    try {
       this.makingOffer = true;
       let offer = await pc.createOffer();
       this.makingOffer = false;
@@ -224,7 +218,7 @@ export class WebRTCController {
         }
       }
 
-      this.socket?.emit("webrtc:signal", {
+      this.socket.emit("webrtc:signal", {
         type: "offer",
         to: peerId,
         from: myId,
@@ -234,7 +228,7 @@ export class WebRTCController {
       });
     } catch (err) {
       this.makingOffer = false;
-      console.warn("[WebRTC] Initial offer failed:", err);
+      console.warn("[WebRTC] _startCallInternal offer failed:", err);
       this.onCallFailed?.("offer failed");
     }
   }
@@ -249,17 +243,13 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Incoming Offer (polite peer + mesh‑ready)
+     Incoming Offer (polite peer + glare-safe)
   --------------------------------------------------- */
   async handleOffer(data) {
     const { from, offer, fromName, audioOnly, fromUser, renegotiate } = data || {};
     console.log("[WebRTC] handleOffer", data);
     if (!from || !offer) return;
 
-    const myId = getMyUserId();
-    if (!myId) return;
-
-    // First time we see this peer in this session
     if (!rtcState.peerId) {
       rtcState.peerId = from;
     }
@@ -270,7 +260,7 @@ export class WebRTCController {
     rtcState.isCaller = false;
 
     rtcState.busy = true;
-    rtcState.inCall = rtcState.inCall || false;
+    rtcState.inCall = false;
     rtcState.incomingOffer = data;
     rtcState.usedRelayFallback = false;
 
@@ -278,46 +268,34 @@ export class WebRTCController {
 
     const pc = await this._getOrCreatePC(from, { relayOnly: false });
 
-    // Glare handling (official polite peer pattern)
     const offerCollision =
       offer.type === "offer" &&
       (this.makingOffer || pc.signalingState !== "stable");
 
-    if (offerCollision) {
-      if (!this.isPolite) {
-        console.warn("[WebRTC] Ignoring offer due to glare (impolite side)");
-        this.ignoreOffer = true;
-        return;
-      }
-
-      try {
-        console.log("[WebRTC] Glare detected — polite side rolling back");
-        await pc.setLocalDescription({ type: "rollback" });
-      } catch (err) {
-        console.warn("[WebRTC] Rollback failed during glare handling:", err);
-      }
-    }
-
-    if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
-    try {
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      await this._flushPendingRemoteCandidates(from, pc);
-    } catch (err) {
-      console.warn("[WebRTC] Failed to setRemoteDescription in handleOffer:", err);
-      this.onCallFailed?.("remote description failed");
+    this.ignoreOffer = !this.isPolite && offerCollision;
+    if (this.ignoreOffer) {
+      console.warn("[WebRTC] Ignoring offer due to glare (impolite side)");
       return;
     }
 
-    // Renegotiation path (already in call)
-    if (renegotiate) {
-      console.log("[WebRTC] Renegotiation offer handled");
-      try {
+    try {
+      if (offerCollision && this.isPolite) {
+        console.log("[WebRTC] Glare detected (polite side) — rolling back");
+        await pc.setLocalDescription({ type: "rollback" });
+      }
+
+      if (offer.sdp) {
+        offer.sdp = offer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
+      }
+
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      await this._flushPendingRemoteCandidates(from, pc);
+
+      if (renegotiate) {
+        console.log("[WebRTC] Renegotiation offer handled");
         let answer = await pc.createAnswer();
         if (answer.sdp) {
           answer.sdp = answer.sdp.replace(
@@ -327,27 +305,27 @@ export class WebRTCController {
         }
         await pc.setLocalDescription(answer);
 
-        this.socket?.emit("webrtc:signal", {
+        this.socket.emit("webrtc:signal", {
           type: "answer",
           to: from,
-          from: myId,
+          from: getMyUserId(),
           answer,
           renegotiate: true,
         });
-      } catch (err) {
-        console.warn("[WebRTC] Renegotiation answer failed:", err);
-        this.onCallFailed?.("renegotiation failed");
+
+        return;
       }
-      return;
+
+      stopAllTones();
+
+      this.onIncomingCall?.({
+        fromName: rtcState.peerName,
+        audioOnly: rtcState.audioOnly,
+      });
+    } catch (err) {
+      console.warn("[WebRTC] handleOffer failed:", err);
+      this.onCallFailed?.("offer handling failed");
     }
-
-    // Fresh incoming call (not yet answered)
-    stopAllTones();
-
-    this.onIncomingCall?.({
-      fromName: rtcState.peerName,
-      audioOnly: rtcState.audioOnly,
-    });
   }
 
   /* ---------------------------------------------------
@@ -372,43 +350,33 @@ export class WebRTCController {
 
     const pc = await this._getOrCreatePC(from, { relayOnly: false });
 
-    if (offer.sdp) {
-      offer.sdp = offer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
     try {
+      if (offer.sdp) {
+        offer.sdp = offer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
+      }
+
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       await this._flushPendingRemoteCandidates(from, pc);
-    } catch (err) {
-      console.warn("[WebRTC] Failed to setRemoteDescription in answerIncomingCall:", err);
-      this.onCallFailed?.("remote description failed");
-      return;
-    }
 
-    let stream = null;
-    try {
-      stream = await getLocalMedia(true, !rtcState.audioOnly);
-    } catch (err) {
-      console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
-    }
-
-    this.localStream = stream;
-    rtcState.localStream = stream;
-
-    this.onLocalStream?.(stream || null);
-
-    if (stream) {
+      let stream = null;
       try {
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+        stream = await getLocalMedia(true, !rtcState.audioOnly);
       } catch (err) {
-        console.warn("[WebRTC] Failed to add local tracks in answerIncomingCall:", err);
+        console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
       }
-    }
 
-    try {
+      this.localStream = stream;
+      rtcState.localStream = stream;
+
+      this.onLocalStream?.(stream || null);
+
+      if (stream) {
+        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+      }
+
       let answer = await pc.createAnswer();
 
       if (answer.sdp) {
@@ -440,7 +408,7 @@ export class WebRTCController {
         }
       }
 
-      this.socket?.emit("webrtc:signal", {
+      this.socket.emit("webrtc:signal", {
         type: "answer",
         to: from,
         from: getMyUserId(),
@@ -448,9 +416,10 @@ export class WebRTCController {
       });
 
       rtcState.incomingOffer = null;
+
       this.onCallStarted?.();
     } catch (err) {
-      console.warn("[WebRTC] Failed to create/send answer:", err);
+      console.warn("[WebRTC] answerIncomingCall failed:", err);
       this.onCallFailed?.("answer failed");
     }
   }
@@ -499,46 +468,35 @@ export class WebRTCController {
 
     const pc = this.pcMap.get(from);
     if (!pc) return;
-
-    // If this is not a renegotiation, ensure we are in the right state
-    if (pc.signalingState !== "have-local-offer" && !data.renegotiate) {
-      console.warn(
-        "[WebRTC] handleAnswer ignored — signalingState=",
-        pc.signalingState,
-        " renegotiate=",
-        !!data.renegotiate
-      );
-      return;
-    }
+    if (pc.signalingState !== "have-local-offer" && !data.renegotiate) return;
 
     rtcState.answering = true;
     setTimeout(() => (rtcState.answering = false), 800);
 
-    if (data.answer.sdp) {
-      data.answer.sdp = data.answer.sdp.replace(
-        /(m=video .*?)(96 97 98)/,
-        (match, prefix, list) => `${prefix}98 96 97`
-      );
-    }
-
     try {
+      if (data.answer.sdp) {
+        data.answer.sdp = data.answer.sdp.replace(
+          /(m=video .*?)(96 97 98)/,
+          (match, prefix, list) => `${prefix}98 96 97`
+        );
+      }
+
       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
       await this._flushPendingRemoteCandidates(from, pc);
+
+      rtcState.inCall = true;
+      rtcState.busy = true;
+
+      if (this.socket) {
+        this.socket.emit("call:accept", { to: from });
+      }
+
+      stopAllTones();
+      this.onCallStarted?.();
     } catch (err) {
-      console.warn("[WebRTC] Failed to setRemoteDescription in handleAnswer:", err);
-      this.onCallFailed?.("remote description failed");
-      return;
+      console.warn("[WebRTC] handleAnswer failed:", err);
+      this.onCallFailed?.("answer handling failed");
     }
-
-    rtcState.inCall = true;
-    rtcState.busy = true;
-
-    if (this.socket) {
-      this.socket.emit("call:accept", { to: from });
-    }
-
-    stopAllTones();
-    this.onCallStarted?.();
   }
 
   /* ---------------------------------------------------
@@ -552,7 +510,6 @@ export class WebRTCController {
 
     const pc = this.pcMap.get(from);
 
-    // If PC not ready or remoteDescription not set yet, buffer candidate
     if (!pc || !pc.remoteDescription) {
       const list = this.pendingRemoteCandidates.get(from) || [];
       list.push(data.candidate);
@@ -678,7 +635,7 @@ export class WebRTCController {
      Screen Share
   --------------------------------------------------- */
   async startScreenShare() {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
+    if (!navigator.mediaDevices.getDisplayMedia) {
       console.warn("[WebRTC] Screen share not supported");
       return;
     }
@@ -732,21 +689,17 @@ export class WebRTCController {
 
         if (camTrack) {
           for (const sender of senders) {
-            try {
-              await sender.replaceTrack(camTrack);
+            await sender.replaceTrack(camTrack);
 
-              const params = sender.getParameters();
-              params.encodings = [
-                {
-                  maxBitrate: 1_500_000,
-                  minBitrate: 300_000,
-                  maxFramerate: 30,
-                },
-              ];
-              await sender.setParameters(params);
-            } catch (err) {
-              console.warn("[WebRTC] Failed to restore camera track after screen share:", err);
-            }
+            const params = sender.getParameters();
+            params.encodings = [
+              {
+                maxBitrate: 1_500_000,
+                minBitrate: 300_000,
+                maxFramerate: 30,
+              },
+            ];
+            await sender.setParameters(params);
           }
         }
 
@@ -913,21 +866,16 @@ export class WebRTCController {
     };
 
     /* ---------------------------------------------------
-       Renegotiation
+       Renegotiation (glare-safe)
     --------------------------------------------------- */
     pc.onnegotiationneeded = async () => {
-      // Prevent overlapping offers
       if (this.makingOffer) {
         console.warn("[WebRTC] Skipping renegotiation — already making offer");
         return;
       }
 
-      // Only renegotiate when stable
       if (pc.signalingState !== "stable") {
-        console.warn(
-          "[WebRTC] Skipping renegotiation — signalingState=",
-          pc.signalingState
-        );
+        console.warn("[WebRTC] Skipping renegotiation — signaling not stable:", pc.signalingState);
         return;
       }
 
@@ -947,7 +895,7 @@ export class WebRTCController {
 
         await pc.setLocalDescription(offer);
 
-        this.socket?.emit("webrtc:signal", {
+        this.socket.emit("webrtc:signal", {
           type: "offer",
           to: peerId,
           from: getMyUserId(),
@@ -1170,7 +1118,6 @@ export class WebRTCController {
     this.socket.on("call:voicemail", ({ from, reason }) => {
       console.log("[WebRTC] voicemail event", from, reason);
       stopAllTones();
-      // Normalize to the shape CallUI expects: { peerId, message }
       this.onVoicemailPrompt?.({
         peerId: from,
         message: reason,
@@ -1188,6 +1135,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
