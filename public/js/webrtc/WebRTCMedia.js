@@ -260,8 +260,12 @@ function createFakeMediaStream() {
     video: videoCount,
   });
 
+ 
+  stream._isFake = true;
+
   return stream;
 }
+
 
 /* -------------------------------------------------------
    Local Media Acquisition (Meet+Discord tuned + avatar fallback)
@@ -653,6 +657,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
