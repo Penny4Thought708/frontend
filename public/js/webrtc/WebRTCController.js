@@ -747,12 +747,21 @@ export class WebRTCController {
     /* ---------------------------------------------------
        Track Routing (single source of truth)
     --------------------------------------------------- */
-    pc.ontrack = (event) => {
-      const id = peerId || rtcState.peerId || "default";
-      const kind = event.track?.kind || "unknown";
-      console.log("[WebRTC] ontrack from", id, "kind:", kind);
-      attachRemoteTrack(id, event);
-    };
+ pc.ontrack = (event) => {
+  const id = peerId || rtcState.peerId || "default";
+  const stream = event.streams[0];
+
+  console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
+
+  // 1. Attach to participant tile (video)
+  attachParticipantStream(id, stream);
+
+  // 2. Attach audio to remoteAudio element
+  if (event.track.kind === "audio" && rtc.remoteAudioEl) {
+    rtc.remoteAudioEl.srcObject = stream;
+  }
+};
+
 
     /* ---------------------------------------------------
        ICE State
@@ -1113,6 +1122,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
