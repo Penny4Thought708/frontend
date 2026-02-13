@@ -398,7 +398,7 @@ export async function flipLocalCamera(rtc) {
   }
 }
 
-/*-------------------------------------------------------
+/* -------------------------------------------------------
    Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
@@ -455,7 +455,6 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     );
   }
 
-  // Now deal with tiles / avatars / video
   const participantEl = getRemoteParticipant(peerId);
   if (!participantEl) {
     log("No participant element for peer:", peerId);
@@ -531,12 +530,11 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
   }
 
   // 🔊 Start speaking detection + visualizer only if we have a tile
-  if (evt.track.kind === "audio" && remoteAudioEl && participantEl) {
+  if (evt.track.kind === "audio" && remoteAudioEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
   }
 }
-
 
 /* -------------------------------------------------------
    Helper: resume remote media after user gesture
@@ -713,6 +711,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
