@@ -1,6 +1,6 @@
 // public/js/webrtc/CallUI.js
-// Aurora‑Orbit Call UI — Final Production Version
-// CallUI is the SOLE owner of call window visibility.
+// Aurora‑Orbit Call UI — Production Version
+// CallUI is the SOLE owner of call window visibility + layout classes.
 
 import { openVoicemailRecorder } from "../voicemail-recorder.js";
 import {
@@ -16,7 +16,6 @@ import {
   setParticipantCameraOff,
 } from "./RemoteParticipants.js";
 import { getReceiver } from "../messaging.js";
-
 import { getVoiceBtn, getVideoBtn } from "../session.js";
 
 export function initCallUI(rtc) {
@@ -30,6 +29,7 @@ export function initCallUI(rtc) {
   ------------------------------------------------------- */
   const win              = document.getElementById("callWindow");
   const grid             = document.getElementById("callGrid");
+  const localParticipant = document.getElementById("localParticipant");
 
   const localVideo       = document.getElementById("localVideo");
   const remoteAudio      = document.getElementById("remoteAudio");
@@ -97,28 +97,27 @@ export function initCallUI(rtc) {
     localVideo.playsInline = true;
 
     if (stream) {
-      localVideo.classList.add("show");
-      localVideo.style.display = "block";
-      localVideo.style.opacity = "1";
-      win?.classList.remove("voice-only");
+      // Video available: ensure local tile is NOT voice-only
+      localParticipant?.classList.remove("voice-only");
+      win?.classList.remove("voice-only-call");
 
-      localVideo.play().catch(() => {
-        setTimeout(() => localVideo.play().catch(() => {}), 50);
-      });
+      localVideo
+        .play()
+        .catch(() => setTimeout(() => localVideo.play().catch(() => {}), 50));
     } else {
-      localVideo.classList.remove("show");
-      localVideo.style.display = "none";
-      localVideo.style.opacity = "0";
+      // No video: treat as voice-only for local
+      localParticipant?.classList.add("voice-only");
+      win?.classList.add("voice-only-call");
     }
   };
 
+  // If RTC already has a local stream when UI initializes
   if (rtc.localStream && localVideo) {
     localVideo.srcObject = rtc.localStream;
     localVideo.muted = true;
     localVideo.playsInline = true;
-    localVideo.classList.add("show");
-    localVideo.style.display = "block";
-    localVideo.style.opacity = "1";
+    localParticipant?.classList.remove("voice-only");
+    win?.classList.remove("voice-only-call");
   }
 
   /* -------------------------------------------------------
@@ -147,7 +146,7 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
-     UI MODE HELPERS
+     UI MODE + LAYOUT HELPERS
   ------------------------------------------------------- */
   function setMode(mode) {
     if (!win) return;
@@ -161,23 +160,26 @@ export function initCallUI(rtc) {
     callStatus.textContent = text || "";
   }
 
+  // Audio-only call mode (for whole call)
   function setVoiceOnly(on) {
-    if (!win) return;
     const isOn = !!on;
-    win.classList.toggle("voice-only", isOn);
+    if (win) win.classList.toggle("voice-only-call", isOn);
+    if (localParticipant) localParticipant.classList.toggle("voice-only", isOn);
 
     if (cameraBtn) cameraBtn.classList.toggle("hidden-soft", isOn);
     if (shareBtn)  shareBtn.classList.toggle("hidden-soft", isOn);
   }
 
   function setCameraOff(on) {
-    if (!win) return;
-    win.classList.toggle("camera-off", !!on);
+    if (!win || !localParticipant) return;
+    const off = !!on;
+    win.classList.toggle("camera-off", off);
+    localParticipant.classList.toggle("voice-only", off);
   }
 
   function setScreenShare(on) {
-    if (!win) return;
-    win.classList.toggle("screen-share", !!on);
+    if (!grid) return;
+    grid.classList.toggle("screen-share-mode", !!on);
   }
 
   function setNoiseSuppression(on) {
@@ -201,31 +203,67 @@ export function initCallUI(rtc) {
   }
 
   /* -------------------------------------------------------
+     SCREEN SHARE LAYOUT HELPERS (STAGE + FILMSTRIP)
+  ------------------------------------------------------- */
+  function setScreenShareMode(peerId) {
+    if (!grid) return;
+
+    const participants = Array.from(
+      grid.querySelectorAll(".participant")
+    );
+
+    participants.forEach((p) => {
+      p.classList.remove("stage", "filmstrip");
+    });
+
+    const stageParticipant = participants.find(
+      (p) => p.dataset.peerId === String(peerId)
+    );
+
+    if (stageParticipant) {
+      stageParticipant.classList.add("stage");
+      participants
+        .filter((p) => p !== stageParticipant)
+        .forEach((p) => p.classList.add("filmstrip"));
+    }
+
+    setScreenShare(true);
+  }
+
+  function clearScreenShareMode() {
+    if (!grid) return;
+
+    const participants = Array.from(
+      grid.querySelectorAll(".participant")
+    );
+
+    participants.forEach((p) => {
+      p.classList.remove("stage", "filmstrip");
+    });
+
+    setScreenShare(false);
+  }
+
+  // Expose for any external modules (desktop + mobile)
+  window.setScreenShareMode = setScreenShareMode;
+  window.clearScreenShareMode = clearScreenShareMode;
+
+  /* -------------------------------------------------------
      WINDOW OPEN/CLOSE — CallUI is sole owner
   ------------------------------------------------------- */
-function openWindowAnimated() {
-  if (!win) return;
-  if (win.classList.contains("is-open")) return;
+  function openWindowAnimated() {
+    if (!win) return;
+    if (win.classList.contains("is-open")) return;
 
-  win.classList.remove("hidden");
-  win.classList.add("is-open");
-  win.setAttribute("aria-hidden", "false");
+    win.classList.remove("hidden");
+    win.classList.add("is-open");
+    win.setAttribute("aria-hidden", "false");
 
-  win.classList.add("call-opening");
-  setTimeout(() => win.classList.remove("call-opening"), 300);
+    win.classList.add("call-opening");
+    setTimeout(() => win.classList.remove("call-opening"), 300);
 
-  document.body.classList.add("panel-open");
-
-  // 🔥 NEW: ensure DOM is ready for participant tiles
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      // This guarantees #callGrid exists and is rendered
-      if (window.initRemoteParticipants) {
-        window.initRemoteParticipants();
-      }
-    });
-  });
-}
+    document.body.classList.add("panel-open");
+  }
 
   function hideWindow() {
     if (!win) return;
@@ -444,16 +482,20 @@ function openWindowAnimated() {
     historyBtn.onclick = () => window.toggleCallHistoryPanel?.();
   }
 
+  // More-controls menu: no flash, smooth toggle
   if (moreBtn && moreMenu) {
-    moreBtn.onclick = (e) => {
-      e.stopPropagation();
-      moreMenu.classList.toggle("hidden");
-    };
+    moreMenu.classList.add("hidden");
 
-    document.addEventListener("click", (e) => {
-      if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
-        moreMenu.classList.add("hidden");
-      }
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = moreMenu.classList.contains("show");
+      moreMenu.classList.toggle("show", !isOpen);
+      moreMenu.classList.toggle("hidden", isOpen);
+    });
+
+    document.addEventListener("click", () => {
+      moreMenu.classList.remove("show");
+      moreMenu.classList.add("hidden");
     });
   }
 
@@ -464,6 +506,7 @@ function openWindowAnimated() {
 
       openWindowAnimated();
       setMode("active");
+      setVoiceOnly(true);
 
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
@@ -480,6 +523,7 @@ function openWindowAnimated() {
 
       openWindowAnimated();
       setMode("active");
+      setVoiceOnly(false);
 
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
@@ -488,7 +532,6 @@ function openWindowAnimated() {
       resumeRemoteMediaPlayback();
     };
   }
-
   /* -------------------------------------------------------
      RTC EVENT WIRING
   ------------------------------------------------------- */
@@ -529,7 +572,7 @@ function openWindowAnimated() {
       localVideo.srcObject = rtc.localStream;
       localVideo.muted = true;
       localVideo.playsInline = true;
-      localVideo.classList.add("show");
+      localParticipant?.classList.remove("voice-only");
     }
   };
 
@@ -540,6 +583,7 @@ function openWindowAnimated() {
     setMode(null);
     clearAllParticipants();
     cleanupMedia();
+    clearScreenShareMode();
     hideWindow();
     enableCallButtons();
   };
@@ -551,6 +595,7 @@ function openWindowAnimated() {
     setMode(null);
     clearAllParticipants();
     cleanupMedia();
+    clearScreenShareMode();
     hideWindow();
     enableCallButtons();
   };
@@ -568,11 +613,8 @@ function openWindowAnimated() {
   };
 
   rtc.onScreenShareStarted = (peerId) => {
-    setScreenShare(true);
-
-    if (window.setScreenShareMode) {
-      window.setScreenShareMode(peerId);
-    }
+    debug(`Screen share started by ${peerId}`);
+    setScreenShareMode(peerId);
 
     const pip = document.getElementById("localPip");
     if (pip && peerId !== "local") {
@@ -581,11 +623,8 @@ function openWindowAnimated() {
   };
 
   rtc.onScreenShareStopped = () => {
-    setScreenShare(false);
-
-    if (window.clearScreenShareMode) {
-      window.clearScreenShareMode();
-    }
+    debug("Screen share stopped");
+    clearScreenShareMode();
 
     const pip = document.getElementById("localPip");
     if (pip) pip.classList.remove("show");
@@ -606,6 +645,9 @@ function openWindowAnimated() {
     showSecondaryIncomingToastInternal(data);
 
   rtc.onActiveSpeaker = (peerId) => {
+    // Desktop: let RemoteParticipants handle speaking visuals
+    setParticipantSpeaking(peerId, true, 1);
+    // Mobile + layout: delegate to global handler if present
     if (window.setActiveSpeaker) {
       window.setActiveSpeaker(peerId);
     }
@@ -800,25 +842,25 @@ function openWindowAnimated() {
       callGrid.scrollLeft = scrollStart + dx;
     });
 
+    // Active speaker scroll + class toggle
     window.setActiveSpeaker = function (participantId) {
       participants = Array.from(callGrid.querySelectorAll(".participant"));
+
+      participants.forEach((p) => p.classList.remove("active-speaker"));
+
       const index = participants.findIndex(
         (p) => p.dataset.peerId === String(participantId)
       );
+
       if (index >= 0) {
+        const active = participants[index];
+        active.classList.add("active-speaker");
+
         callGrid.scrollTo({
           left: index * callGrid.clientWidth,
           behavior: "smooth",
         });
       }
-    };
-
-    window.enableScreenShareMode = function () {
-      callGrid.classList.add("screen-share-mode");
-    };
-
-    window.disableScreenShareMode = function () {
-      callGrid.classList.remove("screen-share-mode");
     };
 
     let lastTap = 0;
