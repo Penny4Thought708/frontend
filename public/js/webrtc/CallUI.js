@@ -15,8 +15,9 @@ import {
   setParticipantSpeaking,
   setParticipantCameraOff,
 } from "./RemoteParticipants.js";
+import { getReceiver } from "../messaging.js";
 
-import { getVoiceBtn, getVideoBtn, getReceiver } from "../session.js";
+import { getVoiceBtn, getVideoBtn } from "../session.js";
 
 export function initCallUI(rtc) {
   if (!rtc) {
@@ -893,6 +894,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
