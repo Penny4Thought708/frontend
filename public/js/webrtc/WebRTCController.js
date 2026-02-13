@@ -35,7 +35,7 @@ function stopAudio(el) {
 
 function stopAllTones() {
   // Intentionally empty in pure engine mode.
-  // CallUI wires tones and can call this via callbacks if needed.
+  // Higher-level UI can wire ringtone/ringback and call this if desired.
 }
 
 /* -------------------------------------------------------
@@ -128,12 +128,6 @@ export class WebRTCController {
     const myId = getMyUserId();
     if (!myId) return;
 
-    // Prevent double-start to same peer while busy
-    if (rtcState.busy && rtcState.peerId === peerId && this.pcMap.has(peerId)) {
-      console.warn("[WebRTC] _startCallInternal ignored — already busy with this peer");
-      return;
-    }
-
     stopAllTones();
 
     rtcState.peerId = peerId;
@@ -164,11 +158,6 @@ export class WebRTCController {
     this.onLocalStream?.(stream || null);
 
     if (stream) {
-      // Avoid double-adding tracks: clear existing senders first
-      const existingSenders = pc.getSenders();
-      for (const s of existingSenders) {
-        if (s.track && stream.getTracks().includes(s.track)) continue;
-      }
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     } else {
       console.warn("[WebRTC] No local media — continuing call anyway");
@@ -179,58 +168,47 @@ export class WebRTCController {
       voiceOnly: audioOnly,
     });
 
-    if (this.makingOffer) {
-      console.warn("[WebRTC] _startCallInternal: already making offer, skipping");
-      return;
+    this.makingOffer = true;
+    let offer = await pc.createOffer();
+    this.makingOffer = false;
+
+    if (offer.sdp) {
+      offer.sdp = offer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
     }
 
-    try {
-      this.makingOffer = true;
-      let offer = await pc.createOffer();
-      this.makingOffer = false;
+    await pc.setLocalDescription(offer);
 
-      if (offer.sdp) {
-        offer.sdp = offer.sdp.replace(
-          /(m=video .*?)(96 97 98)/,
-          (match, prefix, list) => `${prefix}98 96 97`
-        );
+    const videoSender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
+
+    if (videoSender) {
+      const params = videoSender.getParameters();
+      params.encodings = [
+        {
+          maxBitrate: 1_500_000,
+          minBitrate: 300_000,
+          maxFramerate: 30,
+        },
+      ];
+      try {
+        await videoSender.setParameters(params);
+      } catch (err) {
+        console.warn("[WebRTC] setParameters failed", err);
       }
-
-      await pc.setLocalDescription(offer);
-
-      const videoSender = pc
-        .getSenders()
-        .find((s) => s.track && s.track.kind === "video");
-
-      if (videoSender) {
-        const params = videoSender.getParameters();
-        params.encodings = [
-          {
-            maxBitrate: 1_500_000,
-            minBitrate: 300_000,
-            maxFramerate: 30,
-          },
-        ];
-        try {
-          await videoSender.setParameters(params);
-        } catch (err) {
-          console.warn("[WebRTC] setParameters failed", err);
-        }
-      }
-
-      this.socket.emit("webrtc:signal", {
-        type: "offer",
-        to: peerId,
-        from: myId,
-        offer,
-        audioOnly: !!audioOnly,
-        fromName: getMyFullname(),
-      });
-    } catch (err) {
-      this.makingOffer = false;
-      console.warn("[WebRTC] _startCallInternal offer failed:", err);
-      this.onCallFailed?.("offer failed");
     }
+
+    this.socket.emit("webrtc:signal", {
+      type: "offer",
+      to: peerId,
+      from: myId,
+      offer,
+      audioOnly: !!audioOnly,
+      fromName: getMyFullname(),
+    });
   }
 
   /* ---------------------------------------------------
@@ -243,7 +221,7 @@ export class WebRTCController {
   }
 
   /* ---------------------------------------------------
-     Incoming Offer (polite peer + glare-safe)
+     Incoming Offer (polite peer + mesh‑ready)
   --------------------------------------------------- */
   async handleOffer(data) {
     const { from, offer, fromName, audioOnly, fromUser, renegotiate } = data || {};
@@ -278,54 +256,44 @@ export class WebRTCController {
       return;
     }
 
-    try {
-      if (offerCollision && this.isPolite) {
-        console.log("[WebRTC] Glare detected (polite side) — rolling back");
-        await pc.setLocalDescription({ type: "rollback" });
-      }
+    if (offer.sdp) {
+      offer.sdp = offer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
+    }
 
-      if (offer.sdp) {
-        offer.sdp = offer.sdp.replace(
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    await this._flushPendingRemoteCandidates(from, pc);
+
+    if (renegotiate) {
+      console.log("[WebRTC] Renegotiation offer handled");
+      const answer = await pc.createAnswer();
+      if (answer.sdp) {
+        answer.sdp = answer.sdp.replace(
           /(m=video .*?)(96 97 98)/,
           (match, prefix, list) => `${prefix}98 96 97`
         );
       }
+      await pc.setLocalDescription(answer);
 
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      await this._flushPendingRemoteCandidates(from, pc);
-
-      if (renegotiate) {
-        console.log("[WebRTC] Renegotiation offer handled");
-        let answer = await pc.createAnswer();
-        if (answer.sdp) {
-          answer.sdp = answer.sdp.replace(
-            /(m=video .*?)(96 97 98)/,
-            (match, prefix, list) => `${prefix}98 96 97`
-          );
-        }
-        await pc.setLocalDescription(answer);
-
-        this.socket.emit("webrtc:signal", {
-          type: "answer",
-          to: from,
-          from: getMyUserId(),
-          answer,
-          renegotiate: true,
-        });
-
-        return;
-      }
-
-      stopAllTones();
-
-      this.onIncomingCall?.({
-        fromName: rtcState.peerName,
-        audioOnly: rtcState.audioOnly,
+      this.socket.emit("webrtc:signal", {
+        type: "answer",
+        to: from,
+        from: getMyUserId(),
+        answer,
+        renegotiate: true,
       });
-    } catch (err) {
-      console.warn("[WebRTC] handleOffer failed:", err);
-      this.onCallFailed?.("offer handling failed");
+
+      return;
     }
+
+    stopAllTones();
+
+    this.onIncomingCall?.({
+      fromName: rtcState.peerName,
+      audioOnly: rtcState.audioOnly,
+    });
   }
 
   /* ---------------------------------------------------
@@ -350,78 +318,73 @@ export class WebRTCController {
 
     const pc = await this._getOrCreatePC(from, { relayOnly: false });
 
-    try {
-      if (offer.sdp) {
-        offer.sdp = offer.sdp.replace(
-          /(m=video .*?)(96 97 98)/,
-          (match, prefix, list) => `${prefix}98 96 97`
-        );
-      }
-
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      await this._flushPendingRemoteCandidates(from, pc);
-
-      let stream = null;
-      try {
-        stream = await getLocalMedia(true, !rtcState.audioOnly);
-      } catch (err) {
-        console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
-      }
-
-      this.localStream = stream;
-      rtcState.localStream = stream;
-
-      this.onLocalStream?.(stream || null);
-
-      if (stream) {
-        stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-      }
-
-      let answer = await pc.createAnswer();
-
-      if (answer.sdp) {
-        answer.sdp = answer.sdp.replace(
-          /(m=video .*?)(96 97 98)/,
-          (match, prefix, list) => `${prefix}98 96 97`
-        );
-      }
-
-      await pc.setLocalDescription(answer);
-
-      const videoSender = pc
-        .getSenders()
-        .find((s) => s.track && s.track.kind === "video");
-
-      if (videoSender) {
-        const params = videoSender.getParameters();
-        params.encodings = [
-          {
-            maxBitrate: 1_500_000,
-            minBitrate: 300_000,
-            maxFramerate: 30,
-          },
-        ];
-        try {
-          await videoSender.setParameters(params);
-        } catch (err) {
-          console.warn("[WebRTC] setParameters failed", err);
-        }
-      }
-
-      this.socket.emit("webrtc:signal", {
-        type: "answer",
-        to: from,
-        from: getMyUserId(),
-        answer,
-      });
-
-      rtcState.incomingOffer = null;
-
-      this.onCallStarted?.();
-    } catch (err) {
-      console.warn("[WebRTC] answerIncomingCall failed:", err);
-      this.onCallFailed?.("answer failed");
+    if (offer.sdp) {
+      offer.sdp = offer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
     }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    await this._flushPendingRemoteCandidates(from, pc);
+
+    let stream = null;
+    try {
+      stream = await getLocalMedia(true, !rtcState.audioOnly);
+    } catch (err) {
+      console.warn("[WebRTCMedia] getLocalMedia failed in answerIncomingCall:", err);
+    }
+
+    this.localStream = stream;
+    rtcState.localStream = stream;
+
+    this.onLocalStream?.(stream || null);
+
+    if (stream) {
+      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    }
+
+    let answer = await pc.createAnswer();
+
+    if (answer.sdp) {
+      answer.sdp = answer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
+    }
+
+    await pc.setLocalDescription(answer);
+
+    const videoSender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
+
+    if (videoSender) {
+      const params = videoSender.getParameters();
+      params.encodings = [
+        {
+          maxBitrate: 1_500_000,
+          minBitrate: 300_000,
+          maxFramerate: 30,
+        },
+      ];
+      try {
+        await videoSender.setParameters(params);
+      } catch (err) {
+        console.warn("[WebRTC] setParameters failed", err);
+      }
+    }
+
+    this.socket.emit("webrtc:signal", {
+      type: "answer",
+      to: from,
+      from: getMyUserId(),
+      answer,
+    });
+
+    rtcState.incomingOffer = null;
+
+    this.onCallStarted?.();
   }
 
   /* ---------------------------------------------------
@@ -473,30 +436,25 @@ export class WebRTCController {
     rtcState.answering = true;
     setTimeout(() => (rtcState.answering = false), 800);
 
-    try {
-      if (data.answer.sdp) {
-        data.answer.sdp = data.answer.sdp.replace(
-          /(m=video .*?)(96 97 98)/,
-          (match, prefix, list) => `${prefix}98 96 97`
-        );
-      }
-
-      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      await this._flushPendingRemoteCandidates(from, pc);
-
-      rtcState.inCall = true;
-      rtcState.busy = true;
-
-      if (this.socket) {
-        this.socket.emit("call:accept", { to: from });
-      }
-
-      stopAllTones();
-      this.onCallStarted?.();
-    } catch (err) {
-      console.warn("[WebRTC] handleAnswer failed:", err);
-      this.onCallFailed?.("answer handling failed");
+    if (data.answer.sdp) {
+      data.answer.sdp = data.answer.sdp.replace(
+        /(m=video .*?)(96 97 98)/,
+        (match, prefix, list) => `${prefix}98 96 97`
+      );
     }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    await this._flushPendingRemoteCandidates(from, pc);
+
+    rtcState.inCall = true;
+    rtcState.busy = true;
+
+    if (this.socket) {
+      this.socket.emit("call:accept", { to: from });
+    }
+
+    stopAllTones();
+    this.onCallStarted?.();
   }
 
   /* ---------------------------------------------------
@@ -519,9 +477,7 @@ export class WebRTCController {
 
     try {
       await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-    } catch (err) {
-      console.warn("[ICE] Error adding remote candidate:", err);
-    }
+    } catch {}
   }
 
   /* ---------------------------------------------------
@@ -866,16 +822,11 @@ export class WebRTCController {
     };
 
     /* ---------------------------------------------------
-       Renegotiation (glare-safe)
+       Renegotiation
     --------------------------------------------------- */
     pc.onnegotiationneeded = async () => {
       if (this.makingOffer) {
         console.warn("[WebRTC] Skipping renegotiation — already making offer");
-        return;
-      }
-
-      if (pc.signalingState !== "stable") {
-        console.warn("[WebRTC] Skipping renegotiation — signaling not stable:", pc.signalingState);
         return;
       }
 
@@ -1118,6 +1069,7 @@ export class WebRTCController {
     this.socket.on("call:voicemail", ({ from, reason }) => {
       console.log("[WebRTC] voicemail event", from, reason);
       stopAllTones();
+      // Normalize to the shape CallUI expects: { peerId, message }
       this.onVoicemailPrompt?.({
         peerId: from,
         message: reason,
@@ -1135,6 +1087,7 @@ export class WebRTCController {
     });
   }
 }
+
 
 
 
