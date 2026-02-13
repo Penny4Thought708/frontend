@@ -1,6 +1,7 @@
 // public/js/webrtc/WebRTCState.js
-// Production‑grade WebRTC state machine with explicit phases,
-// relay fallback tracking, ICE restart guards, and full teardown safety.
+// Production‑grade WebRTC state machine aligned with the upgraded
+// Controller, Media, and RemoteParticipants layers.
+// Clean, predictable, race‑safe, and future‑proof.
 
 export const rtcState = {
   /* ---------------------------------------------------
@@ -8,6 +9,7 @@ export const rtcState = {
   --------------------------------------------------- */
   peerId: null,
   peerName: null,
+  peerAvatar: null,
 
   /* ---------------------------------------------------
      Call Phases
@@ -21,13 +23,10 @@ export const rtcState = {
   --------------------------------------------------- */
   isCaller: false,
   audioOnly: false,
-  callEstablished: false,
-  mediaReady: false,
-
-  // Used by controller + voicemail logic
-  inCall: false,     // true only once call is connected
-  busy: false,       // true from ringing/connecting through active
-  voiceOnly: false,  // UI-level audio-only mode
+  voiceOnly: false,
+  inCall: false,
+  busy: false,
+  answering: false,
 
   /* ---------------------------------------------------
      Fallback + Recovery
@@ -45,9 +44,8 @@ export const rtcState = {
      Media
   --------------------------------------------------- */
   localStream: null,
-  remoteStream: null,
-  remoteTracks: new Map(),
-
+  remoteStreams: {},   // per‑peer remote streams (matches WebRTCMedia)
+  
   /* ---------------------------------------------------
      Timer
   --------------------------------------------------- */
@@ -57,14 +55,13 @@ export const rtcState = {
   /* ---------------------------------------------------
      Network Quality + Stats
   --------------------------------------------------- */
-  networkQuality: "unknown",   // "excellent" | "good" | "fair" | "poor" | "bad" | "unknown"
-  lastStats: null,             // raw snapshot from getStats
+  networkQuality: "unknown",
+  lastStats: null,
 
   /* ---------------------------------------------------
      Internal Guards
   --------------------------------------------------- */
   resetInProgress: false,
-  answering: false,   // blocks fallback during answer window
 
   /* ---------------------------------------------------
      Logging Helper
@@ -88,15 +85,17 @@ export const rtcState = {
   /* ---------------------------------------------------
      Peer Assignment
   --------------------------------------------------- */
-  setPeer(id, name = null) {
+  setPeer(id, name = null, avatar = null) {
     this.peerId = id ?? null;
     this.peerName = name ?? null;
+    this.peerAvatar = avatar ?? null;
 
     this.callId = crypto.randomUUID?.() || Date.now().toString();
 
     this.log("Peer set:", {
       id: this.peerId,
       name: this.peerName,
+      avatar: this.peerAvatar,
       callId: this.callId
     });
   },
@@ -124,11 +123,24 @@ export const rtcState = {
     });
   },
 
-  markCallEstablished() {
-    this.callEstablished = true;
+  /* ---------------------------------------------------
+     Enter Call (Controller calls this on call start)
+  --------------------------------------------------- */
+  enterCall() {
     this.inCall = true;
+    this.busy = true;
     this.setPhase("active");
     this.log("Call established");
+  },
+
+  /* ---------------------------------------------------
+     Leave Call (Controller calls this on call end)
+  --------------------------------------------------- */
+  leaveCall() {
+    this.inCall = false;
+    this.busy = false;
+    this.setPhase("ending");
+    this.log("Call ending");
   },
 
   /* ---------------------------------------------------
@@ -146,10 +158,7 @@ export const rtcState = {
     }
 
     this.localStream = null;
-    this.remoteStream = null;
-    this.remoteTracks.clear();
-    this.mediaReady = false;
-
+    this.remoteStreams = {};
     this.log("Media reset");
   },
 
@@ -175,11 +184,12 @@ export const rtcState = {
 
     this.isCaller = false;
     this.audioOnly = false;
-    this.callEstablished = false;
+    this.voiceOnly = false;
 
     this.incomingOffer = null;
     this.peerId = null;
     this.peerName = null;
+    this.peerAvatar = null;
 
     this.usedRelayFallback = false;
     this.pendingIceRestart = false;
@@ -188,7 +198,6 @@ export const rtcState = {
     this.answering = false;
     this.inCall = false;
     this.busy = false;
-    this.voiceOnly = false;
 
     this.log("Call state reset");
   },
@@ -208,6 +217,9 @@ export const rtcState = {
     this.resetMedia();
     this.resetTimer();
     this.resetCallState();
+
+    this.networkQuality = "unknown";
+    this.lastStats = null;
 
     this.resetInProgress = false;
   },
@@ -259,20 +271,19 @@ export const rtcState = {
       lastPhase: this.lastPhase,
       peerId: this.peerId,
       peerName: this.peerName,
+      peerAvatar: this.peerAvatar,
       callId: this.callId,
       isCaller: this.isCaller,
       audioOnly: this.audioOnly,
-      callEstablished: this.callEstablished,
+      voiceOnly: this.voiceOnly,
       incomingOffer: this.incomingOffer,
       usedRelayFallback: this.usedRelayFallback,
       pendingIceRestart: this.pendingIceRestart,
       answering: this.answering,
       inCall: this.inCall,
       busy: this.busy,
-      voiceOnly: this.voiceOnly,
       hasLocalStream: !!this.localStream,
-      hasRemoteStream: !!this.remoteStream,
-      remoteTrackCount: this.remoteTracks.size,
+      remoteStreamCount: Object.keys(this.remoteStreams).length,
       callTimerSeconds: this.callTimerSeconds,
       networkQuality: this.networkQuality,
       hasLastStats: !!this.lastStats
@@ -282,17 +293,4 @@ export const rtcState = {
     return snapshot;
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
 
