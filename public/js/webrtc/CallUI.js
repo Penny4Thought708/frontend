@@ -215,18 +215,25 @@ export function initCallUI(rtc) {
     document.body.classList.add("panel-open");
   }
 
-  function hideWindow() {
-    if (!win) return;
-    if (!win.classList.contains("is-open")) return;
+function hideWindow() {
+  if (!win) return;
+  if (!win.classList.contains("is-open")) return;
 
-    win.classList.remove("is-open");
-    win.setAttribute("aria-hidden", "true");
-
-    setTimeout(() => {
-      win.classList.add("hidden");
-      document.body.classList.remove("panel-open");
-    }, 260);
+  // Blur any focused control inside the window before hiding it
+  const active = document.activeElement;
+  if (active && win.contains(active)) {
+    active.blur();
   }
+
+  win.classList.remove("is-open");
+  win.setAttribute("aria-hidden", "true");
+
+  setTimeout(() => {
+    win.classList.add("hidden");
+    document.body.classList.remove("panel-open");
+  }, 260);
+}
+
 
   /* -------------------------------------------------------
      TOAST HELPERS
@@ -357,26 +364,27 @@ export function initCallUI(rtc) {
     };
   }
 
-  if (answerBtn) {
-    answerBtn.onclick = async () => {
-      disableCallButtons();
-      setStatus("Answering…");
+if (answerBtn) {
+  answerBtn.onclick = async () => {
+    disableCallButtons();
+    setStatus("Answering…");
 
-      // 1. Start opening the window
-      openWindowAnimated();
-      setMode("active");
+    // 1. Make the call window visible immediately
+    openWindowAnimated();
+    setMode("active");
 
-      // 2. Wait for the window to actually become visible
-      await new Promise(requestAnimationFrame);
-      await new Promise(requestAnimationFrame);
+    // 2. Wait for the window to fully render (2 frames)
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
 
-      // 3. Now answer the call
-      await rtc.answerIncomingCall?.();
+    // 3. Now answer the call (safe to request media)
+    await rtc.answerIncomingCall?.();
 
-      // 4. NOW remote media playback is allowed
-      resumeRemoteMediaPlayback();
-    };
-  }
+    // 4. Allow remote media to start playing
+    resumeRemoteMediaPlayback();
+  };
+}
+
 
   if (endBtn) {
     endBtn.onclick = () => {
@@ -448,6 +456,44 @@ export function initCallUI(rtc) {
       }
     });
   }
+if (voiceBtn) {
+  voiceBtn.onclick = async () => {
+    const peerId = getReceiver();
+    if (!peerId) return;
+
+    // 1. Open the call window BEFORE WebRTC starts
+    openWindowAnimated();
+    setMode("active");
+
+    // 2. Wait 2 frames so the window is fully visible
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    // 3. Start the call (safe to request media now)
+    rtc.startCall(peerId, true);
+
+    // 4. Allow remote media to play
+    resumeRemoteMediaPlayback();
+  };
+}
+
+if (videoBtn) {
+  videoBtn.onclick = async () => {
+    const peerId = getReceiver();
+    if (!peerId) return;
+
+    openWindowAnimated();
+    setMode("active");
+
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    rtc.startCall(peerId, false);
+
+    resumeRemoteMediaPlayback();
+  };
+}
+
 
   /* -------------------------------------------------------
      RTC EVENT WIRING
@@ -882,6 +928,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
