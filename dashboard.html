@@ -30,7 +30,6 @@
 <link rel="stylesheet" href="contacts.css">
 <link rel="stylesheet" href="messaging.css">
 <link rel="stylesheet" href="video.css">
-<script type="module" src="public/js/webrtc/RemoteParticipants.js"></script>
 
 
   <!-- ⭐ Load user identity FIRST -->
@@ -787,21 +786,24 @@ window.currentUserAvatar = user.avatar;
 
 </body>
 
-<script src="components.js" type="module"></script>
+<!-- Components (fix the custom element name inside this file) -->
+<script type="module" src="components.js"></script>
 
+<!-- Main app -->
 <script type="module" src="public/js/app.js?v=3"></script>
 
-
-<!-- Legacy scripts -->
+<!-- Legacy scripts (must load BEFORE WebRTC modules) -->
 <script src="buttons-functions.js?v=3"></script>
 <script src="SettingsStore.js?v=3"></script>
 <script src="DeviceManager.js?v=3"></script>
 <script src="SettingsController.js?v=3"></script>
 <script src="MediaPreview.js?v=3"></script>
-<!-- all your HTML here -->
 
+<!-- WebRTC modules (correct paths) -->
 <script type="module" src="public/js/webrtc/WebRTCController.js"></script>
 <script type="module" src="public/js/webrtc/CallUI.js"></script>
+<script type="module" src="public/js/webrtc/RemoteParticipants.js"></script>
+
 
 
 <script>
@@ -1647,6 +1649,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
