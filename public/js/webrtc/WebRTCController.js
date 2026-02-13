@@ -762,7 +762,7 @@ pc.ontrack = (event) => {
     rtc.remoteAudioEl.srcObject = stream;
   }
 };
-;
+
 
 
     /* ---------------------------------------------------
@@ -1124,6 +1124,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
