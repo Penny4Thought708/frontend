@@ -4,7 +4,12 @@
 // voice‑only optimization, and group‑aware layout.
 
 import { rtcState } from "./WebRTCState.js";
-
+// WebRTCMedia.js (or wherever this lives)
+import {
+  attachStream as attachParticipantStream,
+  setScreenShareMode,
+  clearScreenShareMode,
+} from "./RemoteParticipants.js";
 /* -------------------------------------------------------
    Shared AudioContext (Safari‑safe, mobile‑safe)
 ------------------------------------------------------- */
@@ -398,6 +403,8 @@ export async function flipLocalCamera(rtc) {
   }
 }
 
+
+
 /* -------------------------------------------------------
    Remote Track Handling (GROUP‑AWARE + voice‑only)
 ------------------------------------------------------- */
@@ -427,6 +434,7 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     remoteStream = new MediaStream();
     rtcState.remoteStreams[peerId] = remoteStream;
   }
+
   remoteStream.addTrack(evt.track);
 
   log("attachRemoteTrack:", {
@@ -436,16 +444,13 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     readyState: evt.track.readyState,
   });
 
-  // 🔊 ALWAYS wire audio, even if we don't have a tile yet
+  // 🔊 ALWAYS wire audio
   const remoteAudioEl = document.getElementById("remoteAudio");
   if (evt.track.kind === "audio" && remoteAudioEl) {
     log("Attaching remote AUDIO to #remoteAudio for peer:", peerId);
 
-    if (!remoteAudioEl.srcObject) {
-      remoteAudioEl.srcObject = new MediaStream();
-    }
-    remoteAudioEl.srcObject.addTrack(evt.track);
-
+    // Use the SAME remoteStream we’re tracking
+    remoteAudioEl.srcObject = remoteStream;
     remoteAudioEl.playsInline = true;
     remoteAudioEl.muted = false;
     remoteAudioEl.volume = 1;
@@ -455,19 +460,21 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     );
   }
 
-  const participantEl = getRemoteParticipant(peerId);
-  if (!participantEl) {
-    log("No participant element for peer:", peerId);
+  // 🔁 Hand stream to tile manager (it will bind <video>)
+  const entry = attachParticipantStream(peerId, remoteStream);
+  if (!entry || !entry.el) {
+    log("No participant entry for peer:", peerId);
     return;
   }
 
-  const videoEl       = participantEl.querySelector("video");
-  const avatarWrapper = participantEl.querySelector(".avatar-wrapper");
+  const participantEl = entry.el;
+  const videoEl       = entry.videoEl;
+  const avatarWrapper = entry.avatarEl;
 
   const showAvatar = (show) => {
-    if (avatarWrapper) avatarWrapper.style.display = show ? "flex" : "none";
-    if (videoEl && !rtcState.voiceOnly && !rtcState.audioOnly) {
-      videoEl.style.display = show ? "none" : "block";
+    if (avatarWrapper) avatarWrapper.classList.toggle("hidden", !show);
+    if (videoEl) {
+      videoEl.classList.toggle("show", !show);
     }
   };
 
@@ -478,58 +485,31 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 
     if (evt.track.label && evt.track.label.toLowerCase().includes("screen")) {
       log("Screen share track ended — exiting stage mode");
-      exitScreenShareMode();
-      hideLocalPip();
+      clearScreenShareMode();
     }
   };
 
   const isScreenShare =
     evt.track.kind === "video" &&
     evt.track.label &&
-    evt.track.label.toLowerCase().includes("screen");
+    /screen|window|application/i.test(evt.track.label);
 
   if (isScreenShare) {
     log("Detected SCREEN SHARE track — promoting to stage:", peerId);
-    enterScreenShareMode(peerId);
-
-    if (peerId === rtcState.peerId) {
-      showLocalPip();
-    }
+    setScreenShareMode(peerId);
   } else {
     const someoneSharing = Object.values(rtcState.remoteStreams).some((s) =>
       s.getVideoTracks().some(
-        (t) => t.label && t.label.toLowerCase().includes("screen")
+        (t) => t.label && /screen|window|application/i.test(t.label)
       )
     );
 
     if (!someoneSharing) {
-      exitScreenShareMode();
-      hideLocalPip();
+      clearScreenShareMode();
     }
   }
 
-  if (evt.track.kind === "video" && videoEl) {
-    log("Attaching remote VIDEO to participant:", peerId);
-
-    videoEl.srcObject = remoteStream;
-    videoEl.playsInline = true;
-    videoEl.muted = true; // keep muted for autoplay
-
-    videoEl.style.display = "block";
-    videoEl.style.opacity = "1";
-    videoEl.classList.add("show");
-
-    videoEl.play()
-      .then(() => {
-        showAvatar(false);
-        participantEl.classList.add("video-active");
-      })
-      .catch((err) => {
-        log("Remote video play blocked or failed:", err?.name || err);
-      });
-  }
-
-  // 🔊 Start speaking detection + visualizer only if we have a tile
+  // 🔊 Start speaking detection + visualizer
   if (evt.track.kind === "audio" && remoteAudioEl) {
     startRemoteSpeakingDetection(remoteStream, participantEl);
     attachAudioVisualizer(remoteStream, participantEl);
@@ -711,6 +691,7 @@ export function setActiveSpeaker(peerId) {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
