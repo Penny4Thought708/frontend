@@ -1,16 +1,11 @@
 // public/js/webrtc/RemoteParticipants.js
-// PURE TILE MANAGER — no media logic, no track logic, no stage logic.
-// CallUI handles window + screen share UI.
-// WebRTCMedia handles media streams.
-// Controller routes events.
-// This file ONLY manages participant tiles and tile state.
+// PURE TILE MANAGER — no layout logic, no screen-share logic, no active-speaker logic.
+// CallUI.js now owns ALL layout classes and UI behavior.
+// This file ONLY manages participant tiles, media binding, and basic state.
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
 let localTileEl = null;
-
-let screenShareActive = false;
-let screenSharePeer = null;
 
 /* -------------------------------------------------------
    Initialization
@@ -98,11 +93,6 @@ export function removeParticipant(peerId) {
   setTimeout(() => entry.el.remove(), 220);
 
   participants.delete(peerId);
-
-  // If the sharer leaves, exit screen-share mode
-  if (screenShareActive && screenSharePeer === peerId) {
-    clearScreenShareMode();
-  }
 }
 
 /* -------------------------------------------------------
@@ -119,20 +109,16 @@ export function attachStream(peerId, stream) {
     entry.videoEl.playsInline = true;
     entry.videoEl.muted = true;
 
-    entry.videoEl.classList.add("show");
-    entry.avatarEl?.classList.add("hidden");
-
     entry.videoEl.onloadedmetadata = () => {
       entry.videoEl.play().catch(() => {});
     };
   }
 
-  return entry; // 🔥 THIS LINE IS THE KEY
+  return entry;
 }
 
-
 /* -------------------------------------------------------
-   Camera Off / On
+   Camera Off / On (CallUI handles layout classes)
 ------------------------------------------------------- */
 export function setParticipantCameraOff(peerId, off) {
   const entry = participants.get(peerId);
@@ -140,6 +126,7 @@ export function setParticipantCameraOff(peerId, off) {
 
   entry.cameraOff = off;
 
+  // CallUI.js handles .voice-only class
   if (off) {
     entry.videoEl?.classList.remove("show");
     entry.avatarEl?.classList.remove("hidden");
@@ -150,7 +137,7 @@ export function setParticipantCameraOff(peerId, off) {
 }
 
 /* -------------------------------------------------------
-   Speaking Indicator
+   Speaking Indicator (CallUI handles active-speaker layout)
 ------------------------------------------------------- */
 export function setParticipantSpeaking(peerId, active, level = 1) {
   const entry = participants.get(peerId);
@@ -158,31 +145,11 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
 
   entry.speaking = active;
 
+  // CSS handles glow animation
   entry.el.classList.toggle("speaking", !!active);
+
+  // Audio level for CSS animations
   entry.el.style.setProperty("--audio-level", active ? String(level) : "0");
-
-  // If screen-share mode is active, do NOT auto-switch stage
-  if (screenShareActive) return;
-
-  // Otherwise, active speaker highlight
-  if (active) {
-    setActiveSpeaker(peerId);
-  }
-}
-
-/* -------------------------------------------------------
-   Active Speaker Highlight
-------------------------------------------------------- */
-export function setActiveSpeaker(peerId) {
-  if (screenShareActive) return; // stage mode overrides this
-
-  for (const [id, entry] of participants.entries()) {
-    entry.el.classList.toggle("active-speaker", id === peerId);
-  }
-
-  if (localTileEl) {
-    localTileEl.classList.toggle("active-speaker", peerId === "local");
-  }
 }
 
 /* -------------------------------------------------------
@@ -206,51 +173,6 @@ export function setParticipantAvatar(peerId, url) {
 }
 
 /* -------------------------------------------------------
-   SCREEN SHARE MODE
-------------------------------------------------------- */
-export function setScreenShareMode(peerId) {
-  if (!gridEl) return;
-
-  screenShareActive = true;
-  screenSharePeer = peerId;
-
-  gridEl.classList.add("screen-share-mode");
-
-  for (const [id, entry] of participants.entries()) {
-    const isSharer = id === peerId;
-
-    entry.el.classList.toggle("screen-share-stage", isSharer);
-    entry.el.classList.toggle("screen-share-thumb", !isSharer);
-  }
-
-  if (localTileEl) {
-    const isLocalSharer = peerId === "local";
-    localTileEl.classList.toggle("screen-share-stage", isLocalSharer);
-    localTileEl.classList.toggle("screen-share-thumb", !isLocalSharer);
-  }
-}
-
-/* -------------------------------------------------------
-   EXIT SCREEN SHARE MODE
-------------------------------------------------------- */
-export function clearScreenShareMode() {
-  if (!gridEl) return;
-
-  screenShareActive = false;
-  screenSharePeer = null;
-
-  gridEl.classList.remove("screen-share-mode");
-
-  for (const [, entry] of participants.entries()) {
-    entry.el.classList.remove("screen-share-stage", "screen-share-thumb");
-  }
-
-  if (localTileEl) {
-    localTileEl.classList.remove("screen-share-stage", "screen-share-thumb");
-  }
-}
-
-/* -------------------------------------------------------
    Clear All Participants (on call end)
 ------------------------------------------------------- */
 export function clearAllParticipants() {
@@ -259,12 +181,11 @@ export function clearAllParticipants() {
   }
   participants.clear();
 
-  clearScreenShareMode();
-
   if (localTileEl) {
     localTileEl.classList.remove("active-speaker");
-    localTileEl.classList.remove("hidden");
+    localTileEl.classList.remove("voice-only");
   }
 }
+
 
 
