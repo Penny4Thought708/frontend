@@ -594,6 +594,47 @@ body.light-mode {
 #record-call.active {
   background: rgba(77, 163, 255, 0.16);
 }
+/* ============================================================
+   VOICE-ONLY MODE (Unified)
+============================================================ */
+
+/* When a participant is voice-only */
+.participant.voice-only .media-wrapper video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.participant.voice-only .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.participant.voice-only {
+  background: var(--bg-2);
+}
+
+/* Keep speaking glow visible even without video */
+.participant.voice-only.speaking {
+  box-shadow: 0 0 12px 3px rgba(0,200,255,0.75);
+  border-color: rgba(0,200,255,0.9);
+}
+
+/* Voice-only in stage mode (screen share) */
+.participant.voice-only.stage {
+  background: var(--bg-2);
+}
+
+/* Voice-only in filmstrip */
+.participant.voice-only.filmstrip {
+  background: var(--bg-2);
+}
+
+/* Voice-only in mobile swipe mode */
+@media (max-width: 900px) {
+  .participant.voice-only {
+    background: var(--bg-2);
+  }
+}
 
 /* ============================================================
    INFO BAR
