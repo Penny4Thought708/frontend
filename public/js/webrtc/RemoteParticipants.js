@@ -110,7 +110,7 @@ export function removeParticipant(peerId) {
 ------------------------------------------------------- */
 export function attachStream(peerId, stream) {
   const entry = participants.get(peerId) || createTile(peerId);
-  if (!entry) return;
+  if (!entry) return null;
 
   entry.stream = stream;
 
@@ -126,7 +126,10 @@ export function attachStream(peerId, stream) {
       entry.videoEl.play().catch(() => {});
     };
   }
+
+  return entry; // 🔥 THIS LINE IS THE KEY
 }
+
 
 /* -------------------------------------------------------
    Camera Off / On
