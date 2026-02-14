@@ -8,7 +8,10 @@
 // Layout is owned by CallUI.js. This file NEVER changes layout structure.
 
 import { rtcState } from "./WebRTCState.js";
-import { attachStream as attachParticipantStream } from "../public/js/webrtc/RemoteParticipants.js";
+import {
+  attachStream as attachParticipantStream,
+} from "./RemoteParticipants.js";
+
 
 
 /* -------------------------------------------------------
@@ -673,6 +676,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
