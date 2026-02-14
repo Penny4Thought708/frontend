@@ -104,15 +104,15 @@ export function initCallUI(rtc) {
     if (videoBtn) videoBtn.disabled = false;
   }
 
-  /* -------------------------------------------------------
-     MEDIA ELEMENT WIRING
-  ------------------------------------------------------- */
-  initRemoteParticipants();
+/* -------------------------------------------------------
+   MEDIA ELEMENT WIRING
+------------------------------------------------------- */
+initRemoteParticipants();
 
-  rtc.attachMediaElements?.({
-    localVideo,
-    remoteAudio,
-  });
+rtc.attachMediaElements({
+  localVideo,
+  remoteAudio,
+});
 
   /* -------------------------------------------------------
      AUTOPLAY RECOVERY (GLOBAL)
@@ -1082,6 +1082,7 @@ export function initCallUI(rtc) {
 
   console.log("[CallUI] Initialized");
 }
+
 
 
 
