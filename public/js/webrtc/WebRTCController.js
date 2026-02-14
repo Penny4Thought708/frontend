@@ -756,26 +756,15 @@ pc.ontrack = (event) => {
   console.log("[WebRTC] remoteAudio element =", this.remoteAudio);
   console.log("[WebRTC] stream tracks =", stream.getTracks().map(t => t.kind));
 
-  // 1. Attach remote VIDEO to a participant tile
   attachParticipantStream(id, stream);
 
-  // 2. Attach remote AUDIO to the audio element
   if (event.track.kind === "audio" && this.remoteAudio) {
     this.remoteAudio.srcObject = stream;
     this.remoteAudio.muted = false;
     this.remoteAudio.playsInline = true;
-
-    this.remoteAudio
-      .play()
-      .then(() => console.log("[WebRTC] remoteAudio playing"))
-      .catch((err) =>
-        console.warn("[WebRTC] remoteAudio play blocked:", err)
-      );
+    // ❌ no play() here – let CallUI trigger it on user gesture
   }
 };
-
-
-
 
     /* ---------------------------------------------------
        ICE State
@@ -1136,6 +1125,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
