@@ -564,26 +564,31 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 /* -------------------------------------------------------
    Helper: resume remote media after user gesture
 ------------------------------------------------------- */
-export function resumeRemoteMediaPlayback() {
+export function resumeRemoteMediaPlayback(retries = 10) {
   const remoteAudioEl = document.getElementById("remoteAudio");
 
-  if (remoteAudioEl && remoteAudioEl.srcObject) {
-    try {
-      remoteAudioEl.muted = false;        // critical
-      if (remoteAudioEl.volume === 0) {
-        remoteAudioEl.volume = 1;         // critical
-      }
-      remoteAudioEl.playsInline = true;
-
-      remoteAudioEl.play().catch((err) => {
-        console.warn("[resumeRemoteMediaPlayback] audio play blocked:", err);
-      });
-    } catch (err) {
-      console.warn("[resumeRemoteMediaPlayback] audio error:", err);
+  if (!remoteAudioEl) return;
+  if (!remoteAudioEl.srcObject) {
+    if (retries > 0) {
+      setTimeout(() => resumeRemoteMediaPlayback(retries - 1), 150);
     }
+    return;
   }
 
-  // Resume remote videos too
+  try {
+    remoteAudioEl.muted = false;
+    if (remoteAudioEl.volume === 0) remoteAudioEl.volume = 1;
+    remoteAudioEl.playsInline = true;
+
+    remoteAudioEl
+      .play()
+      .catch((err) =>
+        console.warn("[resumeRemoteMediaPlayback] audio play blocked:", err)
+      );
+  } catch (err) {
+    console.warn("[resumeRemoteMediaPlayback] audio error:", err);
+  }
+
   const grid = document.getElementById("callGrid");
   if (!grid) return;
 
@@ -594,6 +599,7 @@ export function resumeRemoteMediaPlayback() {
     }
   });
 }
+
 
 
 /* -------------------------------------------------------
@@ -663,6 +669,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
