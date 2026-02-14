@@ -754,14 +754,18 @@ pc.ontrack = (event) => {
 
   console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
 
-  // Attach remote VIDEO to UI
+  // 1. Attach remote VIDEO to a participant tile
   attachParticipantStream(id, stream);
 
-  // Attach remote AUDIO to the audio element
-  if (event.track.kind === "audio" && rtc.remoteAudioEl) {
-    rtc.remoteAudioEl.srcObject = stream;
+  // 2. Attach remote AUDIO to the audio element
+  if (event.track.kind === "audio" && this.remoteAudio) {
+    this.remoteAudio.srcObject = stream;
   }
+
+  // (Optional) still keep your internal track bookkeeping if you want:
+  // attachRemoteTrack(id, event);
 };
+
 
 
 
@@ -1124,6 +1128,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
