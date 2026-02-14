@@ -470,6 +470,7 @@ export async function flipLocalCamera(rtc) {
    Remote Track Handling
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerOrEvt, maybeEvt) {
+  console.log("[attachRemoteTrack] called with", { peerOrEvt, maybeEvt });
   let peerId;
   let evt;
 
@@ -669,6 +670,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
