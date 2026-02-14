@@ -27,7 +27,8 @@ import { initCallLogs } from "./call-log.js";
 
 // WebRTC
 import { WebRTCController } from "./webrtc/WebRTCController.js";
-import { initCallUI } from "./webrtc/CallUI.js";
+import { CallUI } from "./webrtc/CallUI.js";
+
 
 // Components
 import "../components/ContactsMenu.js";
@@ -899,8 +900,12 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  const rtc = new WebRTCController(socket);
-  initCallUI(rtc);
+  // ⭐ NEW: Create CallUI (this internally creates WebRTCController)
+  const callUI = new CallUI(socket);
+
+  // ⭐ Remove old:
+  // const rtc = new WebRTCController(socket);
+  // initCallUI(rtc);
 
   initCallLogs({ socket });
   loadMessageList();
@@ -925,7 +930,11 @@ socket.on("connect", async () => {
 
   initContentMenu();
   initDndFromContactsMenu();
+
+  // ⭐ OPTIONAL: expose callUI globally for debugging
+  window.callUI = callUI;
 });
+
 
 
 
