@@ -40,16 +40,17 @@ export async function getIceServers() {
       const others = [];
 
       for (const u of s.urls) {
-        if (
-          typeof u === "string" &&
-          u.startsWith("turn") &&
-          u.includes(":443") &&
-          u.includes("transport=tcp")
-        ) {
-          preferred.push(u);
-        } else {
-          others.push(u);
-        }
+      if (
+        typeof u === "string" &&
+        (u.startsWith("turn:") || u.startsWith("turns:")) &&
+        u.includes(":443") &&
+        u.includes("transport=tcp")
+      ) {
+        preferred.push(u);
+      } else {
+        others.push(u);
+      }
+
       }
 
       return { ...s, urls: [...preferred, ...others] };
@@ -75,6 +76,7 @@ export async function getIceServers() {
     return fallback;
   }
 }
+
 
 
 
