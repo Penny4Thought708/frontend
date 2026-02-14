@@ -122,7 +122,7 @@ function createTile(peerId, displayName, avatarUrl) {
 export function removeParticipant(peerId) {
   peerId = String(peerId);
   const entry = participants.get(peerId);
-  
+
   if (!entry) return;
 
   try {
@@ -209,6 +209,7 @@ export function attachStream(peerId, stream) {
    Camera Off / On
 ------------------------------------------------------- */
 export function setParticipantCameraOff(peerId, off) {
+  peerId = String(peerId);
   const entry = participants.get(peerId);
   if (!entry) return;
 
@@ -235,6 +236,7 @@ export function setParticipantCameraOff(peerId, off) {
    Speaking Indicator
 ------------------------------------------------------- */
 export function setParticipantSpeaking(peerId, active, level = 1) {
+  peerId = String(peerId);
   const entry = participants.get(peerId);
   if (!entry) return;
 
@@ -255,6 +257,7 @@ export function setParticipantSpeaking(peerId, active, level = 1) {
    Update Display Name
 ------------------------------------------------------- */
 export function setParticipantName(peerId, name) {
+  peerId = String(peerId);
   const entry = participants.get(peerId);
   if (!entry) return;
 
@@ -268,6 +271,7 @@ export function setParticipantName(peerId, name) {
    Update Avatar
 ------------------------------------------------------- */
 export function setParticipantAvatar(peerId, url) {
+  peerId = String(peerId);
   const entry = participants.get(peerId);
   if (!entry) return;
 
