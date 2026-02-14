@@ -754,7 +754,7 @@ export class WebRTCController {
     --------------------------------------------------- */
 
 pc.ontrack = (event) => {
-  const id = String(peerId || rtcState.peerId || "default");
+  const id = String(peerId);   // <- no rtcState, no "default"
   attachRemoteTrack(id, event);
 };
 
@@ -1119,6 +1119,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
