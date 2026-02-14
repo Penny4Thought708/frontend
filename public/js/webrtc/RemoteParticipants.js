@@ -62,7 +62,7 @@ function safeCloneTemplate(tplId) {
    Create Tile
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
-  peerId = String(peerId); // 🔥 normalize
+  peerId = String(peerId);
 
   ensureInitialized();
 
@@ -145,7 +145,7 @@ export function removeParticipant(peerId) {
    Core: attach a MediaStream to a participant tile
 ------------------------------------------------------- */
 export function attachParticipantStream(peerId, stream) {
-  peerId = String(peerId); // 🔥 normalize
+  peerId = String(peerId);
 
   if (!peerId && peerId !== 0) {
     console.warn("[RemoteParticipants] attachParticipantStream called without peerId");
@@ -300,3 +300,4 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
+
