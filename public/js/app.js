@@ -12,7 +12,13 @@ if (window.__APP_ALREADY_LOADED__) {
 /*-------------------------------------------------------*/
 // Imports
 // -------------------------------------------------------
-import { getMyUserId, getJson, postForm } from "./session.js";
+import {
+  getMyUserId,
+  getJson,
+  postForm,
+  getVoiceBtn,
+  getVideoBtn,
+} from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
 
@@ -25,10 +31,8 @@ import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
 // Call logs
 import { initCallLogs } from "./call-log.js";
 
-// WebRTC
-import { WebRTCController } from "./webrtc/WebRTCController.js";
+// WebRTC (CallUI internally creates WebRTCController)
 import { CallUI } from "./webrtc/CallUI.js";
-
 
 // Components
 import "../components/ContactsMenu.js";
@@ -360,7 +364,12 @@ function renderVoicemail(vm) {
   };
 
   li.querySelector(".call-back").onclick = () => {
-    socket.emit("call:start", { to: vm.from_id });
+    // Use WebRTC voice call instead of raw socket call:start
+    if (window.callUI) {
+      window.callUI.startVoiceCall(vm.from_id);
+    } else {
+      console.warn("[voicemail] callUI not ready, cannot start call-back");
+    }
   };
 
   li.querySelector(".delete-voicemail").onclick = async () => {
@@ -869,7 +878,6 @@ document.addEventListener("DOMContentLoaded", () => {
       img.src = url;
       img.alt = "GIF";
 
-      // shimmer removal
       img.onload = () => img.classList.add("loaded");
 
       img.addEventListener("click", () => {
@@ -900,12 +908,8 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  // ⭐ NEW: Create CallUI (this internally creates WebRTCController)
+  // Create CallUI (internally creates WebRTCController)
   const callUI = new CallUI(socket);
-
-  // ⭐ Remove old:
-  // const rtc = new WebRTCController(socket);
-  // initCallUI(rtc);
 
   initCallLogs({ socket });
   loadMessageList();
@@ -928,12 +932,33 @@ socket.on("connect", async () => {
     await loadMessages();
   };
 
-  initContentMenu();
-  initDndFromContactsMenu();
+  // Wire voice/video buttons in the messaging header
+  const voiceBtn = getVoiceBtn();
+  const videoBtn = getVideoBtn();
 
-  // ⭐ OPTIONAL: expose callUI globally for debugging
+  if (voiceBtn) {
+    voiceBtn.addEventListener("click", () => {
+      const peerId = window.currentChatUserId;
+      if (!peerId) return;
+      callUI.startVoiceCall(peerId);
+    });
+  }
+
+  if (videoBtn) {
+    videoBtn.addEventListener("click", () => {
+      const peerId = window.currentChatUserId;
+      if (!peerId) return;
+      callUI.startVideoCall(peerId);
+    });
+  }
+
+  initContentMenu();
+  initDndFromContactsMenu?.();
+
+  // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
