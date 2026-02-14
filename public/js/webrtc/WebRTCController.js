@@ -672,6 +672,8 @@ export class WebRTCController {
      Get or create PC
   --------------------------------------------------- */
   async _getOrCreatePC(peerId, { relayOnly = false } = {}) {
+  peerId = String(peerId);
+
     if (this.pcMap.has(peerId)) {
       return this.pcMap.get(peerId);
     }
@@ -695,6 +697,8 @@ export class WebRTCController {
      PeerConnection Factory
   --------------------------------------------------- */
   async _createPC(peerId, { relayOnly = false } = {}) {
+  peerId = String(peerId);
+
     this.networkMode = this.networkMode || "meet";
 
     const iceServers = await getIceServers({ relayOnly });
@@ -750,13 +754,10 @@ export class WebRTCController {
     --------------------------------------------------- */
 
 pc.ontrack = (event) => {
-  const id = peerId || rtcState.peerId || "default";
-  console.log(
-    "[PC.ontrack] fired",
-    { id, kind: event.track.kind, streams: event.streams.length }
-  );
+  const id = String(peerId || rtcState.peerId || "default");
   attachRemoteTrack(id, event);
 };
+
 
 
     /* ---------------------------------------------------
@@ -1118,6 +1119,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
