@@ -86,13 +86,17 @@ export class CallUI {
     this._startQualityMonitor();
   }
 
-  // -------------------------------------------------------
+ // -------------------------------------------------------
   // PUBLIC API
   // -------------------------------------------------------
   startVoiceCall(peerId) {
     log("startVoiceCall", peerId);
     rtcState.audioOnly = true;
     rtcState.peerId = String(peerId);
+
+    // 🔔 Tell backend a voice call is starting
+    this.socket.emit("call:start", { to: peerId, type: "voice" });
+
     this._openWindow();
     this._enterOutboundVoiceMode();
     this.rtc.startCall(peerId, { audio: true, video: false });
@@ -103,6 +107,10 @@ export class CallUI {
     log("startVideoCall", peerId);
     rtcState.audioOnly = false;
     rtcState.peerId = String(peerId);
+
+    // 🔔 Tell backend a video call is starting
+    this.socket.emit("call:start", { to: peerId, type: "video" });
+
     this._openWindow();
     this._enterOutboundVideoMode();
     this.rtc.startCall(peerId, { audio: true, video: true });
@@ -592,6 +600,7 @@ export class CallUI {
     // If you later wire stats → this.rtc.onQualityUpdate, UI is already ready.
   }
 }
+
 
 
 
