@@ -566,10 +566,24 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
 ------------------------------------------------------- */
 export function resumeRemoteMediaPlayback() {
   const remoteAudioEl = document.getElementById("remoteAudio");
+
   if (remoteAudioEl && remoteAudioEl.srcObject) {
-    remoteAudioEl.play().catch(() => {});
+    try {
+      remoteAudioEl.muted = false;        // critical
+      if (remoteAudioEl.volume === 0) {
+        remoteAudioEl.volume = 1;         // critical
+      }
+      remoteAudioEl.playsInline = true;
+
+      remoteAudioEl.play().catch((err) => {
+        console.warn("[resumeRemoteMediaPlayback] audio play blocked:", err);
+      });
+    } catch (err) {
+      console.warn("[resumeRemoteMediaPlayback] audio error:", err);
+    }
   }
 
+  // Resume remote videos too
   const grid = document.getElementById("callGrid");
   if (!grid) return;
 
@@ -580,6 +594,7 @@ export function resumeRemoteMediaPlayback() {
     }
   });
 }
+
 
 /* -------------------------------------------------------
    Cleanup on call end
@@ -648,6 +663,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
