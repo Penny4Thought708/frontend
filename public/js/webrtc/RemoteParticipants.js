@@ -62,7 +62,10 @@ function safeCloneTemplate(tplId) {
    Create Tile
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
+  peerId = String(peerId); // 🔥 normalize
+
   ensureInitialized();
+
   if (!gridEl) {
     console.warn("[RemoteParticipants] createTile aborted — no gridEl");
     return null;
@@ -117,7 +120,9 @@ function createTile(peerId, displayName, avatarUrl) {
    Remove Participant
 ------------------------------------------------------- */
 export function removeParticipant(peerId) {
+  peerId = String(peerId);
   const entry = participants.get(peerId);
+  
   if (!entry) return;
 
   try {
@@ -140,9 +145,12 @@ export function removeParticipant(peerId) {
    Core: attach a MediaStream to a participant tile
 ------------------------------------------------------- */
 export function attachParticipantStream(peerId, stream) {
+  peerId = String(peerId); // 🔥 normalize
+
   if (!peerId && peerId !== 0) {
     console.warn("[RemoteParticipants] attachParticipantStream called without peerId");
   }
+
   if (!stream) {
     console.warn("[RemoteParticipants] attachParticipantStream called with null stream for peer:", peerId);
   }
