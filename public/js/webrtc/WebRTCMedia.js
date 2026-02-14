@@ -1,305 +1,266 @@
-// public/js/webrtc/RemoteParticipants.js
-// PURE TILE MANAGER — no layout logic, no screen-share logic, no active-speaker layout.
-// CallUI.js owns ALL layout classes and UI behavior.
-// This file ONLY manages:
-//   - participant tiles
-//   - media binding
-//   - basic state (cameraOff, speaking, avatar/name)
+// public/js/webrtc/WebRTCMedia.js
+import { rtcState } from "./WebRTCState.js";
+import {
+  attachParticipantStream,
+  setParticipantSpeaking,
+} from "./RemoteParticipants.js";
 
-const participants = new Map(); // peerId -> entry
-let gridEl = null;
-let localTileEl = null;
-
-/* -------------------------------------------------------
-   Internal: ensure grid + local tile are wired
-------------------------------------------------------- */
-function ensureInitialized() {
-  if (!gridEl) {
-    gridEl = document.getElementById("callGrid");
-    if (!gridEl) {
-      console.warn("[RemoteParticipants] #callGrid not found");
-    }
-  }
-
-  if (!localTileEl) {
-    localTileEl = document.getElementById("localParticipant") || null;
-    if (localTileEl) {
-      localTileEl.dataset.peerId = "local";
-    }
-  }
+function log(...args) {
+  console.log("[WebRTCMedia]", ...args);
 }
 
-/* -------------------------------------------------------
-   Initialization (optional external call)
-------------------------------------------------------- */
-export function initRemoteParticipants() {
-  ensureInitialized();
-}
+const isMobile =
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
 
 /* -------------------------------------------------------
-   Register Local Tile
+   LOCAL MEDIA ACQUISITION
 ------------------------------------------------------- */
-export function registerLocalTile(el) {
-  localTileEl = el || null;
-  if (localTileEl) {
-    localTileEl.dataset.peerId = "local";
-  }
-}
+export async function getLocalMedia(wantAudio = true, wantVideo = true) {
+  rtcState.audioOnly = wantAudio && !wantVideo;
 
-/* -------------------------------------------------------
-   Internal: Safe Template Clone
-------------------------------------------------------- */
-function safeCloneTemplate(tplId) {
-  const tpl = document.getElementById(tplId);
-  if (!tpl || !tpl.content || !tpl.content.firstElementChild) {
-    console.warn(`[RemoteParticipants] Template #${tplId} missing or invalid`);
-    return null;
-  }
-  return tpl.content.firstElementChild.cloneNode(true);
-}
-
-/* -------------------------------------------------------
-   Create Tile
-------------------------------------------------------- */
-function createTile(peerId, displayName, avatarUrl) {
-  peerId = String(peerId);
-
-  ensureInitialized();
-
-  if (!gridEl) {
-    console.warn("[RemoteParticipants] createTile aborted — no gridEl");
-    return null;
-  }
-
-  if (peerId === undefined || peerId === null) {
-    console.warn("[RemoteParticipants] createTile called without peerId");
-    return null;
-  }
-
-  if (participants.has(peerId)) return participants.get(peerId);
-
-  const node = safeCloneTemplate("remoteParticipantTemplate");
-  if (!node) return null;
-
-  node.dataset.peerId = String(peerId);
-
-  const videoEl = node.querySelector("video");
-  const avatarEl = node.querySelector(".avatar-wrapper");
-  const imgEl = node.querySelector(".avatar-img");
-  const nameEl = node.querySelector(".name-tag");
-
-  if (nameEl && displayName) nameEl.textContent = displayName;
-  if (avatarUrl && imgEl) imgEl.src = avatarUrl;
-
-  node.classList.add("joining");
-  gridEl.appendChild(node);
-  requestAnimationFrame(() => {
-    node.classList.remove("joining");
-    node.classList.add("joined");
-  });
-
-  const entry = {
-    peerId,
-    el: node,
-    videoEl,
-    avatarEl,
-    imgEl,
-    nameEl,
-    displayName: displayName || "",
-    avatarUrl: avatarUrl || "",
-    stream: null,
-    cameraOff: false,
-    speaking: false,
+  const constraints = {
+    audio: wantAudio
+      ? { echoCancellation: true, noiseSuppression: true }
+      : false,
+    video: wantVideo
+      ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        }
+      : false,
   };
 
-  participants.set(peerId, entry);
-  return entry;
-}
-
-/* -------------------------------------------------------
-   Remove Participant
-------------------------------------------------------- */
-export function removeParticipant(peerId) {
-  peerId = String(peerId);
-  const entry = participants.get(peerId);
-
-  if (!entry) return;
-
   try {
-    entry.el.classList.add("leaving");
-    setTimeout(() => {
-      try {
-        entry.el.remove();
-      } catch {}
-    }, 220);
-  } catch {
-    try {
-      entry.el.remove();
-    } catch {}
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    log("Local media acquired:", stream);
+    return stream;
+  } catch (err) {
+    log("Local media error:", err);
   }
 
-  participants.delete(peerId);
+  if (wantAudio) {
+    try {
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+        video: false,
+      });
+      log("Audio-only fallback succeeded");
+      rtcState.audioOnly = true;
+      return audioStream;
+    } catch (err) {
+      log("Audio-only also failed:", err);
+    }
+  }
+
+  log("Falling back to fake MediaStream (avatar-only mode)");
+  const fakeStream = createFakeStream();
+  fakeStream._isFake = true;
+  rtcState.audioOnly = true;
+  return fakeStream;
 }
 
 /* -------------------------------------------------------
-   Core: attach a MediaStream to a participant tile
+   FAKE STREAM (NO DEVICES)
 ------------------------------------------------------- */
-export function attachParticipantStream(peerId, stream) {
+function createFakeStream() {
+  const audioCtx = new AudioContext();
+  const oscillator = audioCtx.createOscillator();
+  const dst = audioCtx.createMediaStreamDestination();
+  oscillator.connect(dst);
+  oscillator.start();
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 360;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const fakeVideoTrack = canvas.captureStream(1).getVideoTracks()[0];
+
+  const fakeAudioTrack = dst.stream.getAudioTracks()[0];
+
+  const stream = new MediaStream([fakeAudioTrack, fakeVideoTrack]);
+  return stream;
+}
+
+/* -------------------------------------------------------
+   ATTACH LOCAL STREAM TO DOM
+------------------------------------------------------- */
+export function attachLocalStream(stream) {
+  rtcState.localStream = stream;
+
+  const localVideo = document.getElementById("localVideo");
+  const pipVideo = document.getElementById("localPipVideo");
+
+  if (localVideo) {
+    localVideo.srcObject = stream;
+    localVideo.muted = true;
+    localVideo.play().catch(() => {});
+    if (rtcState.audioOnly) {
+      localVideo.classList.remove("show");
+    } else {
+      localVideo.classList.add("show");
+    }
+  }
+
+  if (pipVideo) {
+    pipVideo.srcObject = stream;
+    pipVideo.muted = true;
+    pipVideo.play().catch(() => {});
+    if (rtcState.audioOnly) {
+      pipVideo.classList.remove("show");
+    } else {
+      pipVideo.classList.add("show");
+    }
+  }
+}
+
+/* -------------------------------------------------------
+   REMOTE TRACK ROUTING (CALLED BY WebRTCController)
+------------------------------------------------------- */
+export function attachRemoteTrack(peerId, event) {
+  if (!event || !event.track) {
+    log("attachRemoteTrack called without track");
+    return;
+  }
+
   peerId = String(peerId);
 
-  if (!peerId && peerId !== 0) {
-    console.warn("[RemoteParticipants] attachParticipantStream called without peerId");
+  if (!rtcState.remoteStreams[peerId]) {
+    rtcState.remoteStreams[peerId] = new MediaStream();
   }
 
-  if (!stream) {
-    console.warn("[RemoteParticipants] attachParticipantStream called with null stream for peer:", peerId);
+  const stream = rtcState.remoteStreams[peerId];
+
+  if (!stream.getTracks().includes(event.track)) {
+    stream.addTrack(event.track);
   }
 
-  ensureInitialized();
+  log("attachRemoteTrack:", {
+    peerId,
+    kind: event.track.kind,
+    label: event.track.label,
+  });
 
-  const entry = participants.get(peerId) || createTile(peerId);
+  if (event.track.kind === "audio") {
+    const audioEl = document.getElementById("remoteAudio");
+    if (audioEl) {
+      audioEl.srcObject = stream;
+      audioEl.play().catch(() => {});
+    }
+  }
+
+  const entry = attachParticipantStream(peerId, stream);
   if (!entry) {
-    console.warn("[RemoteParticipants] attachParticipantStream: no entry for peer:", peerId);
+    log("No participant entry for peer:", peerId);
+    return;
+  }
+
+  const videoEl = entry.videoEl;
+  const avatarEl = entry.avatarEl;
+
+  if (event.track.kind === "video" && videoEl) {
+    videoEl.srcObject = stream;
+    videoEl.classList.add("show");
+    videoEl.play().catch(() => {});
+    if (avatarEl) avatarEl.classList.add("hidden");
+
+    // Inbound video preview behavior is handled by CallUI via CSS classes
+  }
+
+  if (event.track.kind === "audio") {
+    startSpeakingDetection(peerId, stream);
+  }
+}
+
+/* -------------------------------------------------------
+   SPEAKING DETECTION
+------------------------------------------------------- */
+function startSpeakingDetection(peerId, stream) {
+  try {
+    const audioCtx = new AudioContext();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+
+    const src = audioCtx.createMediaStreamSource(stream);
+    src.connect(analyser);
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+    function tick() {
+      analyser.getByteFrequencyData(data);
+      const volume = data.reduce((a, b) => a + b, 0) / data.length;
+
+      const speaking = volume > 28;
+      setParticipantSpeaking(peerId, speaking);
+
+      requestAnimationFrame(tick);
+    }
+    tick();
+  } catch (err) {
+    log("Speaking detection failed:", err);
+  }
+}
+
+/* -------------------------------------------------------
+   SCREEN SHARE
+------------------------------------------------------- */
+export async function startScreenShare() {
+  if (!navigator.mediaDevices.getDisplayMedia) {
+    log("Screen share not supported");
     return null;
   }
 
-  entry.stream = stream || null;
-
-  if (entry.videoEl && stream) {
-    try {
-      entry.videoEl.srcObject = stream;
-      entry.videoEl.playsInline = true;
-      entry.videoEl.muted = true;
-      entry.videoEl.classList.add("show");
-
-      const tryPlay = () => {
-        entry.videoEl
-          .play()
-          .catch((err) => {
-            console.warn(
-              "[RemoteParticipants] remote video play blocked:",
-              err?.name || err
-            );
-          });
-      };
-
-      if (entry.videoEl.readyState >= 2) {
-        tryPlay();
-      } else {
-        entry.videoEl.onloadedmetadata = () => {
-          tryPlay();
-        };
-      }
-    } catch (err) {
-      console.error("[RemoteParticipants] Failed to bind remote video:", err);
-    }
-  }
-
-  return entry;
-}
-
-/* -------------------------------------------------------
-   Backwards‑compat alias
-------------------------------------------------------- */
-export function attachStream(peerId, stream) {
-  return attachParticipantStream(peerId, stream);
-}
-
-/* -------------------------------------------------------
-   Camera Off / On
-------------------------------------------------------- */
-export function setParticipantCameraOff(peerId, off) {
-  peerId = String(peerId);
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  entry.cameraOff = !!off;
-
-  if (entry.videoEl) {
-    if (off) {
-      entry.videoEl.classList.remove("show");
-    } else {
-      entry.videoEl.classList.add("show");
-    }
-  }
-
-  if (entry.avatarEl) {
-    if (off) {
-      entry.avatarEl.classList.remove("hidden");
-    } else {
-      entry.avatarEl.classList.add("hidden");
-    }
-  }
-}
-
-/* -------------------------------------------------------
-   Speaking Indicator
-------------------------------------------------------- */
-export function setParticipantSpeaking(peerId, active, level = 1) {
-  peerId = String(peerId);
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  const isActive = !!active;
-  entry.speaking = isActive;
-
   try {
-    entry.el.classList.toggle("speaking", isActive);
-  } catch {}
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 15, max: 30 },
+      },
+      audio: false,
+    });
 
-  const safeLevel = isActive ? Number(level) || 1 : 0;
-  try {
-    entry.el.style.setProperty("--audio-level", String(safeLevel));
-  } catch {}
-}
-
-/* -------------------------------------------------------
-   Update Display Name
-------------------------------------------------------- */
-export function setParticipantName(peerId, name) {
-  peerId = String(peerId);
-  const entry = participants.get(peerId);
-  if (!entry) return;
-
-  if (entry.nameEl && typeof name === "string") {
-    entry.nameEl.textContent = name;
-    entry.displayName = name;
+    const track = stream.getVideoTracks()[0];
+    return { stream, track };
+  } catch (err) {
+    log("Screen share error:", err);
+    return null;
   }
 }
 
 /* -------------------------------------------------------
-   Update Avatar
+   UPGRADE TO VIDEO (LOCAL)
 ------------------------------------------------------- */
-export function setParticipantAvatar(peerId, url) {
-  peerId = String(peerId);
-  const entry = participants.get(peerId);
-  if (!entry) return;
+export async function upgradeLocalToVideo() {
+  const oldStream = rtcState.localStream;
 
-  if (entry.imgEl && typeof url === "string" && url.length > 0) {
-    entry.imgEl.src = url;
-    entry.avatarUrl = url;
+  const newStream = await getLocalMedia(true, true);
+  attachLocalStream(newStream);
+
+  if (oldStream) {
+    oldStream.getTracks().forEach((t) => t.stop());
   }
+
+  return newStream;
 }
 
 /* -------------------------------------------------------
-   Clear All Participants (on call end)
+   CLEANUP
 ------------------------------------------------------- */
-export function clearAllParticipants() {
-  for (const [, entry] of participants.entries()) {
-    try {
-      entry.el.remove();
-    } catch {}
+export function cleanupMedia() {
+  const stream = rtcState.localStream;
+  if (stream) {
+    stream.getTracks().forEach((t) => t.stop());
   }
-  participants.clear();
 
-  if (localTileEl) {
-    try {
-      localTileEl.classList.remove("active-speaker");
-      localTileEl.classList.remove("voice-only");
-      localTileEl.style.removeProperty("--audio-level");
-    } catch {}
-  }
+  rtcState.localStream = null;
+  rtcState.remoteStreams = {};
 }
+
 
 
 
