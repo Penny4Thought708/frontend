@@ -750,21 +750,40 @@ export class WebRTCController {
     --------------------------------------------------- */
 pc.ontrack = (event) => {
   const id = peerId || rtcState.peerId || "default";
-  const stream = event.streams[0];
+  const [stream] = event.streams || [];
 
-  console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
-
-  // 1. Attach remote VIDEO to a participant tile
-  attachParticipantStream(id, stream);
-
-  // 2. Attach remote AUDIO to the audio element
-  if (event.track.kind === "audio" && this.remoteAudio) {
-    this.remoteAudio.srcObject = stream;
+  if (!stream) {
+    console.warn("[WebRTC] ontrack with no stream", event);
+    return;
   }
 
-  // (Optional) still keep your internal track bookkeeping if you want:
+  const kind = event.track?.kind || "unknown";
+  console.log("[WebRTC] ontrack from", id, "kind:", kind);
+
+  // 1) VIDEO → participant tile
+  if (kind === "video") {
+    attachParticipantStream(id, stream);
+  }
+
+  // 2) AUDIO → remoteAudio element
+  if (kind === "audio" && this.remoteAudio) {
+    // Avoid thrashing srcObject if it's already set to this stream
+    if (this.remoteAudio.srcObject !== stream) {
+      this.remoteAudio.srcObject = stream;
+    }
+
+    const playPromise = this.remoteAudio.play();
+    if (playPromise && typeof playPromise.then === "function") {
+      playPromise.catch((err) => {
+        console.warn("[WebRTC] remoteAudio.play() blocked:", err?.name || err);
+      });
+    }
+  }
+
+  // If you still want your internal bookkeeping:
   // attachRemoteTrack(id, event);
 };
+
 
 
 
@@ -1128,6 +1147,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
