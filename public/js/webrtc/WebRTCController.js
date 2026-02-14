@@ -748,23 +748,14 @@ export class WebRTCController {
     /* ---------------------------------------------------
        Track Routing (single source of truth)
     --------------------------------------------------- */
+
+
 pc.ontrack = (event) => {
   const id = peerId || rtcState.peerId || "default";
-  const stream = event.streams[0];
-
   console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
-  console.log("[WebRTC] remoteAudio element =", this.remoteAudio);
-  console.log("[WebRTC] stream tracks =", stream.getTracks().map(t => t.kind));
-
-  attachParticipantStream(id, stream);
-
-  if (event.track.kind === "audio" && this.remoteAudio) {
-    this.remoteAudio.srcObject = stream;
-    this.remoteAudio.muted = false;
-    this.remoteAudio.playsInline = true;
-    // ❌ no play() here – let CallUI trigger it on user gesture
-  }
+  attachRemoteTrack(id, event);
 };
+
 
     /* ---------------------------------------------------
        ICE State
@@ -1125,6 +1116,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
