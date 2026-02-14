@@ -6,32 +6,29 @@ import {
   attachRemoteTrack,
   startScreenShare,
   cleanupMedia,
+  upgradeLocalToVideo,
 } from "./WebRTCMedia.js";
 
 function log(...args) {
   console.log("[WebRTC]", ...args);
 }
 
-/* -------------------------------------------------------
-   CONTROLLER CLASS
-------------------------------------------------------- */
 export class WebRTCController {
   constructor(socket) {
     this.socket = socket;
 
-    // peerId → RTCPeerConnection
     this.pcMap = new Map();
 
-    // screen share
     this.screenTrack = null;
     this.screenSender = null;
 
-    // event callbacks for UI
     this.onCallStarted = () => {};
     this.onCallEnded = () => {};
     this.onRemoteJoin = () => {};
     this.onRemoteLeave = () => {};
     this.onQualityUpdate = () => {};
+    this.onIncomingOffer = () => {};
+    this.onRemoteUpgradedToVideo = () => {};
 
     this._bindSocket();
   }
@@ -41,21 +38,18 @@ export class WebRTCController {
   ------------------------------------------------------- */
   _bindSocket() {
     this.socket.on("webrtc:signal", async (msg) => {
-      const { type, from, offer, answer, candidate } = msg;
+      const { type, from, offer, answer, candidate, isVideoUpgrade } = msg;
 
       switch (type) {
         case "offer":
-          await this._handleOffer(from, offer);
+          await this._handleOffer(from, offer, !!isVideoUpgrade);
           break;
-
         case "answer":
           await this._handleAnswer(from, answer);
           break;
-
         case "ice":
           await this._handleIce(from, candidate);
           break;
-
         case "leave":
           this._handleLeave(from);
           break;
@@ -76,7 +70,6 @@ export class WebRTCController {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
-        // You can add TURN here
       ],
     });
 
@@ -114,16 +107,15 @@ export class WebRTCController {
   /* -------------------------------------------------------
      START CALL (CALLER)
   ------------------------------------------------------- */
-  async startCall(peerId) {
+  async startCall(peerId, { audio = true, video = true } = {}) {
     rtcState.isCaller = true;
     rtcState.peerId = String(peerId);
+    rtcState.audioOnly = audio && !video;
 
-    const stream = await getLocalMedia(true, true);
+    const stream = await getLocalMedia(audio, video);
     attachLocalStream(stream);
 
     const pc = this._ensurePC(peerId);
-
-    // Add tracks
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     const offer = await pc.createOffer();
@@ -133,6 +125,7 @@ export class WebRTCController {
       type: "offer",
       to: peerId,
       offer,
+      isVideoUpgrade: false,
     });
 
     rtcState.inCall = true;
@@ -143,19 +136,53 @@ export class WebRTCController {
   /* -------------------------------------------------------
      HANDLE INCOMING OFFER (CALLEE)
   ------------------------------------------------------- */
-  async _handleOffer(peerId, offer) {
+  async _handleOffer(peerId, offer, isVideoUpgrade = false) {
     peerId = String(peerId);
     rtcState.peerId = peerId;
+    rtcState.incomingOffer = offer;
+    rtcState.incomingIsVideo = !rtcState.audioOnly || isVideoUpgrade;
+
+    if (!rtcState.localStream) {
+      const stream = await getLocalMedia(true, !rtcState.audioOnly);
+      attachLocalStream(stream);
+    }
+
+    const pc = this._ensurePC(peerId);
+    await pc.setRemoteDescription(offer);
+
+    if (isVideoUpgrade) {
+      this.onRemoteUpgradedToVideo(peerId);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      this.socket.emit("webrtc:signal", {
+        type: "answer",
+        to: peerId,
+        answer,
+      });
+
+      return;
+    }
+
+    this.onIncomingOffer(peerId, offer);
+  }
+
+  /* -------------------------------------------------------
+     ANSWER CALL
+  ------------------------------------------------------- */
+  async answerCall() {
+    const peerId = rtcState.peerId;
+    const offer = rtcState.incomingOffer;
+    if (!peerId || !offer) return;
 
     const pc = this._ensurePC(peerId);
 
-    if (!rtcState.localStream) {
-      const stream = await getLocalMedia(true, true);
-      attachLocalStream(stream);
+    await pc.setRemoteDescription(offer);
+
+    const stream = rtcState.localStream;
+    if (stream) {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     }
-
-    await pc.setRemoteDescription(offer);
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -200,14 +227,13 @@ export class WebRTCController {
   ------------------------------------------------------- */
   async startScreenShare() {
     const result = await startScreenShare();
-    if (!result) return;
+    if (!result) return null;
 
     const { stream, track } = result;
 
     const pc = this.pcMap.get(rtcState.peerId);
-    if (!pc) return;
+    if (!pc) return null;
 
-    // Replace outgoing video track
     const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
     if (sender) {
       await sender.replaceTrack(track);
@@ -215,7 +241,10 @@ export class WebRTCController {
       this.screenTrack = track;
 
       track.onended = () => this.stopScreenShare();
+      return true;
     }
+
+    return null;
   }
 
   async stopScreenShare() {
@@ -224,7 +253,6 @@ export class WebRTCController {
     const pc = this.pcMap.get(rtcState.peerId);
     if (!pc) return;
 
-    // Restore camera
     const camTrack = rtcState.localStream.getVideoTracks()[0];
     await this.screenSender.replaceTrack(camTrack);
 
@@ -234,10 +262,42 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
+     UPGRADE VOICE → VIDEO
+  ------------------------------------------------------- */
+  async upgradeToVideo() {
+    const peerId = rtcState.peerId;
+    if (!peerId) return;
+
+    const pc = this._ensurePC(peerId);
+
+    const newStream = await upgradeLocalToVideo();
+    newStream.getVideoTracks().forEach((track) => {
+      const sender = pc
+        .getSenders()
+        .find((s) => s.track && s.track.kind === "video");
+      if (sender) {
+        sender.replaceTrack(track);
+      } else {
+        pc.addTrack(track, newStream);
+      }
+    });
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    this.socket.emit("webrtc:signal", {
+      type: "offer",
+      to: peerId,
+      offer,
+      isVideoUpgrade: true,
+    });
+  }
+
+  /* -------------------------------------------------------
      END CALL
   ------------------------------------------------------- */
   endCall() {
-    for (const [peerId, pc] of this.pcMap.entries()) {
+    for (const [, pc] of this.pcMap.entries()) {
       pc.close();
     }
     this.pcMap.clear();
@@ -246,6 +306,8 @@ export class WebRTCController {
 
     rtcState.inCall = false;
     rtcState.peerId = null;
+    rtcState.incomingOffer = null;
+    rtcState.incomingIsVideo = false;
 
     this.onCallEnded();
   }
@@ -263,6 +325,8 @@ export class WebRTCController {
     this.onRemoteLeave(peerId);
   }
 }
+
+
 
 
 
