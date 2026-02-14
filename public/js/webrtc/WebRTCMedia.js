@@ -482,6 +482,10 @@ export function attachRemoteTrack(peerOrEvt, maybeEvt) {
     evt = peerOrEvt;
   }
 
+  // 🔥 Normalize here
+  peerId = String(peerId);
+
+
   if (!evt || !evt.track) {
     log("attachRemoteTrack called without track");
     return;
@@ -670,6 +674,7 @@ export function cleanupMedia() {
 export function refreshLocalAvatarVisibility() {
   updateLocalAvatarVisibility();
 }
+
 
 
 
