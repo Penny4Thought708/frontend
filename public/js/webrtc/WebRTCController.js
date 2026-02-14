@@ -749,10 +749,12 @@ export class WebRTCController {
        Track Routing (single source of truth)
     --------------------------------------------------- */
 
-
 pc.ontrack = (event) => {
   const id = peerId || rtcState.peerId || "default";
-  console.log("[WebRTC] ontrack from", id, "kind:", event.track.kind);
+  console.log(
+    "[PC.ontrack] fired",
+    { id, kind: event.track.kind, streams: event.streams.length }
+  );
   attachRemoteTrack(id, event);
 };
 
@@ -1116,6 +1118,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
