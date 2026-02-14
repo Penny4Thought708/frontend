@@ -1,8 +1,8 @@
 // public/js/webrtc/WebRTCMedia.js
 import { rtcState } from "./WebRTCState.js";
 import {
-  attachStream as attachParticipantStream,
-  setSpeaking,
+  attachParticipantStream,
+  setParticipantSpeaking,
 } from "./RemoteParticipants.js";
 
 function log(...args) {
@@ -16,7 +16,9 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   log("getLocalMedia requested with:", { wantAudio, wantVideo });
 
   const constraints = {
-    audio: wantAudio ? { echoCancellation: true, noiseSuppression: true } : false,
+    audio: wantAudio
+      ? { echoCancellation: true, noiseSuppression: true }
+      : false,
     video: wantVideo
       ? {
           width: { ideal: 1280 },
@@ -179,7 +181,7 @@ function startSpeakingDetection(peerId, stream) {
       const volume = data.reduce((a, b) => a + b, 0) / data.length;
 
       const speaking = volume > 28; // threshold
-      setSpeaking(peerId, speaking);
+      setParticipantSpeaking(peerId, speaking);
 
       requestAnimationFrame(tick);
     }
@@ -228,6 +230,8 @@ export function cleanupMedia() {
   rtcState.localStream = null;
   rtcState.remoteStreams = {};
 }
+
+
 
 
 
