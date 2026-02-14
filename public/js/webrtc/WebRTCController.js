@@ -15,7 +15,7 @@ import { addCallLogEntry } from "../call-log.js";
 import { getMyUserId, getMyFullname } from "../session.js";
 import { getIceServers } from "../ice.js";
 import { getReceiver } from "../messaging.js";
-import { attachParticipantStream } from "./RemoteParticipants.js";
+
 
 /* -------------------------------------------------------
    Helpers
@@ -1116,6 +1116,7 @@ pc.ontrack = (event) => {
     });
   }
 }
+
 
 
 
