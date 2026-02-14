@@ -910,6 +910,12 @@ socket.on("connect", async () => {
 
   // Create CallUI (internally creates WebRTCController)
   const callUI = new CallUI(socket);
+ 
+  // 🔔 Inbound call from backend → open call window
+  socket.on("call:start", ({ from, type }) => {
+    const isVideo = type === "video";
+    callUI.receiveInboundCall(from, isVideo);
+  });
 
   initCallLogs({ socket });
   loadMessageList();
@@ -958,6 +964,7 @@ socket.on("connect", async () => {
   // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
