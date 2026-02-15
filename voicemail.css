@@ -1,0 +1,149 @@
+/* ============================================================
+   VOICEMAIL LIST — NEON GLASS PREMIUM
+============================================================ */
+
+#voiceMList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Card */
+.vm-card {
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.25s ease;
+}
+
+/* Header */
+.vm-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vm-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  box-shadow: var(--accent-glow);
+}
+
+.vm-info {
+  flex: 1;
+}
+
+.vm-from {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vm-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vm-status.unread {
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Body */
+.vm-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vm-play-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.vm-play-btn:hover {
+  background: var(--glass-heavy);
+  box-shadow: var(--accent-glow);
+}
+
+.vm-waveform {
+  flex: 1;
+  height: 36px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.vm-waveform .bar {
+  width: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  opacity: 0.8;
+  animation: vmWave 1.2s ease infinite;
+}
+
+@keyframes vmWave {
+  0% { height: 20%; }
+  50% { height: 100%; }
+  100% { height: 20%; }
+}
+
+.vm-duration {
+  width: 40px;
+  text-align: right;
+  color: var(--text-muted);
+}
+
+/* Actions */
+.vm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.vm-actions button {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.vm-actions button:hover {
+  background: var(--glass-heavy);
+  box-shadow: var(--accent-glow);
+}
+
+/* Transcript */
+.vm-transcript {
+  padding: 10px 12px;
+  background: var(--glass);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+}
