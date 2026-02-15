@@ -207,6 +207,7 @@ body.light-mode {
 }
 
 .call-grid.participants-1 { grid-template-columns: 1fr; }
+
 .call-grid.participants-2 { grid-template-columns: 1fr 1fr; }
 
 .call-grid.participants-3,
@@ -229,6 +230,14 @@ body.light-mode {
 
 .call-grid.participants-many {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* Screen share layout */
+.call-grid.screen-share-mode {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  grid-template-rows: 1fr;
+  gap: 12px;
 }
 
 /* ============================================================
@@ -260,18 +269,92 @@ body.light-mode {
   opacity: 1;
 }
 
-/* Speaking */
+/* Speaking + active speaker */
 .participant.speaking {
   box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
 }
 
-/* Active speaker emphasis */
 .participant.active-speaker:not(.stage) {
   box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
   transform: scale(1.02);
   z-index: 3;
+}
+
+/* Screen share stage + filmstrip */
+.participant.stage {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  border-radius: var(--radius-lg);
+  animation: stageInDesktop 0.35s ease forwards;
+}
+
+.participant.filmstrip {
+  grid-column: 2;
+  width: 100%;
+  height: 160px;
+  opacity: 0.9;
+  transform: scale(0.92);
+  border-radius: var(--radius-md);
+  animation: filmstripInDesktop 0.35s ease forwards;
+}
+
+@keyframes stageInDesktop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes filmstripInDesktop {
+  0% { transform: translateY(10px) scale(0.92); opacity: 0; }
+  100% { transform: translateY(0) scale(0.92); opacity: 1; }
+}
+
+/* ============================================================
+   NAME TAG
+============================================================ */
+.name-tag {
+  position: absolute;
+  left: 16px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ============================================================
+   PRESENTING BADGE
+============================================================ */
+.presenting-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.participant.presenting .presenting-badge {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================================
@@ -300,6 +383,11 @@ body.light-mode {
   opacity: 1;
 }
 
+.media-wrapper video.hidden-soft {
+  opacity: 0;
+}
+
+/* Mirror ONLY local video */
 #localVideo,
 #localPipVideo {
   transform: scaleX(-1);
@@ -332,6 +420,11 @@ body.light-mode {
   box-shadow: var(--accent-glow);
 }
 
+.avatar-wrapper .avatar-img {
+  width: 64px;
+  height: 64px;
+}
+
 .avatar-wrapper.hidden {
   opacity: 0;
 }
@@ -356,573 +449,8 @@ body.light-mode {
 }
 
 /* ============================================================
-   LOCAL PIP — NEON GLASS
+   VOICE-ONLY MODE (PER-PARTICIPANT)
 ============================================================ */
-.local-pip {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 200px;
-  height: 120px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
-  overflow: hidden;
-  z-index: 999;
-  opacity: 1;
-  transform: scale(1);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
-  cursor: grab;
-}
-
-.local-pip.dragging {
-  cursor: grabbing;
-  transition: none;
-  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
-}
-
-.local-pip video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 1;
-  transition: opacity 0.25s ease;
-}
-
-.local-pip.hidden {
-  display: none !important;
-}
-
-/* ============================================================
-   REMOTE PIP — MIRRORS LOCAL PIP
-============================================================ */
-.remote-pip {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  width: 200px;
-  height: 120px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
-  overflow: hidden;
-  z-index: 999;
-  opacity: 1;
-  transform: scale(1);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
-  cursor: grab;
-}
-
-.remote-pip.dragging {
-  cursor: grabbing;
-  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
-}
-
-.remote-pip.hidden {
-  display: none !important;
-}
-
-/* ============================================================
-   CONTROL BAR — GLASSMORPHIC
-============================================================ */
-.call-controls {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: var(--gap-md);
-  padding: 12px 20px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
-  transition:
-    opacity var(--med),
-    transform var(--med);
-  z-index: 40;
-}
-
-.call-controls.hidden {
-  opacity: 0;
-  transform: translateX(-50%) translateY(10px);
-  pointer-events: none;
-}
-
-.call-controls.hidden-soft {
-  opacity: 0;
-  transform: translateX(-50%) translateY(14px);
-  pointer-events: none;
-}
-
-/* Buttons */
-.control-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: var(--glass);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text);
-  cursor: pointer;
-  transition:
-    background var(--fast),
-    transform var(--fast),
-    box-shadow var(--fast),
-    color var(--fast);
-}
-
-.control-btn:hover {
-  background: var(--glass-heavy);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-soft);
-}
-
-#end-call.control-btn,
-#decline-call.control-btn {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
-}
-
-#end-call.control-btn:hover,
-#decline-call.control-btn:hover {
-  box-shadow: var(--danger-glow);
-}
-
-/* Inbound vs active */
-.call-window.inbound-mode .active-only { display: none; }
-.call-window.active-mode .inbound-only { display: none; }
-
-/* More controls menu */
-.more-controls {
-  position: relative;
-}
-
-.more-controls-menu {
-  position: absolute;
-  bottom: 52px;
-  right: 0;
-  min-width: 190px;
-  background: var(--bg-3);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  padding: 6px 0;
-  z-index: 10;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(6px);
-  transition: opacity var(--fast), transform var(--fast);
-}
-
-.more-controls-menu button {
-  width: 100%;
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.more-controls-menu button:hover {
-  background: var(--glass);
-}
-
-.more-controls-menu.hidden {
-  display: none !important;
-}
-
-.more-controls-menu.show {
-  display: block;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-#ai-noise-toggle.active,
-#record-call.active {
-  background: rgba(77, 163, 255, 0.16);
-}
-/* ===========================
-   video.css — Part 2
-   (Call grid → end)
-=========================== */
-
-/* ============================================================
-   PARTICIPANT GRID — DESKTOP
-============================================================ */
-
-.call-grid {
-  position: relative;
-  padding: 16px;
-  padding-bottom: 96px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  grid-auto-rows: minmax(180px, 1fr);
-  gap: 14px;
-  transition: grid-template-columns 0.25s ease, grid-auto-rows 0.25s ease;
-}
-
-.call-grid.participants-1 {
-  grid-template-columns: 1fr;
-}
-
-.call-grid.participants-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.call-grid.participants-3,
-.call-grid.participants-4 {
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: minmax(200px, 1fr);
-}
-
-.call-grid.participants-5,
-.call-grid.participants-6 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.call-grid.participants-7,
-.call-grid.participants-8,
-.call-grid.participants-9 {
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-auto-rows: minmax(160px, 1fr);
-}
-
-.call-grid.participants-many {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-/* ============================================================
-   PARTICIPANT TILE — BASE
-============================================================ */
-
-.participant {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  isolation: isolate;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.25s ease,
-    opacity 0.25s ease;
-  z-index: 1;
-}
-
-.participant.local {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-}
-
-.participant.remote {
-  display: block;
-  opacity: 1;
-}
-
-/* Speaking + active speaker */
-
-.participant.speaking {
-  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
-
-.participant.active-speaker:not(.stage) {
-  box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-  transform: scale(1.02);
-  z-index: 3;
-}
-
-/* ============================================================
-   SCREEN SHARE — STAGE + FILMSTRIP
-============================================================ */
-
-.call-grid.screen-share-mode {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  grid-template-rows: 1fr;
-  gap: 12px;
-}
-
-.participant.stage {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  height: 100%;
-  z-index: 5;
-  border-radius: var(--radius-lg);
-  animation: stageInDesktop 0.35s ease forwards;
-}
-
-.participant.filmstrip {
-  grid-column: 2;
-  width: 100%;
-  height: 160px;
-  opacity: 0.9;
-  transform: scale(0.92);
-  border-radius: var(--radius-md);
-  animation: filmstripInDesktop 0.35s ease forwards;
-}
-
-@keyframes stageInDesktop {
-  0% {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes filmstripInDesktop {
-  0% {
-    transform: translateY(10px) scale(0.92);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0) scale(0.92);
-    opacity: 1;
-  }
-}
-
-/* ============================================================
-   NAME TAG
-============================================================ */
-
-.name-tag {
-    position: absolute;
-    left: 240px;
-    bottom: 10px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.6);
-    color: var(--text);
-    font-size: 12px;
-    font-weight: 500;
-    pointer-events: none;
-    z-index: 4;
-}
-
-/* ============================================================
-   PRESENTING BADGE
-============================================================ */
-
-.presenting-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #000;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.participant.presenting .presenting-badge {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ============================================================
-   MEDIA WRAPPER — VIDEO + AVATAR
-============================================================ */
-
-.media-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 160px;
-  background: #000;
-  overflow: hidden;
-}
-
-.media-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  background: #000;
-  display: block;
-}
-
-.media-wrapper video.show {
-  opacity: 1;
-}
-
-.media-wrapper video.hidden-soft {
-  opacity: 0;
-}
-
-/* Mirror ONLY local video */
-
-#localVideo,
-#localPipVideo {
-  transform: scaleX(-1);
-}
-
-.remoteVideo {
-  transform: none !important;
-}
-
-/* ============================================================
-   SCREEN SHARE — PIP COMPATIBILITY
-============================================================ */
-
-.call-window.screen-sharing .local-pip,
-.call-window.screen-sharing .remote-pip {
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-strong);
-  opacity: 1;
-}
-
-.call-window.screen-sharing .participant.stage video {
-  object-fit: contain !important;
-}
-
-/* ============================================================
-   MULTI-REMOTE SWAP — TILE HIGHLIGHT
-============================================================ */
-
-.participant.remote.swap-target {
-  outline: 3px solid var(--accent);
-  outline-offset: -3px;
-  box-shadow: 0 0 18px rgba(77, 163, 255, 0.45);
-}
-
-/* ============================================================
-   TOASTS + VOICEMAIL
-============================================================ */
-
-.toast.show {
-  display: block !important;
-  opacity: 1 !important;
-  animation: slideUp 0.25s ease forwards;
-}
-
-.toast.hide {
-  opacity: 0 !important;
-  animation: slideDown 0.25s ease forwards;
-}
-
-.voicemail-modal.show {
-  display: flex !important;
-  animation: popIn 0.25s ease forwards;
-}
-
-.voicemail-modal.hide {
-  animation: popOut 0.25s ease forwards;
-  opacity: 0;
-}
-
-/* ============================================================
-   ACTIVE SPEAKER — TILE + PIP
-============================================================ */
-
-.local-pip.speaking,
-.remote-pip.speaking {
-  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
-
-/* ============================================================
-   AVATAR WRAPPER
-============================================================ */
-
-.avatar-wrapper {
-position: absolute;
-    inset: 0;
-    display: flex;
-    margin-left: 45%;
-    align-self: center;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.25s ease;
-    z-index: 3;
-}
-
-.avatar-wrapper img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid var(--bg-2);
-  box-shadow: var(--accent-glow);
-}
-
-.avatar-wrapper .avatar-img {
-  width: 64px;
-  height: 64px;
-}
-
-.avatar-wrapper.hidden {
-  opacity: 0;
-}
-
-/* ============================================================
-   VOICE PULSE
-============================================================ */
-
-.voice-pulse {
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  border: 2px solid rgba(77, 163, 255, 0.6);
-  animation: voicePulse 1.4s infinite ease-out;
-  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
-  pointer-events: none;
-}
-
-@keyframes voicePulse {
-  0% {
-    transform: scale(0.7);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
-/* ============================================================
-   VOICE-ONLY MODE
-============================================================ */
-
 .participant.voice-only .media-wrapper video {
   display: none !important;
   opacity: 0 !important;
@@ -950,7 +478,6 @@ position: absolute;
 /* ============================================================
    LOCAL PIP — NEON GLASS
 ============================================================ */
-
 .local-pip {
   position: absolute;
   bottom: 20px;
@@ -1000,7 +527,6 @@ position: absolute;
 /* ============================================================
    REMOTE PIP — MIRRORS LOCAL PIP
 ============================================================ */
-
 .remote-pip {
   position: absolute;
   bottom: 20px;
@@ -1034,10 +560,16 @@ position: absolute;
   display: none !important;
 }
 
+/* Active speaker on PIP */
+.local-pip.speaking,
+.remote-pip.speaking {
+  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+}
+
 /* ============================================================
    MOBILE PIP
 ============================================================ */
-
 @media (max-width: 900px) {
   .local-pip,
   .remote-pip {
@@ -1067,7 +599,6 @@ position: absolute;
 /* ============================================================
    CONTROL BAR — GLASSMORPHIC + AUTO-HIDE
 ============================================================ */
-
 .call-controls {
   position: absolute;
   bottom: 24px;
@@ -1135,6 +666,7 @@ position: absolute;
   box-shadow: var(--danger-glow);
 }
 
+/* Inbound vs active */
 .call-window.inbound-mode .active-only {
   display: none;
 }
@@ -1144,7 +676,6 @@ position: absolute;
 }
 
 /* More controls */
-
 .more-controls {
   position: relative;
 }
@@ -1202,7 +733,6 @@ position: absolute;
 /* ============================================================
    INFO BAR
 ============================================================ */
-
 .call-info-bar {
   position: absolute;
   left: 16px;
@@ -1230,7 +760,6 @@ position: absolute;
 /* ============================================================
    VIDEO UPGRADE OVERLAY
 ============================================================ */
-
 .video-upgrade-overlay {
   position: absolute;
   inset: 0;
@@ -1250,7 +779,6 @@ position: absolute;
 }
 
 /* Mobile card */
-
 .video-upgrade-card {
   position: absolute;
   left: 50%;
@@ -1324,7 +852,6 @@ position: absolute;
 }
 
 /* Desktop overlay */
-
 .video-upgrade-desktop-overlay {
   position: absolute;
   inset: 0;
@@ -1365,7 +892,6 @@ position: absolute;
 }
 
 /* Mobile vs desktop visibility */
-
 .mobile-only {
   display: none;
 }
@@ -1384,7 +910,6 @@ position: absolute;
 }
 
 /* Grid blur during upgrade */
-
 .call-grid.desktop-video-preview {
   filter: blur(10px);
   opacity: 0.6;
@@ -1395,9 +920,32 @@ position: absolute;
 }
 
 /* ============================================================
+   TOASTS + VOICEMAIL
+============================================================ */
+.toast.show {
+  display: block !important;
+  opacity: 1 !important;
+  animation: slideUp 0.25s ease forwards;
+}
+
+.toast.hide {
+  opacity: 0 !important;
+  animation: slideDown 0.25s ease forwards;
+}
+
+.voicemail-modal.show {
+  display: flex !important;
+  animation: popIn 0.25s ease forwards;
+}
+
+.voicemail-modal.hide {
+  animation: popOut 0.25s ease forwards;
+  opacity: 0;
+}
+
+/* ============================================================
    MOBILE LAYOUT — GOOGLE MEET STYLE
 ============================================================ */
-
 @media (max-width: 900px) {
   .call-body {
     width: 100vw !important;
@@ -1426,218 +974,20 @@ position: absolute;
     width: 100%;
     height: 100%;
     scroll-snap-align: center;
-    border-radius: 0 !important;
-    border: none !important;
+    border-radius: 0;
   }
 
-  .participant.local {
-    position: relative !important;
-    z-index: 1 !important;
+  .call-controls {
+    bottom: 16px;
+  }
+
+  .call-info-bar {
+    left: 12px;
+    bottom: 12px;
   }
 
   .local-pip,
   .remote-pip {
-    width: 140px;
-    height: 90px;
-    bottom: 90px;
-    right: 16px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-strong);
-  }
-
-  .local-pip.dragging,
-  .remote-pip.dragging {
-    box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
-  }
-
-  .call-controls {
-    bottom: 20px;
-    background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(10px);
-    padding: 10px 16px;
-  }
-
-  .call-top-info {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 8px 14px;
-    z-index: 30;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent);
-  }
-
-  .name-tag {
-    top: 10px;
-    left: 10px;
-    bottom: auto;
-    background: rgba(0, 0, 0, 0.55);
-    padding: 3px 8px;
-    font-size: 12px;
-  }
-
-  .media-wrapper video.zoomable {
-    transform-origin: center center;
-    transition: transform 0.1s ease-out;
-  }
-
-  .participant.local.draggable {
-    touch-action: none;
-    transition: transform 0.15s ease-out;
-  }
-
-  .call-grid.screen-share-mode {
-    flex-direction: column;
-  }
-
-  .participant.stage {
-    flex: 1 0 auto;
-    width: 100%;
-    height: 100%;
-  }
-
-  .participant.filmstrip {
-    display: none !important;
-  }
-
-  .participant.active-speaker:not(.stage) {
-    box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
-    border-color: rgba(0, 200, 255, 0.9);
+    bottom: 96px;
   }
 }
-
-/* ============================================================
-   GLOBAL ANIMATIONS + UTILITIES
-============================================================ */
-
-@keyframes fadeIn {
-  0% { opacity: 0; transform: scale(0.96); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes fadeOut {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.96); }
-}
-
-@keyframes slideUp {
-  0% { opacity: 0; transform: translateY(12px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideDown {
-  0% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(12px); }
-}
-
-@keyframes popIn {
-  0% { transform: scale(0.85); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes popOut {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(0.85); opacity: 0; }
-}
-
-.hidden { display: none !important; }
-.opacity-0 { opacity: 0 !important; }
-.opacity-1 { opacity: 1 !important; }
-.no-pointer { pointer-events: none !important; }
-.pointer { pointer-events: auto !important; }
-.blur { filter: blur(10px); }
-.no-blur { filter: none !important; }
-.scale-0 { transform: scale(0) !important; }
-.scale-1 { transform: scale(1) !important; }
-
-.z-1 { z-index: 1; }
-.z-5 { z-index: 5; }
-.z-10 { z-index: 10; }
-.z-20 { z-index: 20; }
-.z-30 { z-index: 30; }
-.z-40 { z-index: 40; }
-.z-50 { z-index: 50; }
-.z-60 { z-index: 60; }
-.z-100 { z-index: 100; }
-.z-max { z-index: 999999; }
-
-.transition-fast { transition: all 0.15s ease; }
-.transition-med  { transition: all 0.25s ease; }
-.transition-slow { transition: all 0.4s ease; }
-
-.glass {
-  background: var(--glass);
-  backdrop-filter: blur(var(--blur));
-}
-
-.glass-heavy {
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy));
-}
-
-.accent-glow {
-  box-shadow: 0 0 14px rgba(0, 200, 255, 0.75);
-}
-
-.accent-glow-soft {
-  box-shadow: 0 0 10px rgba(0, 200, 255, 0.45);
-}
-
-.accent-border {
-  border-color: rgba(0, 200, 255, 0.9) !important;
-}
-
-/* Participant state helpers */
-
-.participant.camera-off video {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-.participant.camera-off .avatar-wrapper {
-  display: flex !important;
-  opacity: 1 !important;
-}
-
-.participant.speaking .name-tag {
-  background: rgba(0, 200, 255, 0.75);
-  color: #000;
-}
-
-/* Call window state helpers */
-
-.call-window.minimized {
-  transform: scale(0.85);
-  opacity: 0.75;
-  pointer-events: none;
-}
-
-.call-window.maximized {
-  transform: scale(1);
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Debug overlay */
-
-.debug-overlay {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  padding: 6px 10px;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  font-size: 12px;
-  border-radius: 6px;
-  z-index: 999999;
-  pointer-events: none;
-}
-
-/* Final cleanup: ensure video fit is consistent */
-
-.participant .media-wrapper video,
-.participant video {
-  object-fit: cover !important;
-  background: #000 !important;
-}
-
