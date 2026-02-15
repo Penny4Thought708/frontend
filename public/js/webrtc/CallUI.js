@@ -35,7 +35,7 @@ export class CallUI {
     this.callBody = this.videoContainer?.querySelector(".call-body") || null;
     this.callGrid = document.getElementById("callGrid");
 
-    // Local participant
+    // Local participant (grid tile – kept for future primary swap)
     this.localWrapper = document.getElementById("localParticipant");
     this.localVideo = document.getElementById("localVideo");
     this.localAvatarImg = document.getElementById("localAvatarImg");
@@ -49,7 +49,7 @@ export class CallUI {
     this.timerEl = document.getElementById("call-timer");
     this.qualityEl = document.getElementById("call-quality-indicator");
 
-    // Local PIP
+    // Local PiP
     this.localPip = document.getElementById("localPip");
     this.localPipVideo = document.getElementById("localPipVideo");
 
@@ -86,6 +86,12 @@ export class CallUI {
     // Layout state
     this._primaryIsRemote = true;
     this._dragState = null;
+
+    // Local grid tile should not be the default visible tile;
+    // remote should own the grid, local is PiP by default.
+    if (this.localWrapper) {
+      this.localWrapper.classList.add("hidden");
+    }
 
     this._bindButtons();
     this._bindControllerEvents();
@@ -185,10 +191,13 @@ export class CallUI {
 
     this.rtc.onRemoteJoin = () => {
       this._setStatus("Connected");
+      this._updateParticipantCount();
+      this._ensureRemoteIsPrimaryOnMobile();
     };
 
     this.rtc.onRemoteLeave = () => {
       this._setStatus("Remote left");
+      this._updateParticipantCount();
       this._resetUI();
     };
 
@@ -230,6 +239,7 @@ export class CallUI {
 
     // Camera toggle (upgrade or toggle)
     this.camBtn?.addEventListener("click", async () => {
+      // In voice-only mode, camera button should upgrade to video
       if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
         await this.upgradeToVideo();
         return;
@@ -241,6 +251,8 @@ export class CallUI {
       stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
       this.camBtn.classList.toggle("active", newEnabled);
 
+      // camera-off class should ONLY reflect camera toggle in video mode,
+      // not voice-only mode.
       if (!newEnabled) this.videoContainer?.classList.add("camera-off");
       else this.videoContainer?.classList.remove("camera-off");
     });
@@ -304,12 +316,12 @@ export class CallUI {
       this._enterActiveVoiceMode();
     });
 
-    // Double-tap swap (local vs first remote)
+    // Double-tap swap (local PiP vs first remote)
     const firstRemote = () =>
       this.callGrid?.querySelector(".participant.remote") || null;
 
-    if (this.localWrapper) {
-      this._bindDoubleTap(this.localWrapper, () => {
+    if (this.localPip) {
+      this._bindDoubleTap(this.localPip, () => {
         this._togglePrimary(firstRemote());
       });
     }
@@ -418,6 +430,7 @@ export class CallUI {
 
     this._primaryIsRemote = true;
     this._applyPrimaryLayout();
+    this._ensureRemoteIsPrimaryOnMobile();
   }
 
   _closeWindow() {
@@ -472,6 +485,7 @@ export class CallUI {
     this._showControlsForVideo();
     this._applyModeFlags({ inbound: false, active: true, video: true });
     this._applyPrimaryLayout();
+    this._ensureRemoteIsPrimaryOnMobile();
   }
 
   _enterVideoControlsMode() {
@@ -486,7 +500,12 @@ export class CallUI {
 
     const isVoiceOnly = !video;
     this.videoContainer.classList.toggle("voice-only-call", isVoiceOnly);
-    this.videoContainer.classList.toggle("camera-off", isVoiceOnly);
+
+    // Do NOT use camera-off to represent voice-only.
+    // camera-off is reserved for explicit camera toggle in video mode.
+    if (isVoiceOnly) {
+      this.videoContainer.classList.remove("camera-off");
+    }
 
     this.callControls?.classList.remove("hidden");
   }
@@ -505,6 +524,10 @@ export class CallUI {
       this.moreMenu.classList.remove("show");
       this.moreMenu.classList.add("hidden");
     }
+
+    // Reset primary state
+    this._primaryIsRemote = true;
+    this._applyPrimaryLayout();
   }
 
   // -------------------------------------------------------
@@ -560,18 +583,45 @@ export class CallUI {
   // PRIMARY / PIP + DRAG
   // -------------------------------------------------------
   _togglePrimary(remoteEl) {
-    if (!this.localWrapper || !remoteEl) return;
+    if (!remoteEl) return;
     this._primaryIsRemote = !this._primaryIsRemote;
     this._applyPrimaryLayout(remoteEl);
   }
 
-  _applyPrimaryLayout() {
-    // Layout is handled by CSS grid + mobile flex.
-    // Hook left for future stage/filmstrip logic if needed.
+  _applyPrimaryLayout(remoteElOverride = null) {
+    const remoteEl =
+      remoteElOverride ||
+      this.callGrid?.querySelector(".participant.remote") ||
+      null;
+
+    // Local grid tile is kept for future use but hidden by default.
+    // Remote should own the grid; local is PiP.
+    if (!remoteEl) return;
+
+    if (this._primaryIsRemote) {
+      // Remote is primary, local is PiP
+      if (this.localWrapper) {
+        this.localWrapper.classList.add("hidden");
+      }
+      if (this.localPip) {
+        this.localPip.classList.remove("hidden");
+      }
+    } else {
+      // Local becomes primary (grid), remote remains in grid as well.
+      // For now, we simply show the local grid tile and keep PiP visible;
+      // remote remains in the grid. This keeps behavior stable while
+      // still honoring the "local can be primary" intent.
+      if (this.localWrapper) {
+        this.localWrapper.classList.remove("hidden");
+      }
+      if (this.localPip) {
+        this.localPip.classList.add("hidden");
+      }
+    }
   }
 
   _initPipDrag() {
-    // Drag should apply to the PiP window, not the main local tile
+    // Drag applies to the PiP window
     const pipEl = this.localPip;
     if (!pipEl || !this.callBody) return;
 
@@ -612,6 +662,48 @@ export class CallUI {
     pipEl.addEventListener("pointermove", (e) => moveDrag(e.clientX, e.clientY));
     pipEl.addEventListener("pointerup", endDrag);
     pipEl.addEventListener("pointercancel", endDrag);
+  }
+
+  // -------------------------------------------------------
+  // PARTICIPANT COUNT → GRID CLASSES
+  // -------------------------------------------------------
+  _updateParticipantCount() {
+    if (!this.callGrid) return;
+    const remoteCount = this.callGrid.querySelectorAll(".participant.remote").length;
+
+    this.callGrid.classList.remove(
+      "participants-1",
+      "participants-2",
+      "participants-3",
+      "participants-4",
+      "participants-5",
+      "participants-6",
+      "participants-7",
+      "participants-8",
+      "participants-9",
+      "participants-many"
+    );
+
+    const count = Math.max(remoteCount, 1); // at least 1 for layout
+
+    if (count === 1) this.callGrid.classList.add("participants-1");
+    else if (count === 2) this.callGrid.classList.add("participants-2");
+    else if (count === 3) this.callGrid.classList.add("participants-3");
+    else if (count === 4) this.callGrid.classList.add("participants-4");
+    else if (count === 5) this.callGrid.classList.add("participants-5");
+    else if (count === 6) this.callGrid.classList.add("participants-6");
+    else if (count === 7) this.callGrid.classList.add("participants-7");
+    else if (count === 8) this.callGrid.classList.add("participants-8");
+    else if (count === 9) this.callGrid.classList.add("participants-9");
+    else this.callGrid.classList.add("participants-many");
+  }
+
+  _ensureRemoteIsPrimaryOnMobile() {
+    if (!isMobile() || !this.callGrid) return;
+    const remote = this.callGrid.querySelector(".participant.remote");
+    if (remote) {
+      remote.scrollIntoView({ behavior: "instant", inline: "center", block: "nearest" });
+    }
   }
 
   // -------------------------------------------------------
