@@ -343,176 +343,176 @@ window.currentUserAvatar = user.avatar;
 
 </messaging-panel>
 
+<!-- ============================================================
+     FULL-WINDOW CALL MODE — FIXED & VALIDATED
+============================================================ -->
+<call-window id="callWindow" class="call-window hidden" data-window-id="video-call" aria-hidden="true">
 
-  <!-- ============================================================
-       FULL-WINDOW CALL MODE
-  ============================================================ -->
-  <call-window id="callWindow" class="call-window hidden" data-window-id="video-call" aria-hidden="true">
+  <div class="call-body">
 
-    <div class="call-body">
+    <!-- PARTICIPANT GRID -->
+    <div id="callGrid" class="call-grid">
 
-      <!-- PARTICIPANT GRID -->
-      <div id="callGrid" class="call-grid">
+      <!-- LOCAL PARTICIPANT TILE -->
+      <div class="participant local hidden" id="localParticipant" data-peer-id="local">
+        <div class="media-wrapper">
+          <video id="localVideo" autoplay playsinline muted></video>
+          <div class="avatar-wrapper">
+            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
+            <div class="voice-pulse"></div>
+          </div>
+        </div>
+        <div class="presenting-badge">Presenting</div>
+        <div class="name-tag">You</div>
+      </div>
 
-        <!-- LOCAL PARTICIPANT TILE -->
-        <div class="participant local hidden" id="localParticipant" data-peer-id="local">
+      <!-- REMOTE PARTICIPANT TEMPLATE -->
+      <template id="remoteParticipantTemplate">
+        <div class="participant remote" data-peer-id="">
           <div class="media-wrapper">
-            <video id="localVideo" autoplay playsinline muted></video>
+            <video class="remoteVideo" autoplay playsinline></video>
             <div class="avatar-wrapper">
-              <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
+              <img class="avatar-img" src="img/defaultUser.png" alt="Avatar" />
               <div class="voice-pulse"></div>
             </div>
           </div>
           <div class="presenting-badge">Presenting</div>
-          <div class="name-tag">You</div>
+          <div class="name-tag"></div>
         </div>
+      </template>
 
-        <!-- REMOTE PARTICIPANT TEMPLATE -->
-        <template id="remoteParticipantTemplate">
-          <div class="participant remote" data-peer-id="">
-            <div class="media-wrapper">
-              <video class="remoteVideo" autoplay playsinline muted></video>
-              <div class="avatar-wrapper">
-                <img class="avatar-img" src="img/defaultUser.png" alt="Avatar" />
-                <div class="voice-pulse"></div>
-              </div>
-            </div>
-            <div class="presenting-badge">Presenting</div>
-            <div class="name-tag"></div>
-          </div>
-        </template>
+    </div> <!-- END callGrid -->
 
-      </div> <!-- end callGrid -->
+    <!-- CALL STATUS + TIMER -->
+    <div class="call-top-info">
+      <div id="call-status" class="call-status">Connecting…</div>
+      <div id="call-timer" class="call-timer">00:00</div>
+    </div>
 
-      <!-- CALL STATUS + TIMER -->
-      <div class="call-top-info">
-        <div id="call-status" class="call-status">Connecting…</div>
-        <div id="call-timer" class="call-timer">00:00</div>
-      </div>
+    <!-- CALL CONTROLS -->
+    <div id="call-controls" class="call-controls hidden">
 
-      <!-- CALL CONTROLS -->
-      <div id="call-controls" class="call-controls hidden">
+      <!-- Inbound-only controls -->
+      <button id="decline-call" class="control-btn inbound-only" type="button">
+        <span class="material-symbols-outlined">call_end</span>
+      </button>
 
-        <!-- Inbound-only controls -->
-        <button id="decline-call" class="control-btn inbound-only" type="button">
-          <span class="material-symbols-outlined">call_end</span>
+      <button id="answer-call" class="control-btn inbound-only" type="button">
+        <span class="material-symbols-outlined">call</span>
+      </button>
+
+      <!-- Active-call controls -->
+      <button id="mute-call" class="control-btn active-only" type="button">
+        <span class="material-symbols-outlined">mic_off</span>
+      </button>
+
+      <button id="camera-toggle" class="control-btn active-only" type="button">
+        <span class="material-symbols-outlined">videocam</span>
+      </button>
+
+      <button id="end-call" class="control-btn active-only" type="button">
+        <span class="material-symbols-outlined">call_end</span>
+      </button>
+
+      <!-- MORE CONTROLS MENU -->
+      <div class="more-controls">
+        <button id="more-controls-btn" class="control-btn" type="button">
+          <span class="material-symbols-outlined">more_vert</span>
         </button>
 
-        <button id="answer-call" class="control-btn inbound-only" type="button">
-          <span class="material-symbols-outlined">call</span>
-        </button>
-
-        <!-- Active-call controls -->
-        <button id="mute-call" class="control-btn active-only" type="button">
-          <span class="material-symbols-outlined">mic_off</span>
-        </button>
-
-        <button id="camera-toggle" class="control-btn active-only" type="button">
-          <span class="material-symbols-outlined">videocam</span>
-        </button>
-
-        <button id="end-call" class="control-btn active-only" type="button">
-          <span class="material-symbols-outlined">call_end</span>
-        </button>
-
-        <!-- MORE CONTROLS MENU -->
-        <div class="more-controls">
-          <button id="more-controls-btn" class="control-btn" type="button">
-            <span class="material-symbols-outlined">more_vert</span>
+        <div id="more-controls-menu" class="more-controls-menu hidden">
+          <button id="share-screen" type="button">
+            <span class="material-symbols-outlined">screen_share</span>
+            Share Screen
           </button>
-
-          <div id="more-controls-menu" class="more-controls-menu hidden">
-            <button id="share-screen" type="button">
-              <span class="material-symbols-outlined">screen_share</span>
-              Share Screen
-            </button>
-            <button id="ai-noise-toggle" type="button">
-              <span class="material-symbols-outlined">graphic_eq</span>
-              Noise Suppression
-            </button>
-            <button id="record-call" type="button">
-              <span class="material-symbols-outlined">fiber_manual_record</span>
-              Record Call
-            </button>
-            <button id="call-history-toggle" type="button">
-              <span class="material-symbols-outlined">history</span>
-              Call History
-            </button>
-          </div>
+          <button id="ai-noise-toggle" type="button">
+            <span class="material-symbols-outlined">graphic_eq</span>
+            Noise Suppression
+          </button>
+          <button id="record-call" type="button">
+            <span class="material-symbols-outlined">fiber_manual_record</span>
+            Record Call
+          </button>
+          <button id="call-history-toggle" type="button">
+            <span class="material-symbols-outlined">history</span>
+            Call History
+          </button>
         </div>
-
-      </div> <!-- end call-controls -->
-
-      <!-- REMOTE AUDIO -->
-      <audio id="remoteAudio" autoplay playsinline></audio>
-
-      <!-- CALL INFO BAR -->
-      <div class="call-info-bar">
-        <div id="call-quality-indicator" class="quality-indicator" data-level="excellent">excellent</div>
-        <button id="call-debug-toggle" class="debug-toggle" type="button">
-          <span class="material-symbols-outlined">bug_report</span>
-        </button>
       </div>
 
-    </div> <!-- end call-body -->
+    </div> <!-- END call-controls -->
 
-    <!-- LOCAL PIP (overlay over main video) -->
-    <div id="localPip" class="local-pip hidden pip-anim">
-      <video id="localPipVideo" autoplay playsinline muted></video>
+    <!-- REMOTE AUDIO -->
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <!-- CALL INFO BAR -->
+    <div class="call-info-bar">
+      <div id="call-quality-indicator" class="quality-indicator" data-level="excellent">excellent</div>
+      <button id="call-debug-toggle" class="debug-toggle" type="button">
+        <span class="material-symbols-outlined">bug_report</span>
+      </button>
     </div>
 
-    <!-- REMOTE PIP (for true swap) -->
-    <div id="remotePip" class="remote-pip hidden pip-anim">
-      <video id="remotePipVideo" autoplay playsinline muted></video>
+  </div> <!-- END call-body -->
+
+  <!-- LOCAL PIP -->
+  <div id="localPip" class="local-pip hidden pip-anim">
+    <video id="localPipVideo" autoplay playsinline muted></video>
+  </div>
+
+  <!-- REMOTE PIP -->
+  <div id="remotePip" class="remote-pip hidden pip-anim">
+    <video id="remotePipVideo" autoplay playsinline></video>
+  </div>
+
+  <!-- VIDEO UPGRADE OVERLAY -->
+  <div id="video-upgrade-overlay" class="video-upgrade-overlay hidden" aria-hidden="true">
+
+    <!-- MOBILE -->
+    <div class="video-upgrade-card mobile-only">
+      <div class="video-upgrade-preview">
+        <span class="material-symbols-outlined video-icon">videocam</span>
+      </div>
+      <div class="video-upgrade-text">
+        <div class="title">Switch to video?</div>
+        <div class="subtitle">The other person wants to start video.</div>
+      </div>
+      <div class="video-upgrade-actions">
+        <button id="video-upgrade-decline" class="btn-upgrade-decline" type="button">
+          <span class="material-symbols-outlined">call_end</span>
+          Keep Audio
+        </button>
+        <button id="video-upgrade-accept" class="btn-upgrade-accept" type="button">
+          <span class="material-symbols-outlined">videocam</span>
+          Accept Video
+        </button>
+      </div>
     </div>
 
-    <!-- VIDEO UPGRADE OVERLAY -->
-    <div id="video-upgrade-overlay" class="video-upgrade-overlay hidden" aria-hidden="true">
-
-      <!-- MOBILE: floating card -->
-      <div class="video-upgrade-card mobile-only">
-        <div class="video-upgrade-preview">
-          <span class="material-symbols-outlined video-icon">videocam</span>
-        </div>
-        <div class="video-upgrade-text">
+    <!-- DESKTOP -->
+    <div class="video-upgrade-desktop-overlay desktop-only">
+      <div class="video-upgrade-desktop-inner">
+        <div class="video-upgrade-desktop-text">
           <div class="title">Switch to video?</div>
           <div class="subtitle">The other person wants to start video.</div>
         </div>
-        <div class="video-upgrade-actions">
-          <button id="video-upgrade-decline" class="btn-upgrade-decline" type="button">
+        <div class="video-upgrade-desktop-actions">
+          <button id="video-upgrade-decline-desktop" class="btn-upgrade-decline" type="button">
             <span class="material-symbols-outlined">call_end</span>
             Keep Audio
           </button>
-          <button id="video-upgrade-accept" class="btn-upgrade-accept" type="button">
+          <button id="video-upgrade-accept-desktop" class="btn-upgrade-accept" type="button">
             <span class="material-symbols-outlined">videocam</span>
             Accept Video
           </button>
         </div>
       </div>
-
-      <!-- DESKTOP: fullscreen blur -->
-      <div class="video-upgrade-desktop-overlay desktop-only">
-        <div class="video-upgrade-desktop-inner">
-          <div class="video-upgrade-desktop-text">
-            <div class="title">Switch to video?</div>
-            <div class="subtitle">The other person wants to start video.</div>
-          </div>
-          <div class="video-upgrade-desktop-actions">
-            <button id="video-upgrade-decline-desktop" class="btn-upgrade-decline" type="button">
-              <span class="material-symbols-outlined">call_end</span>
-              Keep Audio
-            </button>
-            <button id="video-upgrade-accept-desktop" class="btn-upgrade-accept" type="button">
-              <span class="material-symbols-outlined">videocam</span>
-              Accept Video
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
-  </call-window>
+  </div> <!-- END video-upgrade-overlay -->
+
+</call-window>
+
 
       </app-workspace>
 
@@ -1620,6 +1620,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
