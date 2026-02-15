@@ -1,10 +1,13 @@
 // public/js/webrtc/RemoteParticipants.js
-// PURE TILE MANAGER — no layout logic, no screen-share logic, no active-speaker layout.
-// CallUI.js owns ALL layout classes and UI behavior.
+// ============================================================
+// PURE TILE MANAGER — no layout logic, no screen-share logic,
+// no active-speaker layout. CallUI.js owns ALL layout behavior.
+//
 // This file ONLY manages:
 //   - participant tiles
 //   - media binding
 //   - basic state (cameraOff, speaking, avatar/name)
+// ============================================================
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -37,7 +40,7 @@ export function initRemoteParticipants() {
 }
 
 /* -------------------------------------------------------
-   Register Local Tile
+   Register Local Tile (if CallUI wants to override)
 ------------------------------------------------------- */
 export function registerLocalTile(el) {
   localTileEl = el || null;
@@ -59,7 +62,7 @@ function safeCloneTemplate(tplId) {
 }
 
 /* -------------------------------------------------------
-   Create Tile
+   Create Tile (remote only)
 ------------------------------------------------------- */
 function createTile(peerId, displayName, avatarUrl) {
   peerId = String(peerId);
@@ -169,7 +172,7 @@ export function attachParticipantStream(peerId, stream) {
     try {
       entry.videoEl.srcObject = stream;
       entry.videoEl.playsInline = true;
-      entry.videoEl.muted = true;
+      entry.videoEl.muted = true; // video muted; audio comes from #remoteAudio
       entry.videoEl.classList.add("show");
 
       const tryPlay = () => {
