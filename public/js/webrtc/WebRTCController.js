@@ -13,6 +13,7 @@
 //   - screen share
 //   - call queue + status
 //   - clean decline/timeout/busy semantics
+//   - TURN-ready ICE + robust diagnostics
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -29,11 +30,39 @@ function log(...args) {
   console.log("[WebRTC]", ...args);
 }
 
-// Expected rtcState extensions (in WebRTCState.js):
-// rtcState.callId = null;
-// rtcState.participants = new Map(); // peerId -> { joinedAt, state }
-// rtcState.status = "idle"; // "idle" | "ringing" | "in-call" | "on-hold"
-// rtcState.inboundQueue = []; // [{ from, offer, incomingIsVideo, callId }]
+function warn(...args) {
+  console.warn("[WebRTC]", ...args);
+}
+
+function err(...args) {
+  console.error("[WebRTC]", ...args);
+}
+
+// High-end ICE configuration (STUN + TURN-ready)
+// Replace TURN config with your own credentials in production.
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    // Example TURN — replace with your own
+    // {
+    //   urls: "turn:global.relay.metered.ca:80",
+    //   username: "yourUsername",
+    //   credential: "yourPassword",
+    // },
+  ],
+  iceCandidatePoolSize: 4,
+};
+
+// Connection state mapping for UI/analytics
+const PC_STATE_MAP = {
+  new: "new",
+  checking: "checking",
+  connected: "connected",
+  completed: "completed",
+  failed: "failed",
+  disconnected: "disconnected",
+  closed: "closed",
+};
 
 export class WebRTCController {
   constructor(socket) {
@@ -58,10 +87,13 @@ export class WebRTCController {
     this.onCallStatusChange = () => {};
     this.onParticipantUpdate = () => {};
 
-    // New UI hooks
+    // UI hooks
     this.onScreenShareStarted = () => {};
     this.onScreenShareStopped = () => {};
     this.onPeerUnavailable = () => {};
+
+    // Internal flags
+    this._destroyed = false;
 
     this._bindSocket();
   }
@@ -106,11 +138,23 @@ export class WebRTCController {
     return rtcState.participants && rtcState.participants.size > 0;
   }
 
+  _getPc(peerId) {
+    peerId = String(peerId);
+    return this.pcMap.get(peerId) || null;
+  }
+
   /* -------------------------------------------------------
      SOCKET SIGNALING
   ------------------------------------------------------- */
   _bindSocket() {
+    if (!this.socket) {
+      err("No socket provided to WebRTCController");
+      return;
+    }
+
     this.socket.on("webrtc:signal", async (msg) => {
+      if (this._destroyed) return;
+
       const {
         type,
         from,
@@ -121,7 +165,11 @@ export class WebRTCController {
         candidate,
         isVideoUpgrade,
         reason,
-      } = msg;
+      } = msg || {};
+
+      if (!from && type !== "unavailable") {
+        warn("Received webrtc:signal without 'from':", msg);
+      }
 
       if (!rtcState.callId && callId) {
         rtcState.callId = callId;
@@ -141,17 +189,20 @@ export class WebRTCController {
           this._handleLeave(from);
           break;
         case "unavailable":
-          // Server can emit this when callee is unreachable/busy/timeout
           if (this.onPeerUnavailable) {
             this.onPeerUnavailable(reason || "User unavailable");
           }
           break;
+        default:
+          warn("Unknown webrtc:signal type:", type, msg);
+          break;
       }
     });
 
-    // Optional: dedicated decline/busy/timeout channels from server
+    // Dedicated decline/busy/timeout channels from server
     this.socket.on("call:declined", (msg) => {
-      const { from, reason } = msg;
+      if (this._destroyed) return;
+      const { from, reason } = msg || {};
       log("call:declined from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call declined");
@@ -160,7 +211,8 @@ export class WebRTCController {
     });
 
     this.socket.on("call:busy", (msg) => {
-      const { from, reason } = msg;
+      if (this._destroyed) return;
+      const { from, reason } = msg || {};
       log("call:busy from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "User busy");
@@ -169,7 +221,8 @@ export class WebRTCController {
     });
 
     this.socket.on("call:timeout", (msg) => {
-      const { from, reason } = msg;
+      if (this._destroyed) return;
+      const { from, reason } = msg || {};
       log("call:timeout from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call timed out");
@@ -179,7 +232,6 @@ export class WebRTCController {
   }
 
   _remoteEndWithoutPc(peerId, reason) {
-    // Caller side: remote never answered, but server timed out/declined
     rtcState.inCall = false;
     rtcState.peerId = null;
     rtcState.incomingOffer = null;
@@ -199,14 +251,10 @@ export class WebRTCController {
       return this.pcMap.get(peerId);
     }
 
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        // TURN-only / custom servers can be added here
-      ],
-    });
-
+    const pc = new RTCPeerConnection(ICE_CONFIG);
     this.pcMap.set(peerId, pc);
+
+    log("Created RTCPeerConnection for peer:", peerId, ICE_CONFIG);
 
     pc.onicecandidate = (evt) => {
       if (evt.candidate) {
@@ -220,28 +268,50 @@ export class WebRTCController {
       }
     };
 
-    pc.ontrack = (evt) => {
-      log("ontrack from", peerId, evt.track.kind);
-      attachRemoteTrack(peerId, evt);
-      this._addParticipant(peerId, { state: "connected" });
-      this.onRemoteJoin(peerId);
+    pc.oniceconnectionstatechange = () => {
+      const state = pc.iceConnectionState;
+      log("ICE connection state:", peerId, state);
+      if (state === "failed") {
+        warn("ICE failed, attempting restart:", peerId);
+        try {
+          pc.restartIce();
+        } catch (e) {
+          err("restartIce failed:", e);
+        }
+      }
     };
 
     pc.onconnectionstatechange = () => {
       const state = pc.connectionState;
-      log("pc state", peerId, state);
+      log("PeerConnection state:", peerId, state);
 
       if (this.onQualityUpdate) {
-        this.onQualityUpdate(state);
+        this.onQualityUpdate(PC_STATE_MAP[state] || state);
       }
 
       if (state === "failed") {
-        pc.restartIce();
+        try {
+          pc.restartIce();
+        } catch (e) {
+          err("restartIce failed on connectionState 'failed':", e);
+        }
       }
 
       if (state === "disconnected" || state === "closed") {
         this._handleLeave(peerId);
       }
+    };
+
+    pc.ontrack = (evt) => {
+      log("ontrack from", peerId, evt.track.kind, evt.track.id);
+      attachRemoteTrack(peerId, evt);
+      this._addParticipant(peerId, { state: "connected" });
+      this.onRemoteJoin(peerId);
+    };
+
+    pc.onnegotiationneeded = async () => {
+      // Optional: renegotiation hook if needed later
+      log("onnegotiationneeded for peer:", peerId);
     };
 
     return pc;
@@ -259,12 +329,18 @@ export class WebRTCController {
     rtcState.peerId = peerId;
     rtcState.audioOnly = audio && !video;
 
-    // Assign or reuse callId
     if (callId) {
       rtcState.callId = callId;
     } else if (!rtcState.callId) {
       rtcState.callId = `${rtcState.selfId || "user"}-${Date.now()}`;
     }
+
+    log("startCall →", {
+      peerId,
+      audio,
+      video,
+      callId: rtcState.callId,
+    });
 
     const stream = await getLocalMedia(audio, video);
     attachLocalStream(stream);
@@ -273,7 +349,10 @@ export class WebRTCController {
     const pc = this._ensurePC(peerId);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-    const offer = await pc.createOffer();
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
     await pc.setLocalDescription(offer);
 
     this.socket.emit("webrtc:signal", {
@@ -308,17 +387,23 @@ export class WebRTCController {
       rtcState.callId = callId;
     }
 
-    // ⭐ SPECIAL CASE: video upgrade while already in-call
+    log("Incoming offer:", {
+      from: peerId,
+      isVideoUpgrade,
+      incomingIsVideo,
+      callId: rtcState.callId,
+    });
+
+    // Video upgrade while already in-call
     if (isVideoUpgrade && rtcState.status === "in-call") {
       rtcState.peerId = peerId;
       rtcState.incomingOffer = offer;
       rtcState.incomingIsVideo = true;
-      // Do NOT change status; we stay "in-call"
       this.onIncomingOffer(peerId, offer);
       return;
     }
 
-    // If already in a call (1:1 or group), queue this offer
+    // Already in a call → queue this offer
     if (rtcState.status === "in-call" || rtcState.status === "on-hold") {
       if (!rtcState.inboundQueue) rtcState.inboundQueue = [];
       rtcState.inboundQueue.push({
@@ -339,7 +424,6 @@ export class WebRTCController {
     rtcState.incomingIsVideo = incomingIsVideo;
     this._setStatus("ringing");
 
-    // Do NOT touch local media here; CallUI decides via answerCall()
     this.onIncomingOffer(peerId, offer);
   }
 
@@ -350,7 +434,12 @@ export class WebRTCController {
   async answerCall() {
     const peerId = rtcState.peerId;
     const offer = rtcState.incomingOffer;
-    if (!peerId || !offer) return;
+    if (!peerId || !offer) {
+      warn("answerCall called without peerId or offer");
+      return;
+    }
+
+    log("answerCall →", { peerId, incomingIsVideo: rtcState.incomingIsVideo });
 
     const pc = this._ensurePC(peerId);
 
@@ -358,7 +447,6 @@ export class WebRTCController {
 
     let stream = rtcState.localStream;
 
-    // If no local stream yet, get appropriate media
     if (!stream) {
       if (rtcState.incomingIsVideo) {
         stream = await getLocalMedia(true, true);
@@ -367,7 +455,6 @@ export class WebRTCController {
       }
       attachLocalStream(stream);
     } else if (rtcState.incomingIsVideo && rtcState.audioOnly) {
-      // We were audio-only and are now accepting a video upgrade
       stream = await upgradeLocalToVideo();
     }
 
@@ -400,25 +487,25 @@ export class WebRTCController {
   async _handleAnswer(peerId, answer) {
     peerId = String(peerId);
     const pc = this._ensurePC(peerId);
+    log("Received answer from", peerId);
     await pc.setRemoteDescription(answer);
     this._addParticipant(peerId, { state: "connected" });
   }
 
   /* -------------------------------------------------------
      DECLINE INBOUND CALL (BEFORE ANSWER)
-     ⭐ Emits dedicated call:declined for server + UI
   ------------------------------------------------------- */
   declineCall(reason = "declined") {
     const peerId = rtcState.peerId;
     const callId = rtcState.callId;
 
-    // Reset local state
+    log("declineCall →", { peerId, callId, reason });
+
     rtcState.inCall = false;
     rtcState.incomingOffer = null;
     rtcState.incomingIsVideo = false;
     this._setStatus("idle");
 
-    // Notify remote explicitly with a DECLINE event
     if (peerId && callId) {
       this.socket.emit("call:declined", {
         from: rtcState.selfId,
@@ -436,12 +523,18 @@ export class WebRTCController {
   ------------------------------------------------------- */
   async _handleIce(peerId, candidate) {
     peerId = String(peerId);
+    if (!candidate) {
+      log("Received null/empty ICE candidate from", peerId);
+      return;
+    }
+
     const pc = this._ensurePC(peerId);
 
     try {
       await pc.addIceCandidate(candidate);
-    } catch (err) {
-      log("ICE error:", err);
+      log("ICE candidate added for", peerId);
+    } catch (e) {
+      err("ICE error for", peerId, e);
     }
   }
 
@@ -455,9 +548,14 @@ export class WebRTCController {
     const { stream, track } = result;
 
     const pc = this.pcMap.get(rtcState.peerId);
-    if (!pc) return null;
+    if (!pc) {
+      warn("startScreenShare: no active PC for peer", rtcState.peerId);
+      return null;
+    }
 
-    const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
+    const sender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
     if (sender) {
       await sender.replaceTrack(track);
       this.screenSender = sender;
@@ -472,6 +570,7 @@ export class WebRTCController {
       return true;
     }
 
+    warn("startScreenShare: no video sender found");
     return null;
   }
 
@@ -486,7 +585,12 @@ export class WebRTCController {
       await this.screenSender.replaceTrack(camTrack);
     }
 
-    this.screenTrack.stop();
+    try {
+      this.screenTrack.stop();
+    } catch (e) {
+      err("stopScreenShare: failed to stop screenTrack:", e);
+    }
+
     this.screenTrack = null;
     this.screenSender = null;
 
@@ -500,9 +604,14 @@ export class WebRTCController {
   ------------------------------------------------------- */
   async upgradeToVideo() {
     const peerId = rtcState.peerId;
-    if (!peerId) return;
+    if (!peerId) {
+      warn("upgradeToVideo called with no peerId");
+      return;
+    }
 
     const pc = this._ensurePC(peerId);
+
+    log("upgradeToVideo →", { peerId });
 
     const newStream = await upgradeLocalToVideo();
     rtcState.localStream = newStream;
@@ -519,7 +628,10 @@ export class WebRTCController {
       }
     });
 
-    const offer = await pc.createOffer();
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
     await pc.setLocalDescription(offer);
 
     this.socket.emit("webrtc:signal", {
@@ -540,8 +652,14 @@ export class WebRTCController {
     const prevCallId = rtcState.callId;
     const peerId = rtcState.peerId;
 
+    log("endCall →", { reason, hadCall, prevCallId, peerId });
+
     for (const [, pc] of this.pcMap.entries()) {
-      pc.close();
+      try {
+        pc.close();
+      } catch (e) {
+        err("Error closing PC:", e);
+      }
     }
     this.pcMap.clear();
 
@@ -553,7 +671,6 @@ export class WebRTCController {
     rtcState.incomingIsVideo = false;
     rtcState.participants = new Map();
 
-    // Notify remote peers in this call (1:1 or group)
     if (hadCall && prevCallId) {
       this.socket.emit("webrtc:signal", {
         type: "leave",
@@ -567,7 +684,6 @@ export class WebRTCController {
     this._setStatus("idle");
     this.onCallEnded?.(reason);
 
-    // After ending, check inbound queue for next call
     this._maybeProcessNextQueuedCall();
   }
 
@@ -577,14 +693,21 @@ export class WebRTCController {
   _handleLeave(peerId) {
     peerId = String(peerId);
 
+    log("Remote leave:", peerId);
+
     const pc = this.pcMap.get(peerId);
-    if (pc) pc.close();
+    if (pc) {
+      try {
+        pc.close();
+      } catch (e) {
+        err("Error closing PC on leave:", e);
+      }
+    }
     this.pcMap.delete(peerId);
 
     this._removeParticipant(peerId);
     this.onRemoteLeave(peerId);
 
-    // If no more participants, treat as call ended
     if (!this._hasActiveParticipants()) {
       cleanupMedia();
       rtcState.inCall = false;
@@ -613,13 +736,14 @@ export class WebRTCController {
     rtcState.incomingOffer = next.offer;
     rtcState.incomingIsVideo = next.incomingIsVideo;
 
+    log("Processing next queued call:", next);
+
     this._setStatus("ringing");
     this.onIncomingOffer(next.from, next.offer);
   }
 
   /* -------------------------------------------------------
      OPTIONAL: PUT CURRENT CALL ON HOLD (HOOK ONLY)
-     (Actual hold behavior is implemented in media/UI layers)
   ------------------------------------------------------- */
   setOnHold(onHold) {
     if (onHold) {
@@ -630,211 +754,16 @@ export class WebRTCController {
       this._setStatus("idle");
     }
   }
+
+  /* -------------------------------------------------------
+     DESTROY CONTROLLER (OPTIONAL CLEANUP)
+  ------------------------------------------------------- */
+  destroy() {
+    this._destroyed = true;
+    try {
+      this.endCall("controller_destroyed");
+    } catch (e) {
+      err("Error during destroy:", e);
+    }
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
