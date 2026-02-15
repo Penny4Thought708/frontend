@@ -715,17 +715,17 @@ body.light-mode {
 ============================================================ */
 
 .name-tag {
-  position: absolute;
-  left: 10px;
-  bottom: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 500;
-  pointer-events: none;
-  z-index: 4;
+    position: absolute;
+    left: 240px;
+    bottom: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 4;
 }
 
 /* ============================================================
@@ -863,15 +863,17 @@ body.light-mode {
 ============================================================ */
 
 .avatar-wrapper {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.25s ease;
-  z-index: 3;
+position: absolute;
+    inset: 0;
+    display: flex;
+    margin-left: 45%;
+    align-self: center;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+    z-index: 3;
 }
 
 .avatar-wrapper img {
