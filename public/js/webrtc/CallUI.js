@@ -91,9 +91,9 @@ export class CallUI {
     // -------------------------------------------------------
     this._primaryIsRemote = true;
 
-    // PiP position (JS‑controlled)
-    this._pipPos = { x: 0, y: 0 }; // translate(x,y)
-    this._pipDefault = { x: 0, y: 0 }; // top‑right default
+    // PiP position (JS‑controlled) — null means "needs default"
+    this._pipPos = null;
+    this._pipDefault = null;
 
     // Drag state
     this._dragState = null;
@@ -435,7 +435,9 @@ export class CallUI {
     this._primaryIsRemote = true;
 
     // Reset PiP to default top‑right
-    this._pipPos = { ...this._pipDefault };
+    this._pipPos = null;
+    this._pipDefault = null;
+    this._resetPipToDefault();
 
     this._applyPrimaryLayout();
   }
@@ -514,7 +516,7 @@ export class CallUI {
     this.callControls?.classList.remove("hidden");
   }
 
-   _resetUI() {
+  _resetUI() {
     rtcState.inCall = false;
     rtcState.peerId = null;
     rtcState.incomingOffer = null;
@@ -533,7 +535,8 @@ export class CallUI {
     this._primaryIsRemote = true;
 
     // Reset PiP position to default top‑right
-    this._pipPos = { ...this._pipDefault };
+    this._pipPos = null;
+    this._pipDefault = null;
 
     // Hide both PiPs until next call
     if (this.localPip) this.localPip.classList.add("hidden");
@@ -603,6 +606,27 @@ export class CallUI {
     this._applyPrimaryLayout(remoteEl);
   }
 
+  _resetPipToDefault() {
+    if (!this.callBody) return;
+
+    // Choose which PiP is currently relevant
+    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
+    if (!pipEl) return;
+
+    const parent = this.callBody.getBoundingClientRect();
+    const pipRect = pipEl.getBoundingClientRect();
+
+    // Top‑right: small margin from edges
+    const margin = 16;
+    const x = Math.max(0, parent.width - pipRect.width - margin);
+    const y = margin;
+
+    this._pipPos = { x, y };
+    this._pipDefault = { x, y };
+
+    pipEl.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
   _applyPrimaryLayout(remoteElOverride = null) {
     const remoteEl =
       remoteElOverride ||
@@ -611,13 +635,18 @@ export class CallUI {
 
     if (!remoteEl) return;
 
-    // Apply PiP position
+    // Ensure PiP has a default position
+    if (!this._pipPos) {
+      this._resetPipToDefault();
+    }
+
     const applyPipTransform = (pipEl) => {
+      if (!pipEl || !this._pipPos) return;
       pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
     };
 
     if (this._primaryIsRemote) {
-      // Remote = primary
+      // Remote = primary, local = PiP
       if (this.localWrapper) this.localWrapper.classList.add("hidden");
       if (this.localPip) {
         this.localPip.classList.remove("hidden");
@@ -627,7 +656,7 @@ export class CallUI {
 
       remoteEl.classList.remove("hidden");
     } else {
-      // Local = primary
+      // Local = primary, remote = PiP
       if (this.localWrapper) this.localWrapper.classList.remove("hidden");
       if (this.localPip) this.localPip.classList.add("hidden");
 
@@ -711,6 +740,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
