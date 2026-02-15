@@ -1,86 +1,73 @@
 /* ============================================================
-   DESIGN TOKENS — DARK MODE (DEFAULT)
+   THEME TOKENS + ANIMATION VARS
 ============================================================ */
 :root {
-  --bg-0: #000000;
-  --bg-1: #0b0e14;
-  --bg-2: #131922;
-  --bg-3: #1b2633;
-  --bg-4: #223040;
-
-  --text: #e8ecf2;
-  --text-dim: #a8b3c2;
-  --text-muted: #6f7a89;
-
+  /* Theme colors (light default) */
+  --bg-1: #f5f7fb;
+  --bg-2: #e3e7f2;
+  --bg-3: #ffffff;
+  --text: #0b1020;
+  --text-muted: #6b7280;
   --accent: #4da3ff;
-  --accent-strong: #1e8bff;
-  --accent-glow: 0 0 24px rgba(77, 163, 255, 0.45);
-
+  --accent-strong: #1f7ae6;
   --danger: #ff4b5c;
-  --danger-glow: 0 0 24px rgba(255, 75, 92, 0.45);
+  --danger-strong: #e03140;
+  --border: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.28);
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  /* Glass + blur */
+  --glass: rgba(255, 255, 255, 0.12);
+  --glass-heavy: rgba(255, 255, 255, 0.18);
+  --blur-heavy: 26px;
 
-  --glass: rgba(255, 255, 255, 0.06);
-  --glass-heavy: rgba(255, 255, 255, 0.12);
-
-  --blur: 12px;
-  --blur-heavy: 22px;
-
+  /* Radii + shadows */
   --radius: 10px;
   --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-lg: 18px;
+  --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.25);
+  --shadow-strong: 0 22px 60px rgba(15, 23, 42, 0.55);
+  --accent-glow: 0 0 40px rgba(77, 163, 255, 0.55);
 
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.45);
-
+  /* Timing + easing */
   --fast: 120ms;
-  --med: 240ms;
-  --slow: 420ms;
+  --med: 220ms;
+  --slow: 360ms;
+  --ease-out-soft: cubic-bezier(0.16, 0.84, 0.44, 1);
+  --ease-snap: cubic-bezier(0.18, 0.89, 0.32, 1.28);
 
-  --gap-sm: 6px;
-  --gap-md: 12px;
-  --gap-lg: 20px;
+  /* GPU hint */
+  --gpu-translate: translate3d(0, 0, 0);
 
-  --font-body: "Inter", system-ui, sans-serif;
-  --font-size-sm: 13px;
-  --font-size-md: 15px;
-  --font-size-lg: 18px;
+  /* Typography */
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", sans-serif;
+}
 
-  --z-floating: 9999;
+/* Dark theme */
+:root[data-theme="dark"] {
+  --bg-1: #020308;
+  --bg-2: #050814;
+  --bg-3: #070b18;
+  --text: #e5e7f5;
+  --text-muted: #9ca3af;
+  --accent: #4da3ff;
+  --accent-strong: #7bb5ff;
+  --danger: #ff4b5c;
+  --danger-strong: #ff6b7a;
+  --border: rgba(148, 163, 184, 0.24);
+  --border-strong: rgba(148, 163, 184, 0.45);
+
+  --glass: rgba(15, 23, 42, 0.55);
+  --glass-heavy: rgba(15, 23, 42, 0.78);
+  --blur-heavy: 30px;
+
+  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.65);
+  --shadow-strong: 0 26px 70px rgba(0, 0, 0, 0.9);
+  --accent-glow: 0 0 40px rgba(77, 163, 255, 0.75);
 }
 
 /* ============================================================
-   LIGHT MODE OVERRIDES
-============================================================ */
-body.light-mode {
-  --bg-0: #ffffff;
-  --bg-1: #f5f7ff;
-  --bg-2: #e8ecf7;
-  --bg-3: #dde3f0;
-  --bg-4: #cfd6ea;
-
-  --text: #1a1d24;
-  --text-dim: #3a4452;
-  --text-muted: #6b7482;
-
-  --accent: #1e8bff;
-  --accent-strong: #006be6;
-  --accent-glow: 0 0 24px rgba(30, 139, 255, 0.35);
-
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.14);
-
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-heavy: rgba(255, 255, 255, 0.75);
-
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.18);
-}
-
-/* ============================================================
-   CALL WINDOW — FULLSCREEN OVERLAY
+   CALL WINDOW — FULLSCREEN OVERLAY (FaceTime-style)
 ============================================================ */
 .call-window {
   position: fixed;
@@ -89,12 +76,17 @@ body.light-mode {
   align-items: center;
   justify-content: center;
   z-index: 999999;
-  background: radial-gradient(circle at top left, #1b2638 0, #07090d 55%, #020308 100%);
+  background:
+    radial-gradient(circle at top left, rgba(77, 163, 255, 0.22), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.9), #020308);
   opacity: 0;
   pointer-events: none;
-  transform: scale(0.96);
+  transform: scale(0.96) translate3d(0, 0, 0);
   transform-origin: 90% 10%;
-  transition: opacity var(--med), transform var(--med);
+  transition:
+    opacity var(--med) var(--ease-out-soft),
+    transform var(--med) var(--ease-out-soft);
+  will-change: opacity, transform;
 }
 
 .call-window.hidden {
@@ -105,16 +97,22 @@ body.light-mode {
   display: flex;
   opacity: 1;
   pointer-events: auto;
-  transform: scale(1);
+  transform: scale(1) var(--gpu-translate);
 }
 
 .call-window.call-opening {
-  animation: callExpand var(--med);
+  animation: callExpand var(--med) var(--ease-out-soft);
 }
 
 @keyframes callExpand {
-  0% { opacity: 0; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
 }
 
 /* Voice-only mode */
@@ -151,23 +149,25 @@ body.light-mode {
 ============================================================ */
 .pip-anim {
   transition:
-    transform 0.25s ease,
-    opacity 0.25s ease,
-    box-shadow 0.25s ease;
+    transform 0.25s var(--ease-snap),
+    opacity 0.25s var(--ease-out-soft),
+    box-shadow 0.25s var(--ease-out-soft),
+    border-color 0.25s var(--ease-out-soft);
+  will-change: transform, opacity, box-shadow;
 }
 
 .pip-anim.fade-out {
   opacity: 0;
-  transform: scale(0.85);
+  transform: scale(0.85) translate3d(0, 0, 0);
 }
 
 .pip-anim.fade-in {
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1) translate3d(0, 0, 0);
 }
 
 .pip-anim.shrink {
-  transform: scale(0.75);
+  transform: scale(0.75) translate3d(0, 0, 0);
 }
 
 .pip-anim.snap-warning {
@@ -175,13 +175,14 @@ body.light-mode {
 }
 
 /* ============================================================
-   CALL BODY — GLASS PANEL
+   CALL BODY — GLASS PANEL (FaceTime blur)
 ============================================================ */
 .call-body {
   width: min(1120px, 96vw);
   height: min(640px, 82vh);
   background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy));
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%) contrast(1.05);
+  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%) contrast(1.05);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-strong), var(--accent-glow);
@@ -203,12 +204,20 @@ body.light-mode {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   grid-auto-rows: minmax(180px, 1fr);
   gap: 14px;
-  transition: grid-template-columns 0.25s ease, grid-auto-rows 0.25s ease;
+  transition:
+    grid-template-columns 0.25s var(--ease-out-soft),
+    grid-auto-rows 0.25s var(--ease-out-soft),
+    filter 0.25s var(--ease-out-soft),
+    opacity 0.25s var(--ease-out-soft);
 }
 
-.call-grid.participants-1 { grid-template-columns: 1fr; }
+.call-grid.participants-1 {
+  grid-template-columns: 1fr;
+}
 
-.call-grid.participants-2 { grid-template-columns: 1fr 1fr; }
+.call-grid.participants-2 {
+  grid-template-columns: 1fr 1fr;
+}
 
 .call-grid.participants-3,
 .call-grid.participants-4 {
@@ -232,12 +241,63 @@ body.light-mode {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
-/* Screen share layout */
+/* ============================================================
+   STAGE MODE — SCREEN SHARE (FaceTime-style stage)
+============================================================ */
 .call-grid.screen-share-mode {
   display: grid;
   grid-template-columns: 1fr 260px;
   grid-template-rows: 1fr;
   gap: 12px;
+}
+
+.participant.stage {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+  animation: stageInDesktop 0.35s var(--ease-out-soft) forwards;
+}
+
+.participant.stage .media-wrapper video {
+  object-fit: contain !important;
+  background: radial-gradient(circle at center, #000000, #020308);
+}
+
+.participant.filmstrip {
+  grid-column: 2;
+  width: 100%;
+  height: 160px;
+  opacity: 0.9;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  border-radius: var(--radius-md);
+  animation: filmstripInDesktop 0.35s var(--ease-out-soft) forwards;
+}
+
+@keyframes stageInDesktop {
+  0% {
+    transform: scale(0.9) translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes filmstripInDesktop {
+  0% {
+    transform: translate3d(0, 10px, 0) scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.92);
+    opacity: 1;
+  }
 }
 
 /* ============================================================
@@ -251,11 +311,12 @@ body.light-mode {
   border: 1px solid var(--border);
   isolation: isolate;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.25s ease,
-    opacity 0.25s ease;
+    border-color 0.2s var(--ease-out-soft),
+    box-shadow 0.2s var(--ease-out-soft),
+    transform 0.25s var(--ease-out-soft),
+    opacity 0.25s var(--ease-out-soft);
   z-index: 1;
+  will-change: transform, box-shadow, opacity;
 }
 
 .participant.local {
@@ -278,39 +339,8 @@ body.light-mode {
 .participant.active-speaker:not(.stage) {
   box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
-  transform: scale(1.02);
+  transform: scale(1.02) translate3d(0, 0, 0);
   z-index: 3;
-}
-
-/* Screen share stage + filmstrip */
-.participant.stage {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  height: 100%;
-  z-index: 5;
-  border-radius: var(--radius-lg);
-  animation: stageInDesktop 0.35s ease forwards;
-}
-
-.participant.filmstrip {
-  grid-column: 2;
-  width: 100%;
-  height: 160px;
-  opacity: 0.9;
-  transform: scale(0.92);
-  border-radius: var(--radius-md);
-  animation: filmstripInDesktop 0.35s ease forwards;
-}
-
-@keyframes stageInDesktop {
-  0% { transform: scale(0.9); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes filmstripInDesktop {
-  0% { transform: translateY(10px) scale(0.92); opacity: 0; }
-  100% { transform: translateY(0) scale(0.92); opacity: 1; }
 }
 
 /* ============================================================
@@ -344,17 +374,17 @@ body.light-mode {
   font-size: 12px;
   font-weight: 600;
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translate3d(0, -6px, 0);
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    opacity 0.25s var(--ease-out-soft),
+    transform 0.25s var(--ease-out-soft);
   pointer-events: none;
   z-index: 5;
 }
 
 .participant.presenting .presenting-badge {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 /* ============================================================
@@ -374,7 +404,7 @@ body.light-mode {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s var(--ease-out-soft);
   background: #000;
   display: block;
 }
@@ -408,7 +438,7 @@ body.light-mode {
   justify-content: center;
   pointer-events: none;
   opacity: 1;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s var(--ease-out-soft);
   z-index: 3;
 }
 
@@ -444,8 +474,14 @@ body.light-mode {
 }
 
 @keyframes voicePulse {
-  0% { transform: scale(0.7); opacity: 0.9; }
-  100% { transform: scale(1.4); opacity: 0; }
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
 
 /* ============================================================
@@ -486,19 +522,21 @@ body.light-mode {
   height: 120px;
   background: var(--glass-heavy);
   backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-strong);
   overflow: hidden;
   z-index: 999;
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1) translate3d(0, 0, 0);
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+    opacity 0.25s var(--ease-out-soft),
+    transform 0.25s var(--ease-snap),
+    box-shadow 0.25s var(--ease-out-soft),
+    border-color 0.25s var(--ease-out-soft);
   cursor: grab;
+  will-change: transform, opacity, box-shadow;
 }
 
 .local-pip.dragging {
@@ -512,7 +550,7 @@ body.light-mode {
   height: 100%;
   object-fit: cover;
   opacity: 1;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s var(--ease-out-soft);
 }
 
 .call-window.voice-only-call .local-pip,
@@ -535,19 +573,21 @@ body.light-mode {
   height: 120px;
   background: var(--glass-heavy);
   backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-strong);
   overflow: hidden;
   z-index: 999;
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1) translate3d(0, 0, 0);
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+    opacity 0.25s var(--ease-out-soft),
+    transform 0.25s var(--ease-snap),
+    box-shadow 0.25s var(--ease-out-soft),
+    border-color 0.25s var(--ease-out-soft);
   cursor: grab;
+  will-change: transform, opacity, box-shadow;
 }
 
 .remote-pip video {
@@ -575,7 +615,7 @@ body.light-mode {
   .remote-pip {
     width: 140px;
     height: 90px;
-    bottom: 90px;
+    bottom: 96px;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-strong);
   }
@@ -603,30 +643,32 @@ body.light-mode {
   position: absolute;
   bottom: 24px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   display: flex;
-  gap: var(--gap-md);
+  gap: var(--gap-md, 10px);
   padding: 12px 20px;
   background: var(--glass-heavy);
   backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
   border-radius: 999px;
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-strong);
   transition:
-    opacity var(--med),
-    transform var(--med);
+    opacity var(--med) var(--ease-out-soft),
+    transform var(--med) var(--ease-out-soft);
   z-index: 40;
+  will-change: opacity, transform;
 }
 
 .call-controls.hidden {
   opacity: 0;
-  transform: translateX(-50%) translateY(10px);
+  transform: translate3d(-50%, 10px, 0);
   pointer-events: none;
 }
 
 .call-controls.hidden-soft {
   opacity: 0;
-  transform: translateX(-50%) translateY(14px);
+  transform: translate3d(-50%, 14px, 0);
   pointer-events: none;
 }
 
@@ -642,15 +684,15 @@ body.light-mode {
   color: var(--text);
   cursor: pointer;
   transition:
-    background var(--fast),
-    transform var(--fast),
-    box-shadow var(--fast),
-    color var(--fast);
+    background var(--fast) var(--ease-out-soft),
+    transform var(--fast) var(--ease-out-soft),
+    box-shadow var(--fast) var(--ease-out-soft),
+    color var(--fast) var(--ease-out-soft);
 }
 
 .control-btn:hover {
   background: var(--glass-heavy);
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   box-shadow: var(--shadow-soft);
 }
 
@@ -663,7 +705,7 @@ body.light-mode {
 
 #end-call.control-btn:hover,
 #decline-call.control-btn:hover {
-  box-shadow: var(--danger-glow);
+  box-shadow: 0 0 24px rgba(255, 75, 92, 0.7);
 }
 
 /* Inbound vs active */
@@ -693,8 +735,10 @@ body.light-mode {
   z-index: 10;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(6px);
-  transition: opacity var(--fast), transform var(--fast);
+  transform: translate3d(0, 6px, 0);
+  transition:
+    opacity var(--fast) var(--ease-out-soft),
+    transform var(--fast) var(--ease-out-soft);
 }
 
 .more-controls-menu button {
@@ -722,7 +766,7 @@ body.light-mode {
   display: block;
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translate3d(0, 0, 0);
 }
 
 #ai-noise-toggle.active,
@@ -751,14 +795,24 @@ body.light-mode {
   color: var(--text);
 }
 
-.quality-indicator[data-level="excellent"] { color: #4cff8f; }
-.quality-indicator[data-level="good"]      { color: #a4ff4c; }
-.quality-indicator[data-level="fair"]      { color: #ffd24c; }
-.quality-indicator[data-level="poor"]      { color: #ff9b4c; }
-.quality-indicator[data-level="bad"]       { color: #ff4b5c; }
+.quality-indicator[data-level="excellent"] {
+  color: #4cff8f;
+}
+.quality-indicator[data-level="good"] {
+  color: #a4ff4c;
+}
+.quality-indicator[data-level="fair"] {
+  color: #ffd24c;
+}
+.quality-indicator[data-level="poor"] {
+  color: #ff9b4c;
+}
+.quality-indicator[data-level="bad"] {
+  color: #ff4b5c;
+}
 
 /* ============================================================
-   VIDEO UPGRADE OVERLAY
+   VIDEO UPGRADE OVERLAY (FaceTime-style blur)
 ============================================================ */
 .video-upgrade-overlay {
   position: absolute;
@@ -766,7 +820,7 @@ body.light-mode {
   z-index: 60;
   pointer-events: none;
   opacity: 0;
-  transition: opacity var(--med);
+  transition: opacity var(--med) var(--ease-out-soft);
 }
 
 .video-upgrade-overlay.show {
@@ -783,12 +837,13 @@ body.light-mode {
   position: absolute;
   left: 50%;
   bottom: 80px;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   width: min(360px, 92vw);
   padding: 14px 16px;
   border-radius: var(--radius-lg);
   background: var(--glass-heavy);
   backdrop-filter: blur(var(--blur-heavy));
+  -webkit-backdrop-filter: blur(var(--blur-heavy));
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow-strong);
   display: flex;
@@ -856,7 +911,12 @@ body.light-mode {
   position: absolute;
   inset: 0;
   backdrop-filter: blur(18px) brightness(0.7);
-  background: radial-gradient(circle at top, rgba(0,0,0,0.55), rgba(0,0,0,0.9));
+  -webkit-backdrop-filter: blur(18px) brightness(0.7);
+  background: radial-gradient(
+    circle at top,
+    rgba(0, 0, 0, 0.55),
+    rgba(0, 0, 0, 0.9)
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -920,26 +980,26 @@ body.light-mode {
 }
 
 /* ============================================================
-   TOASTS + VOICEMAIL
+   TOASTS + VOICEMAIL (hooks)
 ============================================================ */
 .toast.show {
   display: block !important;
   opacity: 1 !important;
-  animation: slideUp 0.25s ease forwards;
+  animation: slideUp 0.25s var(--ease-out-soft) forwards;
 }
 
 .toast.hide {
   opacity: 0 !important;
-  animation: slideDown 0.25s ease forwards;
+  animation: slideDown 0.25s var(--ease-out-soft) forwards;
 }
 
 .voicemail-modal.show {
   display: flex !important;
-  animation: popIn 0.25s ease forwards;
+  animation: popIn 0.25s var(--ease-out-soft) forwards;
 }
 
 .voicemail-modal.hide {
-  animation: popOut 0.25s ease forwards;
+  animation: popOut 0.25s var(--ease-out-soft) forwards;
   opacity: 0;
 }
 
@@ -991,3 +1051,4 @@ body.light-mode {
     bottom: 96px;
   }
 }
+
