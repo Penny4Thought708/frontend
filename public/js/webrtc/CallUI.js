@@ -307,170 +307,185 @@ export class CallUI {
     };
   }
 
-  // -------------------------------------------------------
-  // BUTTON LOGIC
-  // -------------------------------------------------------
-  _bindButtons() {
-    this.answerBtn?.addEventListener("click", () => this.answerCall());
 
-    this.declineBtn?.addEventListener("click", () => {
-      // Prefer explicit decline if controller exposes it
-      if (typeof this.rtc.declineCall === "function") {
-        this.rtc.declineCall("declined");
-      } else {
-        this.endCall("decline_button");
-      }
-      this._analytics("call_decline", { peerId: rtcState.peerId });
+// -------------------------------------------------------
+// BUTTON LOGIC — FIXED + PRODUCTION‑READY
+// -------------------------------------------------------
+_bindButtons() {
+  // ANSWER
+  this.answerBtn?.addEventListener("click", () => {
+    this._stopRinging();
+    this.answerCall();
+  });
 
-      // Show voicemail/unavailable flow if toast is wired that way
-      this._showUnavailableToast("Call declined");
+  // DECLINE (REAL DECLINE → CLOSE WINDOW → VOICEMAIL)
+  this.declineBtn?.addEventListener("click", () => {
+    log("Decline inbound call");
+
+    this._stopRinging();
+
+    // Notify remote side explicitly
+    this.socket.emit("call:declined", {
+      from: rtcState.selfId,
+      to: rtcState.peerId,
+      callId: rtcState.callId,
     });
 
-    this.endBtn?.addEventListener("click", () => this.endCall("end_button"));
+    // Close call window immediately
+    this._closeWindow();
 
-    // Mute
-    this.muteBtn?.addEventListener("click", () => {
-      const stream = rtcState.localStream;
-      if (!stream) return;
-      const enabled = stream.getAudioTracks().some((t) => t.enabled);
-      stream.getAudioTracks().forEach((t) => (t.enabled = !enabled));
-      this.muteBtn.classList.toggle("active", !enabled);
-      this._analytics("toggle_mute", { enabled: !enabled });
-    });
+    // Show voicemail queue card
+    this._openVoicemailModal();
 
-    // Camera toggle (upgrade or toggle)
-    this.camBtn?.addEventListener("click", async () => {
-      // Pure voice → upgrade to video
-      if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
-        await this.upgradeToVideo();
-        return;
-      }
+    this._analytics("call_decline", { peerId: rtcState.peerId });
+  });
 
-      const stream = rtcState.localStream;
-      const enabled = stream.getVideoTracks().some((t) => t.enabled);
-      const newEnabled = !enabled;
-      stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
-      this.camBtn.classList.toggle("active", newEnabled);
+  // END CALL (ACTIVE CALL ONLY)
+  this.endBtn?.addEventListener("click", () => {
+    log("End active call");
+    this._stopRinging();
+    this.endCall("end_button");
+  });
 
-      if (!newEnabled) this.videoContainer?.classList.add("camera-off");
-      else this.videoContainer?.classList.remove("camera-off");
+  // MUTE
+  this.muteBtn?.addEventListener("click", () => {
+    const stream = rtcState.localStream;
+    if (!stream) return;
+    const enabled = stream.getAudioTracks().some((t) => t.enabled);
+    stream.getAudioTracks().forEach((t) => (t.enabled = !enabled));
+    this.muteBtn.classList.toggle("active", !enabled);
+    this._analytics("toggle_mute", { enabled: !enabled });
+  });
 
-      this._analytics("toggle_camera", { enabled: newEnabled });
-    });
-
-    // More menu
-    this.moreBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (!this.moreMenu) return;
-      const isOpen = this.moreMenu.classList.contains("show");
-      this.moreMenu.classList.toggle("show", !isOpen);
-      this.moreMenu.classList.toggle("hidden", isOpen);
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!this.moreMenu) return;
-      const target = e.target;
-      if (!this.moreMenu.contains(target) && target !== this.moreBtn) {
-        this.moreMenu.classList.remove("show");
-        this.moreMenu.classList.add("hidden");
-      }
-    });
-
-    // More menu actions
-    this.shareBtn?.addEventListener("click", () => {
-      this.rtc.startScreenShare();
-      if (this.moreMenu) {
-        this.moreMenu.classList.remove("show");
-        this.moreMenu.classList.add("hidden");
-      }
-    });
-
-    this.noiseBtn?.addEventListener("click", () => {
-      this.noiseBtn.classList.toggle("active");
-      this._analytics("toggle_ai_noise", {
-        active: this.noiseBtn.classList.contains("active"),
-      });
-    });
-
-    this.recordBtn?.addEventListener("click", () => {
-      this.recordBtn.classList.toggle("active");
-      this._analytics("toggle_recording_ui", {
-        active: this.recordBtn.classList.contains("active"),
-      });
-      // Actual recording handled in WebRTCController or another module
-    });
-
-    this.historyBtn?.addEventListener("click", () => {
-      this.historyBtn.classList.toggle("active");
-      this._analytics("toggle_call_history", {
-        active: this.historyBtn.classList.contains("active"),
-      });
-    });
-
-    // Debug toggle
-    this.debugToggleBtn?.addEventListener("click", () => {
-      this.debugToggleBtn.classList.toggle("active");
-      const active = this.debugToggleBtn.classList.contains("active");
-      if (this.debugOverlay) {
-        this.debugOverlay.classList.toggle("hidden", !active);
-      }
-      this._analytics("toggle_debug_overlay", { active });
-    });
-
-    // Video upgrade overlay buttons
-    this.videoUpgradeAcceptBtn?.addEventListener("click", () => this.answerCall());
-    this.videoUpgradeDeclineBtn?.addEventListener("click", () => {
-      this._exitVideoUpgradePreview();
-      this._setStatus("In call");
-      this._enterActiveVoiceMode();
-      this._analytics("video_upgrade_decline_mobile", { peerId: rtcState.peerId });
-    });
-
-    this.videoUpgradeAcceptDesktopBtn?.addEventListener("click", () => this.answerCall());
-    this.videoUpgradeDeclineDesktopBtn?.addEventListener("click", () => {
-      this._exitVideoUpgradePreview();
-      this._setStatus("In call");
-      this._enterActiveVoiceMode();
-      this._analytics("video_upgrade_decline_desktop", { peerId: rtcState.peerId });
-    });
-
-    // Voicemail modal basic wiring (actual recording handled elsewhere)
-    this.vmCancelBtn?.addEventListener("click", () => this._closeVoicemailModal());
-
-    // Unavailable toast → voicemail / video / text
-    this.utVoiceBtn?.addEventListener("click", () => {
-      this._hideUnavailableToast();
-      this._openVoicemailModal();
-      this._analytics("voicemail_open_from_unavailable", { peerId: rtcState.peerId });
-    });
-    this.utVideoBtn?.addEventListener("click", () => {
-      this._hideUnavailableToast();
-      this._analytics("video_message_from_unavailable", { peerId: rtcState.peerId });
-      // hook for future video message flow
-    });
-    this.utTextBtn?.addEventListener("click", () => {
-      this._hideUnavailableToast();
-      this._analytics("text_message_from_unavailable", { peerId: rtcState.peerId });
-      // hook for future text message flow
-    });
-
-    // Double‑tap swap: PiP + any remote tile
-    if (this.localPip) {
-      this._bindDoubleTap(this.localPip, () => {
-        const firstRemote = this._firstRemoteTile();
-        this._togglePrimary(firstRemote);
-      });
+  // CAMERA TOGGLE (UPGRADE OR TOGGLE)
+  this.camBtn?.addEventListener("click", async () => {
+    if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
+      await this.upgradeToVideo();
+      return;
     }
 
-    // Delegate double-tap on any remote participant tile
-    if (this.callGrid) {
-      this.callGrid.addEventListener("click", (e) => {
-        const tile = e.target.closest(".participant.remote");
-        if (!tile) return;
-        this._handleRemoteDoubleTap(tile);
-      });
+    const stream = rtcState.localStream;
+    const enabled = stream.getVideoTracks().some((t) => t.enabled);
+    const newEnabled = !enabled;
+    stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
+    this.camBtn.classList.toggle("active", newEnabled);
+
+    if (!newEnabled) this.videoContainer?.classList.add("camera-off");
+    else this.videoContainer?.classList.remove("camera-off");
+
+    this._analytics("toggle_camera", { enabled: newEnabled });
+  });
+
+  // MORE MENU
+  this.moreBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!this.moreMenu) return;
+    const isOpen = this.moreMenu.classList.contains("show");
+    this.moreMenu.classList.toggle("show", !isOpen);
+    this.moreMenu.classList.toggle("hidden", isOpen);
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!this.moreMenu) return;
+    const target = e.target;
+    if (!this.moreMenu.contains(target) && target !== this.moreBtn) {
+      this.moreMenu.classList.remove("show");
+      this.moreMenu.classList.add("hidden");
     }
+  });
+
+  // SCREEN SHARE
+  this.shareBtn?.addEventListener("click", () => {
+    this.rtc.startScreenShare();
+    if (this.moreMenu) {
+      this.moreMenu.classList.remove("show");
+      this.moreMenu.classList.add("hidden");
+    }
+  });
+
+  // AI NOISE
+  this.noiseBtn?.addEventListener("click", () => {
+    this.noiseBtn.classList.toggle("active");
+    this._analytics("toggle_ai_noise", {
+      active: this.noiseBtn.classList.contains("active"),
+    });
+  });
+
+  // RECORDING UI
+  this.recordBtn?.addEventListener("click", () => {
+    this.recordBtn.classList.toggle("active");
+    this._analytics("toggle_recording_ui", {
+      active: this.recordBtn.classList.contains("active"),
+    });
+  });
+
+  // CALL HISTORY
+  this.historyBtn?.addEventListener("click", () => {
+    this.historyBtn.classList.toggle("active");
+    this._analytics("toggle_call_history", {
+      active: this.historyBtn.classList.contains("active"),
+    });
+  });
+
+  // DEBUG OVERLAY
+  this.debugToggleBtn?.addEventListener("click", () => {
+    this.debugToggleBtn.classList.toggle("active");
+    const active = this.debugToggleBtn.classList.contains("active");
+    if (this.debugOverlay) {
+      this.debugOverlay.classList.toggle("hidden", !active);
+    }
+    this._analytics("toggle_debug_overlay", { active });
+  });
+
+  // VIDEO UPGRADE OVERLAY
+  this.videoUpgradeAcceptBtn?.addEventListener("click", () => this.answerCall());
+  this.videoUpgradeDeclineBtn?.addEventListener("click", () => {
+    this._exitVideoUpgradePreview();
+    this._setStatus("In call");
+    this._enterActiveVoiceMode();
+  });
+
+  this.videoUpgradeAcceptDesktopBtn?.addEventListener("click", () => this.answerCall());
+  this.videoUpgradeDeclineDesktopBtn?.addEventListener("click", () => {
+    this._exitVideoUpgradePreview();
+    this._setStatus("In call");
+    this._enterActiveVoiceMode();
+  });
+
+  // VOICEMAIL MODAL
+  this.vmCancelBtn?.addEventListener("click", () => this._closeVoicemailModal());
+
+  // UNAVAILABLE TOAST → VOICEMAIL
+  this.utVoiceBtn?.addEventListener("click", () => {
+    this._hideUnavailableToast();
+    this._openVoicemailModal();
+  });
+
+  this.utVideoBtn?.addEventListener("click", () => {
+    this._hideUnavailableToast();
+  });
+
+  this.utTextBtn?.addEventListener("click", () => {
+    this._hideUnavailableToast();
+  });
+
+  // DOUBLE TAP SWAP
+  if (this.localPip) {
+    this._bindDoubleTap(this.localPip, () => {
+      const firstRemote = this._firstRemoteTile();
+      this._togglePrimary(firstRemote);
+    });
   }
+
+  if (this.callGrid) {
+    this.callGrid.addEventListener("click", (e) => {
+      const tile = e.target.closest(".participant.remote");
+      if (!tile) return;
+      this._handleRemoteDoubleTap(tile);
+    });
+  }
+}
+
 
   _firstRemoteTile() {
     return this.callGrid?.querySelector(".participant.remote") || null;
@@ -1139,6 +1154,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
