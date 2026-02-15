@@ -49,7 +49,7 @@ export class CallUI {
     this.timerEl = document.getElementById("call-timer");
     this.qualityEl = document.getElementById("call-quality-indicator");
 
-    // Local PiP
+    // Local PIP
     this.localPip = document.getElementById("localPip");
     this.localPipVideo = document.getElementById("localPipVideo");
 
@@ -139,7 +139,7 @@ export class CallUI {
     log("answerCall");
 
     // Accepting video upgrade
-    if (this.videoContainer.classList.contains("video-upgrade-mode")) {
+    if (this.videoContainer?.classList.contains("video-upgrade-mode")) {
       this._exitVideoUpgradePreview();
       rtcState.audioOnly = false;
       this.rtc.answerCall();
@@ -241,20 +241,23 @@ export class CallUI {
       stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
       this.camBtn.classList.toggle("active", newEnabled);
 
-      if (!newEnabled) this.videoContainer.classList.add("camera-off");
-      else this.videoContainer.classList.remove("camera-off");
+      if (!newEnabled) this.videoContainer?.classList.add("camera-off");
+      else this.videoContainer?.classList.remove("camera-off");
     });
 
     // More menu
     this.moreBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (!this.moreMenu) return;
       const isOpen = this.moreMenu.classList.contains("show");
       this.moreMenu.classList.toggle("show", !isOpen);
       this.moreMenu.classList.toggle("hidden", isOpen);
     });
 
     document.addEventListener("click", (e) => {
-      if (!this.moreMenu.contains(e.target) && e.target !== this.moreBtn) {
+      if (!this.moreMenu) return;
+      const target = e.target;
+      if (!this.moreMenu.contains(target) && target !== this.moreBtn) {
         this.moreMenu.classList.remove("show");
         this.moreMenu.classList.add("hidden");
       }
@@ -263,8 +266,10 @@ export class CallUI {
     // More menu actions
     this.shareBtn?.addEventListener("click", () => {
       this.rtc.startScreenShare();
-      this.moreMenu.classList.remove("show");
-      this.moreMenu.classList.add("hidden");
+      if (this.moreMenu) {
+        this.moreMenu.classList.remove("show");
+        this.moreMenu.classList.add("hidden");
+      }
     });
 
     this.noiseBtn?.addEventListener("click", () => {
@@ -356,6 +361,8 @@ export class CallUI {
       this.cameraOnBeep.play().catch(() => {});
     }
 
+    if (!this.videoContainer) return;
+
     this.videoContainer.classList.add("video-upgrade-mode", "inbound-mode");
     this.videoContainer.classList.remove("active-mode");
 
@@ -365,21 +372,33 @@ export class CallUI {
     this.camBtn?.classList.add("hidden");
     this.endBtn?.classList.add("hidden");
 
-    if (isMobile()) {
-      this.callGrid.classList.add("mobile-video-preview");
-      this.callGrid.classList.remove("desktop-video-preview");
-    } else {
-      this.callGrid.classList.add("desktop-video-preview");
-      this.callGrid.classList.remove("mobile-video-preview");
+    if (this.callGrid) {
+      if (isMobile()) {
+        this.callGrid.classList.add("mobile-video-preview");
+        this.callGrid.classList.remove("desktop-video-preview");
+      } else {
+        this.callGrid.classList.add("desktop-video-preview");
+        this.callGrid.classList.remove("mobile-video-preview");
+      }
     }
 
-    this.videoUpgradeOverlay?.classList.add("show");
+    if (this.videoUpgradeOverlay) {
+      this.videoUpgradeOverlay.classList.remove("hidden");
+      this.videoUpgradeOverlay.classList.add("show");
+    }
   }
 
   _exitVideoUpgradePreview() {
+    if (!this.videoContainer) return;
+
     this.videoContainer.classList.remove("video-upgrade-mode");
-    this.callGrid.classList.remove("mobile-video-preview", "desktop-video-preview");
-    this.videoUpgradeOverlay?.classList.remove("show");
+    if (this.callGrid) {
+      this.callGrid.classList.remove("mobile-video-preview", "desktop-video-preview");
+    }
+    if (this.videoUpgradeOverlay) {
+      this.videoUpgradeOverlay.classList.remove("show");
+      this.videoUpgradeOverlay.classList.add("hidden");
+    }
   }
 
   // -------------------------------------------------------
@@ -392,7 +411,7 @@ export class CallUI {
     this.videoContainer.classList.add("is-open", "call-opening");
 
     setTimeout(() => {
-      this.videoContainer.classList.remove("call-opening");
+      this.videoContainer?.classList.remove("call-opening");
     }, 300);
 
     this.callControls?.classList.remove("hidden");
@@ -547,11 +566,13 @@ export class CallUI {
   }
 
   _applyPrimaryLayout() {
-    // CSS handles layout; hook left for future enhancements
+    // Layout is handled by CSS grid + mobile flex.
+    // Hook left for future stage/filmstrip logic if needed.
   }
 
   _initPipDrag() {
-    const pipEl = this.localWrapper;
+    // Drag should apply to the PiP window, not the main local tile
+    const pipEl = this.localPip;
     if (!pipEl || !this.callBody) return;
 
     const startDrag = (x, y) => {
@@ -562,6 +583,7 @@ export class CallUI {
         offsetY: y - rect.top,
         parent,
       };
+      pipEl.classList.add("dragging");
     };
 
     const moveDrag = (x, y) => {
@@ -579,6 +601,7 @@ export class CallUI {
 
     const endDrag = () => {
       this._dragState = null;
+      pipEl.classList.remove("dragging");
     };
 
     pipEl.addEventListener("pointerdown", (e) => {
@@ -609,6 +632,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
