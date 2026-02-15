@@ -105,7 +105,7 @@ function initUI() {
   };
 
   /* -----------------------------------------------------------
-     DIRECTORY SECTION SWITCHER
+     DIRECTORY SECTION SWITCHER (UPDATED WITH VOICEMAIL HOOK)
   ----------------------------------------------------------- */
   (function initDirectorySwitcher() {
     const navButtons = document.querySelectorAll(".directory-nav button");
@@ -125,6 +125,13 @@ function initUI() {
       if (!newSection) return;
       newSection.classList.remove("hidden");
       requestAnimationFrame(() => newSection.classList.add("dir-active"));
+
+      // 🔹 Voicemail section hook
+      if (sectionName === "voicemail") {
+        import("./voicemail/VoicemailUI.js").then(({ loadVoicemails }) => {
+          loadVoicemails();
+        });
+      }
     }
 
     navButtons.forEach(btn => {
@@ -201,11 +208,17 @@ function initUI() {
   });
 
   /* -----------------------------------------------------------
-     VOICEMAIL MODAL
+     VOICEMAIL MODAL (UPDATED)
   ----------------------------------------------------------- */
   document.getElementById("vmCancelBtn")?.addEventListener("click", () => {
     UIX.hideModal(voicemailModal);
   });
+
+  // 🔹 Global launcher for voicemail recorder
+  window.openVoicemailForUser = function (toUserId) {
+    UIX.showModal(voicemailModal);
+    openVoicemailRecorder(toUserId);
+  };
 
   /* -----------------------------------------------------------
      FULL PROFILE CLOSE
@@ -312,6 +325,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
