@@ -1,4 +1,10 @@
 // public/js/webrtc/WebRTCController.js
+// ============================================================
+// WebRTCController: signaling, peer connection, media, upgrades,
+// screen share, and remote track handling.
+// Aligned with CallUI.js (voice/video, upgrade overlay, screen share).
+// ============================================================
+
 import { rtcState } from "./WebRTCState.js";
 import {
   getLocalMedia,
@@ -17,11 +23,14 @@ export class WebRTCController {
   constructor(socket) {
     this.socket = socket;
 
+    // Single-peer map (future‑proof for multi‑peer)
     this.pcMap = new Map();
 
+    // Screen share
     this.screenTrack = null;
     this.screenSender = null;
 
+    // Callbacks (wired by CallUI)
     this.onCallStarted = () => {};
     this.onCallEnded = () => {};
     this.onRemoteJoin = () => {};
@@ -58,7 +67,7 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
-     CREATE PEER CONNECTION
+     CREATE / GET PEER CONNECTION
   ------------------------------------------------------- */
   _ensurePC(peerId) {
     peerId = String(peerId);
@@ -92,11 +101,19 @@ export class WebRTCController {
     };
 
     pc.onconnectionstatechange = () => {
-      log("pc state", peerId, pc.connectionState);
-      if (pc.connectionState === "failed") {
+      const state = pc.connectionState;
+      log("pc state", peerId, state);
+
+      // Simple quality mapping
+      if (this.onQualityUpdate) {
+        this.onQualityUpdate(state);
+      }
+
+      if (state === "failed") {
         pc.restartIce();
       }
-      if (pc.connectionState === "disconnected") {
+
+      if (state === "disconnected" || state === "closed") {
         this._handleLeave(peerId);
       }
     };
@@ -108,8 +125,9 @@ export class WebRTCController {
      START CALL (CALLER)
   ------------------------------------------------------- */
   async startCall(peerId, { audio = true, video = true } = {}) {
+    peerId = String(peerId);
     rtcState.isCaller = true;
-    rtcState.peerId = String(peerId);
+    rtcState.peerId = peerId;
     rtcState.audioOnly = audio && !video;
 
     const stream = await getLocalMedia(audio, video);
@@ -135,40 +153,27 @@ export class WebRTCController {
 
   /* -------------------------------------------------------
      HANDLE INCOMING OFFER (CALLEE)
+     - Initial call (voice or video)
+     - Voice → video upgrade (isVideoUpgrade = true)
+     We DO NOT auto-answer here; CallUI decides.
   ------------------------------------------------------- */
   async _handleOffer(peerId, offer, isVideoUpgrade = false) {
     peerId = String(peerId);
     rtcState.peerId = peerId;
     rtcState.incomingOffer = offer;
-    rtcState.incomingIsVideo = !rtcState.audioOnly || isVideoUpgrade;
 
-    if (!rtcState.localStream) {
-      const stream = await getLocalMedia(true, !rtcState.audioOnly);
-      attachLocalStream(stream);
-    }
+    const sdp = offer?.sdp || "";
+    const hasVideoInSdp = sdp.includes("m=video");
+    rtcState.incomingIsVideo = hasVideoInSdp || isVideoUpgrade;
 
-    const pc = this._ensurePC(peerId);
-    await pc.setRemoteDescription(offer);
-
-    if (isVideoUpgrade) {
-      this.onRemoteUpgradedToVideo(peerId);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      this.socket.emit("webrtc:signal", {
-        type: "answer",
-        to: peerId,
-        answer,
-      });
-
-      return;
-    }
-
+    // Do NOT touch local media here for upgrade preview.
+    // CallUI will call rtc.answerCall() when user accepts.
     this.onIncomingOffer(peerId, offer);
   }
 
   /* -------------------------------------------------------
-     ANSWER CALL
+     ANSWER CALL (CALLEE ACCEPTS)
+     - Handles both initial call and video upgrade accept.
   ------------------------------------------------------- */
   async answerCall() {
     const peerId = rtcState.peerId;
@@ -179,10 +184,25 @@ export class WebRTCController {
 
     await pc.setRemoteDescription(offer);
 
-    const stream = rtcState.localStream;
-    if (stream) {
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+    let stream = rtcState.localStream;
+
+    // If no local stream yet, get appropriate media
+    if (!stream) {
+      if (rtcState.incomingIsVideo) {
+        stream = await getLocalMedia(true, true);
+      } else {
+        stream = await getLocalMedia(true, false);
+      }
+      attachLocalStream(stream);
+    } else if (rtcState.incomingIsVideo && rtcState.audioOnly) {
+      // We were audio-only and are now accepting a video upgrade
+      stream = await upgradeLocalToVideo();
     }
+
+    rtcState.localStream = stream;
+    rtcState.audioOnly = !rtcState.incomingIsVideo;
+
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
@@ -194,17 +214,16 @@ export class WebRTCController {
     });
 
     rtcState.inCall = true;
-    rtcState.callStartTs = Date.now();
+    rtcState.callStartTs = rtcState.callStartTs || Date.now();
     this.onCallStarted(peerId);
   }
 
   /* -------------------------------------------------------
-     HANDLE ANSWER
+     HANDLE ANSWER (CALLER)
   ------------------------------------------------------- */
   async _handleAnswer(peerId, answer) {
     peerId = String(peerId);
     const pc = this._ensurePC(peerId);
-
     await pc.setRemoteDescription(answer);
   }
 
@@ -223,7 +242,7 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
-     SCREEN SHARE
+     SCREEN SHARE (OPTION B: simple track replace)
   ------------------------------------------------------- */
   async startScreenShare() {
     const result = await startScreenShare();
@@ -253,8 +272,10 @@ export class WebRTCController {
     const pc = this.pcMap.get(rtcState.peerId);
     if (!pc) return;
 
-    const camTrack = rtcState.localStream.getVideoTracks()[0];
-    await this.screenSender.replaceTrack(camTrack);
+    const camTrack = rtcState.localStream?.getVideoTracks()[0];
+    if (camTrack) {
+      await this.screenSender.replaceTrack(camTrack);
+    }
 
     this.screenTrack.stop();
     this.screenTrack = null;
@@ -262,7 +283,7 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
-     UPGRADE VOICE → VIDEO
+     UPGRADE VOICE → VIDEO (CALLER INITIATES)
   ------------------------------------------------------- */
   async upgradeToVideo() {
     const peerId = rtcState.peerId;
@@ -271,6 +292,9 @@ export class WebRTCController {
     const pc = this._ensurePC(peerId);
 
     const newStream = await upgradeLocalToVideo();
+    rtcState.localStream = newStream;
+    rtcState.audioOnly = false;
+
     newStream.getVideoTracks().forEach((track) => {
       const sender = pc
         .getSenders()
@@ -294,9 +318,11 @@ export class WebRTCController {
   }
 
   /* -------------------------------------------------------
-     END CALL
+     END CALL (LOCAL HANGUP)
   ------------------------------------------------------- */
   endCall() {
+    const peerId = rtcState.peerId;
+
     for (const [, pc] of this.pcMap.entries()) {
       pc.close();
     }
@@ -308,6 +334,13 @@ export class WebRTCController {
     rtcState.peerId = null;
     rtcState.incomingOffer = null;
     rtcState.incomingIsVideo = false;
+
+    if (peerId) {
+      this.socket.emit("webrtc:signal", {
+        type: "leave",
+        to: peerId,
+      });
+    }
 
     this.onCallEnded();
   }
@@ -323,8 +356,10 @@ export class WebRTCController {
     this.pcMap.delete(peerId);
 
     this.onRemoteLeave(peerId);
+    this.onCallEnded();
   }
 }
+
 
 
 
