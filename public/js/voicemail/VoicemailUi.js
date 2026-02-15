@@ -1,12 +1,5 @@
 // ============================================================
 // VoicemailUI.js — Neon‑Glass Voicemail System
-// Handles:
-//   - Loading voicemail list
-//   - Rendering voicemail cards
-//   - Playback controller
-//   - Delete + save
-//   - Mark-as-read
-//   - Real-time "new voicemail" events
 // ============================================================
 
 import { API_BASE } from "../config.js";
@@ -59,15 +52,28 @@ export async function loadVoicemails() {
 function normalizeVoicemail(vm) {
   return {
     ...vm,
-
-    // Backend returns created_at, UI expects timestamp
     timestamp: vm.created_at,
     dateString: new Date(vm.created_at).toLocaleString(),
-
-    // Placeholder until JOIN is added
-    from_name: `User ${vm.from_id}`,
-    from_avatar: "/public/img/default-avatar.png"
+    from_name: vm.from_name || "Unknown",
+    from_avatar: vm.from_avatar || "img/default-avatar.png",
+    from_theme: vm.from_theme || "system"
   };
+}
+
+/* -------------------------------------------------------
+   Theme → Accent Color Mapping
+------------------------------------------------------- */
+function themeColor(theme) {
+  switch (theme) {
+    case "neon": return "#00e0ff";
+    case "sunset": return "#ff7a50";
+    case "forest": return "#4cd964";
+    case "ocean": return "#4da6ff";
+    case "rose": return "#ff4b8a";
+    case "gold": return "#ffcc33";
+    case "dark": return "#8899aa";
+    default: return "#00e0ff"; // system default
+  }
 }
 
 /* -------------------------------------------------------
@@ -75,8 +81,11 @@ function normalizeVoicemail(vm) {
 ------------------------------------------------------- */
 function renderVoicemailCard(vm) {
   const li = document.createElement("li");
-  li.className = "vm-card glass-heavy";
+  li.className = "vm-card";
   li.dataset.id = vm.id;
+
+  // Apply theme accent color
+  li.style.setProperty("--vm-accent", themeColor(vm.from_theme));
 
   li.innerHTML = `
     <div class="vm-header">
@@ -120,7 +129,6 @@ function renderVoicemailCard(vm) {
 function wireVoicemailCard(card, vm) {
   const playBtn = card.querySelector(".vm-play-btn");
   const durationEl = card.querySelector(".vm-duration");
-
   const audio = new Audio(vm.audio_url);
 
   audio.onloadedmetadata = () => {
@@ -128,27 +136,29 @@ function wireVoicemailCard(card, vm) {
   };
 
   playBtn.onclick = () => {
-    // Stop previous audio
     if (activeAudio && activeAudio !== audio) {
       activeAudio.pause();
-      activeCard.querySelector(".vm-play-btn span").textContent = "play_arrow";
+      activeCard?.querySelector(".vm-play-btn span").textContent = "play_arrow";
+      activeCard?.classList.remove("vm-playing");
     }
 
-    // Toggle play/pause
     if (audio.paused) {
       audio.play();
       playBtn.querySelector("span").textContent = "pause";
+      card.classList.add("vm-playing");
       activeAudio = audio;
       activeCard = card;
       markVoicemailRead(vm.id, card);
     } else {
       audio.pause();
       playBtn.querySelector("span").textContent = "play_arrow";
+      card.classList.remove("vm-playing");
     }
   };
 
   audio.onended = () => {
     playBtn.querySelector("span").textContent = "play_arrow";
+    card.classList.remove("vm-playing");
   };
 
   // Delete
@@ -164,11 +174,13 @@ function wireVoicemailCard(card, vm) {
 }
 
 /* -------------------------------------------------------
-   Mark as Read (correct backend route)
+   Mark as Read
 ------------------------------------------------------- */
 async function markVoicemailRead(id, card) {
   const dot = card.querySelector(".vm-status");
   if (!dot.classList.contains("unread")) return;
+
+  dot.classList.remove("unread");
 
   await fetch(`${API_BASE}/api/voicemail/listened`, {
     method: "POST",
@@ -176,12 +188,10 @@ async function markVoicemailRead(id, card) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id })
   });
-
-  dot.classList.remove("unread");
 }
 
 /* -------------------------------------------------------
-   Delete Voicemail (correct backend route)
+   Delete Voicemail
 ------------------------------------------------------- */
 async function deleteVoicemail(id, card) {
   const res = await fetch(`${API_BASE}/api/voicemail/delete`, {
