@@ -61,8 +61,16 @@ if (window.__SOCKET_INSTANCE__) {
     console.log("[socket] Reconnected");
   });
 }
+socket.on("call:incoming", (payload) => {
+  window.onIncomingCall?.(payload);
+});
+
+socket.on("call:outgoing", (payload) => {
+  window.onOutgoingCall?.(payload);
+});
 
 export { socket };
+
 
 
 
