@@ -82,7 +82,6 @@ body.light-mode {
 /* ============================================================
    CALL WINDOW — FULLSCREEN OVERLAY
 ============================================================ */
-
 .call-window {
   position: fixed;
   inset: 0;
@@ -114,18 +113,12 @@ body.light-mode {
 }
 
 @keyframes callExpand {
-  0% {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.85); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 /* Voice-only mode */
-.call-window.voice-only-call  video,
+.call-window.voice-only-call video,
 .call-window.voice-only-call .participant.remote video {
   display: none !important;
   opacity: 0 !important;
@@ -137,25 +130,25 @@ body.light-mode {
 }
 
 /* Camera-off mode */
-.call-window.camera-off  video {
+.call-window.camera-off video {
   display: none !important;
   opacity: 0 !important;
 }
 
-.call-window.camera-off  .avatar-wrapper {
+.call-window.camera-off .avatar-wrapper {
   display: flex !important;
   opacity: 1 !important;
 }
 
-/* Soft hide utility */
+/* Soft hide */
 .hidden-soft {
   opacity: 0.25;
   pointer-events: none;
 }
+
 /* ============================================================
    PIP — SNAP-AWAY + EDGE SNAPPING + SWAP ANIMATIONS
 ============================================================ */
-
 .pip-anim {
   transition:
     transform 0.25s ease,
@@ -177,7 +170,6 @@ body.light-mode {
   transform: scale(0.75);
 }
 
-/* Snap-away glow when near controls */
 .pip-anim.snap-warning {
   box-shadow: 0 0 18px rgba(255, 200, 0, 0.55);
 }
@@ -185,7 +177,6 @@ body.light-mode {
 /* ============================================================
    CALL BODY — GLASS PANEL
 ============================================================ */
-
 .call-body {
   width: min(1120px, 96vw);
   height: min(640px, 82vh);
@@ -200,6 +191,382 @@ body.light-mode {
   position: relative;
   font-family: var(--font-body);
 }
+
+/* ============================================================
+   PARTICIPANT GRID — DESKTOP
+============================================================ */
+.call-grid {
+  position: relative;
+  padding: 16px;
+  padding-bottom: 96px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-auto-rows: minmax(180px, 1fr);
+  gap: 14px;
+  transition: grid-template-columns 0.25s ease, grid-auto-rows 0.25s ease;
+}
+
+.call-grid.participants-1 { grid-template-columns: 1fr; }
+.call-grid.participants-2 { grid-template-columns: 1fr 1fr; }
+
+.call-grid.participants-3,
+.call-grid.participants-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(200px, 1fr);
+}
+
+.call-grid.participants-5,
+.call-grid.participants-6 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.call-grid.participants-7,
+.call-grid.participants-8,
+.call-grid.participants-9 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-auto-rows: minmax(160px, 1fr);
+}
+
+.call-grid.participants-many {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ============================================================
+   PARTICIPANT TILE — BASE
+============================================================ */
+.participant {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  isolation: isolate;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.25s ease,
+    opacity 0.25s ease;
+  z-index: 1;
+}
+
+.participant.local {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.participant.remote {
+  display: block;
+  opacity: 1;
+}
+
+/* Speaking */
+.participant.speaking {
+  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+}
+
+/* Active speaker emphasis */
+.participant.active-speaker:not(.stage) {
+  box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+  transform: scale(1.02);
+  z-index: 3;
+}
+
+/* ============================================================
+   MEDIA WRAPPER — VIDEO + AVATAR
+============================================================ */
+.media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  background: #000;
+  overflow: hidden;
+}
+
+.media-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  background: #000;
+  display: block;
+}
+
+.media-wrapper video.show {
+  opacity: 1;
+}
+
+#localVideo,
+#localPipVideo {
+  transform: scaleX(-1);
+}
+
+.remoteVideo {
+  transform: none !important;
+}
+
+/* ============================================================
+   AVATAR WRAPPER
+============================================================ */
+.avatar-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  z-index: 3;
+}
+
+.avatar-wrapper img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-2);
+  box-shadow: var(--accent-glow);
+}
+
+.avatar-wrapper.hidden {
+  opacity: 0;
+}
+
+/* ============================================================
+   VOICE PULSE
+============================================================ */
+.voice-pulse {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid rgba(77, 163, 255, 0.6);
+  animation: voicePulse 1.4s infinite ease-out;
+  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
+  pointer-events: none;
+}
+
+@keyframes voicePulse {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* ============================================================
+   LOCAL PIP — NEON GLASS
+============================================================ */
+.local-pip {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  height: 120px;
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  overflow: hidden;
+  z-index: 999;
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  cursor: grab;
+}
+
+.local-pip.dragging {
+  cursor: grabbing;
+  transition: none;
+  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+}
+
+.local-pip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.local-pip.hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   REMOTE PIP — MIRRORS LOCAL PIP
+============================================================ */
+.remote-pip {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 200px;
+  height: 120px;
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  overflow: hidden;
+  z-index: 999;
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  cursor: grab;
+}
+
+.remote-pip.dragging {
+  cursor: grabbing;
+  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+}
+
+.remote-pip.hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   CONTROL BAR — GLASSMORPHIC
+============================================================ */
+.call-controls {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--gap-md);
+  padding: 12px 20px;
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  transition:
+    opacity var(--med),
+    transform var(--med);
+  z-index: 40;
+}
+
+.call-controls.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+  pointer-events: none;
+}
+
+.call-controls.hidden-soft {
+  opacity: 0;
+  transform: translateX(-50%) translateY(14px);
+  pointer-events: none;
+}
+
+/* Buttons */
+.control-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background var(--fast),
+    transform var(--fast),
+    box-shadow var(--fast),
+    color var(--fast);
+}
+
+.control-btn:hover {
+  background: var(--glass-heavy);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+#end-call.control-btn,
+#decline-call.control-btn {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+#end-call.control-btn:hover,
+#decline-call.control-btn:hover {
+  box-shadow: var(--danger-glow);
+}
+
+/* Inbound vs active */
+.call-window.inbound-mode .active-only { display: none; }
+.call-window.active-mode .inbound-only { display: none; }
+
+/* More controls menu */
+.more-controls {
+  position: relative;
+}
+
+.more-controls-menu {
+  position: absolute;
+  bottom: 52px;
+  right: 0;
+  min-width: 190px;
+  background: var(--bg-3);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  padding: 6px 0;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity var(--fast), transform var(--fast);
+}
+
+.more-controls-menu button {
+  width: 100%;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.more-controls-menu button:hover {
+  background: var(--glass);
+}
+
+.more-controls-menu.hidden {
+  display: none !important;
+}
+
+.more-controls-menu.show {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+#ai-noise-toggle.active,
+#record-call.active {
+  background: rgba(77, 163, 255, 0.16);
+}
+/* ===========================
+   video.css — Part 2
+   (Call grid → end)
+=========================== */
 
 /* ============================================================
    PARTICIPANT GRID — DESKTOP
@@ -265,26 +632,24 @@ body.light-mode {
   z-index: 1;
 }
 
-/* Local tile participates in the grid like others */
 .participant.local {
   position: relative;
   z-index: 1;
   pointer-events: auto;
 }
 
-/* Remote tile safety */
 .participant.remote {
   display: block;
   opacity: 1;
 }
 
-/* Speaking state */
+/* Speaking + active speaker */
+
 .participant.speaking {
   box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
 }
 
-/* Active speaker emphasis */
 .participant.active-speaker:not(.stage) {
   box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
@@ -404,7 +769,6 @@ body.light-mode {
   overflow: hidden;
 }
 
-/* Base video styling */
 .media-wrapper video {
   width: 100%;
   height: 100%;
@@ -415,17 +779,16 @@ body.light-mode {
   display: block;
 }
 
-/* JS toggles .show when video is ready */
 .media-wrapper video.show {
   opacity: 1;
 }
 
-/* Hidden-soft */
 .media-wrapper video.hidden-soft {
   opacity: 0;
 }
 
 /* Mirror ONLY local video */
+
 #localVideo,
 #localPipVideo {
   transform: scaleX(-1);
@@ -434,6 +797,7 @@ body.light-mode {
 .remoteVideo {
   transform: none !important;
 }
+
 /* ============================================================
    SCREEN SHARE — PIP COMPATIBILITY
 ============================================================ */
@@ -458,8 +822,9 @@ body.light-mode {
   outline-offset: -3px;
   box-shadow: 0 0 18px rgba(77, 163, 255, 0.45);
 }
+
 /* ============================================================
-   TOASTS + VOICEMAIL — VISIBILITY + ANIMATION
+   TOASTS + VOICEMAIL
 ============================================================ */
 
 .toast.show {
@@ -575,10 +940,7 @@ body.light-mode {
   border-color: rgba(0, 200, 255, 0.9);
 }
 
-.participant.voice-only.stage {
-  background: var(--bg-2);
-}
-
+.participant.voice-only.stage,
 .participant.voice-only.filmstrip {
   background: var(--bg-2);
 }
@@ -629,22 +991,12 @@ body.light-mode {
   display: none !important;
 }
 
-.local-pip.speaking {
-  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
-
-.call-body {
-  position: relative;
-  overflow: hidden;
-}
-
 .local-pip.hidden {
   display: none !important;
 }
 
 /* ============================================================
-   NEW: REMOTE PIP — MIRRORS LOCAL PIP
+   REMOTE PIP — MIRRORS LOCAL PIP
 ============================================================ */
 
 .remote-pip {
@@ -698,10 +1050,20 @@ body.light-mode {
   .remote-pip.dragging {
     box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
   }
+
+  .remote-pip {
+    z-index: 999;
+    pointer-events: auto;
+  }
+
+  .remote-pip.dragging {
+    cursor: grabbing;
+    box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+  }
 }
 
 /* ============================================================
-   CONTROL BAR — GLASSMORPHIC
+   CONTROL BAR — GLASSMORPHIC + AUTO-HIDE
 ============================================================ */
 
 .call-controls {
@@ -728,17 +1090,12 @@ body.light-mode {
   transform: translateX(-50%) translateY(10px);
   pointer-events: none;
 }
-/* ============================================================
-   CONTROL BAR — AUTO-HIDE SUPPORT
-============================================================ */
 
 .call-controls.hidden-soft {
   opacity: 0;
   transform: translateX(-50%) translateY(14px);
   pointer-events: none;
 }
-
-/* Buttons */
 
 .control-btn {
   width: 48px;
@@ -776,8 +1133,6 @@ body.light-mode {
   box-shadow: var(--danger-glow);
 }
 
-/* Inbound vs active */
-
 .call-window.inbound-mode .active-only {
   display: none;
 }
@@ -786,7 +1141,7 @@ body.light-mode {
   display: none;
 }
 
-/* More controls menu */
+/* More controls */
 
 .more-controls {
   position: relative;
@@ -1038,38 +1393,10 @@ body.light-mode {
 }
 
 /* ============================================================
-   SCREEN SHARE ANIMATION HELPERS
-============================================================ */
-
-.participant.animate-stage-in {
-  animation: stageInDesktop 0.35s ease forwards;
-}
-
-.participant.animate-filmstrip-in {
-  animation: filmstripInDesktop 0.35s ease forwards;
-}
-
-.participant.animate-stage-out {
-  animation: stageOutDesktop 0.25s ease forwards;
-}
-
-@keyframes stageOutDesktop {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-}
-
-/* ============================================================
    MOBILE LAYOUT — GOOGLE MEET STYLE
 ============================================================ */
 
 @media (max-width: 900px) {
-
   .call-body {
     width: 100vw !important;
     height: 100vh !important;
@@ -1101,7 +1428,6 @@ body.light-mode {
     border: none !important;
   }
 
-  /* IMPORTANT: local tile must not cover remote on mobile */
   .participant.local {
     position: relative !important;
     z-index: 1 !important;
@@ -1121,19 +1447,6 @@ body.light-mode {
   .remote-pip.dragging {
     box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
   }
-/* ============================================================
-   REMOTE PIP — FIXED FOR SWAP MODE
-============================================================ */
-
-.remote-pip {
-  z-index: 999;
-  pointer-events: auto;
-}
-
-.remote-pip.dragging {
-  cursor: grabbing;
-  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
-}
 
   .call-controls {
     bottom: 20px;
