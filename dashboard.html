@@ -837,19 +837,22 @@ window.currentUserAvatar = user.avatar;
 
 
 <!-- Main app -->
+<!-- Single entry module -->
 <script type="module" src="public/js/app.js?v=3"></script>
 
-<!-- Legacy scripts (must load BEFORE WebRTC modules) -->
+<!-- Legacy non-module scripts (OK) -->
 <script src="buttons-functions.js?v=3"></script>
 <script src="SettingsStore.js?v=3"></script>
 <script src="DeviceManager.js?v=3"></script>
 <script src="SettingsController.js?v=3"></script>
 <script src="MediaPreview.js?v=3"></script>
 
-<!-- WebRTC modules (correct paths) -->
+<!-- ❌ REMOVE these: they cause duplicate module instances -->
+<!--
 <script type="module" src="public/js/webrtc/WebRTCController.js"></script>
 <script type="module" src="public/js/webrtc/CallUI.js"></script>
 <script type="module" src="public/js/webrtc/RemoteParticipants.js"></script>
+-->
 
 
 
@@ -1696,6 +1699,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
