@@ -12,6 +12,7 @@
 //   - media routing
 //   - screen share
 //   - call queue + status
+//   - clean decline/timeout/busy semantics
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -140,13 +141,52 @@ export class WebRTCController {
           this._handleLeave(from);
           break;
         case "unavailable":
-          // Server can emit this when callee is unreachable/busy
+          // Server can emit this when callee is unreachable/busy/timeout
           if (this.onPeerUnavailable) {
             this.onPeerUnavailable(reason || "User unavailable");
           }
           break;
       }
     });
+
+    // Optional: dedicated decline/busy/timeout channels from server
+    this.socket.on("call:declined", (msg) => {
+      const { from, reason } = msg;
+      log("call:declined from", from, reason);
+      if (this.onPeerUnavailable) {
+        this.onPeerUnavailable(reason || "Call declined");
+      }
+      this._remoteEndWithoutPc(from, reason || "declined");
+    });
+
+    this.socket.on("call:busy", (msg) => {
+      const { from, reason } = msg;
+      log("call:busy from", from, reason);
+      if (this.onPeerUnavailable) {
+        this.onPeerUnavailable(reason || "User busy");
+      }
+      this._remoteEndWithoutPc(from, reason || "busy");
+    });
+
+    this.socket.on("call:timeout", (msg) => {
+      const { from, reason } = msg;
+      log("call:timeout from", from, reason);
+      if (this.onPeerUnavailable) {
+        this.onPeerUnavailable(reason || "Call timed out");
+      }
+      this._remoteEndWithoutPc(from, reason || "timeout");
+    });
+  }
+
+  _remoteEndWithoutPc(peerId, reason) {
+    // Caller side: remote never answered, but server timed out/declined
+    rtcState.inCall = false;
+    rtcState.peerId = null;
+    rtcState.incomingOffer = null;
+    rtcState.incomingIsVideo = false;
+    this._setStatus("idle");
+    this.onCallEnded?.(reason || "remote_end");
+    this._maybeProcessNextQueuedCall();
   }
 
   /* -------------------------------------------------------
@@ -258,7 +298,7 @@ export class WebRTCController {
      - Voice → video upgrade (isVideoUpgrade = true)
      - Call waiting + inbound queue
   ------------------------------------------------------- */
-    async _handleOffer(from, offer, isVideoUpgrade = false, callId = null) {
+  async _handleOffer(from, offer, isVideoUpgrade = false, callId = null) {
     const peerId = String(from);
     const sdp = offer?.sdp || "";
     const hasVideoInSdp = sdp.includes("m=video");
@@ -302,7 +342,6 @@ export class WebRTCController {
     // Do NOT touch local media here; CallUI decides via answerCall()
     this.onIncomingOffer(peerId, offer);
   }
-
 
   /* -------------------------------------------------------
      ANSWER CALL (CALLEE ACCEPTS)
@@ -364,8 +403,10 @@ export class WebRTCController {
     await pc.setRemoteDescription(answer);
     this._addParticipant(peerId, { state: "connected" });
   }
+
   /* -------------------------------------------------------
      DECLINE INBOUND CALL (BEFORE ANSWER)
+     ⭐ Emits dedicated call:declined for server + UI
   ------------------------------------------------------- */
   declineCall(reason = "declined") {
     const peerId = rtcState.peerId;
@@ -377,18 +418,17 @@ export class WebRTCController {
     rtcState.incomingIsVideo = false;
     this._setStatus("idle");
 
-    // Notify remote explicitly, even if we were never "in-call"
+    // Notify remote explicitly with a DECLINE event
     if (peerId && callId) {
-      this.socket.emit("webrtc:signal", {
-        type: "leave",
+      this.socket.emit("call:declined", {
         from: rtcState.selfId,
-        to: peerId,              // ⭐ important for your server logs
+        to: peerId,
         callId,
         reason,
       });
     }
 
-    this.onCallEnded();
+    this.onCallEnded?.("declined");
   }
 
   /* -------------------------------------------------------
@@ -495,9 +535,10 @@ export class WebRTCController {
   /* -------------------------------------------------------
      END CALL (LOCAL HANGUP)
   ------------------------------------------------------- */
-  endCall() {
+  endCall(reason = "local_hangup") {
     const hadCall = rtcState.inCall;
     const prevCallId = rtcState.callId;
+    const peerId = rtcState.peerId;
 
     for (const [, pc] of this.pcMap.entries()) {
       pc.close();
@@ -517,12 +558,14 @@ export class WebRTCController {
       this.socket.emit("webrtc:signal", {
         type: "leave",
         from: rtcState.selfId,
+        to: peerId || null,
         callId: prevCallId,
+        reason,
       });
     }
 
     this._setStatus("idle");
-    this.onCallEnded();
+    this.onCallEnded?.(reason);
 
     // After ending, check inbound queue for next call
     this._maybeProcessNextQueuedCall();
@@ -549,7 +592,7 @@ export class WebRTCController {
       rtcState.incomingOffer = null;
       rtcState.incomingIsVideo = false;
       this._setStatus("idle");
-      this.onCallEnded();
+      this.onCallEnded?.("remote_leave");
       this._maybeProcessNextQueuedCall();
     }
   }
@@ -588,6 +631,8 @@ export class WebRTCController {
     }
   }
 }
+
+
 
 
 
