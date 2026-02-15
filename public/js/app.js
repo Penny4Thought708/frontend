@@ -207,241 +207,6 @@ function buildMessageCard(conv) {
 }
 
 // -------------------------------------------------------
-// Voicemail loader + UI
-// -------------------------------------------------------
-async function loadVoicemails() {
-  await waitForIdentity();
-
-  const userId = getMyUserId();
-  if (!userId) return;
-
-  try {
-    const res = await getJson(`${API_BASE}/voicemail/list`);
-    const data = res || {};
-
-    const listEl = document.getElementById("voiceMList");
-    if (!listEl) return;
-
-    listEl.innerHTML = "";
-
-    if (!data.success || !Array.isArray(data.voicemails)) {
-      updateVoicemailBadge(0);
-      return;
-    }
-
-    let unreadCount = 0;
-
-    data.voicemails.forEach((vm) => {
-      if (vm.listened === 0) unreadCount++;
-      renderVoicemail(vm);
-    });
-
-    updateVoicemailBadge(unreadCount);
-  } catch (err) {
-    console.error("loadVoicemails error:", err);
-  }
-}
-
-socket.on("voicemail:new", (vm) => {
-  renderVoicemail(vm);
-  incrementVoicemailBadge();
-  showVoicemailToast(vm);
-});
-
-// -------------------------------------------------------
-// Voicemail item renderer
-// -------------------------------------------------------
-function isDarkMode() {
-  return document.documentElement.classList.contains("dark");
-}
-
-function renderVoicemail(vm) {
-  const listEl = document.getElementById("voiceMList");
-  if (!listEl) return;
-
-  const li = document.createElement("li");
-  li.classList.add("voicemail-item");
-  if (vm.listened === 0) li.classList.add("unheard");
-
-  const isMissedCall = vm.audio_url === null;
-
-  li.innerHTML = `
-    <div class="vm-header">
-      <strong>From: ${vm.from_id}</strong>
-      <span>${vm.timestamp ? new Date(vm.timestamp).toLocaleString() : ""}</span>
-    </div>
-
-    ${
-      isMissedCall
-        ? `<p class="missed-call">Missed call while in DND</p>`
-        : `
-        <div class="waveform-container">
-          <button class="wave-play">▶</button>
-          <div class="waveform" id="waveform-${vm.id}"></div>
-          <select class="wave-speed">
-            <option value="1">1x</option>
-            <option value="1.5">1.5x</option>
-            <option value="2">2x</option>
-          </select>
-          <button class="wave-download">Download</button>
-        </div>
-      `
-    }
-
-    ${vm.transcript ? `<p class="vm-transcript">${vm.transcript}</p>` : ""}
-
-    <div class="vm-actions">
-      <button class="mark-listened">Mark as listened</button>
-      <button class="call-back">Call back</button>
-      <button class="delete-voicemail">Delete</button>
-    </div>
-  `;
-
-  if (!isMissedCall && typeof WaveSurfer !== "undefined") {
-    const dark = isDarkMode();
-
-    const waveform = WaveSurfer.create({
-      container: `#waveform-${vm.id}`,
-      waveColor: dark ? "#777777" : "#999",
-      progressColor: dark ? "#4da3ff" : "#007aff",
-      cursorColor: dark ? "#ffffff" : "#000000",
-      cursorWidth: 2,
-      height: 48,
-      barWidth: 2,
-      barGap: 2,
-      responsive: true,
-      normalize: true,
-    });
-
-    if (vm.peaks && Array.isArray(vm.peaks)) {
-      waveform.load(vm.audio_url, vm.peaks);
-    } else {
-      waveform.load(vm.audio_url);
-    }
-
-    const playBtn = li.querySelector(".wave-play");
-    const speedSelect = li.querySelector(".wave-speed");
-    const downloadBtn = li.querySelector(".wave-download");
-
-    playBtn.onclick = () => {
-      if (waveform.isPlaying()) {
-        waveform.pause();
-        playBtn.textContent = "▶";
-      } else {
-        waveform.play();
-        playBtn.textContent = "⏸";
-      }
-    };
-
-    speedSelect.onchange = () => {
-      waveform.setPlaybackRate(parseFloat(speedSelect.value));
-    };
-
-    downloadBtn.onclick = () => {
-      const a = document.createElement("a");
-      a.href = vm.audio_url;
-      a.download = `voicemail-${vm.id}.mp3`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    };
-  }
-
-  li.querySelector(".mark-listened").onclick = async () => {
-    try {
-      await fetch(`${API_BASE}/voicemail/listened`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id: vm.id }),
-      });
-
-      li.classList.remove("unheard");
-      decrementVoicemailBadge();
-    } catch (err) {
-      console.error("mark-listened error:", err);
-    }
-  };
-
-  li.querySelector(".call-back").onclick = () => {
-    // Use WebRTC voice call instead of raw socket call:start
-    if (window.callUI) {
-      window.callUI.startVoiceCall(vm.from_id);
-    } else {
-      console.warn("[voicemail] callUI not ready, cannot start call-back");
-    }
-  };
-
-  li.querySelector(".delete-voicemail").onclick = async () => {
-    try {
-      await fetch(`${API_BASE}/voicemail/delete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id: vm.id }),
-      });
-
-      li.remove();
-      decrementVoicemailBadge();
-    } catch (err) {
-      console.error("voicemail delete error:", err);
-    }
-  };
-
-  let startX = 0;
-
-  li.addEventListener("touchstart", (e) => {
-    startX = e.touches[0].clientX;
-  });
-
-  li.addEventListener("touchmove", (e) => {
-    const diff = e.touches[0].clientX - startX;
-    if (diff < -50) {
-      li.classList.add("swipe-delete");
-      setTimeout(() => li.querySelector(".delete-voicemail").click(), 200);
-    }
-  });
-
-  listEl.appendChild(li);
-}
-
-// -------------------------------------------------------
-// Voicemail badge + toast
-// -------------------------------------------------------
-function updateVoicemailBadge(count) {
-  const badge = document.getElementById("voicemailBadge");
-  if (!badge) return;
-
-  badge.textContent = count;
-  badge.style.display = count > 0 ? "inline-block" : "none";
-}
-
-function incrementVoicemailBadge() {
-  const badge = document.getElementById("voicemailBadge");
-  if (!badge) return;
-
-  const count = parseInt(badge.textContent || "0") + 1;
-  updateVoicemailBadge(count);
-}
-
-function decrementVoicemailBadge() {
-  const badge = document.getElementById("voicemailBadge");
-  if (!badge) return;
-
-  const count = Math.max(0, parseInt(badge.textContent || "0") - 1);
-  updateVoicemailBadge(count);
-}
-
-function showVoicemailToast(vm) {
-  const toast = document.createElement("div");
-  toast.className = "voicemail-toast";
-  toast.textContent = `New voicemail from ${vm.from_id}`;
-  document.body.appendChild(toast);
-
-  setTimeout(() => toast.remove(), 3000);
-}
-
-// -------------------------------------------------------
 // Intro tour
 // -------------------------------------------------------
 function startIntroTour() {
@@ -864,39 +629,38 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("[GIF] search error:", err);
     }
   }
+function renderGIFs(gifs) {
+  if (!gifResults) return;
+  gifResults.innerHTML = "";
 
-  function renderGIFs(gifs) {
-    if (!gifResults) return;
-    gifResults.innerHTML = "";
+  gifs.forEach((gif) => {
+    const url =
+      gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
+    if (!url) return;
 
-    gifs.forEach((gif) => {
-      const url =
-        gif?.media_formats?.tinygif?.url || gif?.media_formats?.gif?.url;
-      if (!url) return;
+    const img = document.createElement("img");
+    img.src = url;
+    img.alt = "GIF";
 
-      const img = document.createElement("img");
-      img.src = url;
-      img.alt = "GIF";
+    img.onload = () => img.classList.add("loaded");
 
-      img.onload = () => img.classList.add("loaded");
-
-      img.addEventListener("click", () => {
-        messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
-        moveCaretToEnd(messageInput);
-        messageInput.focus();
-        gifPicker?.classList.add("hidden");
-        hideBackdrop();
-      });
-
-      gifResults.appendChild(img);
+    img.addEventListener("click", () => {
+      messageInput.innerHTML += `<img src="${url}" class="gif-inline">`;
+      moveCaretToEnd(messageInput);
+      messageInput.focus();
+      gifPicker?.classList.add("hidden");
+      hideBackdrop();
     });
-  }
 
-  gifSearch?.addEventListener("input", (e) => {
-    const q = e.target.value.trim();
-    if (!q) loadTrendingGIFs();
-    else searchGIFs(q);
+    gifResults.appendChild(img);
   });
+}
+
+gifSearch?.addEventListener("input", (e) => {
+  const q = e.target.value.trim();
+  if (!q) loadTrendingGIFs();
+  else searchGIFs(q);
+});
 });
 
 /* -------------------------------------------------------
@@ -910,7 +674,7 @@ socket.on("connect", async () => {
 
   // Create CallUI (internally creates WebRTCController)
   const callUI = new CallUI(socket);
- 
+
   // 🔔 Inbound call from backend → open call window
   socket.on("call:start", ({ from, type }) => {
     const isVideo = type === "video";
@@ -919,7 +683,9 @@ socket.on("connect", async () => {
 
   initCallLogs({ socket });
   loadMessageList();
-  loadVoicemails();
+
+  // NEW voicemail system handles loading itself (VoicemailUI.js)
+  // ❌ old loadVoicemails() removed
 
   // Open chat for a given contactId using new messaging.js
   window.openChat = async function (contactId) {
@@ -964,6 +730,7 @@ socket.on("connect", async () => {
   // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
