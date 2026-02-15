@@ -11,6 +11,7 @@
 //   - Active speaker pulse (via CSS + RemoteParticipants)
 //   - Multi-remote swap support (any remote tile)
 //   - Voicemail + toast wiring hooks
+//   - Debug overlay + analytics hook points
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -80,8 +81,9 @@ export class CallUI {
     this.recordBtn = document.getElementById("record-call");
     this.historyBtn = document.getElementById("call-history-toggle");
 
-    // Debug toggle
+    // Debug toggle + overlay
     this.debugToggleBtn = document.getElementById("call-debug-toggle");
+    this.debugOverlay = document.getElementById("call-debug-overlay");
 
     // Video upgrade overlay
     this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
@@ -130,6 +132,16 @@ export class CallUI {
     this._controlsVisible = true;
     this._controlsHideTimeout = null;
 
+    // Timer
+    this._callStartTime = null;
+    this._timerInterval = null;
+
+    // Analytics hook placeholder
+    this._analytics = (event, payload = {}) => {
+      // Drop-in hook for production analytics
+      // console.log("[Analytics]", event, payload);
+    };
+
     // Hide local grid tile by default
     if (this.localWrapper) this.localWrapper.classList.add("hidden");
     if (this.remotePip) this.remotePip.classList.add("hidden");
@@ -151,6 +163,7 @@ export class CallUI {
     rtcState.peerId = String(peerId);
 
     this.socket.emit("call:start", { to: peerId, type: "voice" });
+    this._analytics("call_start_voice", { peerId });
 
     this._openWindow();
     this._enterOutboundVoiceMode();
@@ -164,6 +177,7 @@ export class CallUI {
     rtcState.peerId = String(peerId);
 
     this.socket.emit("call:start", { to: peerId, type: "video" });
+    this._analytics("call_start_video", { peerId });
 
     this._openWindow();
     this._enterOutboundVideoMode();
@@ -181,6 +195,7 @@ export class CallUI {
     else this._enterInboundVoiceMode();
 
     this._playRingtone();
+    this._analytics("call_inbound", { peerId, isVideo });
   }
 
   answerCall() {
@@ -192,25 +207,31 @@ export class CallUI {
       rtcState.audioOnly = false;
       this.rtc.answerCall();
       this._enterActiveVideoMode();
+      this._analytics("call_answer_upgrade", { peerId: rtcState.peerId });
       return;
     }
 
     this._stopRinging();
     this.rtc.answerCall();
+    this._callStartTime = Date.now();
+    this._analytics("call_answer", { peerId: rtcState.peerId, audioOnly: rtcState.audioOnly });
 
     if (rtcState.audioOnly) this._enterActiveVoiceMode();
     else this._enterActiveVideoMode();
   }
 
-  endCall() {
-    log("endCall");
+  endCall(reason = "local_end") {
+    log("endCall", reason);
     this._stopRinging();
     this.rtc.endCall();
+    this._analytics("call_end", { peerId: rtcState.peerId, reason });
     this._resetUI();
   }
 
   async upgradeToVideo() {
     log("upgradeToVideo");
+    this._analytics("call_upgrade_to_video_click", { peerId: rtcState.peerId });
+
     await this.rtc.upgradeToVideo();
     rtcState.audioOnly = false;
     this._enterVideoControlsMode();
@@ -222,22 +243,28 @@ export class CallUI {
   _bindControllerEvents() {
     this.rtc.onCallStarted = () => {
       this._stopRinging();
+      this._callStartTime = Date.now();
+      this._analytics("call_started_media", { peerId: rtcState.peerId, audioOnly: rtcState.audioOnly });
+
       if (rtcState.audioOnly) this._enterActiveVoiceMode();
       else this._enterActiveVideoMode();
     };
 
-    this.rtc.onCallEnded = () => {
+    this.rtc.onCallEnded = (reason = "remote_end") => {
       this._stopRinging();
+      this._analytics("call_ended_media", { peerId: rtcState.peerId, reason });
       this._resetUI();
     };
 
     this.rtc.onRemoteJoin = () => {
       this._setStatus("Connected");
       this._applyPrimaryLayout();
+      this._analytics("remote_join", { peerId: rtcState.peerId });
     };
 
     this.rtc.onRemoteLeave = () => {
       this._setStatus("Remote left");
+      this._analytics("remote_leave", { peerId: rtcState.peerId });
       this._resetUI();
     };
 
@@ -253,22 +280,29 @@ export class CallUI {
       rtcState.audioOnly = false;
       this._enterVideoControlsMode();
       this._setStatus("Camera enabled by other side");
+      this._analytics("remote_upgraded_to_video", { peerId: rtcState.peerId });
     };
 
     this.rtc.onQualityUpdate = (score) => {
       if (this.qualityEl) this.qualityEl.textContent = score;
+      if (this.debugOverlay) {
+        this.debugOverlay.textContent = `Quality: ${score}`;
+      }
     };
 
     // Optional hooks for screen share (if WebRTCController exposes them)
     this.rtc.onScreenShareStarted = () => {
       this.videoContainer?.classList.add("screen-sharing");
+      this._analytics("screen_share_started", { peerId: rtcState.peerId });
     };
     this.rtc.onScreenShareStopped = () => {
       this.videoContainer?.classList.remove("screen-sharing");
+      this._analytics("screen_share_stopped", { peerId: rtcState.peerId });
     };
 
     // Optional hooks for unavailability → toast/voicemail
     this.rtc.onPeerUnavailable = (reason) => {
+      this._analytics("peer_unavailable", { peerId: rtcState.peerId, reason });
       this._showUnavailableToast(reason || "User is unavailable");
     };
   }
@@ -278,13 +312,21 @@ export class CallUI {
   // -------------------------------------------------------
   _bindButtons() {
     this.answerBtn?.addEventListener("click", () => this.answerCall());
-   // Before:
-// this.declineBtn?.addEventListener("click", () => this.endCall());
 
-// After:
-this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
+    this.declineBtn?.addEventListener("click", () => {
+      // Prefer explicit decline if controller exposes it
+      if (typeof this.rtc.declineCall === "function") {
+        this.rtc.declineCall("declined");
+      } else {
+        this.endCall("decline_button");
+      }
+      this._analytics("call_decline", { peerId: rtcState.peerId });
 
-    this.endBtn?.addEventListener("click", () => this.endCall());
+      // Show voicemail/unavailable flow if toast is wired that way
+      this._showUnavailableToast("Call declined");
+    });
+
+    this.endBtn?.addEventListener("click", () => this.endCall("end_button"));
 
     // Mute
     this.muteBtn?.addEventListener("click", () => {
@@ -293,10 +335,12 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
       const enabled = stream.getAudioTracks().some((t) => t.enabled);
       stream.getAudioTracks().forEach((t) => (t.enabled = !enabled));
       this.muteBtn.classList.toggle("active", !enabled);
+      this._analytics("toggle_mute", { enabled: !enabled });
     });
 
     // Camera toggle (upgrade or toggle)
     this.camBtn?.addEventListener("click", async () => {
+      // Pure voice → upgrade to video
       if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
         await this.upgradeToVideo();
         return;
@@ -310,6 +354,8 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
 
       if (!newEnabled) this.videoContainer?.classList.add("camera-off");
       else this.videoContainer?.classList.remove("camera-off");
+
+      this._analytics("toggle_camera", { enabled: newEnabled });
     });
 
     // More menu
@@ -341,19 +387,34 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
 
     this.noiseBtn?.addEventListener("click", () => {
       this.noiseBtn.classList.toggle("active");
+      this._analytics("toggle_ai_noise", {
+        active: this.noiseBtn.classList.contains("active"),
+      });
     });
 
     this.recordBtn?.addEventListener("click", () => {
       this.recordBtn.classList.toggle("active");
+      this._analytics("toggle_recording_ui", {
+        active: this.recordBtn.classList.contains("active"),
+      });
+      // Actual recording handled in WebRTCController or another module
     });
 
     this.historyBtn?.addEventListener("click", () => {
       this.historyBtn.classList.toggle("active");
+      this._analytics("toggle_call_history", {
+        active: this.historyBtn.classList.contains("active"),
+      });
     });
 
     // Debug toggle
     this.debugToggleBtn?.addEventListener("click", () => {
       this.debugToggleBtn.classList.toggle("active");
+      const active = this.debugToggleBtn.classList.contains("active");
+      if (this.debugOverlay) {
+        this.debugOverlay.classList.toggle("hidden", !active);
+      }
+      this._analytics("toggle_debug_overlay", { active });
     });
 
     // Video upgrade overlay buttons
@@ -362,6 +423,7 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
       this._exitVideoUpgradePreview();
       this._setStatus("In call");
       this._enterActiveVoiceMode();
+      this._analytics("video_upgrade_decline_mobile", { peerId: rtcState.peerId });
     });
 
     this.videoUpgradeAcceptDesktopBtn?.addEventListener("click", () => this.answerCall());
@@ -369,6 +431,7 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
       this._exitVideoUpgradePreview();
       this._setStatus("In call");
       this._enterActiveVoiceMode();
+      this._analytics("video_upgrade_decline_desktop", { peerId: rtcState.peerId });
     });
 
     // Voicemail modal basic wiring (actual recording handled elsewhere)
@@ -378,13 +441,16 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
     this.utVoiceBtn?.addEventListener("click", () => {
       this._hideUnavailableToast();
       this._openVoicemailModal();
+      this._analytics("voicemail_open_from_unavailable", { peerId: rtcState.peerId });
     });
     this.utVideoBtn?.addEventListener("click", () => {
       this._hideUnavailableToast();
+      this._analytics("video_message_from_unavailable", { peerId: rtcState.peerId });
       // hook for future video message flow
     });
     this.utTextBtn?.addEventListener("click", () => {
       this._hideUnavailableToast();
+      this._analytics("text_message_from_unavailable", { peerId: rtcState.peerId });
       // hook for future text message flow
     });
 
@@ -405,19 +471,6 @@ this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
       });
     }
   }
-_declineInboundCall() {
-  log("declineInboundCall");
-
-  // Stop any ringing sounds
-  this._stopRinging();
-
-  // UI state
-  this._setStatus("Call declined");
-  this._closeWindow();
-
-  // Open voicemail flow for declined inbound calls
-  this._openVoicemailModal();
-}
 
   _firstRemoteTile() {
     return this.callGrid?.querySelector(".participant.remote") || null;
@@ -683,6 +736,12 @@ _declineInboundCall() {
     this._closeWindow();
     this._setStatus("Call ended");
     if (this.timerEl) this.timerEl.textContent = "00:00";
+    this._callStartTime = null;
+
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
 
     if (this.moreMenu) {
       this.moreMenu.classList.remove("show");
@@ -706,20 +765,18 @@ _declineInboundCall() {
     this._applyPrimaryLayout();
   }
 
-// -------------------------------------------------------
-// CONTROLS VISIBILITY
-// -------------------------------------------------------
-_showControlsForVoice() {
-  if (!this.callControls) return;
-  // Keep camera visible so user can upgrade voice → video
-  this.camBtn?.classList.remove("hidden-soft");
-}
+  // -------------------------------------------------------
+  // CONTROLS VISIBILITY
+  // -------------------------------------------------------
+  _showControlsForVoice() {
+    if (!this.callControls) return;
+    this.camBtn?.classList.add("hidden-soft");
+  }
 
-_showControlsForVideo() {
-  if (!this.callControls) return;
-  this.camBtn?.classList.remove("hidden-soft");
-}
-
+  _showControlsForVideo() {
+    if (!this.callControls) return;
+    this.camBtn?.classList.remove("hidden-soft");
+  }
 
   // -------------------------------------------------------
   // STATUS
@@ -846,54 +903,53 @@ _showControlsForVideo() {
     pipEl.style.transform = `translate(${x}px, ${y}px)`;
   }
 
-_applyPrimaryLayout(remoteElOverride = null) {
-  const remoteEl =
-    remoteElOverride ||
-    this.callGrid?.querySelector(".participant.remote") ||
-    null;
+  _applyPrimaryLayout(remoteElOverride = null) {
+    const remoteEl =
+      remoteElOverride ||
+      this.callGrid?.querySelector(".participant.remote") ||
+      null;
 
-  // If no remote yet, show local as primary self-view
-  if (!remoteEl) {
-    if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-    if (this.localPip) this.localPip.classList.add("hidden");
-    if (this.remotePip) this.remotePip.classList.add("hidden");
-    return;
-  }
-
-  if (!this._pipPos) {
-    this._resetPipToDefault();
-  }
-
-  const applyPipTransform = (pipEl) => {
-    if (!pipEl || !this._pipPos) return;
-    pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
-    pipEl.classList.add("pip-anim");
-  };
-
-  if (this._primaryIsRemote) {
-    // Remote = primary, local = PiP
-    if (this.localWrapper) this.localWrapper.classList.add("hidden");
-    if (this.localPip) {
-      this.localPip.classList.remove("hidden");
-      applyPipTransform(this.localPip);
-    }
-    if (this.remotePip) this.remotePip.classList.add("hidden");
-
-    remoteEl.classList.remove("hidden");
-  } else {
-    // Local = primary, remote = PiP
-    if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-    if (this.localPip) this.localPip.classList.add("hidden");
-
-    if (this.remotePip) {
-      this.remotePip.classList.remove("hidden");
-      applyPipTransform(this.remotePip);
+    // If no remote tile yet, show local as primary and hide PiPs
+    if (!remoteEl) {
+      if (this.localWrapper) this.localWrapper.classList.remove("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
+      if (this.remotePip) this.remotePip.classList.add("hidden");
+      return;
     }
 
-    remoteEl.classList.add("hidden");
-  }
-}
+    if (!this._pipPos) {
+      this._resetPipToDefault();
+    }
 
+    const applyPipTransform = (pipEl) => {
+      if (!pipEl || !this._pipPos) return;
+      pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
+      pipEl.classList.add("pip-anim");
+    };
+
+    if (this._primaryIsRemote) {
+      // Remote = primary, local = PiP
+      if (this.localWrapper) this.localWrapper.classList.add("hidden");
+      if (this.localPip) {
+        this.localPip.classList.remove("hidden");
+        applyPipTransform(this.localPip);
+      }
+      if (this.remotePip) this.remotePip.classList.add("hidden");
+
+      remoteEl.classList.remove("hidden");
+    } else {
+      // Local = primary, remote = PiP
+      if (this.localWrapper) this.localWrapper.classList.remove("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
+
+      if (this.remotePip) {
+        this.remotePip.classList.remove("hidden");
+        applyPipTransform(this.remotePip);
+      }
+
+      remoteEl.classList.add("hidden");
+    }
+  }
 
   _initPipDrag() {
     const makeDraggable = (pipEl) => {
@@ -909,6 +965,7 @@ _applyPrimaryLayout(remoteElOverride = null) {
           pipEl,
         };
         pipEl.classList.add("dragging");
+        pipEl.classList.add("pip-anim");
       };
 
       const moveDrag = (x, y) => {
@@ -924,6 +981,21 @@ _applyPrimaryLayout(remoteElOverride = null) {
 
         pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
         this._pipPos = { x: newX, y: newY };
+
+        // Snap-warning if near controls
+        if (this.callControls) {
+          const controlsRect = this.callControls.getBoundingClientRect();
+          const pipRect = pipEl.getBoundingClientRect();
+          const overlapsHoriz =
+            pipRect.right > controlsRect.left && pipRect.left < controlsRect.right;
+          const overlapsVert =
+            pipRect.bottom > controlsRect.top && pipRect.top < controlsRect.bottom;
+          if (overlapsHoriz && overlapsVert) {
+            pipEl.classList.add("snap-warning");
+          } else {
+            pipEl.classList.remove("snap-warning");
+          }
+        }
       };
 
       const endDrag = () => {
@@ -965,7 +1037,7 @@ _applyPrimaryLayout(remoteElOverride = null) {
           );
         }
 
-              // Snap-away from controls: if overlapping controls area, push up
+        // Snap-away from controls: if overlapping controls area, push up
         if (controlsRect) {
           const pipBottom = parentRect.top + newY + pipRect.height;
           const controlsTop = controlsRect.top;
@@ -983,17 +1055,29 @@ _applyPrimaryLayout(remoteElOverride = null) {
             pipBottom > controlsTop && parentRect.top + newY < controlsBottom;
 
           if (overlapsHoriz && overlapsVert) {
+            // Move PiP just above controls
             const safeY =
               controlsTop - parentRect.top - pipRect.height - margin;
             newY = Math.max(margin, safeY);
+
+            // Re-snap horizontally to left/right zones
+            const centerX2 = newX + pipRect.width / 2;
+            const midX2 = parentRect.width / 2;
+            if (centerX2 <= midX2) {
+              newX = margin;
+            } else {
+              newX = Math.max(
+                margin,
+                parentRect.width - pipRect.width - margin
+              );
+            }
           }
         }
 
-        // Apply final snapped position
-        pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
         this._pipPos = { x: newX, y: newY };
-
+        pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
         pipEl.classList.remove("dragging");
+        pipEl.classList.remove("snap-warning");
         this._dragState = null;
       };
 
@@ -1001,75 +1085,62 @@ _applyPrimaryLayout(remoteElOverride = null) {
       pipEl.addEventListener("mousedown", (e) => {
         e.preventDefault();
         startDrag(e.clientX, e.clientY);
-      });
-
-      document.addEventListener("mousemove", (e) => {
-        if (this._dragState) moveDrag(e.clientX, e.clientY);
-      });
-
-      document.addEventListener("mouseup", () => {
-        if (this._dragState) endDrag();
+        const move = (ev) => moveDrag(ev.clientX, ev.clientY);
+        const up = () => {
+          endDrag();
+          window.removeEventListener("mousemove", move);
+          window.removeEventListener("mouseup", up);
+        };
+        window.addEventListener("mousemove", move);
+        window.addEventListener("mouseup", up);
       });
 
       // Touch events
       pipEl.addEventListener("touchstart", (e) => {
         const t = e.touches[0];
+        if (!t) return;
         startDrag(t.clientX, t.clientY);
       });
 
       pipEl.addEventListener("touchmove", (e) => {
         const t = e.touches[0];
+        if (!t) return;
         moveDrag(t.clientX, t.clientY);
       });
 
       pipEl.addEventListener("touchend", () => {
-        if (this._dragState) endDrag();
+        endDrag();
       });
     };
 
-    // Make both PiPs draggable
     makeDraggable(this.localPip);
     makeDraggable(this.remotePip);
   }
 
   // -------------------------------------------------------
-  // DECLINE INBOUND CALL → VOICEMAIL
-  // -------------------------------------------------------
-  _declineInboundCall() {
-    log("declineInboundCall");
-
-    this._stopRinging();
-    this._setStatus("Call declined");
-
-    // Close call window
-    this._closeWindow();
-
-    // Open voicemail modal
-    this._openVoicemailModal();
-  }
-
-  // -------------------------------------------------------
-  // TIMER LOOP
+  // TIMER + QUALITY MONITOR
   // -------------------------------------------------------
   _startTimerLoop() {
-    setInterval(() => {
-      if (!rtcState.inCall || !rtcState.callStartTs) {
-        if (this.timerEl) this.timerEl.textContent = "00:00";
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+    }
+    this._timerInterval = setInterval(() => {
+      if (!this.timerEl) return;
+      if (!this._callStartTime) {
+        this.timerEl.textContent = "00:00";
         return;
       }
-
-      const elapsed = Date.now() - rtcState.callStartTs;
-      if (this.timerEl) this.timerEl.textContent = formatDuration(elapsed);
+      const elapsed = Date.now() - this._callStartTime;
+      this.timerEl.textContent = formatDuration(elapsed);
     }, 1000);
   }
 
-  // -------------------------------------------------------
-  // QUALITY MONITOR
-  // -------------------------------------------------------
   _startQualityMonitor() {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
+
 
 
 
