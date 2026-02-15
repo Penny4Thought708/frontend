@@ -80,15 +80,17 @@ body.light-mode {
 }
 
 /* ============================================================
-   CALL WINDOW — FULLSCREEN OVERLAY
+   CORE LAYOUT — CALL WINDOW (FULLSCREEN OVERLAY)
+   Cleaned, unified, conflict-free
 ============================================================ */
+
 .call-window {
-  position: absolute;
+  position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-floating);
+  z-index: 999999;
   background: radial-gradient(circle at top left, #1b2638 0, #07090d 55%, #020308 100%);
   opacity: 0;
   pointer-events: none;
@@ -106,7 +108,6 @@ body.light-mode {
   opacity: 1;
   pointer-events: auto;
   transform: scale(1);
-  z-index: 9999999;
 }
 
 .call-window.call-opening {
@@ -124,31 +125,39 @@ body.light-mode {
   }
 }
 
-/* Voice-only whole-call mode (CallUI toggles .voice-only-call) */
-.call-window.voice-only-call .participant.local .media-wrapper video {
+/* Voice-only mode (video hidden, avatar shown) */
+.call-window.voice-only-call .participant.local video,
+.call-window.voice-only-call .participant.remote video {
   display: none !important;
-}
-.call-window.voice-only-call .participant.local .avatar-wrapper {
-  display: flex !important;
+  opacity: 0 !important;
 }
 
-/* Camera-off state (CallUI toggles .camera-off) */
-.call-window.camera-off .participant.local .media-wrapper video {
-  display: none !important;
+.call-window.voice-only-call .participant .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
 }
+
+/* Camera-off mode */
+.call-window.camera-off .participant.local video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
 .call-window.camera-off .participant.local .avatar-wrapper {
   display: flex !important;
+  opacity: 1 !important;
 }
 
-/* Soft hide utility used by CallUI (hidden-soft) */
+/* Soft hide utility */
 .hidden-soft {
   opacity: 0.25;
   pointer-events: none;
 }
 
 /* ============================================================
-   CALL BODY
+   CALL BODY — GLASS PANEL
 ============================================================ */
+
 .call-body {
   width: min(1120px, 96vw);
   height: min(640px, 82vh);
@@ -163,52 +172,60 @@ body.light-mode {
   position: relative;
   font-family: var(--font-body);
 }
-
 /* ============================================================
-   PARTICIPANT GRID — BASE
+   PARTICIPANT GRID — GOOGLE MEET STYLE
+   Cleaned, unified, responsive, conflict-free
 ============================================================ */
+
 .call-grid {
   position: relative;
   padding: 16px;
   padding-bottom: 96px; /* ensures controls never overlap tiles */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  transition: grid-template-columns 0.25s ease;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-auto-rows: minmax(180px, 1fr);
+  gap: 14px;
+  transition: grid-template-columns 0.25s ease, grid-auto-rows 0.25s ease;
 }
 
-/* AUTO-LAYOUT ENGINE */
+/* Auto-layout classes (CallUI sets these based on participant count) */
 .call-grid.participants-1 {
   grid-template-columns: 1fr;
 }
+
 .call-grid.participants-2 {
   grid-template-columns: 1fr 1fr;
 }
+
 .call-grid.participants-3,
 .call-grid.participants-4 {
   grid-template-columns: 1fr 1fr;
   grid-auto-rows: minmax(200px, 1fr);
 }
+
 .call-grid.participants-5,
 .call-grid.participants-6 {
   grid-template-columns: 1fr 1fr 1fr;
 }
+
 .call-grid.participants-7,
 .call-grid.participants-8,
 .call-grid.participants-9 {
   grid-template-columns: 1fr 1fr 1fr;
   grid-auto-rows: minmax(160px, 1fr);
 }
+
 .call-grid.participants-many {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 /* ============================================================
-   PARTICIPANT TILE
+   PARTICIPANT TILE — BASE
 ============================================================ */
+
 .participant {
   position: relative;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--bg-3);
   border: 1px solid var(--border);
@@ -218,98 +235,88 @@ body.light-mode {
     box-shadow 0.2s ease,
     transform 0.25s ease,
     opacity 0.25s ease;
+  z-index: 1;
 }
 
-/* Local tile emphasis */
+/* Local tile is NOT in the grid (PiP handles it) */
 .participant.local {
-  box-shadow: 0 0 0 1px rgba(77, 163, 255, 0.4);
+  position: absolute;
+  z-index: 20;
+  pointer-events: auto;
 }
 
-/* Speaking state (WebRTCMedia + RemoteParticipants) */
+/* Speaking state */
 .participant.speaking {
   box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
   border-color: rgba(0, 200, 255, 0.9);
 }
 
-/* Media wrapper */
-.media-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 160px;
-  background: #000;
-}
-
-.media-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-/* JS toggles .show on video elements */
-.media-wrapper video.show {
-  opacity: 1;
+/* Active speaker emphasis (non-stage) */
+.participant.active-speaker:not(.stage) {
+  box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+  transform: scale(1.02);
+  z-index: 3;
 }
 
 /* ============================================================
-   AVATAR OVERLAY
+   SCREEN SHARE — STAGE + FILMSTRIP
 ============================================================ */
-.avatar-wrapper {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.2s ease;
+
+.call-grid.screen-share-mode {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  grid-template-rows: 1fr;
+  gap: 12px;
 }
 
-.avatar-wrapper img {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid var(--bg-2);
-  box-shadow: var(--accent-glow);
+.participant.stage {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  border-radius: var(--radius-lg);
+  animation: stageInDesktop 0.35s ease forwards;
 }
 
-.avatar-wrapper .avatar-img {
-  width: 64px;
-  height: 64px;
+.participant.filmstrip {
+  grid-column: 2;
+  width: 100%;
+  height: 160px;
+  opacity: 0.9;
+  transform: scale(0.92);
+  border-radius: var(--radius-md);
+  animation: filmstripInDesktop 0.35s ease forwards;
 }
 
-/* JS toggles .hidden on avatar wrapper */
-.avatar-wrapper.hidden {
-  opacity: 0;
-}
-
-/* Voice pulse ring (driven by --audio-level from WebRTCMedia) */
-.voice-pulse {
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  border: 2px solid rgba(77, 163, 255, 0.6);
-  animation: voicePulse 1.4s infinite ease-out;
-  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
-}
-
-@keyframes voicePulse {
+/* Stage + filmstrip animations */
+@keyframes stageInDesktop {
   0% {
-    transform: scale(0.7);
-    opacity: 0.9;
+    transform: scale(0.9);
+    opacity: 0;
   }
   100% {
-    transform: scale(1.4);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes filmstripInDesktop {
+  0% {
+    transform: translateY(10px) scale(0.92);
     opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(0.92);
+    opacity: 1;
   }
 }
 
 /* ============================================================
    NAME TAG
 ============================================================ */
+
 .name-tag {
   position: absolute;
   left: 10px;
@@ -327,6 +334,7 @@ body.light-mode {
 /* ============================================================
    PRESENTING BADGE
 ============================================================ */
+
 .presenting-badge {
   position: absolute;
   top: 8px;
@@ -350,206 +358,241 @@ body.light-mode {
   opacity: 1;
   transform: translateY(0);
 }
-
 /* ============================================================
-   UNIFIED DESKTOP LAYOUT (MEET-STYLE + SCREEN SHARE + PIP)
+   MEDIA WRAPPER — VIDEO + AVATAR SYSTEM
+   Cleaned, unified, conflict-free
 ============================================================ */
-@media (min-width: 901px) {
-  .call-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    grid-auto-rows: minmax(180px, 1fr);
-    gap: 14px;
-    padding: 16px;
-    padding-bottom: 96px;
-  }
 
-  .participant.remote {
-    position: relative;
-    z-index: 1;
-    border-radius: var(--radius-lg);
-  }
+.media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  background: #000;
+  overflow: hidden;
+}
 
-  /* Local tile as floating PIP */
-  .participant.local {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 220px;
-    height: 140px;
-    z-index: 20;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-    animation: pipFloatDesktop 0.35s ease-out;
-  }
+/* Base video styling */
+.media-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0; /* JS toggles .show */
+  transition: opacity 0.25s ease;
+  background: #000;
+  display: block;
+}
 
-  @keyframes pipFloatDesktop {
-    0% {
-      transform: scale(0.85) translateY(20px);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
-  }
+/* JS toggles .show when video is ready */
+.media-wrapper video.show {
+  opacity: 1;
+}
 
-  /* Screen-share stage + filmstrip layout (WebRTCMedia + CallUI) */
-  .call-grid.screen-share-mode {
-    display: grid;
-    grid-template-columns: 1fr 260px;
-    grid-template-rows: 1fr;
-    gap: 12px;
-  }
-
-  .participant.stage {
-    grid-column: 1;
-    grid-row: 1;
-    width: 100%;
-    height: 100%;
-    z-index: 5;
-    border-radius: var(--radius-lg);
-    animation: stageInDesktop 0.35s ease forwards;
-  }
-
-  @keyframes stageInDesktop {
-    0% {
-      transform: scale(0.9);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  .participant.filmstrip {
-    grid-column: 2;
-    width: 100%;
-    height: 160px;
-    opacity: 0.9;
-    transform: scale(0.92);
-    border-radius: var(--radius-md);
-    animation: filmstripInDesktop 0.35s ease forwards;
-  }
-
-  @keyframes filmstripInDesktop {
-    0% {
-      transform: translateY(10px) scale(0.92);
-      opacity: 0;
-    }
-    100% {
-      transform: translateY(0) scale(0.92);
-      opacity: 1;
-    }
-  }
-
-  /* Active speaker highlight (CallUI.onActiveSpeaker / RemoteParticipants) */
-  .participant.active-speaker:not(.stage) {
-    box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
-    border-color: rgba(0, 200, 255, 0.9);
-    transform: scale(1.02);
-    z-index: 3;
-  }
+/* Hidden-soft (used during transitions) */
+.media-wrapper video.hidden-soft {
+  opacity: 0;
 }
 
 /* ============================================================
-   STACKING FIXES
+   AVATAR WRAPPER — DEFAULT STATE
 ============================================================ */
-.participant.remote {
-  z-index: 1;
+
+.avatar-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  z-index: 3;
 }
-.participant.local {
-  z-index: 20;
+
+.avatar-wrapper img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-2);
+  box-shadow: var(--accent-glow);
 }
-.participant.stage {
-  z-index: 5;
+
+.avatar-wrapper .avatar-img {
+  width: 64px;
+  height: 64px;
 }
-.participant.filmstrip {
-  z-index: 2;
+
+/* JS toggles .hidden when video is active */
+.avatar-wrapper.hidden {
+  opacity: 0;
 }
 
 /* ============================================================
-   CAMERA FLIP ANIMATION
+   VOICE PULSE — AUDIO LEVEL RING
 ============================================================ */
-#localVideo.camera-flip-anim {
-  animation: flipCam 0.35s ease;
+
+.voice-pulse {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 2px solid rgba(77, 163, 255, 0.6);
+  animation: voicePulse 1.4s infinite ease-out;
+  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
+  pointer-events: none;
 }
 
-@keyframes flipCam {
+@keyframes voicePulse {
   0% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-  40% {
-    transform: scaleX(0);
-    opacity: 0.4;
-  }
-  60% {
-    transform: scaleX(0);
-    opacity: 0.4;
+    transform: scale(0.7);
+    opacity: 0.9;
   }
   100% {
-    transform: scaleX(1);
-    opacity: 1;
+    transform: scale(1.4);
+    opacity: 0;
   }
 }
 
 /* ============================================================
-   LOCAL PIP WINDOW (Meet-style secondary PIP)
+   VOICE-ONLY MODE — UNIFIED
 ============================================================ */
+
+.participant.voice-only .media-wrapper video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.participant.voice-only .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.participant.voice-only {
+  background: var(--bg-2);
+}
+
+/* Keep speaking glow visible even without video */
+.participant.voice-only.speaking {
+  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+}
+
+/* Voice-only in stage mode */
+.participant.voice-only.stage {
+  background: var(--bg-2);
+}
+
+/* Voice-only in filmstrip */
+.participant.voice-only.filmstrip {
+  background: var(--bg-2);
+}
+/* ============================================================
+   LOCAL PIP — ALWAYS VISIBLE, DRAGGABLE, NEON-GLASS WINDOW
+   Matches your design language, glows only when speaking
+============================================================ */
+
+/* Base PiP container */
 .local-pip {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
-  width: 160px;
-  height: 90px;
-  background: #000;
-  border-radius: 8px;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  height: 120px;
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  opacity: 0;
-  transform: scale(0.85);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
   z-index: 999;
-}
-
-.local-pip.show {
   opacity: 1;
   transform: scale(1);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  cursor: grab;
 }
+
+/* When dragging */
+.local-pip.dragging {
+  cursor: grabbing;
+  transition: none;
+  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+}
+
+/* PiP video */
+.local-pip video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+/* Hide PiP entirely in voice-only mode */
+.call-window.voice-only-call .local-pip {
+  display: none !important;
+}
+
+/* Hide PiP when camera is off */
+.call-window.camera-off .local-pip {
+  display: none !important;
+}
+
+/* ============================================================
+   PIP — SPEAKING GLOW (ONLY WHEN SPEAKING)
+============================================================ */
+
+.local-pip.speaking {
+  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+}
+
+/* ============================================================
+   PIP DRAG BOUNDARIES — INSIDE CALL WINDOW ONLY
+============================================================ */
+
+/* The JS will clamp the PiP position inside .call-body.
+   These CSS rules ensure no overflow clipping. */
+
+.call-body {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================
+   MOBILE PIP — SMALLER + SAFE AREA
+============================================================ */
+
+@media (max-width: 900px) {
+  .local-pip {
+    width: 140px;
+    height: 90px;
+    bottom: 90px; /* above controls */
+    right: 16px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-strong);
+  }
+
+  .local-pip.dragging {
+    box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
+  }
+}
+
+/* ============================================================
+   PIP HIDDEN STATE (used by JS)
+============================================================ */
 
 .local-pip.hidden {
-  display: none;
+  display: none !important;
 }
-
 /* ============================================================
-   TOP INFO BAR
+   GLASSMORPHIC CONTROL BAR — GOOGLE MEET STYLE
+   Clean, unified, never overlaps PiP or tiles
 ============================================================ */
-.call-top-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 16px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.6), transparent);
-  font-size: 14px;
-}
 
-.call-status {
-  color: var(--text);
-}
-
-.call-timer {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-/* ============================================================
-   GLASSMORPHIC CONTROL BAR
-============================================================ */
 .call-controls {
   position: absolute;
   bottom: 24px;
@@ -575,6 +618,10 @@ body.light-mode {
   pointer-events: none;
 }
 
+/* ============================================================
+   CONTROL BUTTONS
+============================================================ */
+
 .control-btn {
   width: 48px;
   height: 48px;
@@ -599,6 +646,7 @@ body.light-mode {
   box-shadow: var(--shadow-soft);
 }
 
+/* End/Decline buttons */
 #end-call.control-btn,
 #decline-call.control-btn {
   background: var(--danger);
@@ -611,15 +659,22 @@ body.light-mode {
   box-shadow: var(--danger-glow);
 }
 
-/* Inbound vs active mode (CallUI toggles on .call-window) */
+/* ============================================================
+   INBOUND VS ACTIVE MODE
+============================================================ */
+
 .call-window.inbound-mode .active-only {
   display: none;
 }
+
 .call-window.active-mode .inbound-only {
   display: none;
 }
 
-/* More controls */
+/* ============================================================
+   MORE CONTROLS MENU
+============================================================ */
+
 .more-controls {
   position: relative;
 }
@@ -669,14 +724,54 @@ body.light-mode {
   transform: translateY(0);
 }
 
-/* Toggle states for noise + recording */
+/* Toggle states */
 #ai-noise-toggle.active,
 #record-call.active {
   background: rgba(77, 163, 255, 0.16);
 }
+
 /* ============================================================
-   VIDEO UPGRADE OVERLAY (FaceTime-style)
+   INFO BAR — QUALITY + DEBUG
 ============================================================ */
+
+.call-info-bar {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 30;
+}
+
+.quality-indicator {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text);
+}
+
+.quality-indicator[data-level="excellent"] {
+  color: #4cff8f;
+}
+.quality-indicator[data-level="good"] {
+  color: #a4ff4c;
+}
+.quality-indicator[data-level="fair"] {
+  color: #ffd24c;
+}
+.quality-indicator[data-level="poor"] {
+  color: #ff9b4c;
+}
+.quality-indicator[data-level="bad"] {
+  color: #ff4b5c;
+}
+/* ============================================================
+   VIDEO UPGRADE OVERLAY — FACETIME-STYLE
+   Clean, unified, mobile + desktop
+============================================================ */
+
 .video-upgrade-overlay {
   position: absolute;
   inset: 0;
@@ -692,10 +787,13 @@ body.light-mode {
 }
 
 .video-upgrade-overlay.hidden {
-  display: none;
+  display: none !important;
 }
 
-/* MOBILE: floating card (B1) */
+/* ============================================================
+   MOBILE: FLOATING CARD (B1)
+============================================================ */
+
 .video-upgrade-card {
   position: absolute;
   left: 50%;
@@ -768,7 +866,10 @@ body.light-mode {
   border-color: var(--border-strong);
 }
 
-/* DESKTOP: fullscreen blur (B2) */
+/* ============================================================
+   DESKTOP: FULLSCREEN BLUR (B2)
+============================================================ */
+
 .video-upgrade-desktop-overlay {
   position: absolute;
   inset: 0;
@@ -808,10 +909,14 @@ body.light-mode {
   gap: 10px;
 }
 
-/* Mobile vs desktop visibility */
+/* ============================================================
+   MOBILE VS DESKTOP VISIBILITY
+============================================================ */
+
 .mobile-only {
   display: none;
 }
+
 .desktop-only {
   display: flex;
 }
@@ -825,113 +930,23 @@ body.light-mode {
   }
 }
 
-/* Desktop blur on grid during upgrade */
+/* ============================================================
+   GRID BLUR DURING VIDEO UPGRADE
+============================================================ */
+
 .call-grid.desktop-video-preview {
   filter: blur(10px);
   opacity: 0.6;
 }
 
-/* Mobile preview state (grid stays, card overlays) */
 .call-grid.mobile-video-preview {
   opacity: 1;
 }
 
 /* ============================================================
-   REMOTE VIDEO VISIBILITY FIX
-   (prevents permanent black screen due to opacity: 0)
+   SCREEN SHARE ANIMATION CLASSES
 ============================================================ */
-.media-wrapper video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 1; /* ensure remote video is visible by default */
-  transition: opacity 0.2s ease;
-}
 
-.media-wrapper video.hidden-soft {
-  opacity: 0;
-}
-
-/* ============================================================
-   VOICE-ONLY MODE (Unified)
-============================================================ */
-.participant.voice-only .media-wrapper video {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-.participant.voice-only .avatar-wrapper {
-  display: flex !important;
-  opacity: 1 !important;
-}
-
-.participant.voice-only {
-  background: var(--bg-2);
-}
-
-/* Keep speaking glow visible even without video */
-.participant.voice-only.speaking {
-  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
-
-/* Voice-only in stage mode (screen share) */
-.participant.voice-only.stage {
-  background: var(--bg-2);
-}
-
-/* Voice-only in filmstrip */
-.participant.voice-only.filmstrip {
-  background: var(--bg-2);
-}
-
-/* Voice-only in mobile swipe mode */
-@media (max-width: 900px) {
-  .participant.voice-only {
-    background: var(--bg-2);
-  }
-}
-
-/* ============================================================
-   INFO BAR
-============================================================ */
-.call-info-bar {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 30;
-}
-
-.quality-indicator {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--text);
-}
-
-.quality-indicator[data-level="excellent"] {
-  color: #4cff8f;
-}
-.quality-indicator[data-level="good"] {
-  color: #a4ff4c;
-}
-.quality-indicator[data-level="fair"] {
-  color: #ffd24c;
-}
-.quality-indicator[data-level="poor"] {
-  color: #ff9b4c;
-}
-.quality-indicator[data-level="bad"] {
-  color: #ff4b5c;
-}
-
-/* ============================================================
-   SCREEN SHARE ANIMATION CLASSES (used by WebRTCMedia)
-============================================================ */
 .participant.animate-stage-in {
   animation: stageInDesktop 0.35s ease forwards;
 }
@@ -954,11 +969,14 @@ body.light-mode {
     opacity: 0;
   }
 }
-
 /* ============================================================
-   MOBILE — GOOGLE MEET BEHAVIOR
+   MOBILE LAYOUT — GOOGLE MEET BEHAVIOR
+   Swipeable participants, PiP repositioning, safe-area fixes
 ============================================================ */
+
 @media (max-width: 900px) {
+
+  /* Fullscreen call body */
   .call-body {
     width: 100vw !important;
     height: 100vh !important;
@@ -969,6 +987,7 @@ body.light-mode {
     overflow: hidden;
   }
 
+  /* Swipeable participant pages */
   .call-grid {
     padding: 0 !important;
     gap: 0 !important;
@@ -978,6 +997,7 @@ body.light-mode {
     height: 100%;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
   }
 
   .participant {
@@ -989,29 +1009,21 @@ body.light-mode {
     border: none !important;
   }
 
-  .participant.local {
-    position: absolute;
-    width: 120px;
-    height: 180px;
-    bottom: 90px;
-    right: 12px;
-    border-radius: 14px !important;
-    overflow: hidden;
-    z-index: 20;
-    animation: pipFloat 0.35s ease-out;
+  /* Local PiP — mobile position */
+  .local-pip {
+    width: 140px;
+    height: 90px;
+    bottom: 90px; /* above controls */
+    right: 16px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-strong);
   }
 
-  @keyframes pipFloat {
-    0% {
-      transform: scale(0.8) translateY(20px);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
+  .local-pip.dragging {
+    box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
   }
 
+  /* Controls — mobile style */
   .call-controls {
     bottom: 20px;
     background: rgba(0, 0, 0, 0.35);
@@ -1019,6 +1031,7 @@ body.light-mode {
     padding: 10px 16px;
   }
 
+  /* Top info bar */
   .call-top-info {
     position: absolute;
     top: 0;
@@ -1029,6 +1042,7 @@ body.light-mode {
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45), transparent);
   }
 
+  /* Name tag reposition */
   .name-tag {
     top: 10px;
     left: 10px;
@@ -1038,17 +1052,19 @@ body.light-mode {
     font-size: 12px;
   }
 
+  /* Zoomable video (pinch-to-zoom) */
   .media-wrapper video.zoomable {
     transform-origin: center center;
     transition: transform 0.1s ease-out;
   }
 
+  /* Local PiP draggable on mobile */
   .participant.local.draggable {
     touch-action: none;
     transition: transform 0.15s ease-out;
   }
 
-  /* Mobile screen share */
+  /* Screen share — mobile */
   .call-grid.screen-share-mode {
     flex-direction: column;
   }
@@ -1069,6 +1085,330 @@ body.light-mode {
     border-color: rgba(0, 200, 255, 0.9);
   }
 }
+/* ============================================================
+   ANIMATIONS — GLOBAL
+============================================================ */
 
+@keyframes fadeIn {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
 
+@keyframes fadeOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
 
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(12px); }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes popOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+
+/* ============================================================
+   UTILITY CLASSES
+============================================================ */
+
+.hidden {
+  display: none !important;
+}
+
+.opacity-0 {
+  opacity: 0 !important;
+}
+
+.opacity-1 {
+  opacity: 1 !important;
+}
+
+.no-pointer {
+  pointer-events: none !important;
+}
+
+.pointer {
+  pointer-events: auto !important;
+}
+
+.blur {
+  filter: blur(10px);
+}
+
+.no-blur {
+  filter: none !important;
+}
+
+.scale-0 {
+  transform: scale(0) !important;
+}
+
+.scale-1 {
+  transform: scale(1) !important;
+}
+
+/* ============================================================
+   Z-INDEX HELPERS
+============================================================ */
+
+.z-1 { z-index: 1; }
+.z-5 { z-index: 5; }
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+.z-60 { z-index: 60; }
+.z-100 { z-index: 100; }
+.z-max { z-index: 999999; }
+
+/* ============================================================
+   TRANSITION HELPERS
+============================================================ */
+
+.transition-fast {
+  transition: all 0.15s ease;
+}
+
+.transition-med {
+  transition: all 0.25s ease;
+}
+
+.transition-slow {
+  transition: all 0.4s ease;
+}
+
+/* ============================================================
+   BACKDROP + GLASS UTILITIES
+============================================================ */
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+}
+
+.glass-heavy {
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy));
+}
+
+.glass-strong {
+  background: var(--glass-strong);
+  backdrop-filter: blur(var(--blur-strong));
+}
+
+/* ============================================================
+   ACCENT GLOW UTILITIES
+============================================================ */
+
+.accent-glow {
+  box-shadow: 0 0 14px rgba(0, 200, 255, 0.75);
+}
+
+.accent-glow-soft {
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.45);
+}
+
+.accent-border {
+  border-color: rgba(0, 200, 255, 0.9) !important;
+}
+
+/* ============================================================
+   PARTICIPANT STATE HELPERS
+============================================================ */
+
+.participant.camera-off video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.participant.camera-off .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+.participant.speaking .name-tag {
+  background: rgba(0, 200, 255, 0.75);
+  color: #000;
+}
+
+/* ============================================================
+   CALL WINDOW STATE HELPERS
+============================================================ */
+
+.call-window.minimized {
+  transform: scale(0.85);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.call-window.maximized {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================================================
+   DEBUG OVERLAY (OPTIONAL)
+============================================================ */
+
+.debug-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 12px;
+  border-radius: 6px;
+  z-index: 999999;
+  pointer-events: none;
+}
+/* ============================================================
+   FINAL OVERRIDES — CLEANUP + EDGE CASE FIXES
+   Ensures no conflicts remain in the full stylesheet
+============================================================ */
+
+/* Remove legacy participant styling conflicts */
+.participant .media-wrapper video,
+.participant video {
+  object-fit: cover !important;
+  background: #000 !important;
+}
+
+/* Remove old avatar/video toggle conflicts */
+.participant .avatar-wrapper.hidden,
+.participant .avatar-wrapper.hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.participant .avatar-wrapper.show {
+  opacity: 1 !important;
+}
+
+/* Ensure video always sits below name-tag + badges */
+.participant video {
+  z-index: 1 !important;
+}
+
+.name-tag,
+.presenting-badge {
+  z-index: 5 !important;
+}
+
+/* Remove any old PiP rules that might conflict */
+.participant.local {
+  position: absolute !important;
+  inset: auto !important;
+  pointer-events: auto !important;
+  z-index: 20 !important;
+}
+
+/* Force PiP to always float above grid */
+.local-pip {
+  z-index: 999 !important;
+}
+
+/* Remove legacy grid padding conflicts */
+.call-grid {
+  padding-bottom: 96px !important;
+}
+
+/* Ensure controls never overlap PiP */
+.call-controls {
+  z-index: 40 !important;
+}
+
+/* Ensure overlays always sit above everything */
+.video-upgrade-overlay,
+.video-upgrade-desktop-overlay {
+  z-index: 60 !important;
+}
+
+/* Fix rare case where stage tile loses border radius */
+.participant.stage {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Fix rare case where filmstrip tiles get stretched */
+.participant.filmstrip {
+  object-fit: cover !important;
+}
+
+/* Remove any old transform conflicts */
+.participant,
+.local-pip,
+.call-controls,
+.call-grid {
+  transform-origin: center center !important;
+}
+
+/* Fix mobile scroll bounce causing tile gaps */
+@media (max-width: 900px) {
+  .call-grid {
+    overscroll-behavior-x: contain !important;
+  }
+}
+
+/* Ensure voice-only mode always wins over video */
+.call-window.voice-only-call .participant video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.call-window.voice-only-call .participant .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+/* Fix camera-off edge case */
+.participant.camera-off video {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+.participant.camera-off .avatar-wrapper {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+/* Fix PiP glow stacking */
+.local-pip.speaking {
+  z-index: 1000 !important;
+}
+
+/* Ensure debug overlay always stays on top */
+.debug-overlay {
+  z-index: 999999 !important;
+}
+
+/* Remove any old transitions that cause flicker */
+.participant,
+.local-pip,
+.call-controls,
+.call-grid,
+.media-wrapper video {
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+}
+
+/* Prevent Safari from clipping blur layers */
+.call-body,
+.local-pip,
+.video-upgrade-card,
+.video-upgrade-desktop-inner {
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
