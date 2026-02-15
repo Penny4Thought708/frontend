@@ -1,7 +1,15 @@
 // public/js/webrtc/WebRTCMedia.js
 // ============================================================
-// Media acquisition, local/remote stream routing, PiP support,
+// Media acquisition, local/remote stream routing, PiP wiring,
 // speaking detection, screen share, and cleanup.
+//
+// Layout (who is primary, who is PiP, snap, swap, etc.) is
+// owned entirely by CallUI.js. This file ONLY:
+//   - gets local media
+//   - routes local stream to localVideo + localPipVideo
+//   - routes remote streams to tiles + remotePipVideo + remoteAudio
+//   - runs speaking detection
+//   - handles screen share + upgrade + cleanup
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -100,7 +108,7 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     }
   }
 
-  // Final fallback: fake stream
+  // Final fallback: fake stream (avatar-only mode)
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -134,6 +142,9 @@ function createFakeStream() {
 
 /* -------------------------------------------------------
    ATTACH LOCAL STREAM
+   - Feeds local grid tile video
+   - Feeds local PiP video
+   - Layout (which is visible) is handled by CallUI
 ------------------------------------------------------- */
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
@@ -142,19 +153,33 @@ export function attachLocalStream(stream) {
   const pipVideo = document.getElementById("localPipVideo");
 
   if (localVideo) {
-    localVideo.srcObject = stream;
-    localVideo.muted = true;
-    localVideo.playsInline = true;
-    localVideo.play().catch(() => {});
-    localVideo.classList.toggle("show", !rtcState.audioOnly);
+    try {
+      localVideo.srcObject = stream;
+      localVideo.muted = true;
+      localVideo.playsInline = true;
+      localVideo
+        .play()
+        .catch(() => {
+          /* autoplay may be blocked; CallUI handles UX */
+        });
+    } catch (err) {
+      log("attachLocalStream: failed to bind localVideo:", err);
+    }
   }
 
   if (pipVideo) {
-    pipVideo.srcObject = stream;
-    pipVideo.muted = true;
-    pipVideo.playsInline = true;
-    pipVideo.play().catch(() => {});
-    pipVideo.classList.toggle("show", !rtcState.audioOnly);
+    try {
+      pipVideo.srcObject = stream;
+      pipVideo.muted = true;
+      pipVideo.playsInline = true;
+      pipVideo
+        .play()
+        .catch(() => {
+          /* autoplay may be blocked; CallUI handles UX */
+        });
+    } catch (err) {
+      log("attachLocalStream: failed to bind localPipVideo:", err);
+    }
   }
 }
 
@@ -162,6 +187,7 @@ export function attachLocalStream(stream) {
    REMOTE TRACK ROUTING
    - Feeds remote tile
    - Feeds remote PiP
+   - Feeds shared remote audio element
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerId, event) {
   if (!event || !event.track) return;
@@ -190,9 +216,17 @@ export function attachRemoteTrack(peerId, event) {
   if (event.track.kind === "audio") {
     const audioEl = document.getElementById("remoteAudio");
     if (audioEl) {
-      audioEl.srcObject = stream;
-      audioEl.playsInline = true;
-      audioEl.play().catch(() => {});
+      try {
+        audioEl.srcObject = stream;
+        audioEl.playsInline = true;
+        audioEl
+          .play()
+          .catch(() => {
+            /* autoplay may be blocked; CallUI handles UX */
+          });
+      } catch (err) {
+        log("attachRemoteTrack: failed to bind remoteAudio:", err);
+      }
     }
   }
 
@@ -204,24 +238,40 @@ export function attachRemoteTrack(peerId, event) {
   const avatarEl = entry.avatarEl;
 
   if (event.track.kind === "video" && videoEl) {
-    videoEl.srcObject = stream;
-    videoEl.playsInline = true;
-    videoEl.play().catch(() => {});
-    videoEl.classList.add("show");
-    if (avatarEl) avatarEl.classList.add("hidden");
-  }
-
-  // ⭐ NEW: Feed remote PiP
-  if (event.track.kind === "video") {
-    const remotePipVideo = document.getElementById("remotePipVideo");
-    if (remotePipVideo) {
-      remotePipVideo.srcObject = stream;
-      remotePipVideo.playsInline = true;
-      remotePipVideo.play().catch(() => {});
+    try {
+      videoEl.srcObject = stream;
+      videoEl.playsInline = true;
+      videoEl
+        .play()
+        .catch(() => {
+          /* autoplay may be blocked; CallUI handles UX */
+        });
+      videoEl.classList.add("show");
+      if (avatarEl) avatarEl.classList.add("hidden");
+    } catch (err) {
+      log("attachRemoteTrack: failed to bind remote video tile:", err);
     }
   }
 
-  // Speaking detection
+  // Remote video → remote PiP (CallUI decides when to show/hide)
+  if (event.track.kind === "video") {
+    const remotePipVideo = document.getElementById("remotePipVideo");
+    if (remotePipVideo) {
+      try {
+        remotePipVideo.srcObject = stream;
+        remotePipVideo.playsInline = true;
+        remotePipVideo
+          .play()
+          .catch(() => {
+            /* autoplay may be blocked; CallUI handles UX */
+          });
+      } catch (err) {
+        log("attachRemoteTrack: failed to bind remotePipVideo:", err);
+      }
+    }
+  }
+
+  // Speaking detection (remote audio)
   if (event.track.kind === "audio") {
     startSpeakingDetection(peerId, stream);
   }
@@ -310,7 +360,9 @@ export async function upgradeLocalToVideo() {
 export function cleanupMedia() {
   const stream = rtcState.localStream;
   if (stream) {
-    stream.getTracks().forEach((t) => t.stop());
+    try {
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {}
   }
 
   rtcState.localStream = null;
@@ -319,7 +371,9 @@ export function cleanupMedia() {
   for (const key of Object.keys(rtcState.remoteStreams)) {
     const rs = rtcState.remoteStreams[key];
     if (rs) {
-      rs.getTracks().forEach((t) => t.stop());
+      try {
+        rs.getTracks().forEach((t) => t.stop());
+      } catch {}
     }
   }
   rtcState.remoteStreams = {};
