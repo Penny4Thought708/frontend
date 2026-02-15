@@ -125,7 +125,7 @@ body.light-mode {
 }
 
 /* Voice-only mode */
-.call-window.voice-only-call .participant.local video,
+.call-window.voice-only-call  video,
 .call-window.voice-only-call .participant.remote video {
   display: none !important;
   opacity: 0 !important;
@@ -137,12 +137,12 @@ body.light-mode {
 }
 
 /* Camera-off mode */
-.call-window.camera-off .participant.local video {
+.call-window.camera-off  video {
   display: none !important;
   opacity: 0 !important;
 }
 
-.call-window.camera-off .participant.local .avatar-wrapper {
+.call-window.camera-off  .avatar-wrapper {
   display: flex !important;
   opacity: 1 !important;
 }
@@ -236,10 +236,10 @@ body.light-mode {
   z-index: 1;
 }
 
-/* Local tile (desktop PiP logic handled by JS) */
+/* Local tile participates in the grid like others */
 .participant.local {
-  position: absolute;
-  z-index: 20;
+  position: relative;
+  z-index: 1;
   pointer-events: auto;
 }
 
