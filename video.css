@@ -674,6 +674,183 @@ body.light-mode {
 #record-call.active {
   background: rgba(77, 163, 255, 0.16);
 }
+/* ============================================================
+   VIDEO UPGRADE OVERLAY (FaceTime-style)
+============================================================ */
+.video-upgrade-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--med);
+}
+
+.video-upgrade-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.video-upgrade-overlay.hidden {
+  display: none;
+}
+
+/* MOBILE: floating card (B1) */
+.video-upgrade-card {
+  position: absolute;
+  left: 50%;
+  bottom: 80px;
+  transform: translateX(-50%);
+  width: min(360px, 92vw);
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-heavy);
+  backdrop-filter: blur(var(--blur-heavy));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.video-upgrade-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.video-upgrade-preview .video-icon {
+  font-size: 26px;
+  color: var(--accent);
+}
+
+.video-upgrade-text .title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.video-upgrade-text .subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.video-upgrade-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.btn-upgrade-accept,
+.btn-upgrade-decline {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-upgrade-accept {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent-strong);
+}
+
+.btn-upgrade-decline {
+  background: var(--glass);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* DESKTOP: fullscreen blur (B2) */
+.video-upgrade-desktop-overlay {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(18px) brightness(0.7);
+  background: radial-gradient(circle at top, rgba(0,0,0,0.55), rgba(0,0,0,0.9));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-upgrade-desktop-inner {
+  padding: 20px 24px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-heavy);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 320px;
+}
+
+.video-upgrade-desktop-text .title {
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.video-upgrade-desktop-text .subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.video-upgrade-desktop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Mobile vs desktop visibility */
+.mobile-only {
+  display: none;
+}
+.desktop-only {
+  display: flex;
+}
+
+@media (max-width: 900px) {
+  .mobile-only {
+    display: block;
+  }
+  .desktop-only {
+    display: none;
+  }
+}
+
+/* Desktop blur on grid during upgrade */
+.call-grid.desktop-video-preview {
+  filter: blur(10px);
+  opacity: 0.6;
+}
+
+/* Mobile preview state (grid stays, card overlays) */
+.call-grid.mobile-video-preview {
+  opacity: 1;
+}
+
+/* ============================================================
+   REMOTE VIDEO VISIBILITY FIX
+   (prevents permanent black screen due to opacity: 0)
+============================================================ */
+.media-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1; /* ensure remote video is visible by default */
+  transition: opacity 0.2s ease;
+}
+
+.media-wrapper video.hidden-soft {
+  opacity: 0;
+}
 
 /* ============================================================
    VOICE-ONLY MODE (Unified)
