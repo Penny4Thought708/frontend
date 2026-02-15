@@ -128,9 +128,9 @@ function initUI() {
 
       // 🔹 Voicemail section hook
       if (sectionName === "voicemail") {
-        import("./voicemail/VoicemailUI.js").then(({ loadVoicemails }) => {
-          loadVoicemails();
-        });
+         import("/frontend/public/js/voicemail/VoicemailUi.js").then(({ loadVoicemails }) => {
+           loadVoicemails();
+         });
       }
     }
 
@@ -325,6 +325,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
