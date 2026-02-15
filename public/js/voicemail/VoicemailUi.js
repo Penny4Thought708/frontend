@@ -136,25 +136,32 @@ function wireVoicemailCard(card, vm) {
   };
 
   playBtn.onclick = () => {
-    if (activeAudio && activeAudio !== audio) {
-      activeAudio.pause();
-      activeCard?.querySelector(".vm-play-btn span").textContent = "play_arrow";
-      activeCard?.classList.remove("vm-playing");
-    }
+  // Stop previous audio
+  if (activeAudio && activeAudio !== audio) {
+    activeAudio.pause();
 
-    if (audio.paused) {
-      audio.play();
-      playBtn.querySelector("span").textContent = "pause";
-      card.classList.add("vm-playing");
-      activeAudio = audio;
-      activeCard = card;
-      markVoicemailRead(vm.id, card);
-    } else {
-      audio.pause();
-      playBtn.querySelector("span").textContent = "play_arrow";
-      card.classList.remove("vm-playing");
+    if (activeCard) {
+      const prevBtn = activeCard.querySelector(".vm-play-btn span");
+      if (prevBtn) prevBtn.textContent = "play_arrow";
+      activeCard.classList.remove("vm-playing");
     }
-  };
+  }
+
+  // Toggle play/pause
+  if (audio.paused) {
+    audio.play();
+    playBtn.querySelector("span").textContent = "pause";
+    card.classList.add("vm-playing");
+    activeAudio = audio;
+    activeCard = card;
+    markVoicemailRead(vm.id, card);
+  } else {
+    audio.pause();
+    playBtn.querySelector("span").textContent = "play_arrow";
+    card.classList.remove("vm-playing");
+  }
+};
+
 
   audio.onended = () => {
     playBtn.querySelector("span").textContent = "play_arrow";
