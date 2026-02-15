@@ -1,15 +1,12 @@
 /* ============================================================
-   PREMIUM NEON‑GLASS VOICEMAIL CARD
-   Clean layout • Better spacing • Theme‑aware accents
+   PREMIUM NEON‑GLASS VOICEMAIL CARD (NAMESPACED)
 ============================================================ */
 
-/* Root accent variable (set by JS per‑sender theme) */
-.vm-card {
+.voicemail-ui .vm-card {
   --accent: var(--vm-accent, #00e0ff);
 }
 
-/* Card container */
-.vm-card {
+.voicemail-ui .vm-card {
   position: relative;
   padding: 14px 16px;
   margin: 10px 0;
@@ -29,7 +26,7 @@
     border-color 0.18s ease;
 }
 
-.vm-card:hover {
+.voicemail-ui .vm-card:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
   box-shadow:
@@ -38,7 +35,7 @@
 }
 
 /* Unread glow */
-.vm-card .vm-status.unread {
+.voicemail-ui .vm-card .vm-status.unread {
   background: var(--accent);
   box-shadow: 0 0 10px var(--accent);
   animation: vmPulse 1.4s infinite ease-in-out;
@@ -53,14 +50,14 @@
 /* ============================================================
    HEADER
 ============================================================ */
-.vm-header {
+.voicemail-ui .vm-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
 }
 
-.vm-avatar {
+.voicemail-ui .vm-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -69,24 +66,24 @@
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-.vm-info {
+.voicemail-ui .vm-info {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
 }
 
-.vm-from {
+.voicemail-ui .vm-from {
   font-size: 0.95rem;
   font-weight: 600;
   color: #eaf6ff;
 }
 
-.vm-time {
+.voicemail-ui .vm-time {
   font-size: 0.75rem;
   opacity: 0.7;
 }
 
-.vm-status {
+.voicemail-ui .vm-status {
   margin-left: auto;
   width: 10px;
   height: 10px;
@@ -94,17 +91,16 @@
 }
 
 /* ============================================================
-   BODY (Play button + waveform + duration)
+   BODY
 ============================================================ */
-.vm-body {
+.voicemail-ui .vm-body {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 6px 0 4px;
 }
 
-/* Play button */
-.vm-play-btn {
+.voicemail-ui .vm-play-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -122,13 +118,12 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.vm-play-btn:hover {
+.voicemail-ui .vm-play-btn:hover {
   transform: scale(1.08);
   box-shadow: 0 0 20px var(--accent);
 }
 
-/* Waveform */
-.vm-waveform {
+.voicemail-ui .vm-waveform {
   flex: 1;
   height: 38px;
   display: flex;
@@ -137,7 +132,7 @@
   overflow: hidden;
 }
 
-.vm-waveform .bar {
+.voicemail-ui .vm-waveform .bar {
   width: 3px;
   border-radius: 999px;
   background: linear-gradient(
@@ -149,8 +144,7 @@
   transition: transform 0.12s ease;
 }
 
-/* Animate waveform while playing */
-.vm-card.vm-playing .vm-waveform .bar {
+.voicemail-ui .vm-card.vm-playing .vm-waveform .bar {
   animation: vmWave 0.6s infinite alternate ease-in-out;
 }
 
@@ -159,7 +153,7 @@
   to   { transform: scaleY(1.1); }
 }
 
-.vm-duration {
+.voicemail-ui .vm-duration {
   font-size: 0.8rem;
   opacity: 0.8;
   min-width: 40px;
@@ -167,16 +161,16 @@
 }
 
 /* ============================================================
-   ACTIONS ROW
+   ACTIONS
 ============================================================ */
-.vm-actions {
+.voicemail-ui .vm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
 }
 
-.vm-actions button {
+.voicemail-ui .vm-actions button {
   border: none;
   border-radius: 10px;
   padding: 6px 10px;
@@ -191,7 +185,7 @@
   transition: background 0.12s ease, transform 0.12s ease;
 }
 
-.vm-actions button:hover {
+.voicemail-ui .vm-actions button:hover {
   background: color-mix(in srgb, var(--accent) 20%, transparent);
   transform: translateY(-1px);
 }
@@ -199,7 +193,7 @@
 /* ============================================================
    TRANSCRIPT
 ============================================================ */
-.vm-transcript {
+.voicemail-ui .vm-transcript {
   margin-top: 10px;
   padding: 10px 12px;
   border-radius: 12px;
@@ -218,7 +212,7 @@
   transition: max-height 0.25s ease, opacity 0.25s ease;
 }
 
-.vm-transcript.open {
+.voicemail-ui .vm-transcript.open {
   max-height: 300px;
   opacity: 1;
 }
@@ -226,7 +220,7 @@
 /* ============================================================
    DELETE ANIMATION
 ============================================================ */
-.vm-card.leaving {
+.voicemail-ui .vm-card.leaving {
   opacity: 0;
   transform: translateX(-10px);
   transition: opacity 0.18s ease, transform 0.18s ease;
@@ -235,7 +229,7 @@
 /* ============================================================
    EMPTY STATE
 ============================================================ */
-.vm-empty {
+.voicemail-ui .vm-empty {
   text-align: center;
   padding: 1rem;
   opacity: 0.7;
