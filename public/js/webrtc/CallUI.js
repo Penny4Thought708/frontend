@@ -27,7 +27,7 @@ export class CallUI {
     // -------------------------------------------------------
     // DOM REFERENCES (MATCHING YOUR HTML / CSS)
     // -------------------------------------------------------
-    this.videoContainer = document.getElementById("callWindow"); // <call-window id="callWindow" class="call-window">
+    this.videoContainer = document.getElementById("callWindow"); // <call-window id="callWindow" class="call-window hidden">
     this.callBody = this.videoContainer?.querySelector(".call-body") || null;
     this.callGrid = document.getElementById("callGrid");
 
@@ -45,7 +45,7 @@ export class CallUI {
     this.timerEl = document.getElementById("call-timer");
     this.qualityEl = document.getElementById("call-quality-indicator");
 
-    // Local PiP window
+    // Local PiP window (Meet-style secondary PIP, optional)
     this.localPip = document.getElementById("localPip");
     this.localPipVideo = document.getElementById("localPipVideo");
 
@@ -63,6 +63,9 @@ export class CallUI {
     this.noiseBtn = document.getElementById("ai-noise-toggle");
     this.recordBtn = document.getElementById("record-call");
     this.historyBtn = document.getElementById("call-history-toggle");
+
+    // Debug toggle
+    this.debugToggleBtn = document.getElementById("call-debug-toggle");
 
     // Audio cues (elsewhere in DOM)
     this.ringtone = document.getElementById("ringtone");
@@ -262,7 +265,7 @@ export class CallUI {
       });
     }
 
-    // More menu actions
+    // More menu actions (Option B: simple screen share, no layout change)
     if (this.shareBtn) {
       this.shareBtn.addEventListener("click", () => {
         this.rtc.startScreenShare();
@@ -286,6 +289,13 @@ export class CallUI {
     if (this.historyBtn) {
       this.historyBtn.addEventListener("click", () => {
         this.historyBtn.classList.toggle("active");
+      });
+    }
+
+    // Debug toggle (simple active state for now)
+    if (this.debugToggleBtn) {
+      this.debugToggleBtn.addEventListener("click", () => {
+        this.debugToggleBtn.classList.toggle("active");
       });
     }
 
@@ -455,11 +465,7 @@ export class CallUI {
   // CONTROLS VISIBILITY (WORKS WITH .inbound-mode / .active-mode)
   // -------------------------------------------------------
   _showControlsForVoice({ outbound, inbound, active } = {}) {
-    // CSS already hides inbound-only / active-only based on .call-window.inbound-mode / .active-mode
-    // Here we only handle any extra tweaks if needed.
     if (!this.callControls) return;
-
-    // Voice mode: hide camera button visually if you want
     if (this.camBtn) {
       this.camBtn.classList.add("hidden-soft");
     }
@@ -467,7 +473,6 @@ export class CallUI {
 
   _showControlsForVideo({ outbound, inbound, active } = {}) {
     if (!this.callControls) return;
-
     if (this.camBtn) {
       this.camBtn.classList.remove("hidden-soft");
     }
@@ -513,17 +518,14 @@ export class CallUI {
   // PRIMARY / PIP LAYOUT + DRAG
   // -------------------------------------------------------
   _togglePrimary(remoteEl) {
-    // For now, we just swap CSS roles between local and one remote tile
+    // Hook for future explicit primary/pip roles; CSS already treats local as PIP.
     if (!this.localWrapper || !remoteEl) return;
-
     this._primaryIsRemote = !this._primaryIsRemote;
     this._applyPrimaryLayout(remoteEl);
   }
 
   _applyPrimaryLayout(remoteEl) {
-    // Desktop CSS already treats .participant.local as PIP; for now we just rely on that.
-    // If you later want explicit .primary/.pip classes, you can add them here.
-    // Keeping hook so behavior is extendable.
+    // Currently relying on CSS for layout; this is where you'd add .primary/.pip if desired.
   }
 
   _initPipDrag() {
@@ -585,6 +587,8 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
+
 
 
 
