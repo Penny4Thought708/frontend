@@ -1,32 +1,24 @@
 /* ============================================================
-   VOICEMAIL LIST CONTAINER
+   VOICEMAIL LIST CONTAINER — FIXES INVISIBLE LIST
 ============================================================ */
 
 #voiceMList {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 10px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-
-  /* Smooth fade-in when switching directory sections */
-  opacity: 1;
-  transition: opacity 0.25s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-#voiceMList.hidden {
-  opacity: 0;
-}
-
-/* Empty state */
-.vm-empty {
+#voiceMList .vm-empty {
   padding: 20px;
   text-align: center;
   color: var(--text-muted);
   font-size: 14px;
 }
-
 /* ============================================================
    VOICEMAIL CARD — NEON GLASS PREMIUM
 ============================================================ */
