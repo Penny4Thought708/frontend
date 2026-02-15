@@ -152,6 +152,35 @@ body.light-mode {
   opacity: 0.25;
   pointer-events: none;
 }
+/* ============================================================
+   PIP — SNAP-AWAY + EDGE SNAPPING + SWAP ANIMATIONS
+============================================================ */
+
+.pip-anim {
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.pip-anim.fade-out {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.pip-anim.fade-in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.pip-anim.shrink {
+  transform: scale(0.75);
+}
+
+/* Snap-away glow when near controls */
+.pip-anim.snap-warning {
+  box-shadow: 0 0 18px rgba(255, 200, 0, 0.55);
+}
 
 /* ============================================================
    CALL BODY — GLASS PANEL
@@ -405,6 +434,64 @@ body.light-mode {
 .remoteVideo {
   transform: none !important;
 }
+/* ============================================================
+   SCREEN SHARE — PIP COMPATIBILITY
+============================================================ */
+
+.call-window.screen-sharing .local-pip,
+.call-window.screen-sharing .remote-pip {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-strong);
+  opacity: 1;
+}
+
+.call-window.screen-sharing .participant.stage video {
+  object-fit: contain !important;
+}
+
+/* ============================================================
+   MULTI-REMOTE SWAP — TILE HIGHLIGHT
+============================================================ */
+
+.participant.remote.swap-target {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+  box-shadow: 0 0 18px rgba(77, 163, 255, 0.45);
+}
+/* ============================================================
+   TOASTS + VOICEMAIL — VISIBILITY + ANIMATION
+============================================================ */
+
+.toast.show {
+  display: block !important;
+  opacity: 1 !important;
+  animation: slideUp 0.25s ease forwards;
+}
+
+.toast.hide {
+  opacity: 0 !important;
+  animation: slideDown 0.25s ease forwards;
+}
+
+.voicemail-modal.show {
+  display: flex !important;
+  animation: popIn 0.25s ease forwards;
+}
+
+.voicemail-modal.hide {
+  animation: popOut 0.25s ease forwards;
+  opacity: 0;
+}
+
+/* ============================================================
+   ACTIVE SPEAKER — TILE + PIP
+============================================================ */
+
+.local-pip.speaking,
+.remote-pip.speaking {
+  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
+  border-color: rgba(0, 200, 255, 0.9);
+}
 
 /* ============================================================
    AVATAR WRAPPER
@@ -639,6 +726,15 @@ body.light-mode {
 .call-controls.hidden {
   opacity: 0;
   transform: translateX(-50%) translateY(10px);
+  pointer-events: none;
+}
+/* ============================================================
+   CONTROL BAR — AUTO-HIDE SUPPORT
+============================================================ */
+
+.call-controls.hidden-soft {
+  opacity: 0;
+  transform: translateX(-50%) translateY(14px);
   pointer-events: none;
 }
 
@@ -1025,6 +1121,19 @@ body.light-mode {
   .remote-pip.dragging {
     box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
   }
+/* ============================================================
+   REMOTE PIP — FIXED FOR SWAP MODE
+============================================================ */
+
+.remote-pip {
+  z-index: 999;
+  pointer-events: auto;
+}
+
+.remote-pip.dragging {
+  cursor: grabbing;
+  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+}
 
   .call-controls {
     bottom: 20px;
