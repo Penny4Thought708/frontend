@@ -12,6 +12,7 @@
 //   - handles screen share + upgrade + cleanup
 // ============================================================
 
+// public/js/webrtc/WebRTCMedia.js
 import { rtcState } from "./WebRTCState.js";
 import {
   attachParticipantStream,
@@ -27,25 +28,16 @@ const isMobile =
     navigator.userAgent
   );
 
-// Profiles for different device classes / use cases
 const VIDEO_PROFILES = {
   mobile: {
     width: { ideal: 960, max: 1280 },
     height: { ideal: 540, max: 720 },
     frameRate: { ideal: 24, max: 30 },
-    advanced: [
-      { width: 960, height: 540 },
-      { frameRate: 24 },
-    ],
   },
   desktop: {
     width: { ideal: 1280, max: 1920 },
     height: { ideal: 720, max: 1080 },
     frameRate: { ideal: 30, max: 60 },
-    advanced: [
-      { width: 1280, height: 720 },
-      { frameRate: 30 },
-    ],
   },
 };
 
@@ -61,9 +53,6 @@ function ensureRemoteStreams() {
   }
 }
 
-/* -------------------------------------------------------
-   LOCAL MEDIA ACQUISITION
-------------------------------------------------------- */
 export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   rtcState.audioOnly = wantAudio && !wantVideo;
 
@@ -76,7 +65,7 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
           width: profile.width,
           height: profile.height,
           frameRate: profile.frameRate,
-          advanced: profile.advanced,
+          facingMode: "user",
         }
       : false,
   };
@@ -93,7 +82,6 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     log("Local media error (A/V):", err);
   }
 
-  // Fallback: audio-only
   if (wantAudio) {
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({
@@ -108,7 +96,6 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     }
   }
 
-  // Final fallback: fake stream (avatar-only mode)
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -116,11 +103,8 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   return fakeStream;
 }
 
-/* -------------------------------------------------------
-   FAKE STREAM (NO DEVICES)
-------------------------------------------------------- */
 function createFakeStream() {
-  const audioCtx = new AudioContext();
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = audioCtx.createOscillator();
   const dst = audioCtx.createMediaStreamDestination();
   oscillator.connect(dst);
@@ -140,12 +124,6 @@ function createFakeStream() {
   return new MediaStream([fakeAudioTrack, fakeVideoTrack]);
 }
 
-/* -------------------------------------------------------
-   ATTACH LOCAL STREAM
-   - Feeds local grid tile video
-   - Feeds local PiP video
-   - Layout (which is visible) is handled by CallUI
-------------------------------------------------------- */
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
 
@@ -159,8 +137,8 @@ export function attachLocalStream(stream) {
       localVideo.playsInline = true;
       localVideo
         .play()
-        .catch(() => {
-          /* autoplay may be blocked; CallUI handles UX */
+        .catch((err) => {
+          log("localVideo play blocked:", err?.name || err);
         });
     } catch (err) {
       log("attachLocalStream: failed to bind localVideo:", err);
@@ -174,8 +152,8 @@ export function attachLocalStream(stream) {
       pipVideo.playsInline = true;
       pipVideo
         .play()
-        .catch(() => {
-          /* autoplay may be blocked; CallUI handles UX */
+        .catch((err) => {
+          log("localPipVideo play blocked:", err?.name || err);
         });
     } catch (err) {
       log("attachLocalStream: failed to bind localPipVideo:", err);
@@ -183,12 +161,6 @@ export function attachLocalStream(stream) {
   }
 }
 
-/* -------------------------------------------------------
-   REMOTE TRACK ROUTING
-   - Feeds remote tile
-   - Feeds remote PiP
-   - Feeds shared remote audio element
-------------------------------------------------------- */
 export function attachRemoteTrack(peerId, event) {
   if (!event || !event.track) return;
 
@@ -212,17 +184,15 @@ export function attachRemoteTrack(peerId, event) {
     id: event.track.id,
   });
 
-  // Remote audio → shared audio element
   if (event.track.kind === "audio") {
     const audioEl = document.getElementById("remoteAudio");
     if (audioEl) {
       try {
         audioEl.srcObject = stream;
-        audioEl.playsInline = true;
         audioEl
           .play()
-          .catch(() => {
-            /* autoplay may be blocked; CallUI handles UX */
+          .catch((err) => {
+            log("remoteAudio play blocked:", err?.name || err);
           });
       } catch (err) {
         log("attachRemoteTrack: failed to bind remoteAudio:", err);
@@ -230,7 +200,6 @@ export function attachRemoteTrack(peerId, event) {
     }
   }
 
-  // Remote video → participant tile
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) return;
 
@@ -243,8 +212,8 @@ export function attachRemoteTrack(peerId, event) {
       videoEl.playsInline = true;
       videoEl
         .play()
-        .catch(() => {
-          /* autoplay may be blocked; CallUI handles UX */
+        .catch((err) => {
+          log("remote video play blocked:", err?.name || err);
         });
       videoEl.classList.add("show");
       if (avatarEl) avatarEl.classList.add("hidden");
@@ -253,7 +222,6 @@ export function attachRemoteTrack(peerId, event) {
     }
   }
 
-  // Remote video → remote PiP (CallUI decides when to show/hide)
   if (event.track.kind === "video") {
     const remotePipVideo = document.getElementById("remotePipVideo");
     if (remotePipVideo) {
@@ -262,8 +230,8 @@ export function attachRemoteTrack(peerId, event) {
         remotePipVideo.playsInline = true;
         remotePipVideo
           .play()
-          .catch(() => {
-            /* autoplay may be blocked; CallUI handles UX */
+          .catch((err) => {
+            log("remotePipVideo play blocked:", err?.name || err);
           });
       } catch (err) {
         log("attachRemoteTrack: failed to bind remotePipVideo:", err);
@@ -271,18 +239,14 @@ export function attachRemoteTrack(peerId, event) {
     }
   }
 
-  // Speaking detection (remote audio)
   if (event.track.kind === "audio") {
     startSpeakingDetection(peerId, stream);
   }
 }
 
-/* -------------------------------------------------------
-   SPEAKING DETECTION
-------------------------------------------------------- */
 function startSpeakingDetection(peerId, stream) {
   try {
-    const audioCtx = new AudioContext();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
 
@@ -304,9 +268,6 @@ function startSpeakingDetection(peerId, stream) {
   }
 }
 
-/* -------------------------------------------------------
-   SCREEN SHARE
-------------------------------------------------------- */
 export async function startScreenShare() {
   if (!navigator.mediaDevices.getDisplayMedia) {
     log("Screen share not supported");
@@ -337,9 +298,6 @@ export async function startScreenShare() {
   }
 }
 
-/* -------------------------------------------------------
-   UPGRADE TO VIDEO
-------------------------------------------------------- */
 export async function upgradeLocalToVideo() {
   const oldStream = rtcState.localStream;
 
@@ -354,9 +312,6 @@ export async function upgradeLocalToVideo() {
   return newStream;
 }
 
-/* -------------------------------------------------------
-   CLEANUP
-------------------------------------------------------- */
 export function cleanupMedia() {
   const stream = rtcState.localStream;
   if (stream) {
@@ -378,6 +333,7 @@ export function cleanupMedia() {
   }
   rtcState.remoteStreams = {};
 }
+
 
 
 
