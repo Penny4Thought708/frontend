@@ -231,26 +231,21 @@ export function attachRemoteTrack(peerId, event) {
     }
   }
 
-  // Remote video → participant tile
+  // Remote video/audio → participant tile (single source of truth)
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) {
     log("No participant entry for peer:", peerId);
     return;
   }
 
-  const videoEl = entry.videoEl;
   const avatarEl = entry.avatarEl;
 
-  if (event.track.kind === "video" && videoEl) {
-    videoEl.srcObject = stream;
-    videoEl.playsInline = true;
-    videoEl
-      .play()
-      .catch(() => {
-        log("remote video play blocked (autoplay policy)");
-      });
-
-    videoEl.classList.add("show");
+  if (event.track.kind === "video") {
+    // RemoteParticipants.attachParticipantStream already:
+    // - binds stream to videoEl
+    // - sets playsInline/muted
+    // - calls play()
+    // - adds .show
     if (avatarEl) avatarEl.classList.add("hidden");
   }
 
@@ -365,7 +360,6 @@ export function cleanupMedia() {
   }
   rtcState.remoteStreams = {};
 }
-
 
 
 
