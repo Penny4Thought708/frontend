@@ -19,6 +19,10 @@ function formatDuration(ms) {
   return `${m}:${s}`;
 }
 
+function isMobile() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
 export class CallUI {
   constructor(socket) {
     this.socket = socket;
@@ -27,7 +31,7 @@ export class CallUI {
     // -------------------------------------------------------
     // DOM REFERENCES (MATCHING YOUR HTML / CSS)
     // -------------------------------------------------------
-    this.videoContainer = document.getElementById("callWindow"); // <call-window id="callWindow" class="call-window hidden">
+    this.videoContainer = document.getElementById("callWindow");
     this.callBody = this.videoContainer?.querySelector(".call-body") || null;
     this.callGrid = document.getElementById("callGrid");
 
@@ -67,7 +71,12 @@ export class CallUI {
     // Debug toggle
     this.debugToggleBtn = document.getElementById("call-debug-toggle");
 
-    // Audio cues (elsewhere in DOM)
+    // Video upgrade overlay (FaceTime-style)
+    this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
+    this.videoUpgradeAcceptBtn = document.getElementById("video-upgrade-accept");
+    this.videoUpgradeDeclineBtn = document.getElementById("video-upgrade-decline");
+
+    // Audio cues
     this.ringtone = document.getElementById("ringtone");
     this.ringback = document.getElementById("ringback");
     this.cameraOnBeep = document.getElementById("cameraOnBeep");
@@ -91,7 +100,6 @@ export class CallUI {
     rtcState.audioOnly = true;
     rtcState.peerId = String(peerId);
 
-    // Notify backend
     this.socket.emit("call:start", { to: peerId, type: "voice" });
 
     this._openWindow();
@@ -105,7 +113,6 @@ export class CallUI {
     rtcState.audioOnly = false;
     rtcState.peerId = String(peerId);
 
-    // Notify backend
     this.socket.emit("call:start", { to: peerId, type: "video" });
 
     this._openWindow();
@@ -130,6 +137,16 @@ export class CallUI {
 
   answerCall() {
     log("answerCall");
+
+    // If this is a video upgrade preview mode
+    if (this.videoContainer.classList.contains("video-upgrade-mode")) {
+      this._exitVideoUpgradePreview();
+      rtcState.audioOnly = false;
+      this.rtc.answerCall(); // renegotiation
+      this._enterActiveVideoMode();
+      return;
+    }
+
     this._stopRinging();
     this.rtc.answerCall();
 
@@ -206,17 +223,9 @@ export class CallUI {
   // -------------------------------------------------------
   _bindButtons() {
     // Answer / decline / end
-    if (this.answerBtn) {
-      this.answerBtn.addEventListener("click", () => this.answerCall());
-    }
-
-    if (this.declineBtn) {
-      this.declineBtn.addEventListener("click", () => this.endCall());
-    }
-
-    if (this.endBtn) {
-      this.endBtn.addEventListener("click", () => this.endCall());
-    }
+    this.answerBtn?.addEventListener("click", () => this.answerCall());
+    this.declineBtn?.addEventListener("click", () => this.endCall());
+    this.endBtn?.addEventListener("click", () => this.endCall());
 
     // Mute
     if (this.muteBtn) {
@@ -229,18 +238,27 @@ export class CallUI {
       });
     }
 
-    // Camera toggle (ties into .camera-off / .voice-only-call CSS)
+    // Camera toggle:
+    // - If in voice-only: upgrade to video
+    // - If already video: toggle camera tracks on/off
     if (this.camBtn) {
-      this.camBtn.addEventListener("click", () => {
+      this.camBtn.addEventListener("click", async () => {
+        // Voice-only → upgrade to video
+        if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
+          await this.upgradeToVideo();
+          return;
+        }
+
+        // Normal camera toggle
         const stream = rtcState.localStream;
         if (!stream) return;
-        const enabled = stream.getVideoTracks().some((t) => t.enabled);
-        stream.getVideoTracks().forEach((t) => (t.enabled = !enabled));
-        this.camBtn.classList.toggle("active", !enabled);
+        const hasEnabled = stream.getVideoTracks().some((t) => t.enabled);
+        const newEnabled = !hasEnabled;
+        stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
+        this.camBtn.classList.toggle("active", newEnabled);
 
         if (!this.videoContainer) return;
-        if (!enabled) {
-          // turning camera off
+        if (!newEnabled) {
           this.videoContainer.classList.add("camera-off");
         } else {
           this.videoContainer.classList.remove("camera-off");
@@ -274,30 +292,31 @@ export class CallUI {
       });
     }
 
-    if (this.noiseBtn) {
-      this.noiseBtn.addEventListener("click", () => {
-        this.noiseBtn.classList.toggle("active");
-      });
-    }
+    this.noiseBtn?.addEventListener("click", () => {
+      this.noiseBtn.classList.toggle("active");
+    });
 
-    if (this.recordBtn) {
-      this.recordBtn.addEventListener("click", () => {
-        this.recordBtn.classList.toggle("active");
-      });
-    }
+    this.recordBtn?.addEventListener("click", () => {
+      this.recordBtn.classList.toggle("active");
+    });
 
-    if (this.historyBtn) {
-      this.historyBtn.addEventListener("click", () => {
-        this.historyBtn.classList.toggle("active");
-      });
-    }
+    this.historyBtn?.addEventListener("click", () => {
+      this.historyBtn.classList.toggle("active");
+    });
 
-    // Debug toggle (simple active state for now)
-    if (this.debugToggleBtn) {
-      this.debugToggleBtn.addEventListener("click", () => {
-        this.debugToggleBtn.classList.toggle("active");
-      });
-    }
+    // Debug toggle
+    this.debugToggleBtn?.addEventListener("click", () => {
+      this.debugToggleBtn.classList.toggle("active");
+    });
+
+    // Video upgrade overlay buttons
+    this.videoUpgradeAcceptBtn?.addEventListener("click", () => this.answerCall());
+    this.videoUpgradeDeclineBtn?.addEventListener("click", () => {
+      this._exitVideoUpgradePreview();
+      // Stay in voice call; do not end entire call
+      this._setStatus("In call");
+      this._enterActiveVoiceMode();
+    });
 
     // Double-tap swap (local vs first remote tile)
     const firstRemote = () =>
@@ -330,11 +349,64 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // INBOUND OFFER HANDLING
+  // INBOUND OFFER HANDLING (INCLUDES VIDEO UPGRADE)
   // -------------------------------------------------------
   _handleIncomingOffer(peerId, offer) {
+    const isVideoUpgrade =
+      rtcState.audioOnly === true &&
+      offer?.sdp &&
+      offer.sdp.includes("m=video");
+
+    if (isVideoUpgrade) {
+      this._enterInboundVideoUpgradeMode(peerId);
+      return;
+    }
+
     const isVideo = !rtcState.audioOnly;
     this.receiveInboundCall(peerId, isVideo);
+  }
+
+  _enterInboundVideoUpgradeMode(peerId) {
+    log("Inbound video upgrade request from", peerId);
+
+    this._openWindow();
+    this._setStatus("Incoming video…");
+
+    if (this.cameraOnBeep) {
+      this.cameraOnBeep.currentTime = 0;
+      this.cameraOnBeep.play().catch(() => {});
+    }
+
+    this.videoContainer.classList.add("video-upgrade-mode", "inbound-mode");
+    this.videoContainer.classList.remove("active-mode");
+
+    // Show inbound-only controls, hide active-only
+    this.answerBtn?.classList.remove("hidden");
+    this.declineBtn?.classList.remove("hidden");
+    this.muteBtn?.classList.add("hidden");
+    this.camBtn?.classList.add("hidden");
+    this.endBtn?.classList.add("hidden");
+
+    // Overlay style: B1 mobile (floating card), B2 web (fullscreen/blur)
+    if (isMobile()) {
+      this.callGrid.classList.add("mobile-video-preview");
+      this.callGrid.classList.remove("desktop-video-preview");
+    } else {
+      this.callGrid.classList.add("desktop-video-preview");
+      this.callGrid.classList.remove("mobile-video-preview");
+    }
+
+    if (this.videoUpgradeOverlay) {
+      this.videoUpgradeOverlay.classList.add("show");
+    }
+  }
+
+  _exitVideoUpgradePreview() {
+    this.videoContainer.classList.remove("video-upgrade-mode");
+    this.callGrid.classList.remove("mobile-video-preview", "desktop-video-preview");
+    if (this.videoUpgradeOverlay) {
+      this.videoUpgradeOverlay.classList.remove("show");
+    }
   }
 
   _handleRemoteUpgradedToVideo() {
@@ -349,7 +421,7 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // WINDOW + LAYOUT MODES (MATCHING .call-window CSS)
+  // WINDOW + LAYOUT MODES
   // -------------------------------------------------------
   _openWindow() {
     if (!this.videoContainer) return;
@@ -358,16 +430,12 @@ export class CallUI {
     this.videoContainer.classList.remove("hidden");
     this.videoContainer.classList.add("is-open", "call-opening");
 
-    // Remove call-opening after animation
     setTimeout(() => {
       this.videoContainer?.classList.remove("call-opening");
     }, 300);
 
-    if (this.callControls) {
-      this.callControls.classList.remove("hidden");
-    }
+    this.callControls?.classList.remove("hidden");
 
-    // Default layout: remote primary, local PiP (CSS handles local as PIP)
     this._primaryIsRemote = true;
     this._applyPrimaryLayout();
   }
@@ -380,13 +448,13 @@ export class CallUI {
       "inbound-mode",
       "active-mode",
       "voice-only-call",
-      "camera-off"
+      "camera-off",
+      "video-upgrade-mode"
     );
     this.videoContainer.classList.add("hidden");
 
-    if (this.callControls) {
-      this.callControls.classList.add("hidden");
-    }
+    this.callControls?.classList.add("hidden");
+    this._exitVideoUpgradePreview();
   }
 
   _enterOutboundVoiceMode() {
@@ -440,9 +508,7 @@ export class CallUI {
     this.videoContainer.classList.toggle("voice-only-call", isVoiceOnly);
     this.videoContainer.classList.toggle("camera-off", isVoiceOnly);
 
-    if (this.callControls) {
-      this.callControls.classList.remove("hidden");
-    }
+    this.callControls?.classList.remove("hidden");
   }
 
   _resetUI() {
@@ -462,20 +528,16 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // CONTROLS VISIBILITY (WORKS WITH .inbound-mode / .active-mode)
+  // CONTROLS VISIBILITY
   // -------------------------------------------------------
-  _showControlsForVoice({ outbound, inbound, active } = {}) {
+  _showControlsForVoice() {
     if (!this.callControls) return;
-    if (this.camBtn) {
-      this.camBtn.classList.add("hidden-soft");
-    }
+    this.camBtn?.classList.add("hidden-soft");
   }
 
-  _showControlsForVideo({ outbound, inbound, active } = {}) {
+  _showControlsForVideo() {
     if (!this.callControls) return;
-    if (this.camBtn) {
-      this.camBtn.classList.remove("hidden-soft");
-    }
+    this.camBtn?.classList.remove("hidden-soft");
   }
 
   // -------------------------------------------------------
@@ -518,14 +580,13 @@ export class CallUI {
   // PRIMARY / PIP LAYOUT + DRAG
   // -------------------------------------------------------
   _togglePrimary(remoteEl) {
-    // Hook for future explicit primary/pip roles; CSS already treats local as PIP.
     if (!this.localWrapper || !remoteEl) return;
     this._primaryIsRemote = !this._primaryIsRemote;
     this._applyPrimaryLayout(remoteEl);
   }
 
-  _applyPrimaryLayout(remoteEl) {
-    // Currently relying on CSS for layout; this is where you'd add .primary/.pip if desired.
+  _applyPrimaryLayout() {
+    // Currently relying on CSS for layout; hook left for future .primary/.pip roles.
   }
 
   _initPipDrag() {
@@ -587,6 +648,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
