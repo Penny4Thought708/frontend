@@ -3,6 +3,15 @@
 // WebRTCController: signaling, peer connection, media, upgrades,
 // screen share, remote track handling, call waiting, inbound queue,
 // and group-call–ready architecture.
+//
+// UI owns:
+//   - PiP, swap, layouts, toasts, voicemail, etc.
+// This file focuses on:
+//   - signaling
+//   - peer connection lifecycle
+//   - media routing
+//   - screen share
+//   - call queue + status
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -47,6 +56,11 @@ export class WebRTCController {
     this.onRemoteUpgradedToVideo = () => {};
     this.onCallStatusChange = () => {};
     this.onParticipantUpdate = () => {};
+
+    // New UI hooks
+    this.onScreenShareStarted = () => {};
+    this.onScreenShareStopped = () => {};
+    this.onPeerUnavailable = () => {};
 
     this._bindSocket();
   }
@@ -105,6 +119,7 @@ export class WebRTCController {
         answer,
         candidate,
         isVideoUpgrade,
+        reason,
       } = msg;
 
       if (!rtcState.callId && callId) {
@@ -123,6 +138,12 @@ export class WebRTCController {
           break;
         case "leave":
           this._handleLeave(from);
+          break;
+        case "unavailable":
+          // Server can emit this when callee is unreachable/busy
+          if (this.onPeerUnavailable) {
+            this.onPeerUnavailable(reason || "User unavailable");
+          }
           break;
       }
     });
@@ -366,6 +387,11 @@ export class WebRTCController {
       this.screenTrack = track;
 
       track.onended = () => this.stopScreenShare();
+
+      if (this.onScreenShareStarted) {
+        this.onScreenShareStarted();
+      }
+
       return true;
     }
 
@@ -386,6 +412,10 @@ export class WebRTCController {
     this.screenTrack.stop();
     this.screenTrack = null;
     this.screenSender = null;
+
+    if (this.onScreenShareStopped) {
+      this.onScreenShareStopped();
+    }
   }
 
   /* -------------------------------------------------------
@@ -521,6 +551,7 @@ export class WebRTCController {
     }
   }
 }
+
 
 
 
