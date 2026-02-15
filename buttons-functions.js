@@ -127,12 +127,13 @@ function initUI() {
       requestAnimationFrame(() => newSection.classList.add("dir-active"));
 
       // 🔹 Voicemail section hook
-      if (sectionName === "voicemail") {
-      import("public/js/voicemail/VoicemailUi.js").then(({ loadVoicemails }) => {
-  loadVoicemails();
-});
+    
+if (sectionName === "voicemail") {
+  import("./public/js/voicemail/VoicemailUi.js").then(({ loadVoicemails }) => {
+    loadVoicemails();
+  });
+}
 
-      }
     }
 
     navButtons.forEach(btn => {
@@ -326,6 +327,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
