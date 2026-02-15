@@ -363,6 +363,7 @@ window.currentUserAvatar = user.avatar;
 
       <!-- ===========================
            LOCAL PARTICIPANT TILE
+           (kept for primary swap, hidden by default via JS)
       ============================ -->
       <div class="participant local" id="localParticipant" data-peer-id="local">
         <div class="media-wrapper">
@@ -494,10 +495,17 @@ window.currentUserAvatar = user.avatar;
 
 
   <!-- ============================================================
-       LOCAL PIP WINDOW (MEET-STYLE)
+       LOCAL PIP WINDOW (MEET/FaceTime-style)
   ============================================================ -->
   <div id="localPip" class="local-pip hidden">
     <video id="localPipVideo" autoplay playsinline muted></video>
+  </div>
+
+  <!-- ============================================================
+       NEW: REMOTE PIP WINDOW (for true swap)
+  ============================================================ -->
+  <div id="remotePip" class="remote-pip hidden">
+    <video id="remotePipVideo" autoplay playsinline muted></video>
   </div>
 
 
@@ -1659,6 +1667,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
