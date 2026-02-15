@@ -278,7 +278,12 @@ export class CallUI {
   // -------------------------------------------------------
   _bindButtons() {
     this.answerBtn?.addEventListener("click", () => this.answerCall());
-    this.declineBtn?.addEventListener("click", () => this.endCall());
+   // Before:
+// this.declineBtn?.addEventListener("click", () => this.endCall());
+
+// After:
+this.declineBtn?.addEventListener("click", () => this._declineInboundCall());
+
     this.endBtn?.addEventListener("click", () => this.endCall());
 
     // Mute
@@ -400,6 +405,19 @@ export class CallUI {
       });
     }
   }
+_declineInboundCall() {
+  log("declineInboundCall");
+
+  // Stop any ringing sounds
+  this._stopRinging();
+
+  // UI state
+  this._setStatus("Call declined");
+  this._closeWindow();
+
+  // Open voicemail flow for declined inbound calls
+  this._openVoicemailModal();
+}
 
   _firstRemoteTile() {
     return this.callGrid?.querySelector(".participant.remote") || null;
@@ -688,18 +706,20 @@ export class CallUI {
     this._applyPrimaryLayout();
   }
 
-  // -------------------------------------------------------
-  // CONTROLS VISIBILITY
-  // -------------------------------------------------------
-  _showControlsForVoice() {
-    if (!this.callControls) return;
-    this.camBtn?.classList.add("hidden-soft");
-  }
+// -------------------------------------------------------
+// CONTROLS VISIBILITY
+// -------------------------------------------------------
+_showControlsForVoice() {
+  if (!this.callControls) return;
+  // Keep camera visible so user can upgrade voice → video
+  this.camBtn?.classList.remove("hidden-soft");
+}
 
-  _showControlsForVideo() {
-    if (!this.callControls) return;
-    this.camBtn?.classList.remove("hidden-soft");
-  }
+_showControlsForVideo() {
+  if (!this.callControls) return;
+  this.camBtn?.classList.remove("hidden-soft");
+}
+
 
   // -------------------------------------------------------
   // STATUS
@@ -826,47 +846,54 @@ export class CallUI {
     pipEl.style.transform = `translate(${x}px, ${y}px)`;
   }
 
-  _applyPrimaryLayout(remoteElOverride = null) {
-    const remoteEl =
-      remoteElOverride ||
-      this.callGrid?.querySelector(".participant.remote") ||
-      null;
+_applyPrimaryLayout(remoteElOverride = null) {
+  const remoteEl =
+    remoteElOverride ||
+    this.callGrid?.querySelector(".participant.remote") ||
+    null;
 
-    if (!remoteEl) return;
-
-    if (!this._pipPos) {
-      this._resetPipToDefault();
-    }
-
-    const applyPipTransform = (pipEl) => {
-      if (!pipEl || !this._pipPos) return;
-      pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
-      pipEl.classList.add("pip-anim");
-    };
-
-    if (this._primaryIsRemote) {
-      // Remote = primary, local = PiP
-      if (this.localWrapper) this.localWrapper.classList.add("hidden");
-      if (this.localPip) {
-        this.localPip.classList.remove("hidden");
-        applyPipTransform(this.localPip);
-      }
-      if (this.remotePip) this.remotePip.classList.add("hidden");
-
-      remoteEl.classList.remove("hidden");
-    } else {
-      // Local = primary, remote = PiP
-      if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-      if (this.localPip) this.localPip.classList.add("hidden");
-
-      if (this.remotePip) {
-        this.remotePip.classList.remove("hidden");
-        applyPipTransform(this.remotePip);
-      }
-
-      remoteEl.classList.add("hidden");
-    }
+  // If no remote yet, show local as primary self-view
+  if (!remoteEl) {
+    if (this.localWrapper) this.localWrapper.classList.remove("hidden");
+    if (this.localPip) this.localPip.classList.add("hidden");
+    if (this.remotePip) this.remotePip.classList.add("hidden");
+    return;
   }
+
+  if (!this._pipPos) {
+    this._resetPipToDefault();
+  }
+
+  const applyPipTransform = (pipEl) => {
+    if (!pipEl || !this._pipPos) return;
+    pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
+    pipEl.classList.add("pip-anim");
+  };
+
+  if (this._primaryIsRemote) {
+    // Remote = primary, local = PiP
+    if (this.localWrapper) this.localWrapper.classList.add("hidden");
+    if (this.localPip) {
+      this.localPip.classList.remove("hidden");
+      applyPipTransform(this.localPip);
+    }
+    if (this.remotePip) this.remotePip.classList.add("hidden");
+
+    remoteEl.classList.remove("hidden");
+  } else {
+    // Local = primary, remote = PiP
+    if (this.localWrapper) this.localWrapper.classList.remove("hidden");
+    if (this.localPip) this.localPip.classList.add("hidden");
+
+    if (this.remotePip) {
+      this.remotePip.classList.remove("hidden");
+      applyPipTransform(this.remotePip);
+    }
+
+    remoteEl.classList.add("hidden");
+  }
+}
+
 
   _initPipDrag() {
     const makeDraggable = (pipEl) => {
@@ -1013,6 +1040,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
