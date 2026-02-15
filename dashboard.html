@@ -346,7 +346,7 @@ window.currentUserAvatar = user.avatar;
 <!-- ============================================================
      FULL-WINDOW CALL MODE
 ============================================================ -->
-<call-window
+<div
   id="callWindow"
   class="call-window hidden"
   data-window-id="video-call"
@@ -383,7 +383,7 @@ window.currentUserAvatar = user.avatar;
       <template id="remoteParticipantTemplate">
         <div class="participant remote" data-peer-id="">
           <div class="media-wrapper">
-            <video class="remoteVideo" autoplay playsinline muted></video>
+            <video class="remoteVideo" autoplay playsinline></video>
             <div class="avatar-wrapper">
               <img
                 class="avatar-img"
@@ -460,7 +460,7 @@ window.currentUserAvatar = user.avatar;
     </div> <!-- end call-controls -->
 
     <!-- REMOTE AUDIO -->
-    <audio id="remoteAudio" autoplay playsinline></audio>
+    <audio id="remoteAudio" autoplay></audio>
 
     <!-- CALL INFO BAR -->
     <div class="call-info-bar">
@@ -484,7 +484,7 @@ window.currentUserAvatar = user.avatar;
 
   <!-- REMOTE PIP (for true swap) -->
   <div id="remotePip" class="remote-pip hidden pip-anim">
-    <video id="remotePipVideo" autoplay playsinline muted></video>
+    <video id="remotePipVideo" autoplay playsinline></video>
   </div>
 
   <!-- VIDEO UPGRADE OVERLAY -->
@@ -548,7 +548,7 @@ window.currentUserAvatar = user.avatar;
 
   </div>
 
-</call-window>
+</div>
 
 
 
@@ -1658,6 +1658,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
