@@ -7,7 +7,7 @@
 //   - PiP drag + edge snapping + snap-away from controls
 //   - Double-tap swap with smooth animations
 //   - Tap-to-toggle controls + auto-hide
-//   - Screen-share mode hooks
+//   - Screen-share stage mode hooks
 //   - Active speaker pulse (via CSS + RemoteParticipants)
 //   - Multi-remote swap support (any remote tile)
 //   - Voicemail + toast wiring hooks
@@ -214,7 +214,10 @@ export class CallUI {
     this._stopRinging();
     this.rtc.answerCall();
     this._callStartTime = Date.now();
-    this._analytics("call_answer", { peerId: rtcState.peerId, audioOnly: rtcState.audioOnly });
+    this._analytics("call_answer", {
+      peerId: rtcState.peerId,
+      audioOnly: rtcState.audioOnly,
+    });
 
     if (rtcState.audioOnly) this._enterActiveVoiceMode();
     else this._enterActiveVideoMode();
@@ -223,7 +226,7 @@ export class CallUI {
   endCall(reason = "local_end") {
     log("endCall", reason);
     this._stopRinging();
-    this.rtc.endCall();
+    this.rtc.endCall(reason);
     this._analytics("call_end", { peerId: rtcState.peerId, reason });
     this._resetUI();
   }
@@ -244,7 +247,10 @@ export class CallUI {
     this.rtc.onCallStarted = () => {
       this._stopRinging();
       this._callStartTime = Date.now();
-      this._analytics("call_started_media", { peerId: rtcState.peerId, audioOnly: rtcState.audioOnly });
+      this._analytics("call_started_media", {
+        peerId: rtcState.peerId,
+        audioOnly: rtcState.audioOnly,
+      });
 
       if (rtcState.audioOnly) this._enterActiveVoiceMode();
       else this._enterActiveVideoMode();
@@ -284,208 +290,207 @@ export class CallUI {
     };
 
     this.rtc.onQualityUpdate = (score) => {
-      if (this.qualityEl) this.qualityEl.textContent = score;
+      if (this.qualityEl) {
+        this.qualityEl.textContent = score;
+        this._updateQualityLevel(score);
+      }
       if (this.debugOverlay) {
         this.debugOverlay.textContent = `Quality: ${score}`;
       }
     };
 
-    // Optional hooks for screen share (if WebRTCController exposes them)
+    // Screen share hooks
     this.rtc.onScreenShareStarted = () => {
       this.videoContainer?.classList.add("screen-sharing");
+      this._enterStageMode();
       this._analytics("screen_share_started", { peerId: rtcState.peerId });
     };
     this.rtc.onScreenShareStopped = () => {
       this.videoContainer?.classList.remove("screen-sharing");
+      this._exitStageMode();
       this._analytics("screen_share_stopped", { peerId: rtcState.peerId });
     };
 
-    // Optional hooks for unavailability → toast/voicemail
+    // Unavailability → toast/voicemail
     this.rtc.onPeerUnavailable = (reason) => {
       this._analytics("peer_unavailable", { peerId: rtcState.peerId, reason });
       this._showUnavailableToast(reason || "User is unavailable");
     };
   }
 
-
-// -------------------------------------------------------
-// BUTTON LOGIC — FIXED + PRODUCTION‑READY
-// -------------------------------------------------------
-_bindButtons() {
-  // ANSWER
-  this.answerBtn?.addEventListener("click", () => {
-    this._stopRinging();
-    this.answerCall();
-  });
-
-  // DECLINE (REAL DECLINE → CLOSE WINDOW → VOICEMAIL)
-  this.declineBtn?.addEventListener("click", () => {
-    log("Decline inbound call");
-
-    this._stopRinging();
-
-    // Notify remote side explicitly
-    this.socket.emit("call:declined", {
-      from: rtcState.selfId,
-      to: rtcState.peerId,
-      callId: rtcState.callId,
+  // -------------------------------------------------------
+  // BUTTON LOGIC — FIXED + PRODUCTION‑READY
+  // -------------------------------------------------------
+  _bindButtons() {
+    // ANSWER
+    this.answerBtn?.addEventListener("click", () => {
+      this._stopRinging();
+      this.answerCall();
     });
 
-    // Close call window immediately
-    this._closeWindow();
+    // DECLINE (REAL DECLINE → CLOSE WINDOW → VOICEMAIL)
+    this.declineBtn?.addEventListener("click", () => {
+      log("Decline inbound call");
 
-    // Show voicemail queue card
-    this._openVoicemailModal();
+      this._stopRinging();
 
-    this._analytics("call_decline", { peerId: rtcState.peerId });
-  });
+      this.socket.emit("call:declined", {
+        from: rtcState.selfId,
+        to: rtcState.peerId,
+        callId: rtcState.callId,
+      });
 
-  // END CALL (ACTIVE CALL ONLY)
-  this.endBtn?.addEventListener("click", () => {
-    log("End active call");
-    this._stopRinging();
-    this.endCall("end_button");
-  });
+      this._closeWindow();
+      this._openVoicemailModal();
 
-  // MUTE
-  this.muteBtn?.addEventListener("click", () => {
-    const stream = rtcState.localStream;
-    if (!stream) return;
-    const enabled = stream.getAudioTracks().some((t) => t.enabled);
-    stream.getAudioTracks().forEach((t) => (t.enabled = !enabled));
-    this.muteBtn.classList.toggle("active", !enabled);
-    this._analytics("toggle_mute", { enabled: !enabled });
-  });
+      this._analytics("call_decline", { peerId: rtcState.peerId });
+    });
 
-  // CAMERA TOGGLE (UPGRADE OR TOGGLE)
-  this.camBtn?.addEventListener("click", async () => {
-    if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
-      await this.upgradeToVideo();
-      return;
+    // END CALL (ACTIVE CALL ONLY)
+    this.endBtn?.addEventListener("click", () => {
+      log("End active call");
+      this._stopRinging();
+      this.endCall("end_button");
+    });
+
+    // MUTE
+    this.muteBtn?.addEventListener("click", () => {
+      const stream = rtcState.localStream;
+      if (!stream) return;
+      const enabled = stream.getAudioTracks().some((t) => t.enabled);
+      stream.getAudioTracks().forEach((t) => (t.enabled = !enabled));
+      this.muteBtn.classList.toggle("active", !enabled);
+      this._analytics("toggle_mute", { enabled: !enabled });
+    });
+
+    // CAMERA TOGGLE (UPGRADE OR TOGGLE)
+    this.camBtn?.addEventListener("click", async () => {
+      if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
+        await this.upgradeToVideo();
+        return;
+      }
+
+      const stream = rtcState.localStream;
+      const enabled = stream.getVideoTracks().some((t) => t.enabled);
+      const newEnabled = !enabled;
+      stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
+      this.camBtn.classList.toggle("active", newEnabled);
+
+      if (!newEnabled) this.videoContainer?.classList.add("camera-off");
+      else this.videoContainer?.classList.remove("camera-off");
+
+      this._analytics("toggle_camera", { enabled: newEnabled });
+    });
+
+    // MORE MENU
+    this.moreBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!this.moreMenu) return;
+      const isOpen = this.moreMenu.classList.contains("show");
+      this.moreMenu.classList.toggle("show", !isOpen);
+      this.moreMenu.classList.toggle("hidden", isOpen);
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!this.moreMenu) return;
+      const target = e.target;
+      if (!this.moreMenu.contains(target) && target !== this.moreBtn) {
+        this.moreMenu.classList.remove("show");
+        this.moreMenu.classList.add("hidden");
+      }
+    });
+
+    // SCREEN SHARE
+    this.shareBtn?.addEventListener("click", () => {
+      this.rtc.startScreenShare();
+      if (this.moreMenu) {
+        this.moreMenu.classList.remove("show");
+        this.moreMenu.classList.add("hidden");
+      }
+    });
+
+    // AI NOISE
+    this.noiseBtn?.addEventListener("click", () => {
+      this.noiseBtn.classList.toggle("active");
+      this._analytics("toggle_ai_noise", {
+        active: this.noiseBtn.classList.contains("active"),
+      });
+    });
+
+    // RECORDING UI
+    this.recordBtn?.addEventListener("click", () => {
+      this.recordBtn.classList.toggle("active");
+      this._analytics("toggle_recording_ui", {
+        active: this.recordBtn.classList.contains("active"),
+      });
+    });
+
+    // CALL HISTORY
+    this.historyBtn?.addEventListener("click", () => {
+      this.historyBtn.classList.toggle("active");
+      this._analytics("toggle_call_history", {
+        active: this.historyBtn.classList.contains("active"),
+      });
+    });
+
+    // DEBUG OVERLAY
+    this.debugToggleBtn?.addEventListener("click", () => {
+      this.debugToggleBtn.classList.toggle("active");
+      const active = this.debugToggleBtn.classList.contains("active");
+      if (this.debugOverlay) {
+        this.debugOverlay.classList.toggle("hidden", !active);
+      }
+      this._analytics("toggle_debug_overlay", { active });
+    });
+
+    // VIDEO UPGRADE OVERLAY
+    this.videoUpgradeAcceptBtn?.addEventListener("click", () => this.answerCall());
+    this.videoUpgradeDeclineBtn?.addEventListener("click", () => {
+      this._exitVideoUpgradePreview();
+      this._setStatus("In call");
+      this._enterActiveVoiceMode();
+    });
+
+    this.videoUpgradeAcceptDesktopBtn?.addEventListener("click", () => this.answerCall());
+    this.videoUpgradeDeclineDesktopBtn?.addEventListener("click", () => {
+      this._exitVideoUpgradePreview();
+      this._setStatus("In call");
+      this._enterActiveVoiceMode();
+    });
+
+    // VOICEMAIL MODAL
+    this.vmCancelBtn?.addEventListener("click", () => this._closeVoicemailModal());
+
+    // UNAVAILABLE TOAST → VOICEMAIL
+    this.utVoiceBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+      this._openVoicemailModal();
+    });
+
+    this.utVideoBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+    });
+
+    this.utTextBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+    });
+
+    // DOUBLE TAP SWAP
+    if (this.localPip) {
+      this._bindDoubleTap(this.localPip, () => {
+        const firstRemote = this._firstRemoteTile();
+        this._togglePrimary(firstRemote);
+      });
     }
 
-    const stream = rtcState.localStream;
-    const enabled = stream.getVideoTracks().some((t) => t.enabled);
-    const newEnabled = !enabled;
-    stream.getVideoTracks().forEach((t) => (t.enabled = newEnabled));
-    this.camBtn.classList.toggle("active", newEnabled);
-
-    if (!newEnabled) this.videoContainer?.classList.add("camera-off");
-    else this.videoContainer?.classList.remove("camera-off");
-
-    this._analytics("toggle_camera", { enabled: newEnabled });
-  });
-
-  // MORE MENU
-  this.moreBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!this.moreMenu) return;
-    const isOpen = this.moreMenu.classList.contains("show");
-    this.moreMenu.classList.toggle("show", !isOpen);
-    this.moreMenu.classList.toggle("hidden", isOpen);
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!this.moreMenu) return;
-    const target = e.target;
-    if (!this.moreMenu.contains(target) && target !== this.moreBtn) {
-      this.moreMenu.classList.remove("show");
-      this.moreMenu.classList.add("hidden");
+    if (this.callGrid) {
+      this.callGrid.addEventListener("click", (e) => {
+        const tile = e.target.closest(".participant.remote");
+        if (!tile) return;
+        this._handleRemoteDoubleTap(tile);
+      });
     }
-  });
-
-  // SCREEN SHARE
-  this.shareBtn?.addEventListener("click", () => {
-    this.rtc.startScreenShare();
-    if (this.moreMenu) {
-      this.moreMenu.classList.remove("show");
-      this.moreMenu.classList.add("hidden");
-    }
-  });
-
-  // AI NOISE
-  this.noiseBtn?.addEventListener("click", () => {
-    this.noiseBtn.classList.toggle("active");
-    this._analytics("toggle_ai_noise", {
-      active: this.noiseBtn.classList.contains("active"),
-    });
-  });
-
-  // RECORDING UI
-  this.recordBtn?.addEventListener("click", () => {
-    this.recordBtn.classList.toggle("active");
-    this._analytics("toggle_recording_ui", {
-      active: this.recordBtn.classList.contains("active"),
-    });
-  });
-
-  // CALL HISTORY
-  this.historyBtn?.addEventListener("click", () => {
-    this.historyBtn.classList.toggle("active");
-    this._analytics("toggle_call_history", {
-      active: this.historyBtn.classList.contains("active"),
-    });
-  });
-
-  // DEBUG OVERLAY
-  this.debugToggleBtn?.addEventListener("click", () => {
-    this.debugToggleBtn.classList.toggle("active");
-    const active = this.debugToggleBtn.classList.contains("active");
-    if (this.debugOverlay) {
-      this.debugOverlay.classList.toggle("hidden", !active);
-    }
-    this._analytics("toggle_debug_overlay", { active });
-  });
-
-  // VIDEO UPGRADE OVERLAY
-  this.videoUpgradeAcceptBtn?.addEventListener("click", () => this.answerCall());
-  this.videoUpgradeDeclineBtn?.addEventListener("click", () => {
-    this._exitVideoUpgradePreview();
-    this._setStatus("In call");
-    this._enterActiveVoiceMode();
-  });
-
-  this.videoUpgradeAcceptDesktopBtn?.addEventListener("click", () => this.answerCall());
-  this.videoUpgradeDeclineDesktopBtn?.addEventListener("click", () => {
-    this._exitVideoUpgradePreview();
-    this._setStatus("In call");
-    this._enterActiveVoiceMode();
-  });
-
-  // VOICEMAIL MODAL
-  this.vmCancelBtn?.addEventListener("click", () => this._closeVoicemailModal());
-
-  // UNAVAILABLE TOAST → VOICEMAIL
-  this.utVoiceBtn?.addEventListener("click", () => {
-    this._hideUnavailableToast();
-    this._openVoicemailModal();
-  });
-
-  this.utVideoBtn?.addEventListener("click", () => {
-    this._hideUnavailableToast();
-  });
-
-  this.utTextBtn?.addEventListener("click", () => {
-    this._hideUnavailableToast();
-  });
-
-  // DOUBLE TAP SWAP
-  if (this.localPip) {
-    this._bindDoubleTap(this.localPip, () => {
-      const firstRemote = this._firstRemoteTile();
-      this._togglePrimary(firstRemote);
-    });
   }
-
-  if (this.callGrid) {
-    this.callGrid.addEventListener("click", (e) => {
-      const tile = e.target.closest(".participant.remote");
-      if (!tile) return;
-      this._handleRemoteDoubleTap(tile);
-    });
-  }
-}
-
 
   _firstRemoteTile() {
     return this.callGrid?.querySelector(".participant.remote") || null;
@@ -527,7 +532,6 @@ _bindButtons() {
     this.callBody.addEventListener("click", (e) => {
       const target = e.target;
 
-      // Ignore taps on controls, PiP, overlays
       if (
         this.callControls.contains(target) ||
         this.localPip?.contains(target) ||
@@ -552,11 +556,9 @@ _bindButtons() {
 
     if (shouldShow) {
       this._scheduleControlsAutoHide();
-    } else {
-      if (this._controlsHideTimeout) {
-        clearTimeout(this._controlsHideTimeout);
-        this._controlsHideTimeout = null;
-      }
+    } else if (this._controlsHideTimeout) {
+      clearTimeout(this._controlsHideTimeout);
+      this._controlsHideTimeout = null;
     }
   }
 
@@ -659,7 +661,6 @@ _bindButtons() {
 
     this._primaryIsRemote = true;
 
-    // Reset PiP to default top‑right
     this._pipPos = null;
     this._pipDefault = null;
     this._resetPipToDefault();
@@ -763,18 +764,14 @@ _bindButtons() {
       this.moreMenu.classList.add("hidden");
     }
 
-    // Reset primary state
     this._primaryIsRemote = true;
 
-    // Reset PiP position to default top‑right
     this._pipPos = null;
     this._pipDefault = null;
 
-    // Hide both PiPs until next call
     if (this.localPip) this.localPip.classList.add("hidden");
     if (this.remotePip) this.remotePip.classList.add("hidden");
 
-    // Hide local grid tile
     if (this.localWrapper) this.localWrapper.classList.add("hidden");
 
     this._applyPrimaryLayout();
@@ -872,7 +869,6 @@ _bindButtons() {
     setTimeout(() => {
       pipEl.classList.remove("shrink");
 
-      // Apply new layout
       this._applyPrimaryLayout();
 
       pipEl.classList.remove("fade-out");
@@ -915,7 +911,7 @@ _bindButtons() {
     this._pipPos = { x, y };
     this._pipDefault = { x, y };
 
-    pipEl.style.transform = `translate(${x}px, ${y}px)`;
+    pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
   _applyPrimaryLayout(remoteElOverride = null) {
@@ -938,198 +934,146 @@ _bindButtons() {
 
     const applyPipTransform = (pipEl) => {
       if (!pipEl || !this._pipPos) return;
-      pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
-      pipEl.classList.add("pip-anim");
+      pipEl.style.transform = `translate3d(${this._pipPos.x}px, ${this._pipPos.y}px, 0)`;
     };
 
     if (this._primaryIsRemote) {
-      // Remote = primary, local = PiP
       if (this.localWrapper) this.localWrapper.classList.add("hidden");
+      if (remoteEl) remoteEl.classList.remove("hidden");
+
       if (this.localPip) {
         this.localPip.classList.remove("hidden");
         applyPipTransform(this.localPip);
       }
       if (this.remotePip) this.remotePip.classList.add("hidden");
-
-      remoteEl.classList.remove("hidden");
     } else {
-      // Local = primary, remote = PiP
       if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-      if (this.localPip) this.localPip.classList.add("hidden");
+      if (remoteEl) remoteEl.classList.add("hidden");
 
       if (this.remotePip) {
         this.remotePip.classList.remove("hidden");
         applyPipTransform(this.remotePip);
       }
-
-      remoteEl.classList.add("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
     }
   }
 
   _initPipDrag() {
-    const makeDraggable = (pipEl) => {
-      if (!pipEl || !this.callBody) return;
+    const pipTargets = [this.localPip, this.remotePip].filter(Boolean);
+    pipTargets.forEach((pipEl) => {
+      pipEl.addEventListener("pointerdown", (e) => this._onPipPointerDown(e, pipEl));
+    });
+  }
 
-      const startDrag = (x, y) => {
-        const rect = pipEl.getBoundingClientRect();
-        const parent = this.callBody.getBoundingClientRect();
-        this._dragState = {
-          offsetX: x - rect.left,
-          offsetY: y - rect.top,
-          parent,
-          pipEl,
-        };
-        pipEl.classList.add("dragging");
-        pipEl.classList.add("pip-anim");
-      };
+  _onPipPointerDown(e, pipEl) {
+    if (!this.callBody) return;
+    e.preventDefault();
+    pipEl.setPointerCapture(e.pointerId);
 
-      const moveDrag = (x, y) => {
-        if (!this._dragState) return;
-        const { offsetX, offsetY, parent, pipEl } = this._dragState;
+    const parentRect = this.callBody.getBoundingClientRect();
+    const pipRect = pipEl.getBoundingClientRect();
 
-        let newX = x - offsetX - parent.left;
-        let newY = y - offsetY - parent.top;
+    const startX = e.clientX;
+    const startY = e.clientY;
 
-        // Clamp within call body
-        newX = Math.max(0, Math.min(parent.width - pipEl.offsetWidth, newX));
-        newY = Math.max(0, Math.min(parent.height - pipEl.offsetHeight, newY));
+    const currentX = this._pipPos?.x ?? pipRect.left - parentRect.left;
+    const currentY = this._pipPos?.y ?? pipRect.top - parentRect.top;
 
-        pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
-        this._pipPos = { x: newX, y: newY };
-
-        // Snap-warning if near controls
-        if (this.callControls) {
-          const controlsRect = this.callControls.getBoundingClientRect();
-          const pipRect = pipEl.getBoundingClientRect();
-          const overlapsHoriz =
-            pipRect.right > controlsRect.left && pipRect.left < controlsRect.right;
-          const overlapsVert =
-            pipRect.bottom > controlsRect.top && pipRect.top < controlsRect.bottom;
-          if (overlapsHoriz && overlapsVert) {
-            pipEl.classList.add("snap-warning");
-          } else {
-            pipEl.classList.remove("snap-warning");
-          }
-        }
-      };
-
-      const endDrag = () => {
-        if (!this._dragState) return;
-        const { parent, pipEl } = this._dragState;
-
-        // Edge snapping + snap-away from controls
-        const pipRect = pipEl.getBoundingClientRect();
-        const parentRect = parent;
-        const controlsRect = this.callControls
-          ? this.callControls.getBoundingClientRect()
-          : null;
-
-        let newX = this._pipPos?.x || 0;
-        let newY = this._pipPos?.y || 0;
-
-        const margin = 16;
-        const snapThreshold = 32;
-
-        // Snap to left/right fixed zones with margin
-        const centerX = newX + pipRect.width / 2;
-        const midX = parentRect.width / 2;
-        if (centerX <= midX) {
-          newX = margin;
-        } else {
-          newX = Math.max(
-            margin,
-            parentRect.width - pipRect.width - margin
-          );
-        }
-
-        // Snap to top/bottom edges if near
-        if (newY < snapThreshold) {
-          newY = margin;
-        } else if (parentRect.height - (newY + pipRect.height) < snapThreshold) {
-          newY = Math.max(
-            margin,
-            parentRect.height - pipRect.height - margin
-          );
-        }
-
-        // Snap-away from controls: if overlapping controls area, push up
-        if (controlsRect) {
-          const pipBottom = parentRect.top + newY + pipRect.height;
-          const controlsTop = controlsRect.top;
-          const controlsBottom = controlsRect.bottom;
-
-          const pipLeft = parentRect.left + newX;
-          const pipRight = pipLeft + pipRect.width;
-
-          const controlsLeft = controlsRect.left;
-          const controlsRight = controlsRect.right;
-
-          const overlapsHoriz =
-            pipRight > controlsLeft && pipLeft < controlsRight;
-          const overlapsVert =
-            pipBottom > controlsTop && parentRect.top + newY < controlsBottom;
-
-          if (overlapsHoriz && overlapsVert) {
-            // Move PiP just above controls
-            const safeY =
-              controlsTop - parentRect.top - pipRect.height - margin;
-            newY = Math.max(margin, safeY);
-
-            // Re-snap horizontally to left/right zones
-            const centerX2 = newX + pipRect.width / 2;
-            const midX2 = parentRect.width / 2;
-            if (centerX2 <= midX2) {
-              newX = margin;
-            } else {
-              newX = Math.max(
-                margin,
-                parentRect.width - pipRect.width - margin
-              );
-            }
-          }
-        }
-
-        this._pipPos = { x: newX, y: newY };
-        pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
-        pipEl.classList.remove("dragging");
-        pipEl.classList.remove("snap-warning");
-        this._dragState = null;
-      };
-
-      // Mouse events
-      pipEl.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        startDrag(e.clientX, e.clientY);
-        const move = (ev) => moveDrag(ev.clientX, ev.clientY);
-        const up = () => {
-          endDrag();
-          window.removeEventListener("mousemove", move);
-          window.removeEventListener("mouseup", up);
-        };
-        window.addEventListener("mousemove", move);
-        window.addEventListener("mouseup", up);
-      });
-
-      // Touch events
-      pipEl.addEventListener("touchstart", (e) => {
-        const t = e.touches[0];
-        if (!t) return;
-        startDrag(t.clientX, t.clientY);
-      });
-
-      pipEl.addEventListener("touchmove", (e) => {
-        const t = e.touches[0];
-        if (!t) return;
-        moveDrag(t.clientX, t.clientY);
-      });
-
-      pipEl.addEventListener("touchend", () => {
-        endDrag();
-      });
+    this._dragState = {
+      pointerId: e.pointerId,
+      startX,
+      startY,
+      startPosX: currentX,
+      startPosY: currentY,
+      parentRect,
+      pipRect,
+      pipEl,
     };
 
-    makeDraggable(this.localPip);
-    makeDraggable(this.remotePip);
+    pipEl.classList.add("dragging");
+
+    const moveHandler = (evt) => this._onPipPointerMove(evt);
+    const upHandler = (evt) => this._onPipPointerUp(evt, moveHandler, upHandler);
+
+    window.addEventListener("pointermove", moveHandler);
+    window.addEventListener("pointerup", upHandler);
+    window.addEventListener("pointercancel", upHandler);
+  }
+
+  _onPipPointerMove(e) {
+    if (!this._dragState) return;
+    if (e.pointerId !== this._dragState.pointerId) return;
+
+    const dx = e.clientX - this._dragState.startX;
+    const dy = e.clientY - this._dragState.startY;
+
+    let x = this._dragState.startPosX + dx;
+    let y = this._dragState.startPosY + dy;
+
+    const margin = 8;
+    const maxX =
+      this._dragState.parentRect.width - this._dragState.pipRect.width - margin;
+    const maxY =
+      this._dragState.parentRect.height - this._dragState.pipRect.height - margin;
+
+    x = Math.max(margin, Math.min(maxX, x));
+    y = Math.max(margin, Math.min(maxY, y));
+
+    this._pipPos = { x, y };
+    this._dragState.pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  _onPipPointerUp(e, moveHandler, upHandler) {
+    if (!this._dragState) return;
+    if (e.pointerId !== this._dragState.pointerId) return;
+
+    const pipEl = this._dragState.pipEl;
+    pipEl.classList.remove("dragging");
+    pipEl.releasePointerCapture(this._dragState.pointerId);
+
+    window.removeEventListener("pointermove", moveHandler);
+    window.removeEventListener("pointerup", upHandler);
+    window.removeEventListener("pointercancel", upHandler);
+
+    this._snapPipToEdge();
+    this._dragState = null;
+  }
+
+  _snapPipToEdge() {
+    if (!this._pipPos || !this.callBody) return;
+
+    const parentRect = this.callBody.getBoundingClientRect();
+    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
+    if (!pipEl) return;
+
+    const pipRect = pipEl.getBoundingClientRect();
+    const margin = 16;
+
+    const centerX = this._pipPos.x + pipRect.width / 2;
+    const centerY = this._pipPos.y + pipRect.height / 2;
+
+    const distLeft = centerX;
+    const distRight = parentRect.width - centerX;
+    const distTop = centerY;
+    const distBottom = parentRect.height - centerY;
+
+    const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+    let x = this._pipPos.x;
+    let y = this._pipPos.y;
+
+    if (minDist === distLeft) {
+      x = margin;
+    } else if (minDist === distRight) {
+      x = parentRect.width - pipRect.width - margin;
+    } else if (minDist === distTop) {
+      y = margin;
+    } else {
+      y = parentRect.height - pipRect.height - margin;
+    }
+
+    this._pipPos = { x, y };
+    pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
   // -------------------------------------------------------
@@ -1139,40 +1083,39 @@ _bindButtons() {
     if (this._timerInterval) {
       clearInterval(this._timerInterval);
     }
+
     this._timerInterval = setInterval(() => {
-      if (!this.timerEl) return;
-      if (!this._callStartTime) {
-        this.timerEl.textContent = "00:00";
-        return;
-      }
+      if (!this._callStartTime || !this.timerEl) return;
       const elapsed = Date.now() - this._callStartTime;
       this.timerEl.textContent = formatDuration(elapsed);
     }, 1000);
   }
 
   _startQualityMonitor() {
-    // Already wired via this.rtc.onQualityUpdate → this.qualityEl
+    // UI-only; actual quality updates come from WebRTCController.onQualityUpdate
+    if (!this.qualityEl) return;
+    this._updateQualityLevel(rtcState.lastQualityLevel || "poor");
+  }
+
+  _updateQualityLevel(level) {
+    if (!this.qualityEl) return;
+    const normalized = String(level || "").toLowerCase();
+    this.qualityEl.dataset.level = normalized;
+  }
+
+  // -------------------------------------------------------
+  // STAGE MODE (SCREEN SHARE)
+  // -------------------------------------------------------
+  _enterStageMode() {
+    if (!this.callGrid) return;
+    this.callGrid.classList.add("screen-share-mode");
+  }
+
+  _exitStageMode() {
+    if (!this.callGrid) return;
+    this.callGrid.classList.remove("screen-share-mode");
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
