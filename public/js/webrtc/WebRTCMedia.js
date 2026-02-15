@@ -1,9 +1,7 @@
 // public/js/webrtc/WebRTCMedia.js
 // ============================================================
-// WebRTCMedia: local media acquisition, attachment, remote routing,
-// speaking detection, screen share, and upgrade-to-video helpers.
-// Tuned for high quality, mobile-aware constraints, and bitrate hints.
-// Group-call ready and aligned with RemoteParticipants + WebRTCController.
+// Media acquisition, local/remote stream routing, PiP support,
+// speaking detection, screen share, and cleanup.
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -56,10 +54,7 @@ function ensureRemoteStreams() {
 }
 
 /* -------------------------------------------------------
-   LOCAL MEDIA ACQUISITION (VOICE / VIDEO)
-   - Mobile-aware
-   - Bitrate-friendly constraints
-   - Robust fallbacks
+   LOCAL MEDIA ACQUISITION
 ------------------------------------------------------- */
 export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   rtcState.audioOnly = wantAudio && !wantVideo;
@@ -105,7 +100,7 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     }
   }
 
-  // Final fallback: fake stream (avatar-only mode)
+  // Final fallback: fake stream
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -121,7 +116,7 @@ function createFakeStream() {
   const oscillator = audioCtx.createOscillator();
   const dst = audioCtx.createMediaStreamDestination();
   oscillator.connect(dst);
-  oscillator.frequency.value = 0; // effectively silence
+  oscillator.frequency.value = 0;
   oscillator.start();
 
   const canvas = document.createElement("canvas");
@@ -134,14 +129,11 @@ function createFakeStream() {
 
   const fakeAudioTrack = dst.stream.getAudioTracks()[0];
 
-  const stream = new MediaStream([fakeAudioTrack, fakeVideoTrack]);
-  return stream;
+  return new MediaStream([fakeAudioTrack, fakeVideoTrack]);
 }
 
 /* -------------------------------------------------------
-   ATTACH LOCAL STREAM TO DOM
-   - Main tile + PiP
-   - Audio-only vs video state
+   ATTACH LOCAL STREAM
 ------------------------------------------------------- */
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
@@ -153,49 +145,26 @@ export function attachLocalStream(stream) {
     localVideo.srcObject = stream;
     localVideo.muted = true;
     localVideo.playsInline = true;
-    localVideo
-      .play()
-      .catch(() => {
-        log("localVideo play blocked (autoplay policy)");
-      });
-
-    if (rtcState.audioOnly) {
-      localVideo.classList.remove("show");
-    } else {
-      localVideo.classList.add("show");
-    }
+    localVideo.play().catch(() => {});
+    localVideo.classList.toggle("show", !rtcState.audioOnly);
   }
 
   if (pipVideo) {
     pipVideo.srcObject = stream;
     pipVideo.muted = true;
     pipVideo.playsInline = true;
-    pipVideo
-      .play()
-      .catch(() => {
-        log("localPipVideo play blocked (autoplay policy)");
-      });
-
-    if (rtcState.audioOnly) {
-      pipVideo.classList.remove("show");
-    } else {
-      pipVideo.classList.add("show");
-    }
+    pipVideo.play().catch(() => {});
+    pipVideo.classList.toggle("show", !rtcState.audioOnly);
   }
 }
 
 /* -------------------------------------------------------
-   REMOTE TRACK ROUTING (CALLED BY WebRTCController)
-   - Maintains per-peer MediaStream
-   - Routes audio to <audio id="remoteAudio">
-   - Routes video to RemoteParticipants tiles
-   - Starts speaking detection
+   REMOTE TRACK ROUTING
+   - Feeds remote tile
+   - Feeds remote PiP
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerId, event) {
-  if (!event || !event.track) {
-    log("attachRemoteTrack called without track");
-    return;
-  }
+  if (!event || !event.track) return;
 
   peerId = String(peerId);
   ensureRemoteStreams();
@@ -223,32 +192,36 @@ export function attachRemoteTrack(peerId, event) {
     if (audioEl) {
       audioEl.srcObject = stream;
       audioEl.playsInline = true;
-      audioEl
-        .play()
-        .catch(() => {
-          log("remoteAudio play blocked (autoplay policy)");
-        });
+      audioEl.play().catch(() => {});
     }
   }
 
-  // Remote video/audio → participant tile (single source of truth)
+  // Remote video → participant tile
   const entry = attachParticipantStream(peerId, stream);
-  if (!entry) {
-    log("No participant entry for peer:", peerId);
-    return;
-  }
+  if (!entry) return;
 
+  const videoEl = entry.videoEl;
   const avatarEl = entry.avatarEl;
 
-  if (event.track.kind === "video") {
-    // RemoteParticipants.attachParticipantStream already:
-    // - binds stream to videoEl
-    // - sets playsInline/muted
-    // - calls play()
-    // - adds .show
+  if (event.track.kind === "video" && videoEl) {
+    videoEl.srcObject = stream;
+    videoEl.playsInline = true;
+    videoEl.play().catch(() => {});
+    videoEl.classList.add("show");
     if (avatarEl) avatarEl.classList.add("hidden");
   }
 
+  // ⭐ NEW: Feed remote PiP
+  if (event.track.kind === "video") {
+    const remotePipVideo = document.getElementById("remotePipVideo");
+    if (remotePipVideo) {
+      remotePipVideo.srcObject = stream;
+      remotePipVideo.playsInline = true;
+      remotePipVideo.play().catch(() => {});
+    }
+  }
+
+  // Speaking detection
   if (event.track.kind === "audio") {
     startSpeakingDetection(peerId, stream);
   }
@@ -256,8 +229,6 @@ export function attachRemoteTrack(peerId, event) {
 
 /* -------------------------------------------------------
    SPEAKING DETECTION
-   - Lightweight analyser
-   - Drives voice pulse / active speaker UI
 ------------------------------------------------------- */
 function startSpeakingDetection(peerId, stream) {
   try {
@@ -273,11 +244,8 @@ function startSpeakingDetection(peerId, stream) {
     function tick() {
       analyser.getByteFrequencyData(data);
       const volume = data.reduce((a, b) => a + b, 0) / data.length;
-
-      // Threshold tuned for typical WebRTC levels
       const speaking = volume > 28;
       setParticipantSpeaking(peerId, speaking);
-
       requestAnimationFrame(tick);
     }
     tick();
@@ -287,9 +255,7 @@ function startSpeakingDetection(peerId, stream) {
 }
 
 /* -------------------------------------------------------
-   SCREEN SHARE (simple track replace)
-   - High-res desktop, modest frame rate
-   - Mobile-safe (if supported)
+   SCREEN SHARE
 ------------------------------------------------------- */
 export async function startScreenShare() {
   if (!navigator.mediaDevices.getDisplayMedia) {
@@ -322,9 +288,7 @@ export async function startScreenShare() {
 }
 
 /* -------------------------------------------------------
-   UPGRADE TO VIDEO (LOCAL)
-   - Replaces audio-only local stream with A/V
-   - Stops old tracks
+   UPGRADE TO VIDEO
 ------------------------------------------------------- */
 export async function upgradeLocalToVideo() {
   const oldStream = rtcState.localStream;
@@ -360,6 +324,7 @@ export function cleanupMedia() {
   }
   rtcState.remoteStreams = {};
 }
+
 
 
 
