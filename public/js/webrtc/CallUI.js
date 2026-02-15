@@ -5,29 +5,9 @@
 
 import { rtcState } from "./WebRTCState.js";
 import { WebRTCController } from "./WebRTCController.js";
-import {
-  videoContainer,
-  remoteWrapper,
-  localWrapper,
-  localNameDiv,
-  remoteNameDiv,
-  ringtone,
-  ringback,
-  muteBtn,
-  camBtn,
-  answerBtn,
-  declineBtn,
-  callControls,
-  endBtn,
-  callerOverlay,
-} from "../session.js";
 
 function log(...args) {
   console.log("[CallUI]", ...args);
-}
-
-function isMobile() {
-  return window.matchMedia("(max-width: 768px)").matches;
 }
 
 function formatDuration(ms) {
@@ -44,39 +24,53 @@ export class CallUI {
     this.socket = socket;
     this.rtc = new WebRTCController(socket);
 
-    // Core containers
-    this.videoContainer = videoContainer;
-    this.remoteWrapper = remoteWrapper;
-    this.localWrapper = localWrapper;
-    this.callerOverlay = callerOverlay;
-    this.callControls = callControls;
+    // -------------------------------------------------------
+    // DOM REFERENCES (MATCHING YOUR HTML / CSS)
+    // -------------------------------------------------------
+    this.videoContainer = document.getElementById("callWindow"); // <call-window id="callWindow" class="call-window">
+    this.callBody = this.videoContainer?.querySelector(".call-body") || null;
+    this.callGrid = document.getElementById("callGrid");
 
-    // Names
-    this.localNameDiv = localNameDiv;
-    this.remoteNameDiv = remoteNameDiv;
+    // Local participant
+    this.localWrapper = document.getElementById("localParticipant");
+    this.localVideo = document.getElementById("localVideo");
+    this.localAvatarImg = document.getElementById("localAvatarImg");
 
-    // Controls
-    this.muteBtn = muteBtn;
-    this.camBtn = camBtn;
-    this.answerBtn = answerBtn;
-    this.declineBtn = declineBtn;
-    this.endBtn = endBtn;
-    this.moreBtn = document.getElementById("more-controls-btn");
-    this.moreMenu = document.getElementById("more-controls-menu");
-    this.upgradeBtn = document.getElementById("upgrade-to-video");
+    // Remote audio
+    this.remoteAudio = document.getElementById("remoteAudio");
 
-    // Audio cues
-    this.ringtone = ringtone;
-    this.ringback = ringback;
-    this.cameraOnBeep = document.getElementById("cameraOnBeep");
-
-    // Status / timer / quality
+    // Controls + status
+    this.callControls = document.getElementById("call-controls");
     this.statusEl = document.getElementById("call-status");
     this.timerEl = document.getElementById("call-timer");
     this.qualityEl = document.getElementById("call-quality-indicator");
 
+    // Local PiP window
+    this.localPip = document.getElementById("localPip");
+    this.localPipVideo = document.getElementById("localPipVideo");
+
+    // Buttons
+    this.answerBtn = document.getElementById("answer-call");
+    this.declineBtn = document.getElementById("decline-call");
+    this.muteBtn = document.getElementById("mute-call");
+    this.camBtn = document.getElementById("camera-toggle");
+    this.endBtn = document.getElementById("end-call");
+
+    // More controls
+    this.moreBtn = document.getElementById("more-controls-btn");
+    this.moreMenu = document.getElementById("more-controls-menu");
+    this.shareBtn = document.getElementById("share-screen");
+    this.noiseBtn = document.getElementById("ai-noise-toggle");
+    this.recordBtn = document.getElementById("record-call");
+    this.historyBtn = document.getElementById("call-history-toggle");
+
+    // Audio cues (elsewhere in DOM)
+    this.ringtone = document.getElementById("ringtone");
+    this.ringback = document.getElementById("ringback");
+    this.cameraOnBeep = document.getElementById("cameraOnBeep");
+
     // Layout state
-    this._primaryIsRemote = true; // remote full, local PiP
+    this._primaryIsRemote = true;
     this._dragState = null;
 
     this._bindButtons();
@@ -86,7 +80,7 @@ export class CallUI {
     this._startQualityMonitor();
   }
 
- // -------------------------------------------------------
+  // -------------------------------------------------------
   // PUBLIC API
   // -------------------------------------------------------
   startVoiceCall(peerId) {
@@ -94,7 +88,7 @@ export class CallUI {
     rtcState.audioOnly = true;
     rtcState.peerId = String(peerId);
 
-    // 🔔 Tell backend a voice call is starting
+    // Notify backend
     this.socket.emit("call:start", { to: peerId, type: "voice" });
 
     this._openWindow();
@@ -108,7 +102,7 @@ export class CallUI {
     rtcState.audioOnly = false;
     rtcState.peerId = String(peerId);
 
-    // 🔔 Tell backend a video call is starting
+    // Notify backend
     this.socket.emit("call:start", { to: peerId, type: "video" });
 
     this._openWindow();
@@ -135,6 +129,7 @@ export class CallUI {
     log("answerCall");
     this._stopRinging();
     this.rtc.answerCall();
+
     if (rtcState.audioOnly) {
       this._enterActiveVoiceMode();
     } else {
@@ -157,7 +152,7 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // INTERNAL: controller event wiring
+  // CONTROLLER EVENT WIRING
   // -------------------------------------------------------
   _bindControllerEvents() {
     this.rtc.onCallStarted = (peerId) => {
@@ -204,9 +199,10 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // INTERNAL: button wiring
+  // BUTTON WIRING
   // -------------------------------------------------------
   _bindButtons() {
+    // Answer / decline / end
     if (this.answerBtn) {
       this.answerBtn.addEventListener("click", () => this.answerCall());
     }
@@ -219,6 +215,7 @@ export class CallUI {
       this.endBtn.addEventListener("click", () => this.endCall());
     }
 
+    // Mute
     if (this.muteBtn) {
       this.muteBtn.addEventListener("click", () => {
         const stream = rtcState.localStream;
@@ -229,6 +226,7 @@ export class CallUI {
       });
     }
 
+    // Camera toggle (ties into .camera-off / .voice-only-call CSS)
     if (this.camBtn) {
       this.camBtn.addEventListener("click", () => {
         const stream = rtcState.localStream;
@@ -236,38 +234,81 @@ export class CallUI {
         const enabled = stream.getVideoTracks().some((t) => t.enabled);
         stream.getVideoTracks().forEach((t) => (t.enabled = !enabled));
         this.camBtn.classList.toggle("active", !enabled);
-      });
-    }
 
-    if (this.moreBtn && this.moreMenu) {
-      this.moreBtn.addEventListener("click", () => {
-        this.moreMenu.classList.toggle("visible");
-      });
-
-      document.addEventListener("click", (e) => {
-        if (
-          !this.moreMenu.contains(e.target) &&
-          e.target !== this.moreBtn
-        ) {
-          this.moreMenu.classList.remove("visible");
+        if (!this.videoContainer) return;
+        if (!enabled) {
+          // turning camera off
+          this.videoContainer.classList.add("camera-off");
+        } else {
+          this.videoContainer.classList.remove("camera-off");
         }
       });
     }
 
-    if (this.upgradeBtn) {
-      this.upgradeBtn.addEventListener("click", () => this.upgradeToVideo());
+    // More controls menu
+    if (this.moreBtn && this.moreMenu) {
+      this.moreBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = this.moreMenu.classList.contains("show");
+        this.moreMenu.classList.toggle("show", !isOpen);
+        this.moreMenu.classList.toggle("hidden", isOpen);
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!this.moreMenu.contains(e.target) && e.target !== this.moreBtn) {
+          this.moreMenu.classList.remove("show");
+          this.moreMenu.classList.add("hidden");
+        }
+      });
     }
 
-    // Double-tap / double-click to swap primary/ PiP
-    if (this.remoteWrapper) {
-      this._bindDoubleTap(this.remoteWrapper, () => this._togglePrimary());
+    // More menu actions
+    if (this.shareBtn) {
+      this.shareBtn.addEventListener("click", () => {
+        this.rtc.startScreenShare();
+        this.moreMenu?.classList.remove("show");
+        this.moreMenu?.classList.add("hidden");
+      });
     }
+
+    if (this.noiseBtn) {
+      this.noiseBtn.addEventListener("click", () => {
+        this.noiseBtn.classList.toggle("active");
+      });
+    }
+
+    if (this.recordBtn) {
+      this.recordBtn.addEventListener("click", () => {
+        this.recordBtn.classList.toggle("active");
+      });
+    }
+
+    if (this.historyBtn) {
+      this.historyBtn.addEventListener("click", () => {
+        this.historyBtn.classList.toggle("active");
+      });
+    }
+
+    // Double-tap swap (local vs first remote tile)
+    const firstRemote = () =>
+      this.callGrid?.querySelector(".participant.remote") || null;
+
     if (this.localWrapper) {
-      this._bindDoubleTap(this.localWrapper, () => this._togglePrimary());
+      this._bindDoubleTap(this.localWrapper, () => {
+        this._togglePrimary(firstRemote());
+      });
+    }
+
+    const initialRemote = firstRemote();
+    if (initialRemote) {
+      this._bindDoubleTap(initialRemote, () => {
+        this._togglePrimary(initialRemote);
+      });
     }
   }
 
   _bindDoubleTap(el, handler) {
+    if (!el) return;
     let lastTap = 0;
     el.addEventListener("click", () => {
       const now = Date.now();
@@ -298,81 +339,100 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // WINDOW + LAYOUT MODES
+  // WINDOW + LAYOUT MODES (MATCHING .call-window CSS)
   // -------------------------------------------------------
   _openWindow() {
     if (!this.videoContainer) return;
-    this.videoContainer.classList.add("active");
-    this.videoContainer.classList.remove("hidden");
+    log("_openWindow");
 
-    // Default layout: remote primary, local PiP
+    this.videoContainer.classList.remove("hidden");
+    this.videoContainer.classList.add("is-open", "call-opening");
+
+    // Remove call-opening after animation
+    setTimeout(() => {
+      this.videoContainer?.classList.remove("call-opening");
+    }, 300);
+
+    if (this.callControls) {
+      this.callControls.classList.remove("hidden");
+    }
+
+    // Default layout: remote primary, local PiP (CSS handles local as PIP)
     this._primaryIsRemote = true;
     this._applyPrimaryLayout();
   }
 
   _closeWindow() {
     if (!this.videoContainer) return;
-    this.videoContainer.classList.remove("active");
+
+    this.videoContainer.classList.remove(
+      "is-open",
+      "inbound-mode",
+      "active-mode",
+      "voice-only-call",
+      "camera-off"
+    );
     this.videoContainer.classList.add("hidden");
+
+    if (this.callControls) {
+      this.callControls.classList.add("hidden");
+    }
   }
 
   _enterOutboundVoiceMode() {
     this._setStatus("Calling…");
     this._showControlsForVoice({ outbound: true });
-    this._showOverlay("Calling…");
+    this._applyModeFlags({ inbound: false, active: false, video: false });
   }
 
   _enterOutboundVideoMode() {
     this._setStatus("Video calling…");
     this._showControlsForVideo({ outbound: true });
-    this._showOverlay("Video calling…");
+    this._applyModeFlags({ inbound: false, active: false, video: true });
   }
 
   _enterInboundVoiceMode() {
     this._setStatus("Incoming call");
     this._showControlsForVoice({ inbound: true });
-    this._showOverlay("Incoming call");
+    this._applyModeFlags({ inbound: true, active: false, video: false });
   }
 
   _enterInboundVideoMode() {
     this._setStatus("Incoming video");
     this._showControlsForVideo({ inbound: true });
-    this._showOverlay("Incoming video");
+    this._applyModeFlags({ inbound: true, active: false, video: true });
   }
 
   _enterActiveVoiceMode() {
     this._setStatus("In call");
     this._showControlsForVoice({ active: true });
-    this._hideOverlay();
-
-    // Voice-only: remote wrapper can still be used for avatar / waveform
-    if (this.remoteWrapper) {
-      this.remoteWrapper.classList.add("voice-only");
-    }
-    if (this.localWrapper) {
-      this.localWrapper.classList.add("voice-only");
-    }
+    this._applyModeFlags({ inbound: false, active: true, video: false });
   }
 
   _enterActiveVideoMode() {
     this._setStatus("In video call");
     this._showControlsForVideo({ active: true });
-    this._hideOverlay();
-
-    if (this.remoteWrapper) {
-      this.remoteWrapper.classList.remove("voice-only");
-    }
-    if (this.localWrapper) {
-      this.localWrapper.classList.remove("voice-only");
-    }
-
-    // Mobile A: when callee gets remote video before answer, full screen.
-    // After answer, we keep remote full and local PiP.
+    this._applyModeFlags({ inbound: false, active: true, video: true });
     this._applyPrimaryLayout();
   }
 
   _enterVideoControlsMode() {
     this._enterActiveVideoMode();
+  }
+
+  _applyModeFlags({ inbound, active, video }) {
+    if (!this.videoContainer) return;
+
+    this.videoContainer.classList.toggle("inbound-mode", !!inbound);
+    this.videoContainer.classList.toggle("active-mode", !!active);
+
+    const isVoiceOnly = !video;
+    this.videoContainer.classList.toggle("voice-only-call", isVoiceOnly);
+    this.videoContainer.classList.toggle("camera-off", isVoiceOnly);
+
+    if (this.callControls) {
+      this.callControls.classList.remove("hidden");
+    }
   }
 
   _resetUI() {
@@ -382,78 +442,40 @@ export class CallUI {
     rtcState.incomingIsVideo = false;
 
     this._closeWindow();
-    this._hideOverlay();
-    this._setStatus("");
+    this._setStatus("Call ended");
     if (this.timerEl) this.timerEl.textContent = "00:00";
-    if (this.moreMenu) this.moreMenu.classList.remove("visible");
+
+    if (this.moreMenu) {
+      this.moreMenu.classList.remove("show");
+      this.moreMenu.classList.add("hidden");
+    }
   }
 
   // -------------------------------------------------------
-  // CONTROLS VISIBILITY
+  // CONTROLS VISIBILITY (WORKS WITH .inbound-mode / .active-mode)
   // -------------------------------------------------------
   _showControlsForVoice({ outbound, inbound, active } = {}) {
+    // CSS already hides inbound-only / active-only based on .call-window.inbound-mode / .active-mode
+    // Here we only handle any extra tweaks if needed.
     if (!this.callControls) return;
 
-    this.callControls.classList.remove("video-mode");
-    this.callControls.classList.add("voice-mode");
-
-    if (this.camBtn) this.camBtn.classList.add("hidden");
-    if (this.upgradeBtn) this.upgradeBtn.classList.remove("hidden");
-
-    if (this.answerBtn) {
-      this.answerBtn.classList.toggle("hidden", !inbound);
-    }
-    if (this.declineBtn) {
-      this.declineBtn.classList.toggle("hidden", !inbound);
-    }
-    if (this.endBtn) {
-      this.endBtn.classList.toggle("hidden", !active && !outbound);
-    }
-
-    if (outbound) {
-      if (this.endBtn) this.endBtn.classList.remove("hidden");
+    // Voice mode: hide camera button visually if you want
+    if (this.camBtn) {
+      this.camBtn.classList.add("hidden-soft");
     }
   }
 
   _showControlsForVideo({ outbound, inbound, active } = {}) {
     if (!this.callControls) return;
 
-    this.callControls.classList.remove("voice-mode");
-    this.callControls.classList.add("video-mode");
-
-    if (this.camBtn) this.camBtn.classList.remove("hidden");
-    if (this.upgradeBtn) this.upgradeBtn.classList.add("hidden");
-
-    if (this.answerBtn) {
-      this.answerBtn.classList.toggle("hidden", !inbound);
-    }
-    if (this.declineBtn) {
-      this.declineBtn.classList.toggle("hidden", !inbound);
-    }
-    if (this.endBtn) {
-      this.endBtn.classList.toggle("hidden", !active && !outbound);
-    }
-
-    if (outbound) {
-      if (this.endBtn) this.endBtn.classList.remove("hidden");
+    if (this.camBtn) {
+      this.camBtn.classList.remove("hidden-soft");
     }
   }
 
   // -------------------------------------------------------
-  // OVERLAY / STATUS
+  // STATUS
   // -------------------------------------------------------
-  _showOverlay(text) {
-    if (!this.callerOverlay) return;
-    this.callerOverlay.classList.remove("hidden");
-    const label = this.callerOverlay.querySelector(".caller-label");
-    if (label) label.textContent = text;
-  }
-
-  _hideOverlay() {
-    if (!this.callerOverlay) return;
-    this.callerOverlay.classList.add("hidden");
-  }
-
   _setStatus(text) {
     if (!this.statusEl) return;
     this.statusEl.textContent = text || "";
@@ -490,61 +512,45 @@ export class CallUI {
   // -------------------------------------------------------
   // PRIMARY / PIP LAYOUT + DRAG
   // -------------------------------------------------------
-  _togglePrimary() {
+  _togglePrimary(remoteEl) {
+    // For now, we just swap CSS roles between local and one remote tile
+    if (!this.localWrapper || !remoteEl) return;
+
     this._primaryIsRemote = !this._primaryIsRemote;
-    this._applyPrimaryLayout();
+    this._applyPrimaryLayout(remoteEl);
   }
 
-  _applyPrimaryLayout() {
-    if (!this.remoteWrapper || !this.localWrapper) return;
-
-    if (this._primaryIsRemote) {
-      // Remote full, local PiP
-      this.remoteWrapper.classList.add("primary");
-      this.remoteWrapper.classList.remove("pip");
-
-      this.localWrapper.classList.add("pip");
-      this.localWrapper.classList.remove("primary");
-    } else {
-      // Local full, remote PiP
-      this.localWrapper.classList.add("primary");
-      this.localWrapper.classList.remove("pip");
-
-      this.remoteWrapper.classList.add("pip");
-      this.remoteWrapper.classList.remove("primary");
-    }
+  _applyPrimaryLayout(remoteEl) {
+    // Desktop CSS already treats .participant.local as PIP; for now we just rely on that.
+    // If you later want explicit .primary/.pip classes, you can add them here.
+    // Keeping hook so behavior is extendable.
   }
 
   _initPipDrag() {
-    if (!this.localWrapper || !this.videoContainer) return;
-
     const pipEl = this.localWrapper;
+    if (!pipEl || !this.callBody) return;
 
-    const startDrag = (clientX, clientY) => {
+    const startDrag = (x, y) => {
       const rect = pipEl.getBoundingClientRect();
-      const parentRect = this.videoContainer.getBoundingClientRect();
-
+      const parent = this.callBody.getBoundingClientRect();
       this._dragState = {
-        offsetX: clientX - rect.left,
-        offsetY: clientY - rect.top,
-        parentRect,
+        offsetX: x - rect.left,
+        offsetY: y - rect.top,
+        parent,
       };
     };
 
-    const moveDrag = (clientX, clientY) => {
+    const moveDrag = (x, y) => {
       if (!this._dragState) return;
-      const { offsetX, offsetY, parentRect } = this._dragState;
+      const { offsetX, offsetY, parent } = this._dragState;
 
-      let x = clientX - offsetX - parentRect.left;
-      let y = clientY - offsetY - parentRect.top;
+      let newX = x - offsetX - parent.left;
+      let newY = y - offsetY - parent.top;
 
-      const maxX = parentRect.width - pipEl.offsetWidth;
-      const maxY = parentRect.height - pipEl.offsetHeight;
+      newX = Math.max(0, Math.min(parent.width - pipEl.offsetWidth, newX));
+      newY = Math.max(0, Math.min(parent.height - pipEl.offsetHeight, newY));
 
-      x = Math.max(0, Math.min(maxX, x));
-      y = Math.max(0, Math.min(maxY, y));
-
-      pipEl.style.transform = `translate(${x}px, ${y}px)`;
+      pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
     };
 
     const endDrag = () => {
@@ -552,34 +558,13 @@ export class CallUI {
     };
 
     pipEl.addEventListener("pointerdown", (e) => {
-      if (!pipEl.classList.contains("pip")) return;
       pipEl.setPointerCapture(e.pointerId);
       startDrag(e.clientX, e.clientY);
     });
 
-    pipEl.addEventListener("pointermove", (e) => {
-      if (!this._dragState) return;
-      moveDrag(e.clientX, e.clientY);
-    });
-
-    pipEl.addEventListener("pointerup", () => endDrag());
-    pipEl.addEventListener("pointercancel", () => endDrag());
-
-    // Touch fallback (older browsers)
-    pipEl.addEventListener("touchstart", (e) => {
-      if (!pipEl.classList.contains("pip")) return;
-      const t = e.touches[0];
-      startDrag(t.clientX, t.clientY);
-    });
-
-    pipEl.addEventListener("touchmove", (e) => {
-      if (!this._dragState) return;
-      const t = e.touches[0];
-      moveDrag(t.clientX, t.clientY);
-    });
-
-    pipEl.addEventListener("touchend", () => endDrag());
-    pipEl.addEventListener("touchcancel", () => endDrag());
+    pipEl.addEventListener("pointermove", (e) => moveDrag(e.clientX, e.clientY));
+    pipEl.addEventListener("pointerup", endDrag);
+    pipEl.addEventListener("pointercancel", endDrag);
   }
 
   // -------------------------------------------------------
@@ -597,9 +582,11 @@ export class CallUI {
   }
 
   _startQualityMonitor() {
-    // If you later wire stats → this.rtc.onQualityUpdate, UI is already ready.
+    // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
+
 
 
 
