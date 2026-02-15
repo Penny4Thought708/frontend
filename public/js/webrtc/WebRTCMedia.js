@@ -1,4 +1,10 @@
 // public/js/webrtc/WebRTCMedia.js
+// ============================================================
+// WebRTCMedia: local media acquisition, attachment, remote routing,
+// speaking detection, screen share, and upgrade-to-video helpers.
+// Tuned for high quality, mobile-aware constraints, and bitrate hints.
+// ============================================================
+
 import { rtcState } from "./WebRTCState.js";
 import {
   attachParticipantStream,
@@ -14,47 +20,86 @@ const isMobile =
     navigator.userAgent
   );
 
+// Profiles for different device classes / use cases
+const VIDEO_PROFILES = {
+  mobile: {
+    width: { ideal: 960, max: 1280 },
+    height: { ideal: 540, max: 720 },
+    frameRate: { ideal: 24, max: 30 },
+    // Bitrate hints via advanced constraints (not guaranteed, but helpful)
+    advanced: [
+      { width: 960, height: 540 },
+      { frameRate: 24 },
+    ],
+  },
+  desktop: {
+    width: { ideal: 1280, max: 1920 },
+    height: { ideal: 720, max: 1080 },
+    frameRate: { ideal: 30, max: 60 },
+    advanced: [
+      { width: 1280, height: 720 },
+      { frameRate: 30 },
+    ],
+  },
+};
+
+const AUDIO_CONSTRAINTS = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+};
+
 /* -------------------------------------------------------
-   LOCAL MEDIA ACQUISITION
+   LOCAL MEDIA ACQUISITION (VOICE / VIDEO)
+   - Mobile-aware
+   - Bitrate-friendly constraints
+   - Robust fallbacks
 ------------------------------------------------------- */
 export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   rtcState.audioOnly = wantAudio && !wantVideo;
 
+  const profile = isMobile ? VIDEO_PROFILES.mobile : VIDEO_PROFILES.desktop;
+
   const constraints = {
-    audio: wantAudio
-      ? { echoCancellation: true, noiseSuppression: true }
-      : false,
+    audio: wantAudio ? { ...AUDIO_CONSTRAINTS } : false,
     video: wantVideo
       ? {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
+          width: profile.width,
+          height: profile.height,
+          frameRate: profile.frameRate,
+          advanced: profile.advanced,
         }
       : false,
   };
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    log("Local media acquired:", stream);
+    log("Local media acquired:", {
+      audio: wantAudio,
+      video: wantVideo,
+      tracks: stream.getTracks().map((t) => t.kind),
+    });
     return stream;
   } catch (err) {
-    log("Local media error:", err);
+    log("Local media error (A/V):", err);
   }
 
+  // Fallback: audio-only
   if (wantAudio) {
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: { ...AUDIO_CONSTRAINTS },
         video: false,
       });
       log("Audio-only fallback succeeded");
       rtcState.audioOnly = true;
       return audioStream;
     } catch (err) {
-      log("Audio-only also failed:", err);
+      log("Audio-only fallback failed:", err);
     }
   }
 
+  // Final fallback: fake stream (avatar-only mode)
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -70,6 +115,7 @@ function createFakeStream() {
   const oscillator = audioCtx.createOscillator();
   const dst = audioCtx.createMediaStreamDestination();
   oscillator.connect(dst);
+  oscillator.frequency.value = 0; // effectively silence
   oscillator.start();
 
   const canvas = document.createElement("canvas");
@@ -88,6 +134,8 @@ function createFakeStream() {
 
 /* -------------------------------------------------------
    ATTACH LOCAL STREAM TO DOM
+   - Main tile + PiP
+   - Audio-only vs video state
 ------------------------------------------------------- */
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
@@ -98,7 +146,13 @@ export function attachLocalStream(stream) {
   if (localVideo) {
     localVideo.srcObject = stream;
     localVideo.muted = true;
-    localVideo.play().catch(() => {});
+    localVideo.playsInline = true;
+    localVideo
+      .play()
+      .catch(() => {
+        log("localVideo play blocked (autoplay policy)");
+      });
+
     if (rtcState.audioOnly) {
       localVideo.classList.remove("show");
     } else {
@@ -109,7 +163,13 @@ export function attachLocalStream(stream) {
   if (pipVideo) {
     pipVideo.srcObject = stream;
     pipVideo.muted = true;
-    pipVideo.play().catch(() => {});
+    pipVideo.playsInline = true;
+    pipVideo
+      .play()
+      .catch(() => {
+        log("localPipVideo play blocked (autoplay policy)");
+      });
+
     if (rtcState.audioOnly) {
       pipVideo.classList.remove("show");
     } else {
@@ -120,6 +180,10 @@ export function attachLocalStream(stream) {
 
 /* -------------------------------------------------------
    REMOTE TRACK ROUTING (CALLED BY WebRTCController)
+   - Maintains per-peer MediaStream
+   - Routes audio to <audio id="remoteAudio">
+   - Routes video to RemoteParticipants tiles
+   - Starts speaking detection
 ------------------------------------------------------- */
 export function attachRemoteTrack(peerId, event) {
   if (!event || !event.track) {
@@ -143,16 +207,24 @@ export function attachRemoteTrack(peerId, event) {
     peerId,
     kind: event.track.kind,
     label: event.track.label,
+    id: event.track.id,
   });
 
+  // Remote audio → shared audio element
   if (event.track.kind === "audio") {
     const audioEl = document.getElementById("remoteAudio");
     if (audioEl) {
       audioEl.srcObject = stream;
-      audioEl.play().catch(() => {});
+      audioEl.playsInline = true;
+      audioEl
+        .play()
+        .catch(() => {
+          log("remoteAudio play blocked (autoplay policy)");
+        });
     }
   }
 
+  // Remote video → participant tile
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) {
     log("No participant entry for peer:", peerId);
@@ -164,11 +236,15 @@ export function attachRemoteTrack(peerId, event) {
 
   if (event.track.kind === "video" && videoEl) {
     videoEl.srcObject = stream;
-    videoEl.classList.add("show");
-    videoEl.play().catch(() => {});
-    if (avatarEl) avatarEl.classList.add("hidden");
+    videoEl.playsInline = true;
+    videoEl
+      .play()
+      .catch(() => {
+        log("remote video play blocked (autoplay policy)");
+      });
 
-    // Inbound video preview behavior is handled by CallUI via CSS classes
+    videoEl.classList.add("show");
+    if (avatarEl) avatarEl.classList.add("hidden");
   }
 
   if (event.track.kind === "audio") {
@@ -178,6 +254,8 @@ export function attachRemoteTrack(peerId, event) {
 
 /* -------------------------------------------------------
    SPEAKING DETECTION
+   - Lightweight analyser
+   - Drives voice pulse / active speaker UI
 ------------------------------------------------------- */
 function startSpeakingDetection(peerId, stream) {
   try {
@@ -194,6 +272,7 @@ function startSpeakingDetection(peerId, stream) {
       analyser.getByteFrequencyData(data);
       const volume = data.reduce((a, b) => a + b, 0) / data.length;
 
+      // Threshold tuned for typical WebRTC levels
       const speaking = volume > 28;
       setParticipantSpeaking(peerId, speaking);
 
@@ -206,7 +285,9 @@ function startSpeakingDetection(peerId, stream) {
 }
 
 /* -------------------------------------------------------
-   SCREEN SHARE
+   SCREEN SHARE (OPTION B: simple track replace)
+   - High-res desktop, modest frame rate
+   - Mobile-safe (if supported)
 ------------------------------------------------------- */
 export async function startScreenShare() {
   if (!navigator.mediaDevices.getDisplayMedia) {
@@ -217,14 +298,20 @@ export async function startScreenShare() {
   try {
     const stream = await navigator.mediaDevices.getDisplayMedia({
       video: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
+        width: { ideal: 1920, max: 2560 },
+        height: { ideal: 1080, max: 1440 },
         frameRate: { ideal: 15, max: 30 },
+        displaySurface: "monitor",
       },
       audio: false,
     });
 
     const track = stream.getVideoTracks()[0];
+    log("Screen share started:", {
+      trackId: track?.id,
+      settings: track?.getSettings?.(),
+    });
+
     return { stream, track };
   } catch (err) {
     log("Screen share error:", err);
@@ -234,6 +321,8 @@ export async function startScreenShare() {
 
 /* -------------------------------------------------------
    UPGRADE TO VIDEO (LOCAL)
+   - Replaces audio-only local stream with A/V
+   - Stops old tracks
 ------------------------------------------------------- */
 export async function upgradeLocalToVideo() {
   const oldStream = rtcState.localStream;
@@ -260,7 +349,6 @@ export function cleanupMedia() {
   rtcState.localStream = null;
   rtcState.remoteStreams = {};
 }
-
 
 
 
