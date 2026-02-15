@@ -1,12 +1,14 @@
 // public/js/webrtc/RemoteParticipants.js
 // ============================================================
-// PURE TILE MANAGER — no layout logic, no screen-share logic,
+// PURE TILE MANAGER — no layout logic, no screen-share layout,
 // no active-speaker layout. CallUI.js owns ALL layout behavior.
 //
 // This file ONLY manages:
 //   - participant tiles
 //   - media binding
 //   - basic state (cameraOff, speaking, avatar/name)
+//   - safe creation/removal
+//   - robust autoplay handling
 // ============================================================
 
 const participants = new Map(); // peerId -> entry
@@ -285,6 +287,21 @@ export function setParticipantAvatar(peerId, url) {
 }
 
 /* -------------------------------------------------------
+   Get Participant Entry (for CallUI / diagnostics)
+------------------------------------------------------- */
+export function getParticipant(peerId) {
+  peerId = String(peerId);
+  return participants.get(peerId) || null;
+}
+
+/* -------------------------------------------------------
+   Get All Participants (read-only snapshot)
+------------------------------------------------------- */
+export function getAllParticipants() {
+  return Array.from(participants.values());
+}
+
+/* -------------------------------------------------------
    Clear All Participants (on call end)
 ------------------------------------------------------- */
 export function clearAllParticipants() {
@@ -303,4 +320,5 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
+
 
