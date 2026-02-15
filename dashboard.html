@@ -352,12 +352,7 @@ window.currentUserAvatar = user.avatar;
         <!-- ============================================================
      FULL-WINDOW CALL MODE (EXPANDS FROM CALL BUTTON)
 ============================================================ -->
-<call-window
-  id="callWindow"
-  class="call-window hidden"
-  data-window-id="video-call"
-  aria-hidden="true"
->
+<call-window id="callWindow" class="call-window hidden" data-window-id="video-call" aria-hidden="true">
 
   <div class="call-body">
 
@@ -369,35 +364,19 @@ window.currentUserAvatar = user.avatar;
       <!-- ===========================
            LOCAL PARTICIPANT TILE
       ============================ -->
-      <div
-        class="participant local"
-        id="localParticipant"
-        data-peer-id="local"
-        data-id="local"
-      >
+      <div class="participant local" id="localParticipant" data-peer-id="local">
         <div class="media-wrapper">
 
           <!-- Local video MUST be muted for autoplay -->
-          <video
-            id="localVideo"
-            autoplay
-            playsinline
-            muted
-          ></video>
+          <video id="localVideo" autoplay playsinline muted></video>
 
           <div class="avatar-wrapper">
-            <img
-              id="localAvatarImg"
-              src="img/defaultUser.png"
-              alt="Local Avatar"
-            >
+            <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar">
             <div class="voice-pulse"></div>
           </div>
         </div>
 
-        <!-- Presenting badge -->
         <div class="presenting-badge">Presenting</div>
-
         <div class="name-tag">You</div>
       </div>
 
@@ -408,45 +387,35 @@ window.currentUserAvatar = user.avatar;
         <div class="participant remote">
           <div class="media-wrapper">
 
-            <!-- Remote video MUST be muted for autoplay -->
-            <video
-              class="remoteVideo"
-              autoplay
-              playsinline
-              muted
-            ></video>
+            <video class="remoteVideo" autoplay playsinline muted></video>
 
             <div class="avatar-wrapper">
-              <img
-                class="avatar-img"
-                src="img/defaultUser.png"
-                alt="Avatar"
-              >
+              <img class="avatar-img" src="img/defaultUser.png" alt="Avatar">
               <div class="voice-pulse"></div>
             </div>
           </div>
 
-          <!-- Presenting badge -->
           <div class="presenting-badge">Presenting</div>
-
           <div class="name-tag"></div>
         </div>
       </template>
 
     </div> <!-- end callGrid -->
 
+
     <!-- ============================================================
          CALL STATUS + TIMER
     ============================================================ -->
     <div class="call-top-info">
-      <div id="call-status" class="call-status">Call ended</div>
+      <div id="call-status" class="call-status">Connecting…</div>
       <div id="call-timer" class="call-timer">00:00</div>
     </div>
+
 
     <!-- ============================================================
          CALL CONTROLS
     ============================================================ -->
-    <div id="call-controls" class="call-controls">
+    <div id="call-controls" class="call-controls hidden">
 
       <!-- Inbound-only controls -->
       <button id="decline-call" class="control-btn inbound-only">
@@ -503,27 +472,18 @@ window.currentUserAvatar = user.avatar;
 
     </div> <!-- end call-controls -->
 
+
     <!-- ============================================================
          REMOTE AUDIO ELEMENT
     ============================================================ -->
-    <audio
-      id="remoteAudio"
-      autoplay
-      playsinline
-    ></audio>
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
 
     <!-- ============================================================
          CALL INFO BAR (QUALITY + DEBUG)
     ============================================================ -->
     <div class="call-info-bar">
-      <div
-        id="call-quality-indicator"
-        class="quality-indicator"
-        data-level="poor"
-        title="ICE: disconnected"
-      >
-        Poor
-      </div>
+      <div id="call-quality-indicator" class="quality-indicator" data-level="excellent">excellent</div>
 
       <button id="call-debug-toggle" class="debug-toggle">
         <span class="material-symbols-outlined">bug_report</span>
@@ -532,65 +492,62 @@ window.currentUserAvatar = user.avatar;
 
   </div> <!-- end call-body -->
 
+
   <!-- ============================================================
        LOCAL PIP WINDOW (MEET-STYLE)
   ============================================================ -->
   <div id="localPip" class="local-pip hidden">
-    <video
-      id="localPipVideo"
-      autoplay
-      playsinline
-      muted
-    ></video>
-  </div>
-<!-- ============================================================
-     VIDEO UPGRADE OVERLAY (FaceTime-style)
-============================================================ -->
-<div id="video-upgrade-overlay" class="video-upgrade-overlay hidden" aria-hidden="true">
-
-  <!-- MOBILE: floating card (B1) -->
-  <div class="video-upgrade-card mobile-only">
-    <div class="video-upgrade-preview">
-      <!-- Remote video is already behind in the grid; this is a glass card -->
-      <span class="material-symbols-outlined video-icon">videocam</span>
-    </div>
-    <div class="video-upgrade-text">
-      <div class="title">Switch to video?</div>
-      <div class="subtitle">The other person wants to start video.</div>
-    </div>
-    <div class="video-upgrade-actions">
-      <button id="video-upgrade-decline" class="btn-upgrade-decline">
-        <span class="material-symbols-outlined">call_end</span>
-        Keep Audio
-      </button>
-      <button id="video-upgrade-accept" class="btn-upgrade-accept">
-        <span class="material-symbols-outlined">videocam</span>
-        Accept Video
-      </button>
-    </div>
+    <video id="localPipVideo" autoplay playsinline muted></video>
   </div>
 
-  <!-- DESKTOP: fullscreen blur (B2) -->
-  <div class="video-upgrade-desktop-overlay desktop-only">
-    <div class="video-upgrade-desktop-inner">
-      <div class="video-upgrade-desktop-text">
+
+  <!-- ============================================================
+       VIDEO UPGRADE OVERLAY (FaceTime-style)
+  ============================================================ -->
+  <div id="video-upgrade-overlay" class="video-upgrade-overlay hidden" aria-hidden="true">
+
+    <!-- MOBILE: floating card -->
+    <div class="video-upgrade-card mobile-only">
+      <div class="video-upgrade-preview">
+        <span class="material-symbols-outlined video-icon">videocam</span>
+      </div>
+      <div class="video-upgrade-text">
         <div class="title">Switch to video?</div>
         <div class="subtitle">The other person wants to start video.</div>
       </div>
-      <div class="video-upgrade-desktop-actions">
-        <button id="video-upgrade-decline-desktop" class="btn-upgrade-decline">
+      <div class="video-upgrade-actions">
+        <button id="video-upgrade-decline" class="btn-upgrade-decline">
           <span class="material-symbols-outlined">call_end</span>
           Keep Audio
         </button>
-        <button id="video-upgrade-accept-desktop" class="btn-upgrade-accept">
+        <button id="video-upgrade-accept" class="btn-upgrade-accept">
           <span class="material-symbols-outlined">videocam</span>
           Accept Video
         </button>
       </div>
     </div>
-  </div>
 
-</div>
+    <!-- DESKTOP: fullscreen blur -->
+    <div class="video-upgrade-desktop-overlay desktop-only">
+      <div class="video-upgrade-desktop-inner">
+        <div class="video-upgrade-desktop-text">
+          <div class="title">Switch to video?</div>
+          <div class="subtitle">The other person wants to start video.</div>
+        </div>
+        <div class="video-upgrade-desktop-actions">
+          <button id="video-upgrade-decline-desktop" class="btn-upgrade-decline">
+            <span class="material-symbols-outlined">call_end</span>
+            Keep Audio
+          </button>
+          <button id="video-upgrade-accept-desktop" class="btn-upgrade-accept">
+            <span class="material-symbols-outlined">videocam</span>
+            Accept Video
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
 </call-window>
 
@@ -1702,6 +1659,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
