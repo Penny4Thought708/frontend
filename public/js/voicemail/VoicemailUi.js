@@ -8,6 +8,7 @@
 //   - Mark-as-read
 //   - Real-time "new voicemail" events
 // ============================================================
+import { API_BASE } from "../config.js";
 
 let activeAudio = null;
 let activeCard = null;
@@ -15,29 +16,41 @@ let activeCard = null;
 /* -------------------------------------------------------
    Load Voicemails
 ------------------------------------------------------- */
+import { API_BASE } from "../config.js";
+
 export async function loadVoicemails() {
   const listEl = document.getElementById("voiceMList");
   listEl.innerHTML = "";
 
-  const res = await fetch("/api/voicemail/list");
-  const json = await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/voicemail/list`, {
+      method: "GET",
+      credentials: "include"   // REQUIRED for req.session.user_id
+    });
 
-  if (!json.success) {
-    listEl.innerHTML = `<li class="vm-empty">Failed to load voicemails</li>`;
-    return;
+    const json = await res.json();
+
+    if (!json.success) {
+      listEl.innerHTML = `<li class="vm-empty">Failed to load voicemails</li>`;
+      return;
+    }
+
+    const vms = json.voicemails;
+
+    if (vms.length === 0) {
+      listEl.innerHTML = `<li class="vm-empty">No voicemails yet</li>`;
+      return;
+    }
+
+    vms.forEach(vm => {
+      const card = renderVoicemailCard(vm);
+      listEl.appendChild(card);
+    });
+
+  } catch (err) {
+    console.error("Voicemail load error:", err);
+    listEl.innerHTML = `<li class="vm-empty">Error loading voicemails</li>`;
   }
-
-  const vms = json.voicemails;
-
-  if (vms.length === 0) {
-    listEl.innerHTML = `<li class="vm-empty">No voicemails yet</li>`;
-    return;
-  }
-
-  vms.forEach(vm => {
-    const card = renderVoicemailCard(vm);
-    listEl.appendChild(card);
-  });
 }
 
 /* -------------------------------------------------------
