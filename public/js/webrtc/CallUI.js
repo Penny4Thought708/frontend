@@ -2,6 +2,15 @@
 // ============================================================
 // CallUI: orchestrates call window, controls, and WebRTCController
 // FaceTime‑style A1‑Swap with PiP persistence + JS positioning
+// Features:
+//   - Remote-primary layout with local/remote PiP
+//   - PiP drag + edge snapping + snap-away from controls
+//   - Double-tap swap with smooth animations
+//   - Tap-to-toggle controls + auto-hide
+//   - Screen-share mode hooks
+//   - Active speaker pulse (via CSS + RemoteParticipants)
+//   - Multi-remote swap support (any remote tile)
+//   - Voicemail + toast wiring hooks
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -81,6 +90,25 @@ export class CallUI {
     this.videoUpgradeAcceptDesktopBtn = document.getElementById("video-upgrade-accept-desktop");
     this.videoUpgradeDeclineDesktopBtn = document.getElementById("video-upgrade-decline-desktop");
 
+    // Voicemail modal
+    this.voicemailModal = document.getElementById("voicemailModal");
+    this.vmRecordBtn = document.getElementById("vmRecordBtn");
+    this.vmStopBtn = document.getElementById("vmStopBtn");
+    this.vmPlayBtn = document.getElementById("vmPlayBtn");
+    this.vmSendBtn = document.getElementById("vmSendBtn");
+    this.vmDeleteBtn = document.getElementById("vmDeleteBtn");
+    this.vmCancelBtn = document.getElementById("vmCancelBtn");
+
+    // Toasts
+    this.secondaryIncomingToast = document.getElementById("secondaryIncomingToast");
+    this.unavailableToast = document.getElementById("unavailableToast");
+    this.genericToast = document.getElementById("genericToast");
+    this.mediaToast = document.getElementById("mediaToast");
+
+    this.utVoiceBtn = document.getElementById("utVoiceBtn");
+    this.utVideoBtn = document.getElementById("utVideoBtn");
+    this.utTextBtn = document.getElementById("utTextBtn");
+
     // Audio cues
     this.ringtone = document.getElementById("ringtone");
     this.ringback = document.getElementById("ringback");
@@ -98,6 +126,10 @@ export class CallUI {
     // Drag state
     this._dragState = null;
 
+    // Controls visibility state (tap-to-toggle + auto-hide)
+    this._controlsVisible = true;
+    this._controlsHideTimeout = null;
+
     // Hide local grid tile by default
     if (this.localWrapper) this.localWrapper.classList.add("hidden");
     if (this.remotePip) this.remotePip.classList.add("hidden");
@@ -105,6 +137,7 @@ export class CallUI {
     this._bindButtons();
     this._bindControllerEvents();
     this._initPipDrag();
+    this._bindTapToToggleControls();
     this._startTimerLoop();
     this._startQualityMonitor();
   }
@@ -225,6 +258,19 @@ export class CallUI {
     this.rtc.onQualityUpdate = (score) => {
       if (this.qualityEl) this.qualityEl.textContent = score;
     };
+
+    // Optional hooks for screen share (if WebRTCController exposes them)
+    this.rtc.onScreenShareStarted = () => {
+      this.videoContainer?.classList.add("screen-sharing");
+    };
+    this.rtc.onScreenShareStopped = () => {
+      this.videoContainer?.classList.remove("screen-sharing");
+    };
+
+    // Optional hooks for unavailability → toast/voicemail
+    this.rtc.onPeerUnavailable = (reason) => {
+      this._showUnavailableToast(reason || "User is unavailable");
+    };
   }
 
   // -------------------------------------------------------
@@ -320,21 +366,59 @@ export class CallUI {
       this._enterActiveVoiceMode();
     });
 
-    // Double‑tap swap
-    const firstRemote = () =>
-      this.callGrid?.querySelector(".participant.remote") || null;
+    // Voicemail modal basic wiring (actual recording handled elsewhere)
+    this.vmCancelBtn?.addEventListener("click", () => this._closeVoicemailModal());
 
+    // Unavailable toast → voicemail / video / text
+    this.utVoiceBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+      this._openVoicemailModal();
+    });
+    this.utVideoBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+      // hook for future video message flow
+    });
+    this.utTextBtn?.addEventListener("click", () => {
+      this._hideUnavailableToast();
+      // hook for future text message flow
+    });
+
+    // Double‑tap swap: PiP + any remote tile
     if (this.localPip) {
       this._bindDoubleTap(this.localPip, () => {
-        this._togglePrimary(firstRemote());
+        const firstRemote = this._firstRemoteTile();
+        this._togglePrimary(firstRemote);
       });
     }
 
-    const initialRemote = firstRemote();
-    if (initialRemote) {
-      this._bindDoubleTap(initialRemote, () => {
-        this._togglePrimary(initialRemote);
+    // Delegate double-tap on any remote participant tile
+    if (this.callGrid) {
+      this.callGrid.addEventListener("click", (e) => {
+        const tile = e.target.closest(".participant.remote");
+        if (!tile) return;
+        this._handleRemoteDoubleTap(tile);
       });
+    }
+  }
+
+  _firstRemoteTile() {
+    return this.callGrid?.querySelector(".participant.remote") || null;
+  }
+
+  _handleRemoteDoubleTap(tile) {
+    if (!tile) return;
+    if (!this._remoteTapState) this._remoteTapState = { lastTap: 0, lastEl: null };
+
+    const now = Date.now();
+    const { lastTap, lastEl } = this._remoteTapState;
+
+    if (tile === lastEl && now - lastTap < 300) {
+      this._togglePrimary(tile);
+      this._remoteTapState.lastTap = 0;
+      this._remoteTapState.lastEl = null;
+    } else {
+      this._remoteTapState.lastTap = now;
+      this._remoteTapState.lastEl = tile;
     }
   }
 
@@ -346,6 +430,58 @@ export class CallUI {
       if (now - lastTap < 300) handler();
       lastTap = now;
     });
+  }
+
+  // -------------------------------------------------------
+  // TAP-TO-TOGGLE CONTROLS + AUTO-HIDE
+  // -------------------------------------------------------
+  _bindTapToToggleControls() {
+    if (!this.callBody || !this.callControls) return;
+
+    this.callBody.addEventListener("click", (e) => {
+      const target = e.target;
+
+      // Ignore taps on controls, PiP, overlays
+      if (
+        this.callControls.contains(target) ||
+        this.localPip?.contains(target) ||
+        this.remotePip?.contains(target) ||
+        this.videoUpgradeOverlay?.contains(target)
+      ) {
+        return;
+      }
+
+      this._toggleControlsVisibility();
+    });
+  }
+
+  _toggleControlsVisibility(forceVisible = null) {
+    if (!this.callControls) return;
+
+    const shouldShow =
+      typeof forceVisible === "boolean" ? forceVisible : !this._controlsVisible;
+
+    this._controlsVisible = shouldShow;
+    this.callControls.classList.toggle("hidden-soft", !shouldShow);
+
+    if (shouldShow) {
+      this._scheduleControlsAutoHide();
+    } else {
+      if (this._controlsHideTimeout) {
+        clearTimeout(this._controlsHideTimeout);
+        this._controlsHideTimeout = null;
+      }
+    }
+  }
+
+  _scheduleControlsAutoHide() {
+    if (!this.callControls) return;
+    if (this._controlsHideTimeout) {
+      clearTimeout(this._controlsHideTimeout);
+    }
+    this._controlsHideTimeout = setTimeout(() => {
+      this._toggleControlsVisibility(false);
+    }, 3000);
   }
 
   // -------------------------------------------------------
@@ -431,6 +567,9 @@ export class CallUI {
     }, 300);
 
     this.callControls?.classList.remove("hidden");
+    this._controlsVisible = true;
+    this.callControls?.classList.remove("hidden-soft");
+    this._scheduleControlsAutoHide();
 
     this._primaryIsRemote = true;
 
@@ -451,7 +590,8 @@ export class CallUI {
       "active-mode",
       "voice-only-call",
       "camera-off",
-      "video-upgrade-mode"
+      "video-upgrade-mode",
+      "screen-sharing"
     );
     this.videoContainer.classList.add("hidden");
 
@@ -598,25 +738,84 @@ export class CallUI {
   }
 
   // -------------------------------------------------------
-  // PRIMARY / PIP + DRAG
+  // TOASTS + VOICEMAIL
   // -------------------------------------------------------
+  _showUnavailableToast(message) {
+    if (!this.unavailableToast) return;
+    const msgEl = this.unavailableToast.querySelector(".ut-message");
+    if (msgEl) msgEl.textContent = message || "";
+    this.unavailableToast.classList.remove("hidden");
+  }
+
+  _hideUnavailableToast() {
+    if (!this.unavailableToast) return;
+    this.unavailableToast.classList.add("hidden");
+  }
+
+  _openVoicemailModal() {
+    if (!this.voicemailModal) return;
+    this.voicemailModal.classList.remove("hidden");
+  }
+
+  _closeVoicemailModal() {
+    if (!this.voicemailModal) return;
+    this.voicemailModal.classList.add("hidden");
+  }
+
+  // -------------------------------------------------------
+  // PRIMARY / PIP + SWAP ANIMATION + DRAG
+  // -------------------------------------------------------
+  _animateSwap(pipEl, primaryEl) {
+    if (!pipEl || !primaryEl) {
+      this._applyPrimaryLayout();
+      return;
+    }
+
+    pipEl.classList.add("pip-anim");
+    primaryEl.classList.add("primary-anim");
+
+    pipEl.classList.add("shrink", "fade-out");
+    primaryEl.classList.add("fade-out");
+
+    setTimeout(() => {
+      pipEl.classList.remove("shrink");
+
+      // Apply new layout
+      this._applyPrimaryLayout();
+
+      pipEl.classList.remove("fade-out");
+      primaryEl.classList.remove("fade-out");
+
+      pipEl.classList.add("fade-in");
+      primaryEl.classList.add("fade-in");
+
+      setTimeout(() => {
+        pipEl.classList.remove("fade-in");
+        primaryEl.classList.remove("fade-in");
+      }, 200);
+    }, 180);
+  }
+
   _togglePrimary(remoteEl) {
     if (!remoteEl) return;
+
+    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
+    const primaryEl = this._primaryIsRemote ? remoteEl : this.localWrapper;
+
     this._primaryIsRemote = !this._primaryIsRemote;
-    this._applyPrimaryLayout(remoteEl);
+
+    this._animateSwap(pipEl, primaryEl);
   }
 
   _resetPipToDefault() {
     if (!this.callBody) return;
 
-    // Choose which PiP is currently relevant
     const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
     if (!pipEl) return;
 
     const parent = this.callBody.getBoundingClientRect();
     const pipRect = pipEl.getBoundingClientRect();
 
-    // Top‑right: small margin from edges
     const margin = 16;
     const x = Math.max(0, parent.width - pipRect.width - margin);
     const y = margin;
@@ -635,7 +834,6 @@ export class CallUI {
 
     if (!remoteEl) return;
 
-    // Ensure PiP has a default position
     if (!this._pipPos) {
       this._resetPipToDefault();
     }
@@ -643,6 +841,7 @@ export class CallUI {
     const applyPipTransform = (pipEl) => {
       if (!pipEl || !this._pipPos) return;
       pipEl.style.transform = `translate(${this._pipPos.x}px, ${this._pipPos.y}px)`;
+      pipEl.classList.add("pip-anim");
     };
 
     if (this._primaryIsRemote) {
@@ -692,18 +891,93 @@ export class CallUI {
         let newX = x - offsetX - parent.left;
         let newY = y - offsetY - parent.top;
 
+        // Clamp within call body
         newX = Math.max(0, Math.min(parent.width - pipEl.offsetWidth, newX));
         newY = Math.max(0, Math.min(parent.height - pipEl.offsetHeight, newY));
 
         pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
-
-        // Persist PiP position
         this._pipPos = { x: newX, y: newY };
       };
 
       const endDrag = () => {
         if (!this._dragState) return;
-        this._dragState.pipEl.classList.remove("dragging");
+        const { parent, pipEl } = this._dragState;
+
+        // Edge snapping + snap-away from controls
+        const pipRect = pipEl.getBoundingClientRect();
+        const parentRect = parent;
+        const controlsRect = this.callControls
+          ? this.callControls.getBoundingClientRect()
+          : null;
+
+        let newX = this._pipPos?.x || 0;
+        let newY = this._pipPos?.y || 0;
+
+        const margin = 16;
+        const snapThreshold = 32;
+
+        // Snap to left/right fixed zones with margin
+        const centerX = newX + pipRect.width / 2;
+        const midX = parentRect.width / 2;
+        if (centerX <= midX) {
+          newX = margin;
+        } else {
+          newX = Math.max(
+            margin,
+            parentRect.width - pipRect.width - margin
+          );
+        }
+
+        // Snap to top/bottom edges if near
+        if (newY < snapThreshold) {
+          newY = margin;
+        } else if (parentRect.height - (newY + pipRect.height) < snapThreshold) {
+          newY = Math.max(
+            margin,
+            parentRect.height - pipRect.height - margin
+          );
+        }
+
+        // Snap-away from controls: if overlapping controls area, push up
+        if (controlsRect) {
+          const pipBottom = parentRect.top + newY + pipRect.height;
+          const controlsTop = controlsRect.top;
+          const controlsBottom = controlsRect.bottom;
+
+          const pipLeft = parentRect.left + newX;
+          const pipRight = pipLeft + pipRect.width;
+
+          const controlsLeft = controlsRect.left;
+          const controlsRight = controlsRect.right;
+
+          const overlapsHoriz =
+            pipRight > controlsLeft && pipLeft < controlsRight;
+          const overlapsVert =
+            pipBottom > controlsTop && parentRect.top + newY < controlsBottom;
+
+          if (overlapsHoriz && overlapsVert) {
+            // Move PiP just above controls
+            const safeY =
+              controlsTop - parentRect.top - pipRect.height - margin;
+            newY = Math.max(margin, safeY);
+
+            // Re-snap horizontally to left/right zones
+            const controlsMidX = (controlsLeft + controlsRight) / 2;
+            if (pipLeft + pipRect.width / 2 <= controlsMidX) {
+              newX = margin;
+            } else {
+              newX = Math.max(
+                margin,
+                parentRect.width - pipRect.width - margin
+              );
+            }
+          }
+        }
+
+        pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
+        this._pipPos = { x: newX, y: newY };
+
+        pipEl.classList.remove("dragging");
         this._dragState = null;
       };
 
@@ -717,7 +991,6 @@ export class CallUI {
       pipEl.addEventListener("pointercancel", endDrag);
     };
 
-    // Make both PiPs draggable
     makeDraggable(this.localPip);
     makeDraggable(this.remotePip);
   }
@@ -740,6 +1013,7 @@ export class CallUI {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
+
 
 
 
