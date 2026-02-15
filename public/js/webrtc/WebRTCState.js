@@ -1,22 +1,18 @@
 // public/js/webrtc/WebRTCState.js
 // ============================================================
 // rtcState: single source of truth for call + media state
-// Used by:
-//   - WebRTCController (signaling, participants, queue)
-//   - WebRTCMedia (streams, audioOnly, cameraOff)
-//   - CallUI (modes, timers, upgrade, quality)
 // ============================================================
 
 export const rtcState = {
   // Identity
-  selfId: null,          // set by app/session layer
+  selfId: null,
 
   // Call/session
   inCall: false,
   isCaller: false,
   busy: false,
-  callId: null,          // current call identifier (1:1 or group)
-  status: "idle",        // "idle" | "ringing" | "in-call" | "on-hold"
+  callId: null,
+  status: "idle", // "idle" | "ringing" | "in-call" | "on-hold"
 
   peerId: null,
   peerName: null,
@@ -27,19 +23,23 @@ export const rtcState = {
   usedRelayFallback: false,
 
   // Participants (group-ready)
-  // peerId -> { peerId, joinedAt, state, ... }
   participants: new Map(),
 
-  // Inbound call queue (call waiting)
-  // [{ from, offer, incomingIsVideo, callId }]
+  // Inbound call queue
   inboundQueue: [],
 
   // Media
   localStream: null,
-  remoteStreams: {},   // peerId -> MediaStream
+  remoteStreams: {}, // peerId -> MediaStream
   audioOnly: false,
   cameraOff: false,
   micMuted: false,
+
+  // Screen share
+  screenSharing: false,
+
+  // Upgrade state
+  videoUpgrading: false,
 
   // Timers
   callStartTs: null,
@@ -48,6 +48,13 @@ export const rtcState = {
   // Network / quality
   lastQualityLevel: "poor",
   answering: false,
+
+  // Connection snapshots
+  connectionState: "new", // "connecting" | "connected" | "failed" | "closed"
+  iceState: "new",        // "checking" | "connected" | "failed" | "disconnected"
+
+  // Error tracking
+  lastError: null,
 
   // Stats snapshot → quality level
   updateFromStats({ videoLoss, rtt, outgoingBitrate }) {
