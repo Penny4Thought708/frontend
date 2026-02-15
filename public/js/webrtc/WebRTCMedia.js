@@ -3,6 +3,7 @@
 // WebRTCMedia: local media acquisition, attachment, remote routing,
 // speaking detection, screen share, and upgrade-to-video helpers.
 // Tuned for high quality, mobile-aware constraints, and bitrate hints.
+// Group-call ready and aligned with RemoteParticipants + WebRTCController.
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -26,7 +27,6 @@ const VIDEO_PROFILES = {
     width: { ideal: 960, max: 1280 },
     height: { ideal: 540, max: 720 },
     frameRate: { ideal: 24, max: 30 },
-    // Bitrate hints via advanced constraints (not guaranteed, but helpful)
     advanced: [
       { width: 960, height: 540 },
       { frameRate: 24 },
@@ -48,6 +48,12 @@ const AUDIO_CONSTRAINTS = {
   noiseSuppression: true,
   autoGainControl: true,
 };
+
+function ensureRemoteStreams() {
+  if (!rtcState.remoteStreams) {
+    rtcState.remoteStreams = {};
+  }
+}
 
 /* -------------------------------------------------------
    LOCAL MEDIA ACQUISITION (VOICE / VIDEO)
@@ -192,6 +198,7 @@ export function attachRemoteTrack(peerId, event) {
   }
 
   peerId = String(peerId);
+  ensureRemoteStreams();
 
   if (!rtcState.remoteStreams[peerId]) {
     rtcState.remoteStreams[peerId] = new MediaStream();
@@ -285,7 +292,7 @@ function startSpeakingDetection(peerId, stream) {
 }
 
 /* -------------------------------------------------------
-   SCREEN SHARE (OPTION B: simple track replace)
+   SCREEN SHARE (simple track replace)
    - High-res desktop, modest frame rate
    - Mobile-safe (if supported)
 ------------------------------------------------------- */
@@ -334,6 +341,7 @@ export async function upgradeLocalToVideo() {
     oldStream.getTracks().forEach((t) => t.stop());
   }
 
+  rtcState.audioOnly = false;
   return newStream;
 }
 
@@ -347,9 +355,16 @@ export function cleanupMedia() {
   }
 
   rtcState.localStream = null;
+
+  ensureRemoteStreams();
+  for (const key of Object.keys(rtcState.remoteStreams)) {
+    const rs = rtcState.remoteStreams[key];
+    if (rs) {
+      rs.getTracks().forEach((t) => t.stop());
+    }
+  }
   rtcState.remoteStreams = {};
 }
-
 
 
 
