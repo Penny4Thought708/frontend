@@ -965,7 +965,7 @@ _applyPrimaryLayout(remoteElOverride = null) {
           );
         }
 
-        // Snap-away from controls: if overlapping controls area, push up
+              // Snap-away from controls: if overlapping controls area, push up
         if (controlsRect) {
           const pipBottom = parentRect.top + newY + pipRect.height;
           const controlsTop = controlsRect.top;
@@ -983,24 +983,13 @@ _applyPrimaryLayout(remoteElOverride = null) {
             pipBottom > controlsTop && parentRect.top + newY < controlsBottom;
 
           if (overlapsHoriz && overlapsVert) {
-            // Move PiP just above controls
             const safeY =
               controlsTop - parentRect.top - pipRect.height - margin;
             newY = Math.max(margin, safeY);
-
-            // Re-snap horizontally to left/right zones
-            const controlsMidX = (controlsLeft + controlsRight) / 2;
-            if (pipLeft + pipRect.width / 2 <= controlsMidX) {
-              newX = margin;
-            } else {
-              newX = Math.max(
-                margin,
-                parentRect.width - pipRect.width - margin
-              );
-            }
           }
         }
 
+        // Apply final snapped position
         pipEl.style.transform = `translate(${newX}px, ${newY}px)`;
         this._pipPos = { x: newX, y: newY };
 
@@ -1008,39 +997,79 @@ _applyPrimaryLayout(remoteElOverride = null) {
         this._dragState = null;
       };
 
-      pipEl.addEventListener("pointerdown", (e) => {
-        pipEl.setPointerCapture(e.pointerId);
+      // Mouse events
+      pipEl.addEventListener("mousedown", (e) => {
+        e.preventDefault();
         startDrag(e.clientX, e.clientY);
       });
 
-      pipEl.addEventListener("pointermove", (e) => moveDrag(e.clientX, e.clientY));
-      pipEl.addEventListener("pointerup", endDrag);
-      pipEl.addEventListener("pointercancel", endDrag);
+      document.addEventListener("mousemove", (e) => {
+        if (this._dragState) moveDrag(e.clientX, e.clientY);
+      });
+
+      document.addEventListener("mouseup", () => {
+        if (this._dragState) endDrag();
+      });
+
+      // Touch events
+      pipEl.addEventListener("touchstart", (e) => {
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY);
+      });
+
+      pipEl.addEventListener("touchmove", (e) => {
+        const t = e.touches[0];
+        moveDrag(t.clientX, t.clientY);
+      });
+
+      pipEl.addEventListener("touchend", () => {
+        if (this._dragState) endDrag();
+      });
     };
 
+    // Make both PiPs draggable
     makeDraggable(this.localPip);
     makeDraggable(this.remotePip);
   }
 
   // -------------------------------------------------------
-  // TIMER + QUALITY
+  // DECLINE INBOUND CALL → VOICEMAIL
   // -------------------------------------------------------
-  _startTimerLoop() {
-    const tick = () => {
-      if (rtcState.inCall && rtcState.callStartTs && this.timerEl) {
-        const elapsed = Date.now() - rtcState.callStartTs;
-        this.timerEl.textContent = formatDuration(elapsed);
-      }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+  _declineInboundCall() {
+    log("declineInboundCall");
+
+    this._stopRinging();
+    this._setStatus("Call declined");
+
+    // Close call window
+    this._closeWindow();
+
+    // Open voicemail modal
+    this._openVoicemailModal();
   }
 
+  // -------------------------------------------------------
+  // TIMER LOOP
+  // -------------------------------------------------------
+  _startTimerLoop() {
+    setInterval(() => {
+      if (!rtcState.inCall || !rtcState.callStartTs) {
+        if (this.timerEl) this.timerEl.textContent = "00:00";
+        return;
+      }
+
+      const elapsed = Date.now() - rtcState.callStartTs;
+      if (this.timerEl) this.timerEl.textContent = formatDuration(elapsed);
+    }, 1000);
+  }
+
+  // -------------------------------------------------------
+  // QUALITY MONITOR
+  // -------------------------------------------------------
   _startQualityMonitor() {
     // Already wired via this.rtc.onQualityUpdate → this.qualityEl
   }
 }
-
 
 
 
