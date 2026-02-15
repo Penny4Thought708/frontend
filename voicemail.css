@@ -154,3 +154,34 @@
   font-size: 14px;
   line-height: 1.4;
 }
+.vm-card {
+  border-color: var(--vm-accent, rgba(120, 200, 255, 0.25));
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--vm-accent) 40%, transparent);
+}
+
+.vm-card:hover {
+  border-color: var(--vm-accent);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--vm-accent) 60%, transparent);
+}
+
+.vm-status-dot.unread {
+  background: var(--vm-accent);
+  box-shadow: 0 0 10px var(--vm-accent);
+}
+
+.vm-play-btn {
+  background: radial-gradient(circle at 30% 30%, var(--vm-accent), #003);
+  box-shadow: 0 0 12px var(--vm-accent);
+}
+
+.vm-play-btn:hover {
+  box-shadow: 0 0 18px var(--vm-accent);
+}
+
+.vm-waveform .bar {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--vm-accent) 20%, transparent),
+    var(--vm-accent)
+  );
+}
