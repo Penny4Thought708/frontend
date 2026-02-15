@@ -349,8 +349,8 @@ window.currentUserAvatar = user.avatar;
 
 
 
-        <!-- ============================================================
-     FULL-WINDOW CALL MODE (EXPANDS FROM CALL BUTTON)
+<!-- ============================================================
+     FULL-WINDOW CALL MODE
 ============================================================ -->
 <call-window id="callWindow" class="call-window hidden" data-window-id="video-call" aria-hidden="true">
 
@@ -363,12 +363,10 @@ window.currentUserAvatar = user.avatar;
 
       <!-- ===========================
            LOCAL PARTICIPANT TILE
-           (kept for primary swap, hidden by default via JS)
+           (hidden by default, shown only when local is primary)
       ============================ -->
-      <div class="participant local" id="localParticipant" data-peer-id="local">
+      <div class="participant local hidden" id="localParticipant" data-peer-id="local">
         <div class="media-wrapper">
-
-          <!-- Local video MUST be muted for autoplay -->
           <video id="localVideo" autoplay playsinline muted></video>
 
           <div class="avatar-wrapper">
@@ -387,7 +385,6 @@ window.currentUserAvatar = user.avatar;
       <template id="remoteParticipantTemplate">
         <div class="participant remote">
           <div class="media-wrapper">
-
             <video class="remoteVideo" autoplay playsinline muted></video>
 
             <div class="avatar-wrapper">
@@ -414,7 +411,7 @@ window.currentUserAvatar = user.avatar;
 
 
     <!-- ============================================================
-         CALL CONTROLS
+         CALL CONTROLS (ALWAYS ABOVE PIP)
     ============================================================ -->
     <div id="call-controls" class="call-controls hidden">
 
@@ -495,22 +492,22 @@ window.currentUserAvatar = user.avatar;
 
 
   <!-- ============================================================
-       LOCAL PIP WINDOW (MEET/FaceTime-style)
+       LOCAL PIP WINDOW (OVERLAY, DRAGGABLE, SNAP-AWAY)
   ============================================================ -->
-  <div id="localPip" class="local-pip hidden">
+  <div id="localPip" class="local-pip pip-overlay hidden">
     <video id="localPipVideo" autoplay playsinline muted></video>
   </div>
 
   <!-- ============================================================
-       NEW: REMOTE PIP WINDOW (for true swap)
+       REMOTE PIP WINDOW (OVERLAY, DRAGGABLE, SNAP-AWAY)
   ============================================================ -->
-  <div id="remotePip" class="remote-pip hidden">
+  <div id="remotePip" class="remote-pip pip-overlay hidden">
     <video id="remotePipVideo" autoplay playsinline muted></video>
   </div>
 
 
   <!-- ============================================================
-       VIDEO UPGRADE OVERLAY (FaceTime-style)
+       VIDEO UPGRADE OVERLAY
   ============================================================ -->
   <div id="video-upgrade-overlay" class="video-upgrade-overlay hidden" aria-hidden="true">
 
@@ -558,9 +555,6 @@ window.currentUserAvatar = user.avatar;
   </div>
 
 </call-window>
-
-
-
       </app-workspace>
 
     </app-main>
@@ -1667,6 +1661,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
