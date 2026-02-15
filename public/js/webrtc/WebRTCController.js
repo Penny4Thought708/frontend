@@ -258,7 +258,7 @@ export class WebRTCController {
      - Voice → video upgrade (isVideoUpgrade = true)
      - Call waiting + inbound queue
   ------------------------------------------------------- */
-  async _handleOffer(from, offer, isVideoUpgrade = false, callId = null) {
+    async _handleOffer(from, offer, isVideoUpgrade = false, callId = null) {
     const peerId = String(from);
     const sdp = offer?.sdp || "";
     const hasVideoInSdp = sdp.includes("m=video");
@@ -266,6 +266,16 @@ export class WebRTCController {
 
     if (callId && !rtcState.callId) {
       rtcState.callId = callId;
+    }
+
+    // ⭐ SPECIAL CASE: video upgrade while already in-call
+    if (isVideoUpgrade && rtcState.status === "in-call") {
+      rtcState.peerId = peerId;
+      rtcState.incomingOffer = offer;
+      rtcState.incomingIsVideo = true;
+      // Do NOT change status; we stay "in-call"
+      this.onIncomingOffer(peerId, offer);
+      return;
     }
 
     // If already in a call (1:1 or group), queue this offer
@@ -292,6 +302,7 @@ export class WebRTCController {
     // Do NOT touch local media here; CallUI decides via answerCall()
     this.onIncomingOffer(peerId, offer);
   }
+
 
   /* -------------------------------------------------------
      ANSWER CALL (CALLEE ACCEPTS)
@@ -352,6 +363,32 @@ export class WebRTCController {
     const pc = this._ensurePC(peerId);
     await pc.setRemoteDescription(answer);
     this._addParticipant(peerId, { state: "connected" });
+  }
+  /* -------------------------------------------------------
+     DECLINE INBOUND CALL (BEFORE ANSWER)
+  ------------------------------------------------------- */
+  declineCall(reason = "declined") {
+    const peerId = rtcState.peerId;
+    const callId = rtcState.callId;
+
+    // Reset local state
+    rtcState.inCall = false;
+    rtcState.incomingOffer = null;
+    rtcState.incomingIsVideo = false;
+    this._setStatus("idle");
+
+    // Notify remote explicitly, even if we were never "in-call"
+    if (peerId && callId) {
+      this.socket.emit("webrtc:signal", {
+        type: "leave",
+        from: rtcState.selfId,
+        to: peerId,              // ⭐ important for your server logs
+        callId,
+        reason,
+      });
+    }
+
+    this.onCallEnded();
   }
 
   /* -------------------------------------------------------
@@ -551,6 +588,7 @@ export class WebRTCController {
     }
   }
 }
+
 
 
 
