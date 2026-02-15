@@ -8,7 +8,8 @@
 //   - Mark-as-read
 //   - Real-time "new voicemail" events
 // ============================================================
- 
+
+import { API_BASE } from "../config.js";
 
 let activeAudio = null;
 let activeCard = null;
@@ -16,8 +17,6 @@ let activeCard = null;
 /* -------------------------------------------------------
    Load Voicemails
 ------------------------------------------------------- */
-import { API_BASE } from "../config.js";
-
 export async function loadVoicemails() {
   const listEl = document.getElementById("voiceMList");
   listEl.innerHTML = "";
@@ -25,7 +24,7 @@ export async function loadVoicemails() {
   try {
     const res = await fetch(`${API_BASE}/api/voicemail/list`, {
       method: "GET",
-      credentials: "include"   // REQUIRED for req.session.user_id
+      credentials: "include"
     });
 
     const json = await res.json();
@@ -43,7 +42,8 @@ export async function loadVoicemails() {
     }
 
     vms.forEach(vm => {
-      const card = renderVoicemailCard(vm);
+      const normalized = normalizeVoicemail(vm);
+      const card = renderVoicemailCard(normalized);
       listEl.appendChild(card);
     });
 
@@ -51,6 +51,23 @@ export async function loadVoicemails() {
     console.error("Voicemail load error:", err);
     listEl.innerHTML = `<li class="vm-empty">Error loading voicemails</li>`;
   }
+}
+
+/* -------------------------------------------------------
+   Normalize Backend → Frontend Fields
+------------------------------------------------------- */
+function normalizeVoicemail(vm) {
+  return {
+    ...vm,
+
+    // Backend returns created_at, UI expects timestamp
+    timestamp: vm.created_at,
+    dateString: new Date(vm.created_at).toLocaleString(),
+
+    // Placeholder until JOIN is added
+    from_name: `User ${vm.from_id}`,
+    from_avatar: "/public/img/default-avatar.png"
+  };
 }
 
 /* -------------------------------------------------------
@@ -147,21 +164,33 @@ function wireVoicemailCard(card, vm) {
 }
 
 /* -------------------------------------------------------
-   Mark as Read
+   Mark as Read (correct backend route)
 ------------------------------------------------------- */
 async function markVoicemailRead(id, card) {
   const dot = card.querySelector(".vm-status");
   if (!dot.classList.contains("unread")) return;
 
-  await fetch(`/api/voicemail/mark-read/${id}`, { method: "POST" });
+  await fetch(`${API_BASE}/api/voicemail/listened`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+
   dot.classList.remove("unread");
 }
 
 /* -------------------------------------------------------
-   Delete Voicemail
+   Delete Voicemail (correct backend route)
 ------------------------------------------------------- */
 async function deleteVoicemail(id, card) {
-  const res = await fetch(`/api/voicemail/delete/${id}`, { method: "DELETE" });
+  const res = await fetch(`${API_BASE}/api/voicemail/delete`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+
   const json = await res.json();
 
   if (json.success) {
@@ -207,8 +236,10 @@ function formatDuration(sec) {
 ------------------------------------------------------- */
 export function bindVoicemailSocket(socket) {
   socket.on("voicemail:new", (vm) => {
+    const normalized = normalizeVoicemail(vm);
     const list = document.getElementById("voiceMList");
-    const card = renderVoicemailCard(vm);
+    const card = renderVoicemailCard(normalized);
     list.prepend(card);
   });
 }
+
