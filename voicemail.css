@@ -1,187 +1,243 @@
 /* ============================================================
-   VOICEMAIL LIST CONTAINER — FIXES INVISIBLE LIST
+   PREMIUM NEON‑GLASS VOICEMAIL CARD
+   Clean layout • Better spacing • Theme‑aware accents
 ============================================================ */
 
-#voiceMList {
-  list-style: none;
-  margin: 0;
-  padding: 0 10px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#voiceMList .vm-empty {
-  padding: 20px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-/* ============================================================
-   VOICEMAIL CARD — NEON GLASS PREMIUM
-============================================================ */
-
+/* Root accent variable (set by JS per‑sender theme) */
 .vm-card {
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: fadeIn 0.25s ease;
+  --accent: var(--vm-accent, #00e0ff);
 }
 
+/* Card container */
+.vm-card {
+  position: relative;
+  padding: 14px 16px;
+  margin: 10px 0;
+  border-radius: 18px;
+
+  background: rgba(12, 18, 28, 0.55);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    0 0 18px color-mix(in srgb, var(--accent) 25%, transparent);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.vm-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.55),
+    0 0 22px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Unread glow */
+.vm-card .vm-status.unread {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: vmPulse 1.4s infinite ease-in-out;
+}
+
+@keyframes vmPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
 .vm-header {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 10px;
 }
 
 .vm-avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: 2px solid var(--accent);
-  box-shadow: var(--accent-glow);
+  object-fit: cover;
+  border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .vm-info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
 .vm-from {
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text);
+  color: #eaf6ff;
 }
 
 .vm-time {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
-.vm-status.unread {
+.vm-status {
+  margin-left: auto;
   width: 10px;
   height: 10px;
-  background: var(--accent);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--accent);
 }
 
+/* ============================================================
+   BODY (Play button + waveform + duration)
+============================================================ */
 .vm-body {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin: 6px 0 4px;
 }
 
+/* Play button */
 .vm-play-btn {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: var(--glass);
-  border: 1px solid var(--border);
+  border: none;
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text);
-  cursor: pointer;
-  transition: 0.2s ease;
+
+  background: radial-gradient(circle at 30% 30%, var(--accent), #003);
+  color: #020611;
+
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .vm-play-btn:hover {
-  background: var(--glass-heavy);
-  box-shadow: var(--accent-glow);
+  transform: scale(1.08);
+  box-shadow: 0 0 20px var(--accent);
 }
 
+/* Waveform */
 .vm-waveform {
   flex: 1;
-  height: 36px;
+  height: 38px;
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 3px;
+  overflow: hidden;
 }
 
 .vm-waveform .bar {
   width: 3px;
-  background: var(--accent);
-  border-radius: 2px;
-  opacity: 0.8;
-  animation: vmWave 1.2s ease infinite;
+  border-radius: 999px;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--accent) 20%, transparent),
+    var(--accent)
+  );
+  transform-origin: bottom;
+  transition: transform 0.12s ease;
+}
+
+/* Animate waveform while playing */
+.vm-card.vm-playing .vm-waveform .bar {
+  animation: vmWave 0.6s infinite alternate ease-in-out;
 }
 
 @keyframes vmWave {
-  0% { height: 20%; }
-  50% { height: 100%; }
-  100% { height: 20%; }
+  from { transform: scaleY(0.6); }
+  to   { transform: scaleY(1.1); }
 }
 
 .vm-duration {
-  width: 40px;
+  font-size: 0.8rem;
+  opacity: 0.8;
+  min-width: 40px;
   text-align: right;
-  color: var(--text-muted);
 }
 
+/* ============================================================
+   ACTIONS ROW
+============================================================ */
 .vm-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .vm-actions button {
-  background: var(--glass);
-  border: 1px solid var(--border);
+  border: none;
+  border-radius: 10px;
   padding: 6px 10px;
-  border-radius: var(--radius);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(230, 240, 255, 0.9);
   cursor: pointer;
-  transition: 0.2s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: background 0.12s ease, transform 0.12s ease;
 }
 
 .vm-actions button:hover {
-  background: var(--glass-heavy);
-  box-shadow: var(--accent-glow);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  transform: translateY(-1px);
 }
 
+/* ============================================================
+   TRANSCRIPT
+============================================================ */
 .vm-transcript {
+  margin-top: 10px;
   padding: 10px 12px;
-  background: var(--glass);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 14px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--accent);
+
+  font-size: 0.85rem;
   line-height: 1.4;
-}
-.vm-card {
-  border-color: var(--vm-accent, rgba(120, 200, 255, 0.25));
-  box-shadow: 0 12px 30px color-mix(in srgb, var(--vm-accent) 40%, transparent);
+  color: #dfefff;
+
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+
+  transition: max-height 0.25s ease, opacity 0.25s ease;
 }
 
-.vm-card:hover {
-  border-color: var(--vm-accent);
-  box-shadow: 0 16px 40px color-mix(in srgb, var(--vm-accent) 60%, transparent);
+.vm-transcript.open {
+  max-height: 300px;
+  opacity: 1;
 }
 
-.vm-status-dot.unread {
-  background: var(--vm-accent);
-  box-shadow: 0 0 10px var(--vm-accent);
+/* ============================================================
+   DELETE ANIMATION
+============================================================ */
+.vm-card.leaving {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.vm-play-btn {
-  background: radial-gradient(circle at 30% 30%, var(--vm-accent), #003);
-  box-shadow: 0 0 12px var(--vm-accent);
-}
-
-.vm-play-btn:hover {
-  box-shadow: 0 0 18px var(--vm-accent);
-}
-
-.vm-waveform .bar {
-  background: linear-gradient(
-    to top,
-    color-mix(in srgb, var(--vm-accent) 20%, transparent),
-    var(--vm-accent)
-  );
+/* ============================================================
+   EMPTY STATE
+============================================================ */
+.vm-empty {
+  text-align: center;
+  padding: 1rem;
+  opacity: 0.7;
+  font-size: 0.9rem;
 }
