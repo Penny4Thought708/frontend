@@ -86,6 +86,9 @@ function createTile(peerId, displayName, avatarUrl) {
   const node = safeCloneTemplate("remoteParticipantTemplate");
   if (!node) return null;
 
+  // ⭐ REQUIRED FOR CallUI layout engine
+  node.classList.add("participant", "remote");
+
   node.dataset.peerId = String(peerId);
 
   const videoEl = node.querySelector("video");
@@ -320,5 +323,6 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
+
 
 
