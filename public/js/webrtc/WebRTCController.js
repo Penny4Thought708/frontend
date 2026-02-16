@@ -86,6 +86,8 @@ export class WebRTCController {
     this.onRemoteUpgradedToVideo = () => {};
     this.onCallStatusChange = () => {};
     this.onParticipantUpdate = () => {};
+    // Add to constructor:
+    this._pendingCandidates = {};
 
     // UI hooks
     this.onScreenShareStarted = () => {};
@@ -521,22 +523,38 @@ export class WebRTCController {
   /* -------------------------------------------------------
      HANDLE ICE CANDIDATE
   ------------------------------------------------------- */
-  async _handleIce(peerId, candidate) {
-    peerId = String(peerId);
-    if (!candidate) {
-      log("Received null/empty ICE candidate from", peerId);
-      return;
+async _handleIce(peerId, candidate) {
+  peerId = String(peerId);
+  const pc = this._ensurePC(peerId);
+
+  // Buffer ICE until remote description is set
+  if (!pc.remoteDescription) {
+    if (!this._pendingCandidates[peerId]) {
+      this._pendingCandidates[peerId] = [];
     }
+    this._pendingCandidates[peerId].push(candidate);
+    return;
+  }
 
-    const pc = this._ensurePC(peerId);
+  try {
+    await pc.addIceCandidate(candidate);
+    log("ICE candidate added for", peerId);
+  } catch (err) {
+    log("ICE error for", peerId, err);
+  }
+}
 
+// After pc.setRemoteDescription(...)
+if (this._pendingCandidates[peerId]) {
+  for (const c of this._pendingCandidates[peerId]) {
     try {
-      await pc.addIceCandidate(candidate);
-      log("ICE candidate added for", peerId);
-    } catch (e) {
-      err("ICE error for", peerId, e);
+      await pc.addIceCandidate(c);
+    } catch (err) {
+      log("Buffered ICE error:", err);
     }
   }
+  delete this._pendingCandidates[peerId];
+}
 
   /* -------------------------------------------------------
      SCREEN SHARE (simple track replace)
@@ -767,3 +785,4 @@ export class WebRTCController {
     }
   }
 }
+
