@@ -196,7 +196,7 @@ window.currentUserAvatar = user.avatar;
       <app-workspace class="app-workspace">
 
         <!-- ============================================================
-             DIRECTORY PANEL (SLIDES FROM RAIL)
+             DIRECTORY PANEL
         ============================================================ -->
         <directory-panel id="directoryPanel" class="directory-panel">
 
@@ -226,10 +226,9 @@ window.currentUserAvatar = user.avatar;
               <ul id="messaging_list" class="con-list"></ul>
             </section>
 
-           <section id="dir-voicemail" class="dir-section hidden voicemail-ui">
-            <ul id="voiceMList" class="con-list"></ul>
-          </section>
-
+            <section id="dir-voicemail" class="dir-section hidden voicemail-ui">
+              <ul id="voiceMList" class="con-list"></ul>
+            </section>
 
             <section id="dir-blocked" class="dir-section hidden">
               <ul id="blocked-contacts" class="con-list"></ul>
@@ -241,316 +240,272 @@ window.currentUserAvatar = user.avatar;
 
 
 
-       <!-- ============================================================
-     MESSAGING PANEL (ALWAYS VISIBLE)
-============================================================ -->
-<messaging-panel id="messagingPanel" class="messaging-panel">
+        <!-- ============================================================
+             MESSAGING PANEL
+        ============================================================ -->
+        <messaging-panel id="messagingPanel" class="messaging-panel">
 
-  <header class="msg-header">
-    <h2 id="msgHeaderName"></h2>
+          <header class="msg-header">
+            <h2 id="msgHeaderName"></h2>
 
-    <div class="msg-actions">
-      <button id="voiceBtn" type="button">
-        <span class="material-symbols-outlined">mic</span>
-      </button>
+            <div class="msg-actions">
+              <button id="voiceBtn" type="button">
+                <span class="material-symbols-outlined">mic</span>
+              </button>
 
-      <button id="videoBtn" type="button" data-window-open="video-call">
-        <span class="material-symbols-outlined">videocam</span>
-      </button>
+              <button id="videoBtn" type="button" data-window-open="video-call">
+                <span class="material-symbols-outlined">videocam</span>
+              </button>
 
-      <button id="call-debug-toggle" type="button">
-        <span class="material-symbols-outlined">bug_report</span>
-      </button>
-    </div>
-  </header>
+              <button id="call-debug-toggle" type="button">
+                <span class="material-symbols-outlined">bug_report</span>
+              </button>
+            </div>
+          </header>
 
-  <div id="messageWin" class="message-window">
-    <div id="newMessagesPill" class="new-messages-pill hidden">New Messages</div>
+          <div id="messageWin" class="message-window">
+            <div id="newMessagesPill" class="new-messages-pill hidden">New Messages</div>
 
-    <div id="messageEmptyState" class="empty-state">
-      <p>Select a contact to start messaging</p>
-    </div>
+            <div id="messageEmptyState" class="empty-state">
+              <p>Select a contact to start messaging</p>
+            </div>
 
-    <!-- Typing indicator lives inside the scroll area, at the bottom -->
-    <div id="typingIndicator" class="typing-indicator">
-      <div class="typing-bubble">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
-  </div>
-
-  <div class="recording-indicator">
-    <div class="recording-bubble">
-      <span class="mic-icon">🎤</span>
-      <span class="recording-text">Recording audio…</span>
-      <div class="pulse-ring"></div>
-    </div>
-  </div>
-
-  <div id="img-viewer" class="img-viewer">
-    <img id="img-viewer-img" alt="Preview" />
-  </div>
-
-  <div id="attachmentPreview" class="attachment-preview hidden"></div>
-
-  <form id="text_box_reply" class="composer">
-    <button id="plusBtn" type="button">
-      <span class="material-symbols-outlined">add</span>
-    </button>
-
-    <div id="message_input" class="msg-input" contenteditable="true"></div>
-
-    <button id="micBtn" type="button">
-      <span class="material-symbols-outlined">mic</span>
-    </button>
-
-    <button type="submit">
-      <span class="material-symbols-outlined">send</span>
-    </button>
-
-    <input id="attachment_input" type="file" multiple hidden />
-  </form>
-
-  <!-- ============================================================
-       BOTTOM SHEET
-  ============================================================ -->
-  <div id="bottomSheet" class="bottom-sheet">
-    <div class="sheet-handle"></div>
-    <button class="sheet-item" id="sheetCamera">📷 Camera</button>
-    <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
-    <button class="sheet-item" id="sheetFile">📎 File</button>
-    <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
-    <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
-    <button class="sheet-item" id="sheetGif">🎬 GIF</button>
-  </div>
-
-  <!-- ============================================================
-       EMOJI PICKER
-  ============================================================ -->
-  <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
-
-  <!-- ============================================================
-       GIF PICKER
-  ============================================================ -->
-  <div id="gifPicker" class="gif-picker hidden">
-    <input
-      type="text"
-      id="gifSearch"
-      class="gif-search"
-      placeholder="Search GIFs..."/>
-    <div id="gifResults" class="gif-results"></div>
-  </div>
-
-</messaging-panel>
-
-<!-- ============================================================
-     FULL-WINDOW CALL MODE
-============================================================ -->
-<div
-  id="callWindow"
-  class="call-window hidden"
-  data-window-id="video-call"
-  aria-hidden="true"
->
-
-  <div class="call-body">
-
-    <!-- PARTICIPANT GRID -->
-    <div id="callGrid" class="call-grid">
-
-      <!-- LOCAL PARTICIPANT TILE -->
-      <div
-        class="participant local hidden"
-        id="localParticipant"
-        data-peer-id="local"
-      >
-        <div class="media-wrapper">
-          <video id="localVideo" autoplay playsinline muted></video>
-          <div class="avatar-wrapper">
-            <img
-              id="localAvatarImg"
-              src="img/defaultUser.png"
-              alt="Local Avatar"
-            />
-            <div class="voice-pulse"></div>
-          </div>
-        </div>
-        <div class="presenting-badge">Presenting</div>
-        <div class="name-tag">You</div>
-      </div>
-
-      <!-- REMOTE PARTICIPANT TEMPLATE -->
-      <template id="remoteParticipantTemplate">
-        <div class="participant remote" data-peer-id="">
-          <div class="media-wrapper">
-            <video class="remoteVideo" autoplay playsinline></video>
-            <div class="avatar-wrapper">
-              <img
-                class="avatar-img"
-                src="img/defaultUser.png"
-                alt="Avatar"
-              />
-              <div class="voice-pulse"></div>
+            <div id="typingIndicator" class="typing-indicator">
+              <div class="typing-bubble">
+                <span></span><span></span><span></span>
+              </div>
             </div>
           </div>
-          <div class="presenting-badge">Presenting</div>
-          <div class="name-tag"></div>
-        </div>
-      </template>
 
-    </div> <!-- end callGrid -->
+          <div class="recording-indicator">
+            <div class="recording-bubble">
+              <span class="mic-icon">🎤</span>
+              <span class="recording-text">Recording audio…</span>
+              <div class="pulse-ring"></div>
+            </div>
+          </div>
 
-    <!-- CALL STATUS + TIMER -->
-    <div class="call-top-info">
-      <div id="call-status" class="call-status">Connecting…</div>
-      <div id="call-timer" class="call-timer">00:00</div>
-    </div>
+          <div id="img-viewer" class="img-viewer">
+            <img id="img-viewer-img" alt="Preview" />
+          </div>
 
-    <!-- CALL CONTROLS -->
-    <div id="call-controls" class="call-controls hidden">
+          <div id="attachmentPreview" class="attachment-preview hidden"></div>
 
-      <!-- Inbound-only controls -->
-      <button id="decline-call" class="control-btn inbound-only" type="button">
-        <span class="material-symbols-outlined">call_end</span>
-      </button>
+          <form id="text_box_reply" class="composer">
+            <button id="plusBtn" type="button">
+              <span class="material-symbols-outlined">add</span>
+            </button>
 
-      <button id="answer-call" class="control-btn inbound-only" type="button">
-        <span class="material-symbols-outlined">call</span>
-      </button>
+            <div id="message_input" class="msg-input" contenteditable="true"></div>
 
-      <!-- Active-call controls -->
-      <button id="mute-call" class="control-btn active-only" type="button">
-        <span class="material-symbols-outlined">mic_off</span>
-      </button>
+            <button id="micBtn" type="button">
+              <span class="material-symbols-outlined">mic</span>
+            </button>
 
-      <button id="camera-toggle" class="control-btn active-only" type="button">
-        <span class="material-symbols-outlined">videocam</span>
-      </button>
+            <button type="submit">
+              <span class="material-symbols-outlined">send</span>
+            </button>
 
-      <button id="end-call" class="control-btn active-only" type="button">
-        <span class="material-symbols-outlined">call_end</span>
-      </button>
+            <input id="attachment_input" type="file" multiple hidden />
+          </form>
 
-      <!-- MORE CONTROLS MENU -->
-      <div class="more-controls">
-        <button id="more-controls-btn" class="control-btn" type="button">
-          <span class="material-symbols-outlined">more_vert</span>
-        </button>
+          <!-- Bottom Sheet -->
+          <div id="bottomSheet" class="bottom-sheet">
+            <div class="sheet-handle"></div>
+            <button class="sheet-item" id="sheetCamera">📷 Camera</button>
+            <button class="sheet-item" id="sheetGallery">🖼️ Gallery</button>
+            <button class="sheet-item" id="sheetFile">📎 File</button>
+            <button class="sheet-item" id="sheetAudio">🎤 Voice Message</button>
+            <button class="sheet-item" id="sheetEmoji">😀 Emoji</button>
+            <button class="sheet-item" id="sheetGif">🎬 GIF</button>
+          </div>
 
-        <div id="more-controls-menu" class="more-controls-menu hidden">
-          <button id="share-screen" type="button">
-            <span class="material-symbols-outlined">screen_share</span>
-            Share Screen
-          </button>
-          <button id="ai-noise-toggle" type="button">
-            <span class="material-symbols-outlined">graphic_eq</span>
-            Noise Suppression
-          </button>
-          <button id="record-call" type="button">
-            <span class="material-symbols-outlined">fiber_manual_record</span>
-            Record Call
-          </button>
-          <button id="call-history-toggle" type="button">
-            <span class="material-symbols-outlined">history</span>
-            Call History
-          </button>
-        </div>
-      </div>
+          <emoji-picker id="emojiPicker" data-no-storage class="emoji-picker"></emoji-picker>
 
-    </div> <!-- end call-controls -->
+          <div id="gifPicker" class="gif-picker hidden">
+            <input type="text" id="gifSearch" class="gif-search" placeholder="Search GIFs..." />
+            <div id="gifResults" class="gif-results"></div>
+          </div>
 
-    <!-- REMOTE AUDIO -->
-    <audio id="remoteAudio" autoplay></audio>
-
-    <!-- CALL INFO BAR -->
-    <div class="call-info-bar">
-      <div
-        id="call-quality-indicator"
-        class="quality-indicator"
-        data-level="excellent">
-        excellent
-      </div>
-      <button id="call-debug-toggle" class="debug-toggle" type="button">
-        <span class="material-symbols-outlined">bug_report</span>
-      </button>
-    </div>
-
-  </div> <!-- end call-body -->
-
-  <!-- LOCAL PIP (overlay over main video) -->
-  <div id="localPip" class="local-pip hidden pip-anim">
-    <video id="localPipVideo" autoplay playsinline muted></video>
-  </div>
-
-  <!-- REMOTE PIP (for true swap) -->
-  <div id="remotePip" class="remote-pip hidden pip-anim">
-    <video id="remotePipVideo" autoplay playsinline></video>
-  </div>
-
-  <!-- VIDEO UPGRADE OVERLAY -->
-  <div
-    id="video-upgrade-overlay"
-    class="video-upgrade-overlay hidden"
-    aria-hidden="true">
-
-    <!-- MOBILE: floating card -->
-    <div class="video-upgrade-card mobile-only">
-      <div class="video-upgrade-preview">
-        <span class="material-symbols-outlined video-icon">videocam</span>
-      </div>
-      <div class="video-upgrade-text">
-        <div class="title">Switch to video?</div>
-        <div class="subtitle">The other person wants to start video.</div>
-      </div>
-      <div class="video-upgrade-actions">
-        <button
-          id="video-upgrade-decline"
-          class="btn-upgrade-decline"
-          type="button">
-          <span class="material-symbols-outlined">call_end</span>
-          Keep Audio
-        </button>
-        <button
-          id="video-upgrade-accept"
-          class="btn-upgrade-accept"
-          type="button">
-          <span class="material-symbols-outlined">videocam</span>
-          Accept Video
-        </button>
-      </div>
-    </div>
-
-    <!-- DESKTOP: fullscreen blur -->
-    <div class="video-upgrade-desktop-overlay desktop-only">
-      <div class="video-upgrade-desktop-inner">
-        <div class="video-upgrade-desktop-text">
-          <div class="title">Switch to video?</div>
-          <div class="subtitle">The other person wants to start video.</div>
-        </div>
-        <div class="video-upgrade-desktop-actions">
-          <button
-            id="video-upgrade-decline-desktop"
-            class="btn-upgrade-decline"
-            type="button">
-            <span class="material-symbols-outlined">call_end</span>
-            Keep Audio
-          </button>
-          <button
-            id="video-upgrade-accept-desktop"
-            class="btn-upgrade-accept"
-            type="button">
-            <span class="material-symbols-outlined">videocam</span>
-            Accept Video
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-</div>
+        </messaging-panel>
 
 
+
+        <!-- ============================================================
+             FULL-WINDOW CALL MODE
+        ============================================================ -->
+        <div
+          id="callWindow"
+          class="call-window hidden"
+          data-window-id="video-call"
+        >
+
+          <div class="call-body">
+
+            <!-- PARTICIPANT GRID -->
+            <div id="callGrid" class="call-grid">
+
+              <!-- LOCAL PARTICIPANT TILE -->
+              <div class="participant local hidden" id="localParticipant" data-peer-id="local">
+                <div class="media-wrapper">
+                  <video id="localVideo" autoplay playsinline muted></video>
+                  <div class="avatar-wrapper">
+                    <img id="localAvatarImg" src="img/defaultUser.png" alt="Local Avatar" />
+                    <div class="voice-pulse"></div>
+                  </div>
+                </div>
+                <div class="presenting-badge">Presenting</div>
+                <div class="name-tag">You</div>
+              </div>
+
+              <!-- REMOTE PARTICIPANT TEMPLATE -->
+              <template id="remoteParticipantTemplate">
+                <div class="participant remote" data-peer-id="">
+                  <div class="media-wrapper">
+                    <video class="remoteVideo" autoplay playsinline></video>
+                    <div class="avatar-wrapper">
+                      <img class="avatar-img" src="img/defaultUser.png" alt="Avatar" />
+                      <div class="voice-pulse"></div>
+                    </div>
+                  </div>
+                  <div class="presenting-badge">Presenting</div>
+                  <div class="name-tag"></div>
+                </div>
+              </template>
+
+            </div> <!-- end callGrid -->
+
+            <!-- LOCAL PIP -->
+            <div id="localPip" class="local-pip hidden pip-anim">
+              <video id="localPipVideo" autoplay playsinline muted></video>
+            </div>
+
+            <!-- REMOTE PIP -->
+            <div id="remotePip" class="remote-pip hidden pip-anim">
+              <video id="remotePipVideo" autoplay playsinline></video>
+            </div>
+
+            <!-- CALL STATUS + TIMER -->
+            <div class="call-top-info">
+              <div id="call-status" class="call-status">Connecting…</div>
+              <div id="call-timer" class="call-timer">00:00</div>
+            </div>
+
+            <!-- CALL CONTROLS -->
+            <div id="call-controls" class="call-controls hidden">
+
+              <!-- Inbound-only controls -->
+              <button id="decline-call" class="control-btn inbound-only" type="button">
+                <span class="material-symbols-outlined">call_end</span>
+              </button>
+
+              <button id="answer-call" class="control-btn inbound-only" type="button">
+                <span class="material-symbols-outlined">call</span>
+              </button>
+
+              <!-- Active-call controls -->
+              <button id="mute-call" class="control-btn active-only" type="button">
+                <span class="material-symbols-outlined">mic_off</span>
+              </button>
+
+              <button id="camera-toggle" class="control-btn active-only" type="button">
+                <span class="material-symbols-outlined">videocam</span>
+              </button>
+
+              <button id="end-call" class="control-btn active-only" type="button">
+                <span class="material-symbols-outlined">call_end</span>
+              </button>
+
+              <!-- MORE CONTROLS MENU -->
+              <div class="more-controls">
+                <button id="more-controls-btn" class="control-btn" type="button">
+                  <span class="material-symbols-outlined">more_vert</span>
+                </button>
+
+                <div id="more-controls-menu" class="more-controls-menu hidden">
+                  <button id="share-screen" type="button">
+                    <span class="material-symbols-outlined">screen_share</span>
+                    Share Screen
+                  </button>
+                  <button id="ai-noise-toggle" type="button">
+                    <span class="material-symbols-outlined">graphic_eq</span>
+                    Noise Suppression
+                  </button>
+                  <button id="record-call" type="button">
+                    <span class="material-symbols-outlined">fiber_manual_record</span>
+                    Record Call
+                  </button>
+                  <button id="call-history-toggle" type="button">
+                    <span class="material-symbols-outlined">history</span>
+                    Call History
+                  </button>
+                </div>
+              </div>
+
+            </div> <!-- end call-controls -->
+
+            <!-- REMOTE AUDIO -->
+            <audio id="remoteAudio" autoplay></audio>
+
+            <!-- CALL INFO BAR -->
+            <div class="call-info-bar">
+              <div id="call-quality-indicator" class="quality-indicator" data-level="excellent">
+                excellent
+              </div>
+              <button id="call-debug-toggle" class="debug-toggle" type="button">
+                <span class="material-symbols-outlined">bug_report</span>
+              </button>
+            </div>
+
+          </div> <!-- end call-body -->
+
+          <!-- VIDEO UPGRADE OVERLAY -->
+          <div id="video-upgrade-overlay" class="video-upgrade-overlay hidden">
+
+            <!-- MOBILE -->
+            <div class="video-upgrade-card mobile-only">
+              <div class="video-upgrade-preview">
+                <span class="material-symbols-outlined video-icon">videocam</span>
+              </div>
+              <div class="video-upgrade-text">
+                <div class="title">Switch to video?</div>
+                <div class="subtitle">The other person wants to start video.</div>
+              </div>
+              <div class="video-upgrade-actions">
+                <button id="video-upgrade-decline" class="btn-upgrade-decline" type="button">
+                  <span class="material-symbols-outlined">call_end</span>
+                  Keep Audio
+                </button>
+                <button id="video-upgrade-accept" class="btn-upgrade-accept" type="button">
+                  <span class="material-symbols-outlined">videocam</span>
+                  Accept Video
+                </button>
+              </div>
+            </div>
+
+            <!-- DESKTOP -->
+            <div class="video-upgrade-desktop-overlay desktop-only">
+              <div class="video-upgrade-desktop-inner">
+                <div class="video-upgrade-desktop-text">
+                  <div class="title">Switch to video?</div>
+                  <div class="subtitle">The other person wants to start video.</div>
+                </div>
+                <div class="video-upgrade-desktop-actions">
+                  <button id="video-upgrade-decline-desktop" class="btn-upgrade-decline" type="button">
+                    <span class="material-symbols-outlined">call_end</span>
+                    Keep Audio
+                  </button>
+                  <button id="video-upgrade-accept-desktop" class="btn-upgrade-accept" type="button">
+                    <span class="material-symbols-outlined">videocam</span>
+                    Accept Video
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div> <!-- end callWindow -->
 
       </app-workspace>
 
@@ -559,7 +514,7 @@ window.currentUserAvatar = user.avatar;
 
 
     <!-- ============================================================
-         FLOATING WINDOWS (PROFILE, SETTINGS, IMAGE VIEWER)
+         FLOATING WINDOWS
     ============================================================ -->
     <app-floating-windows>
 
@@ -616,8 +571,13 @@ window.currentUserAvatar = user.avatar;
             <a id="fullProfileInstagram" href="#" target="_blank" rel="noopener noreferrer"></a>
           </div>
 
-          <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
-          <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
+                 <p class="profile-field"><strong>Status:</strong> 
+            <span id="fullProfileShowOnline"></span>
+          </p>
+
+          <p class="profile-field"><strong>Messages:</strong> 
+            <span id="fullProfileAllowMessages"></span>
+          </p>
 
           <div class="copy-row">
             <button id="copyEmailBtn" type="button">Copy Email</button>
@@ -669,7 +629,8 @@ window.currentUserAvatar = user.avatar;
 
         <div class="vm-body">
           <div class="vm-wave">
-            <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
+            <div class="vm-bar"></div><div class="vm-bar"></div><div class="vm-bar"></div>
+            <div class="vm-bar"></div><div class="vm-bar"></div>
           </div>
 
           <div id="vmStatus" class="vm-status">Ready to record</div>
@@ -709,7 +670,7 @@ window.currentUserAvatar = user.avatar;
         <div class="ut-title">User unavailable</div>
         <div class="ut-message"></div>
         <div class="ut-options">
-                  <button id="utVoiceBtn" type="button">🎙️ Voice Message</button>
+          <button id="utVoiceBtn" type="button">🎙️ Voice Message</button>
           <button id="utVideoBtn" type="button">📹 Video Message</button>
           <button id="utTextBtn" type="button">💬 Message</button>
         </div>
@@ -718,9 +679,11 @@ window.currentUserAvatar = user.avatar;
       <toast id="genericToast" class="toast hidden">
         <div class="gt-message"></div>
       </toast>
- <toast id="mediaToast" class="media-toast hidden">
+
+      <toast id="mediaToast" class="media-toast hidden">
         <div class="media-message">No camera or microphone detected</div>
       </toast>
+
     </app-toasts>
 
 
@@ -763,33 +726,37 @@ window.currentUserAvatar = user.avatar;
     <audio id="notification" src="notification.mp3" preload="auto"></audio>
 
   </app-shell>
-<!-- Delete menu bottom sheet -->
-<div id="deleteMenuSheet" class="delete-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">Delete message?</div>
-
-  <button type="button" class="sheet-btn danger" id="btnDeleteForEveryone">
-    Delete for everyone
-  </button>
-
-  <button type="button" class="sheet-btn" id="btnDeleteForMe">
-    Delete for me
-  </button>
-
-  <button type="button" class="sheet-btn secondary" id="btnDeleteCancel">
-    Cancel
-  </button>
-</div>
 
 
-<!-- Undo toast -->
-<div id="undoToast" class="undo-toast">
-  <span class="undo-text">Message deleted</span>
-  <button type="button" id="btnUndoDelete" class="undo-btn">UNDO</button>
-</div>
-<div id="pickerBackdrop" class="picker-backdrop hidden"></div>
+  <!-- Delete menu bottom sheet -->
+  <div id="deleteMenuSheet" class="delete-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Delete message?</div>
+
+    <button type="button" class="sheet-btn danger" id="btnDeleteForEveryone">
+      Delete for everyone
+    </button>
+
+    <button type="button" class="sheet-btn" id="btnDeleteForMe">
+      Delete for me
+    </button>
+
+    <button type="button" class="sheet-btn secondary" id="btnDeleteCancel">
+      Cancel
+    </button>
+  </div>
+
+
+  <!-- Undo toast -->
+  <div id="undoToast" class="undo-toast">
+    <span class="undo-text">Message deleted</span>
+    <button type="button" id="btnUndoDelete" class="undo-btn">UNDO</button>
+  </div>
+
+  <div id="pickerBackdrop" class="picker-backdrop hidden"></div>
 
 </body>
+
 
 
 
@@ -1658,6 +1625,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
