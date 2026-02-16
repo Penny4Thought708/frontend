@@ -92,6 +92,9 @@ export class CallUI {
     this.callStartTime = null;
     this.timerInterval = null;
 
+    // Outbound voice→video upgrade state (iPhone-style)
+    this.outboundVideoUpgradePending = false;
+
     // -------------------------------------------------------
     // INIT
     // -------------------------------------------------------
@@ -150,6 +153,7 @@ export class CallUI {
 
   answerCall() {
     if (this.windowEl.classList.contains("video-upgrade-mode")) {
+      // Inbound video upgrade accept
       this._exitUpgradeOverlay();
       rtcState.audioOnly = false;
       rtcState.status = "in-call";
@@ -173,14 +177,35 @@ export class CallUI {
     this._stopRinging();
     this.rtc.endCall(reason);
     rtcState.status = "idle";
+    this.outboundVideoUpgradePending = false;
+    this.windowEl?.classList.remove("outbound-video-upgrade");
     this._resetUI();
   }
 
   async upgradeToVideo() {
-    await this.rtc.upgradeToVideo();
+    // Outbound voice→video upgrade (iPhone-style)
+    this.outboundVideoUpgradePending = true;
     rtcState.audioOnly = false;
     rtcState.status = "in-call";
-    this._enterActiveVideoMode();
+
+    // On mobile: local video should take 100% of the screen
+    // while waiting for the callee to accept.
+    if (isMobile()) {
+      this.windowEl?.classList.add("outbound-video-upgrade");
+      this._setStatus("Switching to video…");
+      // Make local the primary tile during preview
+      this.primaryIsRemote = false;
+      this._applyModeFlags({ inbound: false, active: true, video: true });
+      this._applyPrimaryLayout();
+    } else {
+      // Desktop can just behave like normal video mode while waiting
+      this._setStatus("Switching to video…");
+      this._applyModeFlags({ inbound: false, active: true, video: true });
+    }
+
+    await this.rtc.upgradeToVideo();
+    // Final layout flip happens when remote actually accepts
+    // via onRemoteUpgradedToVideo.
   }
 
   // ===========================================================
@@ -199,6 +224,8 @@ export class CallUI {
 
     this.rtc.onCallEnded = () => {
       rtcState.status = "idle";
+      this.outboundVideoUpgradePending = false;
+      this.windowEl?.classList.remove("outbound-video-upgrade");
       this._resetUI();
     };
 
@@ -209,6 +236,8 @@ export class CallUI {
 
     this.rtc.onRemoteLeave = () => {
       rtcState.status = "idle";
+      this.outboundVideoUpgradePending = false;
+      this.windowEl?.classList.remove("outbound-video-upgrade");
       this._resetUI();
     };
 
@@ -219,6 +248,7 @@ export class CallUI {
         offer.sdp.includes("m=video");
 
       if (isUpgrade) {
+        // Inbound video upgrade: show blurred preview + overlay
         this._enterInboundUpgradeMode(peerId);
       } else {
         this.receiveInboundCall(peerId, !rtcState.audioOnly);
@@ -226,9 +256,18 @@ export class CallUI {
     };
 
     this.rtc.onRemoteUpgradedToVideo = () => {
+      // Remote accepted the upgrade
       this.cameraOnBeep?.play().catch(() => {});
       rtcState.audioOnly = false;
       rtcState.status = "in-call";
+
+      // When accepted:
+      // - remote video becomes 100% (primary)
+      // - local video overlays as PiP
+      this.outboundVideoUpgradePending = false;
+      this.windowEl?.classList.remove("outbound-video-upgrade");
+
+      this.primaryIsRemote = true;
       this._enterActiveVideoMode();
       this._setStatus("Camera enabled by other side");
     };
@@ -271,12 +310,15 @@ export class CallUI {
     });
 
     this.camBtn?.addEventListener("click", async () => {
-      if (rtcState.audioOnly || !rtcState.localStream?.getVideoTracks().length) {
+      const stream = rtcState.localStream;
+
+      // If we're in audio-only or have no video tracks yet,
+      // trigger the voice→video upgrade flow.
+      if (rtcState.audioOnly || !stream?.getVideoTracks().length) {
         await this.upgradeToVideo();
         return;
       }
 
-      const stream = rtcState.localStream;
       const enabled = stream.getVideoTracks().some(t => t.enabled);
       const newEnabled = !enabled;
 
@@ -307,7 +349,7 @@ export class CallUI {
       this.moreMenu.classList.remove("show");
     });
 
-    // Upgrade overlay
+    // Upgrade overlay (inbound)
     this.upgradeAccept?.addEventListener("click", () => this.answerCall());
     this.upgradeDecline?.addEventListener("click", () => this._exitUpgradeOverlay());
     this.upgradeAcceptDesktop?.addEventListener("click", () => this.answerCall());
@@ -337,7 +379,7 @@ export class CallUI {
   }
 
   // ===========================================================
-  // DOUBLE TAP HANDLER (FIXED)
+  // DOUBLE TAP HANDLER
   // ===========================================================
   _bindDoubleTap(element, callback) {
     if (!element) return;
@@ -396,7 +438,7 @@ export class CallUI {
   }
 
   // ===========================================================
-  // INBOUND OFFER HANDLING
+  // INBOUND OFFER HANDLING (VIDEO UPGRADE)
   // ===========================================================
   _enterInboundUpgradeMode(peerId) {
     this._openWindow();
@@ -411,6 +453,7 @@ export class CallUI {
     this.camBtn.classList.add("hidden");
     this.endBtn.classList.add("hidden");
 
+    // Blur/preview the grid while showing overlay
     if (isMobile()) {
       this.callGrid.classList.add("mobile-video-preview");
     } else {
@@ -465,7 +508,8 @@ export class CallUI {
         "voice-only-call",
         "camera-off",
         "video-upgrade-mode",
-        "screen-sharing"
+        "screen-sharing",
+        "outbound-video-upgrade"
       );
       this.windowEl.classList.add("hidden");
     }
@@ -536,7 +580,7 @@ export class CallUI {
     this._closeWindow();
     this._setStatus("Call ended");
 
-       if (this.timerEl) this.timerEl.textContent = "00:00";
+    if (this.timerEl) this.timerEl.textContent = "00:00";
     this.callStartTime = null;
 
     if (this.timerInterval) {
@@ -703,6 +747,7 @@ export class CallUI {
     };
 
     if (this.primaryIsRemote) {
+      // Remote is primary (full-size), local in PiP
       this.localTile?.classList.add("hidden");
       remoteEl.classList.remove("hidden");
 
@@ -711,6 +756,7 @@ export class CallUI {
 
       this.remotePip?.classList.add("hidden");
     } else {
+      // Local is primary (full-size), remote in PiP
       this.localTile?.classList.remove("hidden");
       remoteEl.classList.add("hidden");
 
@@ -880,6 +926,7 @@ export class CallUI {
     this.callGrid?.classList.remove("screen-share-mode");
   }
 }
+
 
 
 
