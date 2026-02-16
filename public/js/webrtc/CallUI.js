@@ -1,15 +1,6 @@
 // ============================================================
-// CallUI.js — Fully Rewritten (Google Meet / FaceTime Style)
-// ============================================================
-// This rewrite provides:
-//   • Deterministic state machine
-//   • Perfect primary/secondary video logic
-//   • Stable PiP (drag, snap, swap)
-//   • Stable inbound/outbound/active modes
-//   • Stable voice→video upgrade flow
-//   • Stable call window lifecycle
-//   • Perfect alignment with your HTML + CSS
-//   • Zero layout races, zero flicker, zero disappearing window
+// CallUI.js — Fully Integrated with WebRTCController
+// Google Meet / FaceTime–grade UI controller
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -42,34 +33,28 @@ export class CallUI {
     this.callBody = this.windowEl?.querySelector(".call-body");
     this.callGrid = document.getElementById("callGrid");
 
-    // Local tile
     this.localTile = document.getElementById("localParticipant");
     this.localVideo = document.getElementById("localVideo");
 
-    // Remote audio
     this.remoteAudio = document.getElementById("remoteAudio");
 
-    // PiP
     this.localPip = document.getElementById("localPip");
     this.localPipVideo = document.getElementById("localPipVideo");
 
     this.remotePip = document.getElementById("remotePip");
     this.remotePipVideo = document.getElementById("remotePipVideo");
 
-    // Controls
     this.controls = document.getElementById("call-controls");
     this.statusEl = document.getElementById("call-status");
     this.timerEl = document.getElementById("call-timer");
     this.qualityEl = document.getElementById("call-quality-indicator");
 
-    // Buttons
     this.answerBtn = document.getElementById("answer-call");
     this.declineBtn = document.getElementById("decline-call");
     this.muteBtn = document.getElementById("mute-call");
     this.camBtn = document.getElementById("camera-toggle");
     this.endBtn = document.getElementById("end-call");
 
-    // More menu
     this.moreBtn = document.getElementById("more-controls-btn");
     this.moreMenu = document.getElementById("more-controls-menu");
     this.shareBtn = document.getElementById("share-screen");
@@ -77,24 +62,20 @@ export class CallUI {
     this.recordBtn = document.getElementById("record-call");
     this.historyBtn = document.getElementById("call-history-toggle");
 
-    // Upgrade overlay
     this.upgradeOverlay = document.getElementById("video-upgrade-overlay");
     this.upgradeAccept = document.getElementById("video-upgrade-accept");
     this.upgradeDecline = document.getElementById("video-upgrade-decline");
     this.upgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
     this.upgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
 
-    // Voicemail
     this.voicemailModal = document.getElementById("voicemailModal");
     this.vmCancelBtn = document.getElementById("vmCancelBtn");
 
-    // Toasts
     this.unavailableToast = document.getElementById("unavailableToast");
     this.utVoiceBtn = document.getElementById("utVoiceBtn");
     this.utVideoBtn = document.getElementById("utVideoBtn");
     this.utTextBtn = document.getElementById("utTextBtn");
 
-    // Audio cues
     this.ringtone = document.getElementById("ringtone");
     this.ringback = document.getElementById("ringback");
     this.cameraOnBeep = document.getElementById("cameraOnBeep");
@@ -102,9 +83,9 @@ export class CallUI {
     // -------------------------------------------------------
     // INTERNAL STATE
     // -------------------------------------------------------
-    this.primaryIsRemote = true;     // remote = primary, local = PiP
-    this.pipPos = null;              // { x, y }
-    this.dragState = null;           // pointer drag info
+    this.primaryIsRemote = true;
+    this.pipPos = null;
+    this.dragState = null;
     this.controlsVisible = true;
     this.controlsTimeout = null;
 
@@ -121,7 +102,6 @@ export class CallUI {
     this._startTimerLoop();
     this._startQualityMonitor();
 
-    // Hide local tile initially
     this.localTile?.classList.add("hidden");
     this.remotePip?.classList.add("hidden");
   }
@@ -132,6 +112,7 @@ export class CallUI {
   startVoiceCall(peerId) {
     rtcState.audioOnly = true;
     rtcState.peerId = String(peerId);
+    rtcState.status = "calling";
 
     this.socket.emit("call:start", { to: peerId, type: "voice" });
 
@@ -145,6 +126,7 @@ export class CallUI {
   startVideoCall(peerId) {
     rtcState.audioOnly = false;
     rtcState.peerId = String(peerId);
+    rtcState.status = "calling";
 
     this.socket.emit("call:start", { to: peerId, type: "video" });
 
@@ -158,6 +140,7 @@ export class CallUI {
   receiveInboundCall(peerId, isVideo) {
     rtcState.peerId = String(peerId);
     rtcState.audioOnly = !isVideo;
+    rtcState.status = "ringing";
 
     this._openWindow();
     isVideo ? this._enterInboundVideoMode() : this._enterInboundVoiceMode();
@@ -166,15 +149,18 @@ export class CallUI {
   }
 
   answerCall() {
-    if (this.windowEl?.classList.contains("video-upgrade-mode")) {
+    if (this.windowEl.classList.contains("video-upgrade-mode")) {
       this._exitUpgradeOverlay();
       rtcState.audioOnly = false;
+      rtcState.status = "in-call";
       this.rtc.answerCall();
       this._enterActiveVideoMode();
       return;
     }
 
     this._stopRinging();
+    rtcState.status = "in-call";
+
     this.rtc.answerCall();
     this.callStartTime = Date.now();
 
@@ -186,12 +172,14 @@ export class CallUI {
   endCall(reason = "local_end") {
     this._stopRinging();
     this.rtc.endCall(reason);
+    rtcState.status = "idle";
     this._resetUI();
   }
 
   async upgradeToVideo() {
     await this.rtc.upgradeToVideo();
     rtcState.audioOnly = false;
+    rtcState.status = "in-call";
     this._enterActiveVideoMode();
   }
 
@@ -201,6 +189,7 @@ export class CallUI {
   _bindControllerEvents() {
     this.rtc.onCallStarted = () => {
       this._stopRinging();
+      rtcState.status = "in-call";
       this.callStartTime = Date.now();
 
       rtcState.audioOnly
@@ -208,14 +197,20 @@ export class CallUI {
         : this._enterActiveVideoMode();
     };
 
-    this.rtc.onCallEnded = () => this._resetUI();
+    this.rtc.onCallEnded = () => {
+      rtcState.status = "idle";
+      this._resetUI();
+    };
 
     this.rtc.onRemoteJoin = () => {
       this._setStatus("Connected");
       this._applyPrimaryLayout();
     };
 
-    this.rtc.onRemoteLeave = () => this._resetUI();
+    this.rtc.onRemoteLeave = () => {
+      rtcState.status = "idle";
+      this._resetUI();
+    };
 
     this.rtc.onIncomingOffer = (peerId, offer) => {
       const isUpgrade =
@@ -233,6 +228,7 @@ export class CallUI {
     this.rtc.onRemoteUpgradedToVideo = () => {
       this.cameraOnBeep?.play().catch(() => {});
       rtcState.audioOnly = false;
+      rtcState.status = "in-call";
       this._enterActiveVideoMode();
       this._setStatus("Camera enabled by other side");
     };
@@ -445,31 +441,37 @@ export class CallUI {
 
   _enterOutboundVoiceMode() {
     this._setStatus("Calling…");
+    rtcState.status = "calling";
     this._applyModeFlags({ inbound: false, active: false, video: false });
   }
 
   _enterOutboundVideoMode() {
     this._setStatus("Video calling…");
+    rtcState.status = "calling";
     this._applyModeFlags({ inbound: false, active: false, video: true });
   }
 
   _enterInboundVoiceMode() {
     this._setStatus("Incoming call");
+    rtcState.status = "ringing";
     this._applyModeFlags({ inbound: true, active: false, video: false });
   }
 
   _enterInboundVideoMode() {
     this._setStatus("Incoming video");
+    rtcState.status = "ringing";
     this._applyModeFlags({ inbound: true, active: false, video: true });
   }
 
   _enterActiveVoiceMode() {
     this._setStatus("In call");
+    rtcState.status = "in-call";
     this._applyModeFlags({ inbound: false, active: true, video: false });
   }
 
   _enterActiveVideoMode() {
     this._setStatus("In video call");
+    rtcState.status = "in-call";
     this._applyModeFlags({ inbound: false, active: true, video: true });
     this._applyPrimaryLayout();
   }
@@ -487,6 +489,9 @@ export class CallUI {
   _resetUI() {
     rtcState.inCall = false;
     rtcState.peerId = null;
+    rtcState.incomingOffer = null;
+    rtcState.incomingIsVideo = false;
+    rtcState.status = "idle";
 
     this._closeWindow();
     this._setStatus("Call ended");
@@ -598,10 +603,10 @@ export class CallUI {
   _togglePrimary(remoteEl) {
     if (!remoteEl) return;
 
-    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
-    const primaryEl = this._primaryIsRemote ? remoteEl : this.localWrapper;
+    const pipEl = this.primaryIsRemote ? this.localPip : this.remotePip;
+    const primaryEl = this.primaryIsRemote ? remoteEl : this.localTile;
 
-    this._primaryIsRemote = !this._primaryIsRemote;
+    this.primaryIsRemote = !this.primaryIsRemote;
 
     this._animateSwap(pipEl, primaryEl);
   }
@@ -609,7 +614,7 @@ export class CallUI {
   _resetPipToDefault() {
     if (!this.callBody) return;
 
-    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
+    const pipEl = this.primaryIsRemote ? this.localPip : this.remotePip;
     if (!pipEl) return;
 
     const parent = this.callBody.getBoundingClientRect();
@@ -619,60 +624,62 @@ export class CallUI {
     const x = Math.max(0, parent.width - pipRect.width - margin);
     const y = margin;
 
-    this._pipPos = { x, y };
-    this._pipDefault = { x, y };
+    this.pipPos = { x, y };
 
     pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  _applyPrimaryLayout(remoteElOverride = null) {
+  _applyPrimaryLayout(remoteOverride = null) {
     const remoteEl =
-      remoteElOverride ||
+      remoteOverride ||
       this.callGrid?.querySelector(".participant.remote") ||
       null;
 
-    // If no remote tile yet, show local as primary and hide PiPs
+    // No remote yet → local is primary
     if (!remoteEl) {
-      if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-      if (this.localPip) this.localPip.classList.add("hidden");
-      if (this.remotePip) this.remotePip.classList.add("hidden");
+      this.localTile?.classList.remove("hidden");
+      this.localPip?.classList.add("hidden");
+      this.remotePip?.classList.add("hidden");
       return;
     }
 
-    if (!this._pipPos) {
+    if (!this.pipPos) {
       this._resetPipToDefault();
     }
 
-    const applyPipTransform = (pipEl) => {
-      if (!pipEl || !this._pipPos) return;
-      pipEl.style.transform = `translate3d(${this._pipPos.x}px, ${this._pipPos.y}px, 0)`;
+    const applyTransform = (pipEl) => {
+      if (!pipEl || !this.pipPos) return;
+      pipEl.style.transform = `translate3d(${this.pipPos.x}px, ${this.pipPos.y}px, 0)`;
     };
 
-    if (this._primaryIsRemote) {
-      if (this.localWrapper) this.localWrapper.classList.add("hidden");
-      if (remoteEl) remoteEl.classList.remove("hidden");
+    if (this.primaryIsRemote) {
+      this.localTile?.classList.add("hidden");
+      remoteEl.classList.remove("hidden");
 
-      if (this.localPip) {
-        this.localPip.classList.remove("hidden");
-        applyPipTransform(this.localPip);
-      }
-      if (this.remotePip) this.remotePip.classList.add("hidden");
+      this.localPip?.classList.remove("hidden");
+      applyTransform(this.localPip);
+
+      this.remotePip?.classList.add("hidden");
     } else {
-      if (this.localWrapper) this.localWrapper.classList.remove("hidden");
-      if (remoteEl) remoteEl.classList.add("hidden");
+      this.localTile?.classList.remove("hidden");
+      remoteEl.classList.add("hidden");
 
-      if (this.remotePip) {
-        this.remotePip.classList.remove("hidden");
-        applyPipTransform(this.remotePip);
-      }
-      if (this.localPip) this.localPip.classList.add("hidden");
+      this.remotePip?.classList.remove("hidden");
+      applyTransform(this.remotePip);
+
+      this.localPip?.classList.add("hidden");
     }
   }
 
+  // ===========================================================
+  // PiP DRAGGING
+  // ===========================================================
   _initPipDrag() {
     const pipTargets = [this.localPip, this.remotePip].filter(Boolean);
     pipTargets.forEach((pipEl) => {
-      pipEl.addEventListener("pointerdown", (e) => this._onPipPointerDown(e, pipEl));
+      pipEl.addEventListener("pointerdown", (e) =>
+        this._onPipPointerDown(e, pipEl)
+      );
     });
   }
 
@@ -687,10 +694,10 @@ export class CallUI {
     const startX = e.clientX;
     const startY = e.clientY;
 
-    const currentX = this._pipPos?.x ?? pipRect.left - parentRect.left;
-    const currentY = this._pipPos?.y ?? pipRect.top - parentRect.top;
+    const currentX = this.pipPos?.x ?? pipRect.left - parentRect.left;
+    const currentY = this.pipPos?.y ?? pipRect.top - parentRect.top;
 
-    this._dragState = {
+    this.dragState = {
       pointerId: e.pointerId,
       startX,
       startY,
@@ -712,56 +719,56 @@ export class CallUI {
   }
 
   _onPipPointerMove(e) {
-    if (!this._dragState) return;
-    if (e.pointerId !== this._dragState.pointerId) return;
+    if (!this.dragState) return;
+    if (e.pointerId !== this.dragState.pointerId) return;
 
-    const dx = e.clientX - this._dragState.startX;
-    const dy = e.clientY - this._dragState.startY;
+    const dx = e.clientX - this.dragState.startX;
+    const dy = e.clientY - this.dragState.startY;
 
-    let x = this._dragState.startPosX + dx;
-    let y = this._dragState.startPosY + dy;
+    let x = this.dragState.startPosX + dx;
+    let y = this.dragState.startPosY + dy;
 
     const margin = 8;
     const maxX =
-      this._dragState.parentRect.width - this._dragState.pipRect.width - margin;
+      this.dragState.parentRect.width - this.dragState.pipRect.width - margin;
     const maxY =
-      this._dragState.parentRect.height - this._dragState.pipRect.height - margin;
+      this.dragState.parentRect.height - this.dragState.pipRect.height - margin;
 
     x = Math.max(margin, Math.min(maxX, x));
     y = Math.max(margin, Math.min(maxY, y));
 
-    this._pipPos = { x, y };
-    this._dragState.pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    this.pipPos = { x, y };
+    this.dragState.pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
   _onPipPointerUp(e, moveHandler, upHandler) {
-    if (!this._dragState) return;
-    if (e.pointerId !== this._dragState.pointerId) return;
+    if (!this.dragState) return;
+    if (e.pointerId !== this.dragState.pointerId) return;
 
-    const pipEl = this._dragState.pipEl;
+    const pipEl = this.dragState.pipEl;
     pipEl.classList.remove("dragging");
-    pipEl.releasePointerCapture(this._dragState.pointerId);
+    pipEl.releasePointerCapture(this.dragState.pointerId);
 
     window.removeEventListener("pointermove", moveHandler);
     window.removeEventListener("pointerup", upHandler);
     window.removeEventListener("pointercancel", upHandler);
 
     this._snapPipToEdge();
-    this._dragState = null;
+    this.dragState = null;
   }
 
   _snapPipToEdge() {
-    if (!this._pipPos || !this.callBody) return;
+    if (!this.pipPos || !this.callBody) return;
 
     const parentRect = this.callBody.getBoundingClientRect();
-    const pipEl = this._primaryIsRemote ? this.localPip : this.remotePip;
+    const pipEl = this.primaryIsRemote ? this.localPip : this.remotePip;
     if (!pipEl) return;
 
     const pipRect = pipEl.getBoundingClientRect();
     const margin = 16;
 
-    const centerX = this._pipPos.x + pipRect.width / 2;
-    const centerY = this._pipPos.y + pipRect.height / 2;
+    const centerX = this.pipPos.x + pipRect.width / 2;
+    const centerY = this.pipPos.y + pipRect.height / 2;
 
     const distLeft = centerX;
     const distRight = parentRect.width - centerX;
@@ -770,8 +777,8 @@ export class CallUI {
 
     const minDist = Math.min(distLeft, distRight, distTop, distBottom);
 
-    let x = this._pipPos.x;
-    let y = this._pipPos.y;
+    let x = this.pipPos.x;
+    let y = this.pipPos.y;
 
     if (minDist === distLeft) {
       x = margin;
@@ -783,7 +790,7 @@ export class CallUI {
       y = parentRect.height - pipRect.height - margin;
     }
 
-    this._pipPos = { x, y };
+    this.pipPos = { x, y };
     pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
@@ -791,42 +798,39 @@ export class CallUI {
   // TIMER + QUALITY MONITOR
   // ===========================================================
   _startTimerLoop() {
-    if (this._timerInterval) {
-      clearInterval(this._timerInterval);
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
     }
 
-    this._timerInterval = setInterval(() => {
-      if (!this._callStartTime || !this.timerEl) return;
-      const elapsed = Date.now() - this._callStartTime;
+    this.timerInterval = setInterval(() => {
+      if (!this.callStartTime || !this.timerEl) return;
+      const elapsed = Date.now() - this.callStartTime;
       this.timerEl.textContent = formatDuration(elapsed);
     }, 1000);
   }
 
   _startQualityMonitor() {
-    // UI-only; actual quality updates come from WebRTCController.onQualityUpdate
     if (!this.qualityEl) return;
     this._updateQualityLevel(rtcState.lastQualityLevel || "poor");
   }
 
   _updateQualityLevel(level) {
     if (!this.qualityEl) return;
-    const normalized = String(level || "").toLowerCase();
-    this.qualityEl.dataset.level = normalized;
+    this.qualityEl.dataset.level = String(level || "").toLowerCase();
   }
 
   // ===========================================================
   // STAGE MODE (SCREEN SHARE)
   // ===========================================================
   _enterStageMode() {
-    if (!this.callGrid) return;
-    this.callGrid.classList.add("screen-share-mode");
+    this.callGrid?.classList.add("screen-share-mode");
   }
 
   _exitStageMode() {
-    if (!this.callGrid) return;
-    this.callGrid.classList.remove("screen-share-mode");
+    this.callGrid?.classList.remove("screen-share-mode");
   }
 }
+
 
 
 
