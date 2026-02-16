@@ -402,19 +402,26 @@ export class CallUI {
     this.upgradeOverlay.classList.add("hidden");
   }
 
-  // ===========================================================
+   // ===========================================================
   // WINDOW + MODES
   // ===========================================================
   _openWindow() {
+    if (!this.windowEl) {
+      console.warn("[CallUI] _openWindow: no windowEl");
+      return;
+    }
+
     this.windowEl.classList.remove("hidden");
     this.windowEl.classList.add("is-open", "call-opening");
 
-    setTimeout(() => this.windowEl.classList.remove("call-opening"), 300);
+    setTimeout(() => this.windowEl?.classList.remove("call-opening"), 300);
 
-    this.controls.classList.remove("hidden");
-    this.controlsVisible = true;
-    this.controls.classList.remove("hidden-soft");
-    this._scheduleControlsAutoHide();
+    if (this.controls) {
+      this.controls.classList.remove("hidden");
+      this.controlsVisible = true;
+      this.controls.classList.remove("hidden-soft");
+      this._scheduleControlsAutoHide?.();
+    }
 
     this.primaryIsRemote = true;
     this.pipPos = null;
@@ -424,19 +431,24 @@ export class CallUI {
   }
 
   _closeWindow() {
-    this.windowEl.classList.remove(
-      "is-open",
-      "inbound-mode",
-      "active-mode",
-      "voice-only-call",
-      "camera-off",
-      "video-upgrade-mode",
-      "screen-sharing"
-    );
-    this.windowEl.classList.add("hidden");
+    if (this.windowEl) {
+      this.windowEl.classList.remove(
+        "is-open",
+        "inbound-mode",
+        "active-mode",
+        "voice-only-call",
+        "camera-off",
+        "video-upgrade-mode",
+        "screen-sharing"
+      );
+      this.windowEl.classList.add("hidden");
+    }
 
-    this.controls.classList.add("hidden");
-    this._exitUpgradeOverlay();
+    if (this.controls) {
+      this.controls.classList.add("hidden");
+    }
+
+    this._exitUpgradeOverlay?.();
   }
 
   _enterOutboundVoiceMode() {
@@ -477,13 +489,15 @@ export class CallUI {
   }
 
   _applyModeFlags({ inbound, active, video }) {
-    this.windowEl.classList.toggle("inbound-mode", inbound);
-    this.windowEl.classList.toggle("active-mode", active);
+    if (!this.windowEl) return;
+
+    this.windowEl.classList.toggle("inbound-mode", !!inbound);
+    this.windowEl.classList.toggle("active-mode", !!active);
     this.windowEl.classList.toggle("voice-only-call", !video);
 
     if (!video) this.windowEl.classList.remove("camera-off");
 
-    this.controls.classList.remove("hidden");
+    this.controls?.classList.remove("hidden");
   }
 
   _resetUI() {
@@ -496,21 +510,25 @@ export class CallUI {
     this._closeWindow();
     this._setStatus("Call ended");
 
-    this.timerEl.textContent = "00:00";
+    if (this.timerEl) this.timerEl.textContent = "00:00";
     this.callStartTime = null;
 
-    clearInterval(this.timerInterval);
-    this.timerInterval = null;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
 
-    this.moreMenu.classList.add("hidden");
-    this.moreMenu.classList.remove("show");
+    if (this.moreMenu) {
+      this.moreMenu.classList.add("hidden");
+      this.moreMenu.classList.remove("show");
+    }
 
     this.primaryIsRemote = true;
     this.pipPos = null;
 
-    this.localPip.classList.add("hidden");
-    this.remotePip.classList.add("hidden");
-    this.localTile.classList.add("hidden");
+    this.localPip?.classList.add("hidden");
+    this.remotePip?.classList.add("hidden");
+    this.localTile?.classList.add("hidden");
 
     this._applyPrimaryLayout();
   }
@@ -519,27 +537,34 @@ export class CallUI {
   // STATUS + AUDIO
   // ===========================================================
   _setStatus(text) {
-    this.statusEl.textContent = text;
+    if (!this.statusEl) return;
+    this.statusEl.textContent = text || "";
   }
 
   _playRingtone() {
+    if (!this.ringtone) return;
     this.ringtone.currentTime = 0;
     this.ringtone.loop = true;
     this.ringtone.play().catch(() => {});
   }
 
   _playRingback() {
+    if (!this.ringback) return;
     this.ringback.currentTime = 0;
     this.ringback.loop = true;
     this.ringback.play().catch(() => {});
   }
 
   _stopRinging() {
-    this.ringtone.pause();
-    this.ringtone.currentTime = 0;
+    if (this.ringtone) {
+      this.ringtone.pause();
+      this.ringtone.currentTime = 0;
+    }
 
-    this.ringback.pause();
-    this.ringback.currentTime = 0;
+    if (this.ringback) {
+      this.ringback.pause();
+      this.ringback.currentTime = 0;
+    }
   }
 
   // ===========================================================
@@ -635,7 +660,6 @@ export class CallUI {
       this.callGrid?.querySelector(".participant.remote") ||
       null;
 
-    // No remote yet → local is primary
     if (!remoteEl) {
       this.localTile?.classList.remove("hidden");
       this.localPip?.classList.add("hidden");
@@ -830,6 +854,7 @@ export class CallUI {
     this.callGrid?.classList.remove("screen-share-mode");
   }
 }
+
 
 
 
