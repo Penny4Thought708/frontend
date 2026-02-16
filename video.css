@@ -194,7 +194,7 @@
 }
 
 /* ============================================================
-   PARTICIPANT GRID — DESKTOP
+   PARTICIPANT GRID — DESKTOP (Google Meet / Discord hybrid)
 ============================================================ */
 .call-grid {
   position: relative;
@@ -211,6 +211,7 @@
     opacity 0.25s var(--ease-out-soft);
 }
 
+/* Google Meet–style sizing */
 .call-grid.participants-1 {
   grid-template-columns: 1fr;
 }
@@ -239,6 +240,19 @@
 
 .call-grid.participants-many {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* Discord-style dense layout (when JS adds .discord-layout) */
+.call-grid.discord-layout {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-auto-rows: minmax(160px, 1fr);
+  gap: 10px;
+}
+
+.call-grid.discord-layout .participant {
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(148, 163, 184, 0.35);
 }
 
 /* ============================================================
@@ -966,7 +980,6 @@
   }
   .desktop-only {
     display: none;
-  }
 }
 
 /* Grid blur during upgrade */
@@ -1049,6 +1062,268 @@
   .local-pip,
   .remote-pip {
     bottom: 96px;
+  }
+}
+
+/* ============================================================
+   IOS VOICE MODE — FULL-HEIGHT GLASS PANEL (B3-B)
+   Uses existing call-body as the panel, with blurred grid behind.
+============================================================ */
+
+/* When JS adds .ios-voice-mode to callWindow, we treat it as iPhone voice UI */
+.call-window.ios-voice-mode .call-body {
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  background: rgba(7, 11, 24, 0.82);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+}
+
+/* Blur the grid behind the panel but keep it running */
+.call-window.ios-voice-mode .call-grid {
+  position: absolute;
+  inset: 0;
+  filter: blur(18px) brightness(0.6);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Voice UI content sits above */
+.call-window.ios-voice-mode .call-top-info,
+.call-window.ios-voice-mode .call-controls,
+.call-window.ios-voice-mode .call-info-bar {
+  position: relative;
+  z-index: 5;
+}
+
+/* Centered avatar + name + status */
+.call-window.ios-voice-mode .call-top-info {
+  position: relative;
+  margin-top: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.call-window.ios-voice-mode #call-status {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.call-window.ios-voice-mode #call-timer {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Use local avatar as big center avatar (from localParticipant) */
+.call-window.ios-voice-mode #localParticipant .avatar-wrapper {
+  position: relative;
+  inset: auto;
+  width: auto;
+  height: auto;
+}
+
+.call-window.ios-voice-mode #localParticipant .avatar-wrapper img {
+  width: 96px;
+  height: 96px;
+  border-width: 4px;
+}
+
+/* Hide video tiles in pure voice mode panel */
+.call-window.ios-voice-mode .participant .media-wrapper video {
+  display: none !important;
+}
+
+/* Controls in iOS style: slightly larger, spaced out */
+.call-window.ios-voice-mode .call-controls {
+  position: relative;
+  margin-top: auto;
+  margin-bottom: 40px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transform: translate3d(0, 0, 0);
+}
+
+.call-window.ios-voice-mode .control-btn {
+  width: 56px;
+  height: 56px;
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(148, 163, 184, 0.45);
+}
+
+/* Info bar floats above bottom */
+.call-window.ios-voice-mode .call-info-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Fade + scale in for the whole voice panel */
+.call-window.ios-voice-mode .call-body {
+  opacity: 0;
+  transform: scale(0.92) translate3d(0, 0, 0);
+  animation: iosVoicePanelIn var(--med) var(--ease-out-soft) forwards;
+}
+
+@keyframes iosVoicePanelIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+/* When leaving ios-voice-mode (JS removes class), the normal call-body layout takes over */
+
+/* ============================================================
+   LOCAL FULLSCREEN PREVIEW DURING UPGRADE (F1)
+   Caller: local video takes 100% of mobile screen with fade+scale.
+============================================================ */
+
+/* JS should add .local-preview-fullscreen on callWindow when caller requests video */
+@media (max-width: 900px) {
+  .call-window.local-preview-fullscreen .call-grid {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .call-window.local-preview-fullscreen #localVideo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 80;
+    opacity: 0;
+    transform: scale(0.92) translate3d(0, 0, 0);
+    animation: localPreviewIn var(--med) var(--ease-out-soft) forwards;
+  }
+
+  @keyframes localPreviewIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.92) translate3d(0, 0, 0);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+  }
+
+  /* Hide PIP while fullscreen preview is active */
+  .call-window.local-preview-fullscreen .local-pip,
+  .call-window.local-preview-fullscreen .remote-pip {
+    display: none !important;
+  }
+}
+
+/* After callee accepts, JS should:
+   - remove .local-preview-fullscreen
+   - set primaryIsRemote=true
+   - let existing PIP + grid logic take over
+*/
+
+/* ============================================================
+   CALLEE BLURRED PREVIEW DURING UPGRADE
+   (they see blurred remote video until they accept)
+============================================================ */
+
+/* JS already toggles .desktop-video-preview / .mobile-video-preview on callGrid */
+.call-window.video-upgrade-mode .call-grid.desktop-video-preview {
+  filter: blur(14px) brightness(0.6);
+  opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .call-window.video-upgrade-mode .call-grid.mobile-video-preview {
+    filter: blur(14px) brightness(0.6);
+    opacity: 0.9;
+  }
+}
+
+/* While upgrade overlay is visible, hide active-call controls and show inbound buttons */
+.call-window.video-upgrade-mode .call-controls .active-only {
+  display: none !important;
+}
+
+/* ============================================================
+   MODE FLAGS (for JS convenience)
+============================================================ */
+
+/* Meet-style default (already covered by base rules) */
+.call-window.meet-mode .call-grid {
+  /* base grid already matches Meet; hook left for future tweaks */
+}
+
+/* Discord-style group mode */
+.call-window.discord-mode .call-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-auto-rows: minmax(160px, 1fr);
+  gap: 10px;
+}
+
+/* Voice-only global mode (already partially handled above) */
+.call-window.voice-only-call .call-grid {
+  filter: none;
+}
+
+/* ============================================================
+   SMALL UTILITY ANIMATIONS (TOASTS, MODALS)
+============================================================ */
+@keyframes slideUp {
+  0% {
+    transform: translate3d(0, 8px, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 8px, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.9) translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes popOut {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9) translate3d(0, 0, 0);
+    opacity: 0;
   }
 }
 
