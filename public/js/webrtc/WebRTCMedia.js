@@ -1,7 +1,13 @@
 // public/js/webrtc/WebRTCMedia.js
 // ============================================================
-// Media acquisition, local/remote stream routing, PiP wiring,
-// speaking detection, screen share, and cleanup.
+// Modernized Media Engine for the new CallUI
+// - Local media acquisition (audio/video)
+// - Full-screen local preview support (mobile upgrade flow)
+// - Remote track routing into new participant tiles
+// - PiP wiring (local + remote)
+// - Speaking detection
+// - Screen share
+// - Cleanup
 // ============================================================
 
 import { rtcState } from "./WebRTCState.js";
@@ -19,7 +25,9 @@ const isMobile =
     navigator.userAgent
   );
 
-// Profiles for different device classes / use cases
+// ============================================================
+// VIDEO PROFILES (mobile vs desktop)
+// ============================================================
 const VIDEO_PROFILES = {
   mobile: {
     width: { ideal: 960, max: 1280 },
@@ -45,9 +53,9 @@ function ensureRemoteStreams() {
   if (!rtcState.remoteStreams) rtcState.remoteStreams = {};
 }
 
-/* -------------------------------------------------------
-   LOCAL MEDIA ACQUISITION
-------------------------------------------------------- */
+// ============================================================
+// LOCAL MEDIA ACQUISITION
+// ============================================================
 export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   rtcState.audioOnly = wantAudio && !wantVideo;
 
@@ -93,7 +101,7 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     }
   }
 
-  // Final fallback: fake stream
+  // Final fallback: fake stream (avatar-only mode)
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -101,9 +109,9 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
   return fakeStream;
 }
 
-/* -------------------------------------------------------
-   FAKE STREAM
-------------------------------------------------------- */
+// ============================================================
+// FAKE STREAM (avatar-only mode)
+// ============================================================
 function createFakeStream() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   const audioCtx = new AudioCtx();
@@ -126,9 +134,9 @@ function createFakeStream() {
   return new MediaStream([fakeAudioTrack, fakeVideoTrack]);
 }
 
-/* -------------------------------------------------------
-   ATTACH LOCAL STREAM
-------------------------------------------------------- */
+// ============================================================
+// ATTACH LOCAL STREAM (primary + PiP)
+// ============================================================
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
 
@@ -154,9 +162,9 @@ export function attachLocalStream(stream) {
   bind(pipVideo);
 }
 
-/* -------------------------------------------------------
-   REMOTE TRACK ROUTING
-------------------------------------------------------- */
+// ============================================================
+// REMOTE TRACK ROUTING
+// ============================================================
 export function attachRemoteTrack(peerId, event) {
   if (!event || !event.track) return;
 
@@ -191,7 +199,7 @@ export function attachRemoteTrack(peerId, event) {
     }
   }
 
-  // Remote video → tile
+  // Remote video → participant tile
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) return;
 
@@ -229,9 +237,9 @@ export function attachRemoteTrack(peerId, event) {
   }
 }
 
-/* -------------------------------------------------------
-   SPEAKING DETECTION
-------------------------------------------------------- */
+// ============================================================
+// SPEAKING DETECTION
+// ============================================================
 function startSpeakingDetection(peerId, stream) {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -257,9 +265,9 @@ function startSpeakingDetection(peerId, stream) {
   }
 }
 
-/* -------------------------------------------------------
-   SCREEN SHARE
-------------------------------------------------------- */
+// ============================================================
+// SCREEN SHARE
+// ============================================================
 export async function startScreenShare() {
   if (!navigator.mediaDevices.getDisplayMedia) {
     log("Screen share not supported");
@@ -284,15 +292,17 @@ export async function startScreenShare() {
   }
 }
 
-/* -------------------------------------------------------
-   UPGRADE TO VIDEO
-------------------------------------------------------- */
+// ============================================================
+// UPGRADE TO VIDEO (local)
+// ============================================================
 export async function upgradeLocalToVideo() {
   const oldStream = rtcState.localStream;
 
+  // Acquire new audio+video stream
   const newStream = await getLocalMedia(true, true);
   attachLocalStream(newStream);
 
+  // Stop old tracks
   if (oldStream) {
     oldStream.getTracks().forEach((t) => t.stop());
   }
@@ -301,9 +311,9 @@ export async function upgradeLocalToVideo() {
   return newStream;
 }
 
-/* -------------------------------------------------------
-   CLEANUP
-------------------------------------------------------- */
+// ============================================================
+// CLEANUP
+// ============================================================
 export function cleanupMedia() {
   const stream = rtcState.localStream;
   if (stream) {
@@ -321,6 +331,7 @@ export function cleanupMedia() {
   }
   rtcState.remoteStreams = {};
 }
+
 
 
 
