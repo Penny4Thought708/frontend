@@ -28,9 +28,7 @@ if (window.__SOCKET_INSTANCE__) {
     console.log("[socket] Connected:", socket.id);
 
     // Re-announce presence
-    if (window.restorePresence) {
-      window.restorePresence();
-    }
+    window.restorePresence?.();
 
     // Re-sync call state if a call is active
     if (window.rtc?.isInCall?.()) {
@@ -39,18 +37,12 @@ if (window.__SOCKET_INSTANCE__) {
     }
 
     // Flush any buffered ICE candidates
-    if (window.flushBufferedCandidates) {
-      window.flushBufferedCandidates();
-    }
+    window.flushBufferedCandidates?.();
   });
 
   socket.on("disconnect", (reason) => {
     console.warn("[socket] Disconnected:", reason);
-
-    // Optional: mark UI offline
-    if (window.onSocketDisconnected) {
-      window.onSocketDisconnected(reason);
-    }
+    window.onSocketDisconnected?.(reason);
   });
 
   socket.on("reconnect_attempt", (n) => {
@@ -61,16 +53,58 @@ if (window.__SOCKET_INSTANCE__) {
     console.log("[socket] Reconnected");
   });
 }
-socket.on("call:incoming", (payload) => {
+
+/* -------------------------------------------------------
+   REMOVE DEAD EVENTS (backend never emits these)
+------------------------------------------------------- */
+// socket.on("call:incoming", ...);
+// socket.on("call:outgoing", ...);
+
+/* -------------------------------------------------------
+   REAL BACKEND EVENTS
+------------------------------------------------------- */
+
+// Callee receives inbound call
+socket.on("call:start", (payload) => {
   window.onIncomingCall?.(payload);
 });
 
-socket.on("call:outgoing", (payload) => {
-  window.onOutgoingCall?.(payload);
+// Callee accepted → caller notified
+socket.on("call:accept", (payload) => {
+  window.onCallAccepted?.(payload);
+});
+
+// Remote hung up
+socket.on("call:end", (payload) => {
+  window.onRemoteHangup?.(payload);
+});
+
+// Declined
+socket.on("call:declined", (payload) => {
+  window.onCallDeclined?.(payload);
+});
+
+// Timeout
+socket.on("call:timeout", (payload) => {
+  window.onCallTimeout?.(payload);
+});
+
+// Missed
+socket.on("call:missed", (payload) => {
+  window.onCallMissed?.(payload);
+});
+
+// DND
+socket.on("call:dnd", (payload) => {
+  window.onCallDnd?.(payload);
+});
+
+// Voicemail flow
+socket.on("call:voicemail", (payload) => {
+  window.onCallVoicemail?.(payload);
 });
 
 export { socket };
-
 
 
 
