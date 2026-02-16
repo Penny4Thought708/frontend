@@ -337,15 +337,41 @@ export class CallUI {
   }
 
   // ===========================================================
+  // DOUBLE TAP HANDLER (FIXED)
+  // ===========================================================
+  _bindDoubleTap(element, callback) {
+    if (!element) return;
+
+    let lastTap = 0;
+
+    element.addEventListener("click", () => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        callback?.();
+      }
+      lastTap = now;
+    });
+  }
+
+  _handleRemoteDoubleTap(tile) {
+    if (!tile) return;
+    this._togglePrimary(tile);
+  }
+
+  _firstRemoteTile() {
+    return this.callGrid?.querySelector(".participant.remote") || null;
+  }
+
+  // ===========================================================
   // TAP-TO-TOGGLE CONTROLS
   // ===========================================================
   _bindTapToToggleControls() {
     this.callBody?.addEventListener("click", (e) => {
       if (
-        this.controls.contains(e.target) ||
-        this.localPip.contains(e.target) ||
-        this.remotePip.contains(e.target) ||
-        this.upgradeOverlay.contains(e.target)
+        (this.controls && this.controls.contains(e.target)) ||
+        (this.localPip && this.localPip.contains(e.target)) ||
+        (this.remotePip && this.remotePip.contains(e.target)) ||
+        (this.upgradeOverlay && this.upgradeOverlay.contains(e.target))
       ) return;
 
       this._toggleControls();
@@ -356,7 +382,7 @@ export class CallUI {
     const show = force !== null ? force : !this.controlsVisible;
     this.controlsVisible = show;
 
-    this.controls.classList.toggle("hidden-soft", !show);
+    this.controls?.classList.toggle("hidden-soft", !show);
 
     if (show) this._scheduleControlsAutoHide();
     else clearTimeout(this.controlsTimeout);
@@ -402,7 +428,7 @@ export class CallUI {
     this.upgradeOverlay.classList.add("hidden");
   }
 
-   // ===========================================================
+  // ===========================================================
   // WINDOW + MODES
   // ===========================================================
   _openWindow() {
@@ -510,7 +536,7 @@ export class CallUI {
     this._closeWindow();
     this._setStatus("Call ended");
 
-    if (this.timerEl) this.timerEl.textContent = "00:00";
+       if (this.timerEl) this.timerEl.textContent = "00:00";
     this.callStartTime = null;
 
     if (this.timerInterval) {
@@ -854,6 +880,7 @@ export class CallUI {
     this.callGrid?.classList.remove("screen-share-mode");
   }
 }
+
 
 
 
