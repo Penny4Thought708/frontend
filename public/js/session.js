@@ -121,6 +121,13 @@ export const messagesContainer = messageWin;
 
 // Top bar
 export const topBar = el("topBar");
+export function getVoiceBtn() {
+  return document.getElementById("voiceBtn");
+}
+
+export function getVideoBtn() {
+  return document.getElementById("videoBtn");
+}
 
 // -----------------------------------------------------------
 // Helpers
@@ -260,6 +267,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
