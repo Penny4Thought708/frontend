@@ -1,5 +1,4 @@
 // public/js/webrtc/WebRTCMedia.js
-// WebRTCMobile.js
 // High-performance media engine for FaceTime-style mobile + Google Meet / Discord web
 
 import { rtcState } from "./WebRTCState.js";
@@ -42,17 +41,19 @@ const AUDIO_CONSTRAINTS = {
 };
 
 // ============================================================
-// DOM CACHING
+// DOM ACCESS (lazy lookups so late-injected UI works)
 // ============================================================
-const dom = {
-  localVideo: document.getElementById("localVideo"),
-  localPipVideo: document.getElementById("localPipVideo"),
-  localAvatarWrapper: document
-    .getElementById("localAvatarImg")
-    ?.closest(".avatar-wrapper"),
-  remoteAudio: document.getElementById("remoteAudio"),
-  remotePipVideo: document.getElementById("remotePipVideo"),
-};
+function getDom() {
+  return {
+    localVideo: document.getElementById("localVideo"),
+    localPipVideo: document.getElementById("localPipVideo"),
+    localAvatarWrapper: document
+      .getElementById("localAvatarImg")
+      ?.closest(".avatar-wrapper"),
+    remoteAudio: document.getElementById("remoteAudio"),
+    remotePipVideo: document.getElementById("remotePipVideo"),
+  };
+}
 
 function ensureRemoteStreams() {
   if (!rtcState.remoteStreams) rtcState.remoteStreams = {};
@@ -90,7 +91,7 @@ function ensureSpeakingLoop() {
       const { analyser, data } = entry;
       analyser.getByteFrequencyData(data);
       const volume = data.reduce((a, b) => a + b, 0) / data.length;
-      const speaking = volume > 28; // hard toggle (S1)
+      const speaking = volume > 28;
       setParticipantSpeaking(peerId, speaking);
     }
 
@@ -106,7 +107,6 @@ function startSpeakingDetection(peerId, stream) {
     if (!ctx) return;
     if (!stream || !stream.getAudioTracks().length) return;
 
-    // Avoid duplicate analyser for same peer
     if (speakingAnalysers.has(peerId)) return;
 
     const analyser = ctx.createAnalyser();
@@ -173,7 +173,6 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     log("Local media error:", err);
   }
 
-  // Fallback: audio-only
   if (wantAudio) {
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({
@@ -188,7 +187,6 @@ export async function getLocalMedia(wantAudio = true, wantVideo = true) {
     }
   }
 
-  // Final fallback: fake stream (avatar-only mode)
   log("Falling back to fake MediaStream (avatar-only mode)");
   const fakeStream = createFakeStream();
   fakeStream._isFake = true;
@@ -227,9 +225,11 @@ function createFakeStream() {
 export function attachLocalStream(stream) {
   rtcState.localStream = stream;
 
-  const localVideo = dom.localVideo;
-  const pipVideo = dom.localPipVideo;
-  const localAvatarWrapper = dom.localAvatarWrapper;
+  const {
+    localVideo,
+    localPipVideo,
+    localAvatarWrapper,
+  } = getDom();
 
   const hasVideo =
     stream &&
@@ -254,25 +254,20 @@ export function attachLocalStream(stream) {
     }
   };
 
-  // Primary local tile
   if (hasVideo) {
     bind(localVideo, true);
   } else if (localVideo) {
-    // No video: clear srcObject for local tile
     localVideo.srcObject = null;
     localVideo.classList.remove("show");
   }
 
-  // Local PiP (used for Meet / FaceTime-style overlay)
   if (hasVideo) {
-    bind(pipVideo, true);
-  } else if (pipVideo) {
-    // Audio-only: hide PiP (FaceTime-style)
-    pipVideo.srcObject = null;
-    pipVideo.classList.remove("show");
+    bind(localPipVideo, true);
+  } else if (localPipVideo) {
+    localPipVideo.srcObject = null;
+    localPipVideo.classList.remove("show");
   }
 
-  // Avatar visibility
   try {
     if (localAvatarWrapper) {
       if (hasVideo) {
@@ -308,9 +303,10 @@ export function attachRemoteTrack(peerId, event) {
     id: event.track.id,
   });
 
-  // Remote audio → shared audio element
-  if (event.track.kind === "audio" && dom.remoteAudio) {
-    const audioEl = dom.remoteAudio;
+  const { remoteAudio, remotePipVideo } = getDom();
+
+  if (event.track.kind === "audio" && remoteAudio) {
+    const audioEl = remoteAudio;
     audioEl.srcObject = stream;
     audioEl.playsInline = true;
     audioEl.removeAttribute("muted");
@@ -319,7 +315,6 @@ export function attachRemoteTrack(peerId, event) {
     else audioEl.onloadedmetadata = tryPlay;
   }
 
-  // Remote video → participant tile
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) return;
 
@@ -338,9 +333,8 @@ export function attachRemoteTrack(peerId, event) {
     if (avatarEl) avatarEl.classList.add("hidden");
   }
 
-  // Remote video → PiP (for 1:1 / primary remote)
-  if (event.track.kind === "video" && dom.remotePipVideo) {
-    const pip = dom.remotePipVideo;
+  if (event.track.kind === "video" && remotePipVideo) {
+    const pip = remotePipVideo;
     pip.srcObject = stream;
     pip.playsInline = true;
     pip.setAttribute("autoplay", "true");
@@ -349,7 +343,6 @@ export function attachRemoteTrack(peerId, event) {
     else pip.onloadedmetadata = tryPlay;
   }
 
-  // Speaking detection (shared engine)
   if (event.track.kind === "audio") {
     startSpeakingDetection(peerId, stream);
   }
@@ -388,11 +381,9 @@ export async function startScreenShare() {
 export async function upgradeLocalToVideo() {
   const oldStream = rtcState.localStream;
 
-  // Acquire new audio+video stream
   const newStream = await getLocalMedia(true, true);
   attachLocalStream(newStream);
 
-  // Stop old tracks
   if (oldStream) {
     oldStream.getTracks().forEach((t) => t.stop());
   }
@@ -422,22 +413,29 @@ export function cleanupMedia() {
 
   stopAllSpeakingDetection();
 
-  // Clear DOM bindings
-  if (dom.localVideo) {
-    dom.localVideo.srcObject = null;
-    dom.localVideo.classList.remove("show");
+  const {
+    localVideo,
+    localPipVideo,
+    remotePipVideo,
+    remoteAudio,
+  } = getDom();
+
+  if (localVideo) {
+    localVideo.srcObject = null;
+    localVideo.classList.remove("show");
   }
-  if (dom.localPipVideo) {
-    dom.localPipVideo.srcObject = null;
-    dom.localPipVideo.classList.remove("show");
+  if (localPipVideo) {
+    localPipVideo.srcObject = null;
+    localPipVideo.classList.remove("show");
   }
-  if (dom.remotePipVideo) {
-    dom.remotePipVideo.srcObject = null;
+  if (remotePipVideo) {
+    remotePipVideo.srcObject = null;
   }
-  if (dom.remoteAudio) {
-    dom.remoteAudio.srcObject = null;
+  if (remoteAudio) {
+    remoteAudio.srcObject = null;
   }
 }
+
 
 
 
