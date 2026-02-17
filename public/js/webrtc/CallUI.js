@@ -10,7 +10,7 @@ import { rtcState } from "./WebRTCState.js";
 // Optional: if you want to use helpers from session.js instead of raw DOM:
 // import { getVoiceBtn, getVideoBtn } from "../session.js";
 
-class CallUI {
+export class CallUI {
   constructor(socket) {
     this.socket = socket;
 
@@ -873,6 +873,7 @@ class CallUI {
 }
 
 export default CallUI;
+
 
 
 
