@@ -431,15 +431,18 @@
   opacity: 0;
 }
 
-/* Mirror ONLY local video */
+/* Local self-view should NOT be cropped */
 #localVideo,
 #localPipVideo {
-  transform: scaleX(-1);
+  object-fit: contain !important;
+  background-color: black;
 }
 
+/* Remote video should fill the tile */
 .remoteVideo {
-  transform: none !important;
+  object-fit: cover !important;
 }
+
 
 /* ============================================================
    AVATAR WRAPPER
