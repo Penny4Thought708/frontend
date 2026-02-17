@@ -705,24 +705,40 @@ socket.on("connect", async () => {
   };
 
   // Wire voice/video buttons in the messaging header
-  const voiceBtn = getVoiceBtn();
-  const videoBtn = getVideoBtn();
+const voiceBtn = getVoiceBtn();
+const videoBtn = getVideoBtn();
 
-  if (voiceBtn) {
-    voiceBtn.addEventListener("click", () => {
-      const peerId = window.currentChatUserId;
-      if (!peerId) return;
-      callUI.startVoiceCall(peerId);
-    });
-  }
+if (voiceBtn) {
+  voiceBtn.addEventListener("click", () => {
+    const peerId = window.currentChatUserId;
+    if (!peerId) return;
 
-  if (videoBtn) {
-    videoBtn.addEventListener("click", () => {
-      const peerId = window.currentChatUserId;
-      if (!peerId) return;
-      callUI.startVideoCall(peerId);
+    // Mobile → iOS voice UI
+    // Desktop → Meet audio-only
+    const mode = callUI._isMobile() ? "ios-voice" : "meet";
+
+    callUI.openForOutgoing(peerId, {
+      audio: true,
+      video: false,
+      mode
     });
-  }
+  });
+}
+
+if (videoBtn) {
+  videoBtn.addEventListener("click", () => {
+    const peerId = window.currentChatUserId;
+    if (!peerId) return;
+
+    // Video calls always use Meet UI
+    callUI.openForOutgoing(peerId, {
+      audio: true,
+      video: true,
+      mode: "meet"
+    });
+  });
+}
+
 
   initContentMenu();
   initDndFromContactsMenu?.();
@@ -730,6 +746,7 @@ socket.on("connect", async () => {
   // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
