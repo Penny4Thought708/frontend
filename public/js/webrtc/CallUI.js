@@ -116,6 +116,15 @@ export class CallUI {
       incomingIsVideo: !!isVideo,
     });
   }
+_setStatusText(text) {
+  if (this.callStatusEl) {
+    this.callStatusEl.textContent = text || "";
+  }
+
+  if (this.iosCallStatus) {
+    this.iosCallStatus.textContent = text || "";
+  }
+}
 
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
@@ -693,6 +702,7 @@ _setInboundActiveState(isInbound) {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
