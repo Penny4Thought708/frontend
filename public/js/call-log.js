@@ -2,9 +2,7 @@
 //  call-log.js — Polished for Node Backend + GitHub Pages
 // =======================================================
 
-import { 
-  getVoiceBtn, 
-  getVideoBtn, 
+import {  
   avatarUrl 
 } from "./session.js";
 
@@ -633,6 +631,7 @@ export function refreshCallLogs() {
   listEl.innerHTML = "";
   loadPage(true);
 }
+
 
 
 
