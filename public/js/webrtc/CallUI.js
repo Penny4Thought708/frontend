@@ -703,6 +703,37 @@ _setStatusText(text) {
       this.root.classList.remove("call-opening");
     }, 260);
   }
+// ============================================================
+// TIMER HELPERS (REQUIRED)
+// ============================================================
+_startTimer(startTs) {
+  this._stopTimer();
+
+  // If a timestamp is provided, use it. Otherwise, timer starts now.
+  this.callStartTs = startTs || Date.now();
+
+  const update = () => {
+    if (!this.callTimerEl && !this.iosCallTimer) return;
+
+    const elapsed = Math.floor((Date.now() - this.callStartTs) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const s = String(elapsed % 60).padStart(2, "0");
+    const text = `${m}:${s}`;
+
+    if (this.callTimerEl) this.callTimerEl.textContent = text;
+    if (this.iosCallTimer) this.iosCallTimer.textContent = text;
+  };
+
+  update();
+  this.callTimerInterval = setInterval(update, 1000);
+}
+
+_stopTimer() {
+  if (this.callTimerInterval) {
+    clearInterval(this.callTimerInterval);
+    this.callTimerInterval = null;
+  }
+}
 
   // ============================================================
   // UTIL
@@ -712,6 +743,7 @@ _setStatusText(text) {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
