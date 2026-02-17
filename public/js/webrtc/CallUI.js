@@ -216,202 +216,165 @@ export class CallUI {
     };
   }
 
+ _bindUI() {
   // ============================================================
-  // UI BINDING
+  // INBOUND / ACTIVE CALL CONTROLS
   // ============================================================
-
-  _bindUI() {
-    if (this.declineBtn) {
-      this.declineBtn.addEventListener("click", () => {
-        this.controller.declineCall("declined");
-        this._setStatusText("Declined");
-      });
-    }
-
-    if (this.answerBtn) {
-      this.answerBtn.addEventListener("click", async () => {
-        await this.controller.answerCall();
-        this._setInboundActiveState(false);
-      });
-    }
-
-    if (this.endCallBtn) {
-      this.endCallBtn.addEventListener("click", () => {
-        this.controller.endCall("local_hangup");
-      });
-    }
-
-    if (this.muteBtn) {
-      this.muteBtn.addEventListener("click", () => {
-        this._toggleMute();
-      });
-    }
-
-    if (this.cameraToggleBtn) {
-      this.cameraToggleBtn.addEventListener("click", () => {
-        this._toggleCamera();
-      });
-    }
-
-    if (this.moreControlsBtn && this.moreControlsMenu) {
-      this.moreControlsBtn.addEventListener("click", () => {
-        this._toggleMoreControlsMenu();
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!this.moreControlsMenu.contains(e.target) &&
-            e.target !== this.moreControlsBtn) {
-          this._hideMoreControlsMenu();
-        }
-      });
-    }
-
-    if (this.shareScreenBtn) {
-      this.shareScreenBtn.addEventListener("click", async () => {
-        if (!this.isScreenSharing) {
-          const ok = await this.controller.startScreenShare();
-          if (ok) {
-            this.isScreenSharing = true;
-          }
-        } else {
-          await this.controller.stopScreenShare();
-          this.isScreenSharing = false;
-        }
-      });
-    }
-
-    if (this.aiNoiseBtn) {
-      this.aiNoiseBtn.addEventListener("click", () => {
-        this.aiNoiseBtn.classList.toggle("active");
-        // Hook noise suppression toggle here if you add it later
-      });
-    }
-
-    if (this.recordCallBtn) {
-      this.recordCallBtn.addEventListener("click", () => {
-        this.recordCallBtn.classList.toggle("active");
-        // Hook recording logic here if you add it later
-      });
-    }
-
-    if (this.callHistoryToggleBtn) {
-      this.callHistoryToggleBtn.addEventListener("click", () => {
-        // Hook call history panel toggle
-        console.log("[CallUI] Call history toggle clicked");
-      });
-    }
-
-    // Video upgrade overlay
-    if (this.videoUpgradeAcceptMobile) {
-      this.videoUpgradeAcceptMobile.addEventListener("click", () => {
-        this._acceptVideoUpgrade();
-      });
-    }
-    if (this.videoUpgradeDeclineMobile) {
-      this.videoUpgradeDeclineMobile.addEventListener("click", () => {
-        this._declineVideoUpgrade();
-      });
-    }
-    if (this.videoUpgradeAcceptDesktop) {
-      this.videoUpgradeAcceptDesktop.addEventListener("click", () => {
-        this._acceptVideoUpgrade();
-      });
-    }
-    if (this.videoUpgradeDeclineDesktop) {
-      this.videoUpgradeDeclineDesktop.addEventListener("click", () => {
-        this._declineVideoUpgrade();
-      });
-    }
-
-    // PiP swap (double-click / double-tap)
-    if (this.localPip && this.enablePipSwap) {
-      this.localPip.addEventListener("dblclick", () => {
-        this._swapPipWithMain();
-      });
-      this.localPip.addEventListener("touchend", (e) => {
-        if (e.detail === 2) {
-          this._swapPipWithMain();
-        }
-      });
-    }
-
-    // Basic auto-hide controls on inactivity (desktop)
-    let lastMove = Date.now();
-    const showControls = () => {
-      if (!this.callControls) return;
-      this.callControls.classList.remove("hidden-soft");
-    };
-    const hideControls = () => {
-      if (!this.callControls) return;
-      this.callControls.classList.add("hidden-soft");
-    };
-
-    if (this.callBody) {
-      this.callBody.addEventListener("mousemove", () => {
-        lastMove = Date.now();
-        showControls();
-      });
-      this.callBody.addEventListener("touchstart", () => {
-        lastMove = Date.now();
-        showControls();
-      });
-
-      setInterval(() => {
-        if (!this.callControls) return;
-        if (Date.now() - lastMove > 4000) {
-          hideControls();
-        }
-      }, 1000);
-    }
+  if (this.declineBtn) {
+    this.declineBtn.addEventListener("click", () => {
+      this.controller.declineCall("declined");
+      this._setStatusText("Declined");
+    });
   }
-// ============================================================
-// GLOBAL VOICE + VIDEO CALL BUTTONS (outside call window)
-// ============================================================
-const voiceBtn = document.getElementById("voiceBtn");
-const videoBtn = document.getElementById("videoBtn");
 
-// You already track the current chat target in your session.js
-// Example: window.currentChatUserId or session.getReceiver()
-const getReceiver = () => {
-  return window.currentChatUserId || window.session?.getReceiver?.();
-};
-
-if (voiceBtn) {
-  voiceBtn.addEventListener("click", () => {
-    const peerId = getReceiver();
-    if (!peerId) return console.warn("No receiver selected for voice call");
-
-    // Open UI in correct mode (mobile = iOS voice)
-    const audioOnly = true;
-    const video = false;
-
-    const mode = this._isMobile() ? "ios-voice" : "meet";
-
-    this.openForOutgoing(peerId, {
-      audio: audioOnly,
-      video,
-      mode,
+  if (this.answerBtn) {
+    this.answerBtn.addEventListener("click", async () => {
+      await this.controller.answerCall();
+      this._setInboundActiveState(false);
     });
-  });
-}
+  }
 
-if (videoBtn) {
-  videoBtn.addEventListener("click", () => {
-    const peerId = getReceiver();
-    if (!peerId) return console.warn("No receiver selected for video call");
-
-    const audio = true;
-    const video = true;
-
-    // Desktop = meet mode, mobile = meet mode (video)
-    const mode = "meet";
-
-    this.openForOutgoing(peerId, {
-      audio,
-      video,
-      mode,
+  if (this.endCallBtn) {
+    this.endCallBtn.addEventListener("click", () => {
+      this.controller.endCall("local_hangup");
     });
-  });
+  }
+
+  if (this.muteBtn) {
+    this.muteBtn.addEventListener("click", () => {
+      this._toggleMute();
+    });
+  }
+
+  if (this.cameraToggleBtn) {
+    this.cameraToggleBtn.addEventListener("click", () => {
+      this._toggleCamera();
+    });
+  }
+
+  // ============================================================
+  // MORE CONTROLS MENU
+  // ============================================================
+  if (this.moreControlsBtn && this.moreControlsMenu) {
+    this.moreControlsBtn.addEventListener("click", () => {
+      this._toggleMoreControlsMenu();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!this.moreControlsMenu.contains(e.target) &&
+          e.target !== this.moreControlsBtn) {
+        this._hideMoreControlsMenu();
+      }
+    });
+  }
+
+  // ============================================================
+  // SCREEN SHARE
+  // ============================================================
+  if (this.shareScreenBtn) {
+    this.shareScreenBtn.addEventListener("click", async () => {
+      if (!this.isScreenSharing) {
+        const ok = await this.controller.startScreenShare();
+        if (ok) this.isScreenSharing = true;
+      } else {
+        await this.controller.stopScreenShare();
+        this.isScreenSharing = false;
+      }
+    });
+  }
+
+  // ============================================================
+  // VIDEO UPGRADE OVERLAY
+  // ============================================================
+  if (this.videoUpgradeAcceptMobile) {
+    this.videoUpgradeAcceptMobile.addEventListener("click", () => {
+      this._acceptVideoUpgrade();
+    });
+  }
+  if (this.videoUpgradeDeclineMobile) {
+    this.videoUpgradeDeclineMobile.addEventListener("click", () => {
+      this._declineVideoUpgrade();
+    });
+  }
+  if (this.videoUpgradeAcceptDesktop) {
+    this.videoUpgradeAcceptDesktop.addEventListener("click", () => {
+      this._acceptVideoUpgrade();
+    });
+  }
+  if (this.videoUpgradeDeclineDesktop) {
+    this.videoUpgradeDeclineDesktop.addEventListener("click", () => {
+      this._declineVideoUpgrade();
+    });
+  }
+
+  // ============================================================
+  // GLOBAL VOICE + VIDEO CALL BUTTONS (outside call window)
+  // ============================================================
+  const voiceBtn = document.getElementById("voiceBtn");
+  const videoBtn = document.getElementById("videoBtn");
+
+  const getReceiver = () => {
+    return window.currentChatUserId || window.session?.getReceiver?.();
+  };
+
+  if (voiceBtn) {
+    voiceBtn.addEventListener("click", () => {
+      const peerId = getReceiver();
+      if (!peerId) return console.warn("No receiver selected for voice call");
+
+      const mode = this._isMobile() ? "ios-voice" : "meet";
+
+      this.openForOutgoing(peerId, {
+        audio: true,
+        video: false,
+        mode,
+      });
+    });
+  }
+
+  if (videoBtn) {
+    videoBtn.addEventListener("click", () => {
+      const peerId = getReceiver();
+      if (!peerId) return console.warn("No receiver selected for video call");
+
+      this.openForOutgoing(peerId, {
+        audio: true,
+        video: true,
+        mode: "meet",
+      });
+    });
+  }
+
+  // ============================================================
+  // AUTO-HIDE CONTROLS
+  // ============================================================
+  let lastMove = Date.now();
+  const showControls = () => {
+    if (!this.callControls) return;
+    this.callControls.classList.remove("hidden-soft");
+  };
+  const hideControls = () => {
+    if (!this.callControls) return;
+    this.callControls.classList.add("hidden-soft");
+  };
+
+  if (this.callBody) {
+    this.callBody.addEventListener("mousemove", () => {
+      lastMove = Date.now();
+      showControls();
+    });
+    this.callBody.addEventListener("touchstart", () => {
+      lastMove = Date.now();
+      showControls();
+    });
+
+    setInterval(() => {
+      if (!this.callControls) return;
+      if (Date.now() - lastMove > 4000) {
+        hideControls();
+      }
+    }, 1000);
+  }
 }
 
   // ============================================================
@@ -937,6 +900,7 @@ _toggleCamera() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
