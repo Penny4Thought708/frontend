@@ -125,27 +125,6 @@ export function getVideoBtn() {
 export const localNameDiv = el("localName");
 export const remoteNameDiv = el("remoteName");
 
-export let localVideo;
-export let remoteVideo;
-export let remoteAudioEl;
-
-document.addEventListener("DOMContentLoaded", () => {
-  localVideo = el("localVideo");
-  remoteVideo = el("remoteVideo");
-  remoteAudioEl = el("remoteAudio");
-});
-
-export const ringtone = el("ringtone");
-export const ringback = el("ringback");
-
-export const muteBtn = el("mute-call");
-export const camBtn = el("camera-toggle");
-
-export const answerBtn = el("answer-call");
-export const declineBtn = el("decline-call");
-export const callControls = el("call-controls");
-export const endBtn = el("end-call");
-export const callerOverlay = el("callerOverlay");
 
 // -----------------------------------------------------------
 // Search UI
@@ -298,6 +277,7 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
 
 
 
