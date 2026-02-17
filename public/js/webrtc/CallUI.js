@@ -723,11 +723,25 @@ export class CallUI {
     pipEl.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  _applyPrimaryLayout(remoteOverride = null) {
-    const remoteEl =
-      remoteOverride ||
-      this.callGrid?.querySelector(".participant.remote") ||
-      null;
+      _applyPrimaryLayout(remoteOverride = null) {
+        // -------------------------------------------------------
+        // 1. Find a remote tile that actually has a real stream
+        // -------------------------------------------------------
+        let remoteEl = null;
+      
+        const allRemotes = this.callGrid?.querySelectorAll(".participant.remote") || [];
+        for (const el of allRemotes) {
+          const peerId = el.dataset.peerId;
+          const entry = window.RemoteParticipants?.getParticipant?.(peerId);
+          if (entry && entry.stream) {
+            remoteEl = el;
+            break;
+          }
+        }
+      
+        // Allow override
+        if (remoteOverride) remoteEl = remoteOverride;
+
 
     // Discord-style group layout is handled by CSS grid classes;
     // here we just decide who is primary vs PiP.
@@ -925,6 +939,7 @@ export class CallUI {
     this.callGrid?.classList.remove("screen-share-mode");
   }
 }
+
 
 
 
