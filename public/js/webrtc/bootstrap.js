@@ -1,20 +1,5 @@
 // public/js/webrtc/bootstrap.js
-// ============================================================
-// Unified WebRTC Bootstrap
-// Wires together:
-//   - socket.js
-//   - ice.js
-//   - WebRTCController (via CallUI)
-//   - CallUI
-//   - RemoteParticipants
-//   - WebRTCMedia
-//
-// Responsibilities:
-//   - Initialize socket + ICE
-//   - Initialize CallUI (which owns WebRTCController)
-//   - Initialize RemoteParticipants
-//   - Expose controller/UI for reconnect helpers
-// ============================================================
+// High-level bootstrap for WebRTC + UI + controller wiring
 
 import { socket } from "../socket.js";
 import { getIceServers } from "../ice.js";
@@ -24,6 +9,8 @@ import { initRemoteParticipants } from "./RemoteParticipants.js";
 
 import { attachLocalStream } from "./WebRTCMedia.js";
 import { rtcState } from "./WebRTCState.js";
+
+// Expose RemoteParticipants for debugging (optional)
 import * as RemoteParticipants from "./webrtc/RemoteParticipants.js";
 window.RemoteParticipants = RemoteParticipants;
 
@@ -34,62 +21,73 @@ function log(...args) {
 export async function initWebRTC() {
   log("Initializing WebRTC…");
 
-  // -------------------------------------------------------
-  // 1. Load ICE servers (optional, for future dynamic config)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     1. Load ICE servers (optional dynamic config)
+  ------------------------------------------------------- */
   try {
     rtcState.iceServers = await getIceServers();
+    log("ICE servers loaded:", rtcState.iceServers);
   } catch (e) {
-    console.warn("[BOOTSTRAP] getIceServers failed, using defaults in WebRTCController:", e);
+    console.warn(
+      "[BOOTSTRAP] getIceServers failed, using defaults in WebRTCController:",
+      e
+    );
   }
 
-  // -------------------------------------------------------
-  // 2. Create UI (which internally creates WebRTCController)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     2. Create UI (which internally creates WebRTCController)
+  ------------------------------------------------------- */
   const ui = new CallUI(socket);
-  const controller = ui.rtc; // CallUI constructor already did: this.rtc = new WebRTCController(socket)
+  const controller = ui.rtc; // CallUI constructor sets this.rtc = new WebRTCController(socket)
 
   // Expose globally for debugging / reconnect helpers
   window.rtc = controller;
   window.callUI = ui;
 
-  // -------------------------------------------------------
-  // 3. Initialize RemoteParticipants (pure tile manager)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     3. Initialize RemoteParticipants (tile manager)
+  ------------------------------------------------------- */
   initRemoteParticipants();
 
   // NOTE:
   // All controller → UI wiring is done INSIDE CallUI._bindControllerEvents().
   // We do NOT override those callbacks here to avoid breaking UI logic.
 
-  // -------------------------------------------------------
-  // 4. Screen share hooks (align with CallUI + CSS)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     4. Screen share hooks (UI + CSS alignment)
+  ------------------------------------------------------- */
   controller.onScreenShareStarted = () => {
-    // CallUI already has _enterStageMode wired via controller events,
-    // but this is a safe extra hook if you want a global class.
-    ui.callGrid?.classList.add("screen-share-mode");
+    try {
+      ui.callGrid?.classList.add("screen-share-mode");
+    } catch {}
   };
 
   controller.onScreenShareStopped = () => {
-    ui.callGrid?.classList.remove("screen-share-mode");
+    try {
+      ui.callGrid?.classList.remove("screen-share-mode");
+    } catch {}
   };
 
-  // -------------------------------------------------------
-  // 5. Remote upgraded to video (ensure UI flips to video mode)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     5. Remote upgraded to video (ensure UI flips to video mode)
+  ------------------------------------------------------- */
   const prevOnRemoteUpgraded = controller.onRemoteUpgradedToVideo;
   controller.onRemoteUpgradedToVideo = (...args) => {
     try {
       prevOnRemoteUpgraded?.(...args);
     } catch {}
-    // Make sure UI is in active video mode
-    ui._enterActiveVideoMode();
+
+    // Ensure UI is in active video mode (Meet / FaceTime)
+    try {
+      ui._enterActiveVideoMode();
+    } catch (err) {
+      console.warn("[BOOTSTRAP] _enterActiveVideoMode failed:", err);
+    }
   };
 
-  // -------------------------------------------------------
-  // 6. Reconnect handling helpers
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     6. Reconnect handling helpers
+  ------------------------------------------------------- */
   controller.isInCall = () => rtcState.inCall === true;
 
   controller.resyncAfterReconnect = () => {
@@ -99,47 +97,68 @@ export async function initWebRTC() {
 
     // Reattach local media to DOM
     if (rtcState.localStream) {
-      attachLocalStream(rtcState.localStream);
+      try {
+        attachLocalStream(rtcState.localStream);
+      } catch (err) {
+        console.warn("[BOOTSTRAP] Failed to reattach local stream:", err);
+      }
     }
 
     const peerId = rtcState.peerId;
     if (peerId) {
       const pc = controller._ensurePC(peerId);
 
+      // Re-add local tracks
       if (rtcState.localStream) {
-        rtcState.localStream.getTracks().forEach((t) =>
-          pc.addTrack(t, rtcState.localStream)
-        );
+        try {
+          rtcState.localStream.getTracks().forEach((t) =>
+            pc.addTrack(t, rtcState.localStream)
+          );
+        } catch (err) {
+          console.warn("[BOOTSTRAP] Failed to re-add local tracks:", err);
+        }
       }
 
       // Ask remote to resend offer / renegotiate
-      socket.emit("webrtc:signal", {
-        type: "resync-request",
-        from: rtcState.selfId,
-        to: peerId,
-        callId: rtcState.callId,
-      });
+      try {
+        socket.emit("webrtc:signal", {
+          type: "resync-request",
+          from: rtcState.selfId,
+          to: peerId,
+          callId: rtcState.callId,
+        });
+      } catch (err) {
+        console.warn("[BOOTSTRAP] Failed to emit resync-request:", err);
+      }
     }
 
     ui._setStatus("Reconnected");
   };
 
-  // -------------------------------------------------------
-  // 7. Global helpers (optional)
-  // -------------------------------------------------------
+  /* -------------------------------------------------------
+     7. Global helpers (optional)
+  ------------------------------------------------------- */
   window.onSocketDisconnected = () => {
-    ui._setStatus("Reconnecting…");
+    try {
+      ui._setStatus("Reconnecting…");
+    } catch {}
   };
 
   window.restorePresence = () => {
-    socket.emit("presence:restore");
+    try {
+      socket.emit("presence:restore");
+    } catch {}
   };
 
   log("WebRTC bootstrap complete");
   return { controller, ui };
 }
 
-// Auto‑init
+/* -------------------------------------------------------
+   Auto-init on DOM ready
+------------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", () => {
-  initWebRTC().catch((err) => console.error("WebRTC init failed:", err));
+  initWebRTC().catch((err) =>
+    console.error("WebRTC init failed:", err)
+  );
 });
