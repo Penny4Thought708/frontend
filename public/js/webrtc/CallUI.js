@@ -257,10 +257,74 @@ export class CallUI {
   // ============================================================
   // PRIMARY LAYOUT ENGINE
   // ============================================================
+_applyPrimaryLayout() {
+  if (this.isAnimatingSwap) return;
 
-  _applyPrimaryLayout() {
-    // Implemented in Part 2
+  let remoteEl = null;
+  const allRemotes = this.callGrid.querySelectorAll(".participant.remote");
+
+  for (const el of allRemotes) {
+    const peerId = el.dataset.peerId;
+    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
+
+    if (entry && entry.stream) {
+      remoteEl = el;
+      break;
+    }
   }
+
+  const hasRemote = !!remoteEl;
+
+  const count = hasRemote ? 2 : 1;
+
+  this.callGrid.classList.remove(
+    "participants-1",
+    "participants-2",
+    "participants-3",
+    "participants-4",
+    "participants-5",
+    "participants-6",
+    "participants-7",
+    "participants-8",
+    "participants-9",
+    "participants-many"
+  );
+
+  if (count === 1) this.callGrid.classList.add("participants-1");
+  if (count === 2) this.callGrid.classList.add("participants-2");
+
+  if (!hasRemote) {
+    this.primaryIsRemote = false;
+    this.localTile.classList.remove("hidden");
+    if (remoteEl) remoteEl.classList.add("hidden");
+    this.localPip.classList.add("hidden");
+    this.remotePip.classList.add("hidden");
+    return;
+  }
+
+  if (this.primaryIsRemote) {
+    remoteEl.classList.remove("hidden");
+    this.localTile.classList.add("hidden");
+    this.localPip.classList.remove("hidden");
+    this.remotePip.classList.add("hidden");
+    this.localPipVideo.srcObject = this.localVideo.srcObject;
+    this._applyPipTransform(this.localPip);
+  } else {
+    this.localTile.classList.remove("hidden");
+    remoteEl.classList.add("hidden");
+    this.remotePip.classList.remove("hidden");
+    this.localPip.classList.add("hidden");
+
+    const peerId = remoteEl.dataset.peerId;
+    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
+    if (entry?.videoEl?.srcObject) {
+      this.remotePipVideo.srcObject = entry.videoEl.srcObject;
+    }
+
+    this._applyPipTransform(this.remotePip);
+  }
+}
+
 
   // ============================================================
   // END CALL
@@ -276,20 +340,7 @@ export class CallUI {
     }, 220);
   }
 }
-// ============================================================
-// PRIMARY LAYOUT ENGINE
-// ============================================================
-//
-// This function decides:
-//   - Which tile is primary (local or remote)
-//   - Which PiP is visible
-//   - Which grid tiles are visible
-//   - How many participants are shown
-//   - Which layout mode to use (Meet/Discord)
-// ============================================================
 
-_applyPrimaryLayout() {
-  if (this.isAnimatingSwap) return;
 
   // ------------------------------------------------------------
   // 1. Detect remote participant with a real video stream
@@ -1050,6 +1101,7 @@ _init() {
 // ============================================================
 
 export default CallUI;
+
 
 
 
