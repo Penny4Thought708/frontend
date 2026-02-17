@@ -335,7 +335,6 @@ export class WebRTCController {
           err("restartIce failed on connectionState 'failed':", e);
         }
       }
-
       if (state === "disconnected" || state === "closed") {
         this._handleLeave(peerId);
       }
@@ -838,6 +837,7 @@ export class WebRTCController {
     }
   }
 }
+
 
 
 
