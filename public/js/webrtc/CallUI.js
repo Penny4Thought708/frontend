@@ -672,6 +672,16 @@ _setInboundActiveState(isInbound) {
   }
 }
 
+_setStatusText(text) {
+  if (this.callStatusEl) {
+    this.callStatusEl.textContent = text || "";
+  }
+  if (this.iosCallStatus) {
+    this.iosCallStatus.textContent = text || "";
+  }
+}
+
+
   // ============================================================
   // WINDOW OPEN/CLOSE
   // ============================================================
@@ -702,6 +712,7 @@ _setInboundActiveState(isInbound) {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
