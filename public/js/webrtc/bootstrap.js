@@ -24,6 +24,8 @@ import { initRemoteParticipants } from "./RemoteParticipants.js";
 
 import { attachLocalStream } from "./WebRTCMedia.js";
 import { rtcState } from "./WebRTCState.js";
+import * as RemoteParticipants from "./webrtc/RemoteParticipants.js";
+window.RemoteParticipants = RemoteParticipants;
 
 function log(...args) {
   console.log("[BOOTSTRAP]", ...args);
