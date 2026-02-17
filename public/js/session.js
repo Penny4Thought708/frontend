@@ -1,11 +1,12 @@
-/* ============================================================
-   SESSION + DOM + HELPERS (Node backend compatible)
-   Fully rewritten for new UI architecture
-============================================================ */
+// public/js/session.js
+// ============================================================
+// SESSION + DOM + HELPERS (Node backend compatible)
+// Fully rewritten for new UI architecture
+// ============================================================
 
 // -----------------------------------------------------------
 // Imports MUST be first in ES modules
-/* -----------------------------------------------------------*/
+// -----------------------------------------------------------
 import { DEBUG } from "./debug.js";
 import { socket } from "./socket.js";
 
@@ -87,11 +88,11 @@ const el = (id) => document.getElementById(id);
 const qs = (sel) => document.querySelector(sel);
 
 // -----------------------------------------------------------
-// Messaging UI Elements (UPDATED FOR NEW UI)
+// Messaging UI Elements
 // -----------------------------------------------------------
 export const msgForm = el("text_box_reply");
 export const msgInput = el("message_input");
-export const messageWin = el("messageWin"); // FIXED selector
+export const messageWin = el("messageWin");
 
 export const attachmentInput = el("attachment_input");
 export const previewDiv = el("attachmentPreview");
@@ -102,29 +103,11 @@ export const badge = qs(".notification-badge .badge");
 export const messageBox = el("messaging_box");
 
 // -----------------------------------------------------------
-// Lookup UI (Conwrap)
+// Lookup UI
 // -----------------------------------------------------------
 export const lookupBtn = el("lookup-btn");
 export const lookupInput = el("lookup-input");
 export const lookupResults = el("contacts-lookup");
-
-// -----------------------------------------------------------
-// Call UI Elements
-// -----------------------------------------------------------
-export const videoContainer = el("video-container");
-export const remoteWrapper = el("remoteWrapper");
-export const localWrapper = el("localVideoWrapper");
-
-export function getVoiceBtn() {
-  return el("voiceBtn");
-}
-export function getVideoBtn() {
-  return el("videoBtn");
-}
-
-export const localNameDiv = el("localName");
-export const remoteNameDiv = el("remoteName");
-
 
 // -----------------------------------------------------------
 // Search UI
@@ -277,6 +260,8 @@ function resetInactivityTimer() {
   window.addEventListener(evt, resetInactivityTimer);
 });
 resetInactivityTimer();
+
+
 
 
 
