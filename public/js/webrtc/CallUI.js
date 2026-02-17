@@ -364,6 +364,55 @@ export class CallUI {
       }, 1000);
     }
   }
+// ============================================================
+// GLOBAL VOICE + VIDEO CALL BUTTONS (outside call window)
+// ============================================================
+const voiceBtn = document.getElementById("voiceBtn");
+const videoBtn = document.getElementById("videoBtn");
+
+// You already track the current chat target in your session.js
+// Example: window.currentChatUserId or session.getReceiver()
+const getReceiver = () => {
+  return window.currentChatUserId || window.session?.getReceiver?.();
+};
+
+if (voiceBtn) {
+  voiceBtn.addEventListener("click", () => {
+    const peerId = getReceiver();
+    if (!peerId) return console.warn("No receiver selected for voice call");
+
+    // Open UI in correct mode (mobile = iOS voice)
+    const audioOnly = true;
+    const video = false;
+
+    const mode = this._isMobile() ? "ios-voice" : "meet";
+
+    this.openForOutgoing(peerId, {
+      audio: audioOnly,
+      video,
+      mode,
+    });
+  });
+}
+
+if (videoBtn) {
+  videoBtn.addEventListener("click", () => {
+    const peerId = getReceiver();
+    if (!peerId) return console.warn("No receiver selected for video call");
+
+    const audio = true;
+    const video = true;
+
+    // Desktop = meet mode, mobile = meet mode (video)
+    const mode = "meet";
+
+    this.openForOutgoing(peerId, {
+      audio,
+      video,
+      mode,
+    });
+  });
+}
 
   // ============================================================
   // PIP DRAGGING
@@ -825,25 +874,35 @@ export class CallUI {
     this.moreControlsMenu.classList.add("hidden");
   }
 
-  _toggleMute() {
-    this.isMuted = !this.isMuted;
-    // You can wire actual audio track mute here via rtcState.localStream
-    if (this.muteBtn) {
-      this.muteBtn.classList.toggle("active", this.isMuted);
-    }
+_toggleMute() {
+  this.isMuted = !this.isMuted;
+
+  const stream = window.rtcState?.localStream;
+  if (stream) {
+    stream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
   }
 
-  _toggleCamera() {
-    this.isCameraOn = !this.isCameraOn;
-    if (this.isCameraOn) {
-      this.root.classList.remove("camera-off");
-    } else {
-      this.root.classList.add("camera-off");
-    }
-    if (this.cameraToggleBtn) {
-      this.cameraToggleBtn.classList.toggle("active", this.isCameraOn);
-    }
+  this.muteBtn.classList.toggle("active", this.isMuted);
+}
+
+
+_toggleCamera() {
+  this.isCameraOn = !this.isCameraOn;
+
+  const stream = window.rtcState?.localStream;
+  if (stream) {
+    stream.getVideoTracks().forEach(t => t.enabled = this.isCameraOn);
   }
+
+  if (this.isCameraOn) {
+    this.root.classList.remove("camera-off");
+  } else {
+    this.root.classList.add("camera-off");
+  }
+
+  this.cameraToggleBtn.classList.toggle("active", this.isCameraOn);
+}
+
 
   // ============================================================
   // iOS VOICE UI
@@ -878,6 +937,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
