@@ -1,12 +1,17 @@
 // public/js/webrtc/CallUI.js
-// ============================================================
-// CallUI: owns layout, PiP, modes, overlays, timers, and
-// connects WebRTCController to your HTML/CSS.
-// ============================================================
+// High-performance, production-grade call window UI
+// - Mobile: iOS voice + FaceTime-style PiP
+// - Web: Google Meet-style layout
+// - Group: Discord-style grid
+
+import { WebRTCController } from "./WebRTCController.js";
+import { rtcState } from "./WebRTCState.js";
 
 export class CallUI {
-  constructor(controller, options = {}) {
-    this.controller = controller;
+  constructor(socket, options = {}) {
+    // Controller (source of truth for signaling + media)
+    this.rtc = new WebRTCController(socket);
+    this.controller = this.rtc;
 
     // Mode preferences / feature flags
     this.enablePipSwap = options.enablePipSwap ?? true;
@@ -28,10 +33,10 @@ export class CallUI {
     this.remotePip = document.getElementById("remotePip");
     this.remotePipVideo = document.getElementById("remotePipVideo");
 
-    this.iosVoiceUI = this.root.querySelector(".ios-voice-ui");
+    this.iosVoiceUI = this.root?.querySelector(".ios-voice-ui");
     this.iosVoiceAvatar = document.getElementById("iosVoiceAvatar");
-    this.iosCallStatus = this.root.querySelector(".ios-call-status");
-    this.iosCallTimer = this.root.querySelector(".ios-call-timer");
+    this.iosCallStatus = this.root?.querySelector(".ios-call-status");
+    this.iosCallTimer = this.root?.querySelector(".ios-call-timer");
 
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
@@ -110,8 +115,8 @@ export class CallUI {
   }
 
   /**
-   * Called from bootstrap when backend emits call:start.
-   * Keeps a simple API for app.js: callUI.receiveInboundCall(from, isVideo)
+   * Called from app when backend emits call:start.
+   * Keeps a simple API: callUI.receiveInboundCall(from, isVideo)
    */
   receiveInboundCall(peerId, isVideo) {
     this.showInboundRinging(peerId, {
@@ -130,8 +135,6 @@ export class CallUI {
 
     if (this._isMobile() && audioOnly) {
       mode = "ios-voice";
-    } else if (mode === "discord") {
-      // keep discord if explicitly requested later for group
     }
 
     this._setMode(mode, { audioOnly });
@@ -149,6 +152,7 @@ export class CallUI {
     this._setStatusText("Idle");
     this._setMode("meet", { audioOnly: false });
 
+    if (!this.root) return;
     this.root.classList.remove("is-open", "call-opening", "inbound-mode", "active-mode");
     this.root.classList.add("hidden");
     this.root.style.opacity = "0";
@@ -169,10 +173,20 @@ export class CallUI {
       this._onCallEnded(reason);
     };
 
-    c.onIncomingOffer = (peerId) => {
-      this.showInboundRinging(peerId, {
-        incomingIsVideo: window.rtcState?.incomingIsVideo,
-      });
+    c.onIncomingOffer = (peerId, offer) => {
+      // Distinguish between fresh inbound call vs in-call video upgrade
+      const isUpgrade =
+        rtcState.status === "in-call" &&
+        rtcState.incomingIsVideo &&
+        rtcState.audioOnly;
+
+      if (isUpgrade) {
+        this.showVideoUpgradeOverlay(peerId, offer);
+      } else {
+        this.showInboundRinging(peerId, {
+          incomingIsVideo: rtcState.incomingIsVideo,
+        });
+      }
     };
 
     c.onIncomingOfferQueued = (peerId, offer, callId) => {
@@ -212,6 +226,11 @@ export class CallUI {
 
     c.onPeerUnavailable = (reason) => {
       this._onPeerUnavailable(reason);
+    };
+
+    c.onRemoteUpgradedToVideo = () => {
+      // Ensure UI is in active video mode when remote upgrades
+      this._enterActiveVideoMode();
     };
   }
 
@@ -260,8 +279,10 @@ export class CallUI {
       });
 
       document.addEventListener("click", (e) => {
-        if (!this.moreControlsMenu.contains(e.target) &&
-            e.target !== this.moreControlsBtn) {
+        if (
+          !this.moreControlsMenu.contains(e.target) &&
+          e.target !== this.moreControlsBtn
+        ) {
           this._hideMoreControlsMenu();
         }
       });
@@ -417,7 +438,9 @@ export class CallUI {
     const attachDragHandlers = (el) => {
       if (!el) return;
       el.addEventListener("mousedown", (e) => startDrag(el, e));
-      el.addEventListener("touchstart", (e) => startDrag(el, e), { passive: false });
+      el.addEventListener("touchstart", (e) => startDrag(el, e), {
+        passive: false,
+      });
     };
 
     attachDragHandlers(this.localPip);
@@ -529,12 +552,22 @@ export class CallUI {
     }, 1200);
   }
 
+  _enterActiveVideoMode() {
+    if (this.currentMode === "ios-voice") {
+      this._setMode("meet", { audioOnly: false });
+      this._showLocalPip(true);
+      this._updateIosVoiceStatus("");
+    }
+  }
+
   // ============================================================
   // MODE + LAYOUT
   // ============================================================
 
   _setMode(mode, { audioOnly = false } = {}) {
     this.currentMode = mode;
+
+    if (!this.root || !this.callGrid) return;
 
     this.root.classList.remove("meet-mode", "discord-mode", "ios-voice-mode");
     this.callGrid.classList.remove("discord-layout");
@@ -607,7 +640,7 @@ export class CallUI {
     peerId = String(peerId);
     if (this.remoteTiles.has(peerId)) return this.remoteTiles.get(peerId);
 
-    if (!this.remoteTemplate) return null;
+    if (!this.remoteTemplate || !this.callGrid) return null;
     const clone = this.remoteTemplate.content.firstElementChild.cloneNode(true);
     clone.dataset.peerId = peerId;
 
@@ -637,7 +670,7 @@ export class CallUI {
 
   _updateParticipantTile(peerId, data) {
     peerId = String(peerId);
-    if (peerId === "local" || peerId === window.rtcState?.selfId) {
+    if (peerId === "local" || peerId === rtcState.selfId) {
       if (!this.localTile) return;
       this.localTile.classList.toggle("voice-only", !!data?.voiceOnly);
       this.localTile.classList.toggle("speaking", !!data?.speaking);
@@ -664,7 +697,13 @@ export class CallUI {
     this.remoteTiles.forEach((tile) => tile.el.remove());
     this.remoteTiles.clear();
     if (this.localTile) {
-      this.localTile.classList.remove("presenting", "voice-only", "speaking", "active-speaker", "stage");
+      this.localTile.classList.remove(
+        "presenting",
+        "voice-only",
+        "speaking",
+        "active-speaker",
+        "stage"
+      );
     }
   }
 
@@ -712,7 +751,7 @@ export class CallUI {
   // ============================================================
 
   showVideoUpgradeOverlay(peerId, offer) {
-    if (!this.videoUpgradeOverlay) return;
+    if (!this.videoUpgradeOverlay || !this.callGrid || !this.root) return;
 
     this.videoUpgradeOverlay.classList.remove("hidden");
     this.videoUpgradeOverlay.classList.add("show");
@@ -726,7 +765,7 @@ export class CallUI {
   }
 
   _hideVideoUpgradeOverlay() {
-    if (!this.videoUpgradeOverlay) return;
+    if (!this.videoUpgradeOverlay || !this.callGrid || !this.root) return;
     this.videoUpgradeOverlay.classList.remove("show");
     this.videoUpgradeOverlay.classList.add("hidden");
     this.root.classList.remove("video-upgrade-mode");
@@ -734,20 +773,16 @@ export class CallUI {
   }
 
   _acceptVideoUpgrade() {
-    // If we were in iOS voice, transition to Meet-style video
     const wasIosVoice = this.currentMode === "ios-voice";
 
-    if (window.rtcState?.isCaller) {
+    if (rtcState.isCaller) {
       this.controller.upgradeToVideo();
     } else {
       this.controller.answerCall();
     }
 
     if (wasIosVoice) {
-      // iOS voice → Meet video transition
-      this._setMode("meet", { audioOnly: false });
-      this._showLocalPip(true);
-      this._updateIosVoiceStatus("");
+      this._enterActiveVideoMode();
     }
 
     this._hideVideoUpgradeOverlay();
@@ -834,7 +869,7 @@ export class CallUI {
   _toggleMute() {
     this.isMuted = !this.isMuted;
 
-    const stream = window.rtcState?.localStream;
+    const stream = rtcState.localStream;
     if (stream) {
       stream.getAudioTracks().forEach((t) => {
         t.enabled = !this.isMuted;
@@ -849,17 +884,19 @@ export class CallUI {
   _toggleCamera() {
     this.isCameraOn = !this.isCameraOn;
 
-    const stream = window.rtcState?.localStream;
+    const stream = rtcState.localStream;
     if (stream) {
       stream.getVideoTracks().forEach((t) => {
         t.enabled = this.isCameraOn;
       });
     }
 
-    if (this.isCameraOn) {
-      this.root.classList.remove("camera-off");
-    } else {
-      this.root.classList.add("camera-off");
+    if (this.root) {
+      if (this.isCameraOn) {
+        this.root.classList.remove("camera-off");
+      } else {
+        this.root.classList.add("camera-off");
+      }
     }
 
     if (this.cameraToggleBtn) {
@@ -900,12 +937,4 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
-
-
-
-
-
-
-
-
 
