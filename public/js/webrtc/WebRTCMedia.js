@@ -133,7 +133,6 @@ function createFakeStream() {
 
   return new MediaStream([fakeAudioTrack, fakeVideoTrack]);
 }
-
 // ============================================================
 // ATTACH LOCAL STREAM (primary + PiP)
 // ============================================================
@@ -142,6 +141,9 @@ export function attachLocalStream(stream) {
 
   const localVideo = document.getElementById("localVideo");
   const pipVideo = document.getElementById("localPipVideo");
+  const localAvatarWrapper = document
+    .getElementById("localAvatarImg")
+    ?.closest(".avatar-wrapper");
 
   const bind = (el) => {
     if (!el) return;
@@ -150,6 +152,10 @@ export function attachLocalStream(stream) {
       el.muted = true;
       el.playsInline = true;
       el.setAttribute("autoplay", "true");
+
+      // Make sure CSS knows this video should be visible
+      el.classList.add("show");
+
       const tryPlay = () => el.play().catch(() => {});
       if (el.readyState >= 2) tryPlay();
       else el.onloadedmetadata = tryPlay;
@@ -160,6 +166,21 @@ export function attachLocalStream(stream) {
 
   bind(localVideo);
   bind(pipVideo);
+
+  // Hide local avatar when we have a real video track
+  try {
+    const hasVideo =
+      stream &&
+      stream.getVideoTracks &&
+      stream.getVideoTracks().length > 0 &&
+      stream.getVideoTracks()[0].readyState === "live";
+
+    if (hasVideo && localAvatarWrapper) {
+      localAvatarWrapper.classList.add("hidden");
+    }
+  } catch (e) {
+    // non-fatal
+  }
 }
 
 // ============================================================
@@ -331,6 +352,7 @@ export function cleanupMedia() {
   }
   rtcState.remoteStreams = {};
 }
+
 
 
 
