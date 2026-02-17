@@ -4,34 +4,25 @@
 // Wires together:
 //   - socket.js
 //   - ice.js
-//   - WebRTCController
+//   - WebRTCController (via CallUI)
 //   - CallUI
 //   - RemoteParticipants
 //   - WebRTCMedia
 //
 // Responsibilities:
 //   - Initialize socket + ICE
-//   - Initialize WebRTCController
-//   - Initialize CallUI
+//   - Initialize CallUI (which owns WebRTCController)
 //   - Initialize RemoteParticipants
-//   - Bind controller → UI events
-//   - Bind UI → controller actions
-//   - Handle reconnect + call state restore
+//   - Expose controller/UI for reconnect helpers
 // ============================================================
 
 import { socket } from "../socket.js";
 import { getIceServers } from "../ice.js";
 
-import { WebRTCController } from "./WebRTCController.js";
 import { CallUI } from "./CallUI.js";
-import { RemoteParticipants } from "./RemoteParticipants.js";
+import { initRemoteParticipants } from "./RemoteParticipants.js";
 
-import {
-  attachLocalStream,
-  attachRemoteTrack,
-  cleanupMedia,
-} from "./WebRTCMedia.js";
-
+import { attachLocalStream } from "./WebRTCMedia.js";
 import { rtcState } from "./WebRTCState.js";
 
 function log(...args) {
@@ -42,101 +33,61 @@ export async function initWebRTC() {
   log("Initializing WebRTC…");
 
   // -------------------------------------------------------
-  // 1. Load ICE servers
+  // 1. Load ICE servers (optional, for future dynamic config)
   // -------------------------------------------------------
-  rtcState.iceServers = await getIceServers();
+  try {
+    rtcState.iceServers = await getIceServers();
+  } catch (e) {
+    console.warn("[BOOTSTRAP] getIceServers failed, using defaults in WebRTCController:", e);
+  }
 
   // -------------------------------------------------------
-  // 2. Create controller + UI + participants
+  // 2. Create UI (which internally creates WebRTCController)
   // -------------------------------------------------------
-  const controller = new WebRTCController(socket);
   const ui = new CallUI(socket);
-  const participants = new RemoteParticipants();
+  const controller = ui.rtc; // CallUI constructor already did: this.rtc = new WebRTCController(socket)
 
-  // Expose globally for reconnect logic
+  // Expose globally for debugging / reconnect helpers
   window.rtc = controller;
+  window.callUI = ui;
 
   // -------------------------------------------------------
-  // 3. Wire controller → UI
+  // 3. Initialize RemoteParticipants (pure tile manager)
   // -------------------------------------------------------
+  initRemoteParticipants();
 
-  controller.onIncomingOffer = (peerId, offer) => {
-    log("Incoming offer → UI");
-    ui.receiveInboundCall(peerId, rtcState.incomingIsVideo);
-  };
+  // NOTE:
+  // All controller → UI wiring is done INSIDE CallUI._bindControllerEvents().
+  // We do NOT override those callbacks here to avoid breaking UI logic.
 
-  controller.onIncomingOfferQueued = (peerId) => {
-    log("Incoming offer queued");
-    ui._showUnavailableToast("Incoming call queued");
-  };
-
-  controller.onCallStarted = () => {
-    log("Call started");
-    ui._setStatus("Connected");
-  };
-
-  controller.onCallEnded = (reason) => {
-    log("Call ended:", reason);
-    ui._resetUI();
-  };
-
-  controller.onRemoteJoin = (peerId) => {
-    log("Remote joined:", peerId);
-    ui._setStatus("Connected");
-    ui._applyPrimaryLayout();
-  };
-
-  controller.onRemoteLeave = (peerId) => {
-    log("Remote left:", peerId);
-    ui._setStatus("Remote left");
-    ui._resetUI();
-  };
-
-  controller.onPeerUnavailable = (reason) => {
-    log("Peer unavailable:", reason);
-    ui._showUnavailableToast(reason);
-  };
-
+  // -------------------------------------------------------
+  // 4. Screen share hooks (align with CallUI + CSS)
+  // -------------------------------------------------------
   controller.onScreenShareStarted = () => {
-    ui.videoContainer?.classList.add("screen-sharing");
+    // CallUI already has _enterStageMode wired via controller events,
+    // but this is a safe extra hook if you want a global class.
+    ui.callGrid?.classList.add("screen-share-mode");
   };
 
   controller.onScreenShareStopped = () => {
-    ui.videoContainer?.classList.remove("screen-sharing");
-  };
-
-  controller.onParticipantUpdate = (peerId, info) => {
-    if (info) participants.upsertParticipant(peerId, info);
-    else participants.removeParticipant(peerId);
-  };
-
-  // Active speaker detection
-  controller.onRemoteAudioTrack = (peerId, stream) => {
-    participants.startActiveSpeaker(peerId, stream);
+    ui.callGrid?.classList.remove("screen-share-mode");
   };
 
   // -------------------------------------------------------
-  // 4. Wire UI → controller
+  // 5. Remote upgraded to video (ensure UI flips to video mode)
   // -------------------------------------------------------
-
-  ui.rtc = controller; // UI already expects this
-
-  ui.startVoiceCall = (peerId) => {
-    controller.startCall(peerId, { audio: true, video: false });
+  const prevOnRemoteUpgraded = controller.onRemoteUpgradedToVideo;
+  controller.onRemoteUpgradedToVideo = (...args) => {
+    try {
+      prevOnRemoteUpgraded?.(...args);
+    } catch {}
+    // Make sure UI is in active video mode
+    ui._enterActiveVideoMode();
   };
 
-  ui.startVideoCall = (peerId) => {
-    controller.startCall(peerId, { audio: true, video: true });
-  };
-
-  ui.answerCall = () => controller.answerCall();
-  ui.endCall = () => controller.endCall();
-  ui.upgradeToVideo = () => controller.upgradeToVideo();
-
   // -------------------------------------------------------
-  // 5. Reconnect handling
+  // 6. Reconnect handling helpers
   // -------------------------------------------------------
-
   controller.isInCall = () => rtcState.inCall === true;
 
   controller.resyncAfterReconnect = () => {
@@ -144,12 +95,11 @@ export async function initWebRTC() {
 
     if (!rtcState.inCall) return;
 
-    // Reattach local media
+    // Reattach local media to DOM
     if (rtcState.localStream) {
       attachLocalStream(rtcState.localStream);
     }
 
-    // Rebuild peer connection
     const peerId = rtcState.peerId;
     if (peerId) {
       const pc = controller._ensurePC(peerId);
@@ -160,7 +110,7 @@ export async function initWebRTC() {
         );
       }
 
-      // Ask remote to resend offer
+      // Ask remote to resend offer / renegotiate
       socket.emit("webrtc:signal", {
         type: "resync-request",
         from: rtcState.selfId,
@@ -173,18 +123,8 @@ export async function initWebRTC() {
   };
 
   // -------------------------------------------------------
-  // 6. Global helpers
+  // 7. Global helpers (optional)
   // -------------------------------------------------------
-
-  window.flushBufferedCandidates = () => {
-    if (!rtcState.bufferedCandidates) return;
-    const peerId = rtcState.peerId;
-    const pc = controller._ensurePC(peerId);
-
-    rtcState.bufferedCandidates.forEach((c) => pc.addIceCandidate(c));
-    rtcState.bufferedCandidates = [];
-  };
-
   window.onSocketDisconnected = () => {
     ui._setStatus("Reconnecting…");
   };
@@ -194,10 +134,10 @@ export async function initWebRTC() {
   };
 
   log("WebRTC bootstrap complete");
-  return { controller, ui, participants };
+  return { controller, ui };
 }
 
-// Auto‑init if desired
+// Auto‑init
 document.addEventListener("DOMContentLoaded", () => {
   initWebRTC().catch((err) => console.error("WebRTC init failed:", err));
 });
