@@ -69,11 +69,9 @@ export class CallUI {
     this.isCameraOn = true;
     this.isScreenSharing = false;
     this.isInbound = false;
-    this.incomingUpgradeOffer = null;
-    this.incomingUpgradePeerId = null;
 
     // PiP state
-    this.pipSwapActive = true; // local ↔ remote swap enabled
+    this.pipSwapActive = true;
     this.pipDragState = {
       active: false,
       target: null,
@@ -112,23 +110,28 @@ export class CallUI {
   }
 
   /**
-   * Called when an inbound offer arrives.
-   * We just show the window in inbound mode and let user accept/decline.
+   * Called from bootstrap when backend emits call:start.
+   * Keeps a simple API for app.js: callUI.receiveInboundCall(from, isVideo)
+   */
+  receiveInboundCall(peerId, isVideo) {
+    this.showInboundRinging(peerId, {
+      incomingIsVideo: !!isVideo,
+    });
+  }
+
+  /**
+   * Called when an inbound offer arrives from WebRTCController.
    */
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
 
-    // Decide mode:
-    // - if iOS/mobile + audio-only → ios-voice
-    // - if group (later) → discord
-    // - else meet
     const audioOnly = !incomingIsVideo;
     let mode = modeHint || "meet";
 
     if (this._isMobile() && audioOnly) {
       mode = "ios-voice";
     } else if (mode === "discord") {
-      // keep as discord if caller wants group style
+      // keep discord if explicitly requested later for group
     }
 
     this._setMode(mode, { audioOnly });
@@ -166,17 +169,13 @@ export class CallUI {
       this._onCallEnded(reason);
     };
 
-    c.onIncomingOffer = (peerId, offer) => {
-      // Decide mode based on offer (audio/video) via rtcState,
-      // but controller already computed incomingIsVideo.
+    c.onIncomingOffer = (peerId) => {
       this.showInboundRinging(peerId, {
         incomingIsVideo: window.rtcState?.incomingIsVideo,
       });
     };
 
     c.onIncomingOfferQueued = (peerId, offer, callId) => {
-      // Could show a subtle toast "New call waiting"
-      // For now, just log.
       console.log("[CallUI] Incoming offer queued from", peerId, callId);
     };
 
@@ -216,166 +215,153 @@ export class CallUI {
     };
   }
 
- _bindUI() {
   // ============================================================
-  // INBOUND / ACTIVE CALL CONTROLS
+  // UI BINDING
   // ============================================================
-  if (this.declineBtn) {
-    this.declineBtn.addEventListener("click", () => {
-      this.controller.declineCall("declined");
-      this._setStatusText("Declined");
-    });
-  }
 
-  if (this.answerBtn) {
-    this.answerBtn.addEventListener("click", async () => {
-      await this.controller.answerCall();
-      this._setInboundActiveState(false);
-    });
-  }
-
-  if (this.endCallBtn) {
-    this.endCallBtn.addEventListener("click", () => {
-      this.controller.endCall("local_hangup");
-    });
-  }
-
-  if (this.muteBtn) {
-    this.muteBtn.addEventListener("click", () => {
-      this._toggleMute();
-    });
-  }
-
-  if (this.cameraToggleBtn) {
-    this.cameraToggleBtn.addEventListener("click", () => {
-      this._toggleCamera();
-    });
-  }
-
-  // ============================================================
-  // MORE CONTROLS MENU
-  // ============================================================
-  if (this.moreControlsBtn && this.moreControlsMenu) {
-    this.moreControlsBtn.addEventListener("click", () => {
-      this._toggleMoreControlsMenu();
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!this.moreControlsMenu.contains(e.target) &&
-          e.target !== this.moreControlsBtn) {
-        this._hideMoreControlsMenu();
-      }
-    });
-  }
-
-  // ============================================================
-  // SCREEN SHARE
-  // ============================================================
-  if (this.shareScreenBtn) {
-    this.shareScreenBtn.addEventListener("click", async () => {
-      if (!this.isScreenSharing) {
-        const ok = await this.controller.startScreenShare();
-        if (ok) this.isScreenSharing = true;
-      } else {
-        await this.controller.stopScreenShare();
-        this.isScreenSharing = false;
-      }
-    });
-  }
-
-  // ============================================================
-  // VIDEO UPGRADE OVERLAY
-  // ============================================================
-  if (this.videoUpgradeAcceptMobile) {
-    this.videoUpgradeAcceptMobile.addEventListener("click", () => {
-      this._acceptVideoUpgrade();
-    });
-  }
-  if (this.videoUpgradeDeclineMobile) {
-    this.videoUpgradeDeclineMobile.addEventListener("click", () => {
-      this._declineVideoUpgrade();
-    });
-  }
-  if (this.videoUpgradeAcceptDesktop) {
-    this.videoUpgradeAcceptDesktop.addEventListener("click", () => {
-      this._acceptVideoUpgrade();
-    });
-  }
-  if (this.videoUpgradeDeclineDesktop) {
-    this.videoUpgradeDeclineDesktop.addEventListener("click", () => {
-      this._declineVideoUpgrade();
-    });
-  }
-
-  // ============================================================
-  // GLOBAL VOICE + VIDEO CALL BUTTONS (outside call window)
-  // ============================================================
-  const voiceBtn = document.getElementById("voiceBtn");
-  const videoBtn = document.getElementById("videoBtn");
-
-  const getReceiver = () => {
-    return window.currentChatUserId || window.session?.getReceiver?.();
-  };
-
-  if (voiceBtn) {
-    voiceBtn.addEventListener("click", () => {
-      const peerId = getReceiver();
-      if (!peerId) return console.warn("No receiver selected for voice call");
-
-      const mode = this._isMobile() ? "ios-voice" : "meet";
-
-      this.openForOutgoing(peerId, {
-        audio: true,
-        video: false,
-        mode,
+  _bindUI() {
+    // Inbound / active controls
+    if (this.declineBtn) {
+      this.declineBtn.addEventListener("click", () => {
+        this.controller.declineCall("declined");
+        this._setStatusText("Declined");
       });
-    });
-  }
+    }
 
-  if (videoBtn) {
-    videoBtn.addEventListener("click", () => {
-      const peerId = getReceiver();
-      if (!peerId) return console.warn("No receiver selected for video call");
-
-      this.openForOutgoing(peerId, {
-        audio: true,
-        video: true,
-        mode: "meet",
+    if (this.answerBtn) {
+      this.answerBtn.addEventListener("click", async () => {
+        await this.controller.answerCall();
+        this._setInboundActiveState(false);
       });
-    });
-  }
+    }
 
-  // ============================================================
-  // AUTO-HIDE CONTROLS
-  // ============================================================
-  let lastMove = Date.now();
-  const showControls = () => {
-    if (!this.callControls) return;
-    this.callControls.classList.remove("hidden-soft");
-  };
-  const hideControls = () => {
-    if (!this.callControls) return;
-    this.callControls.classList.add("hidden-soft");
-  };
+    if (this.endCallBtn) {
+      this.endCallBtn.addEventListener("click", () => {
+        this.controller.endCall("local_hangup");
+      });
+    }
 
-  if (this.callBody) {
-    this.callBody.addEventListener("mousemove", () => {
-      lastMove = Date.now();
-      showControls();
-    });
-    this.callBody.addEventListener("touchstart", () => {
-      lastMove = Date.now();
-      showControls();
-    });
+    if (this.muteBtn) {
+      this.muteBtn.addEventListener("click", () => {
+        this._toggleMute();
+      });
+    }
 
-    setInterval(() => {
+    if (this.cameraToggleBtn) {
+      this.cameraToggleBtn.addEventListener("click", () => {
+        this._toggleCamera();
+      });
+    }
+
+    // More controls menu
+    if (this.moreControlsBtn && this.moreControlsMenu) {
+      this.moreControlsBtn.addEventListener("click", () => {
+        this._toggleMoreControlsMenu();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!this.moreControlsMenu.contains(e.target) &&
+            e.target !== this.moreControlsBtn) {
+          this._hideMoreControlsMenu();
+        }
+      });
+    }
+
+    // Screen share
+    if (this.shareScreenBtn) {
+      this.shareScreenBtn.addEventListener("click", async () => {
+        if (!this.isScreenSharing) {
+          const ok = await this.controller.startScreenShare();
+          if (ok) this.isScreenSharing = true;
+        } else {
+          await this.controller.stopScreenShare();
+          this.isScreenSharing = false;
+        }
+      });
+    }
+
+    // AI noise + recording toggles (UI only for now)
+    if (this.aiNoiseBtn) {
+      this.aiNoiseBtn.addEventListener("click", () => {
+        this.aiNoiseBtn.classList.toggle("active");
+      });
+    }
+
+    if (this.recordCallBtn) {
+      this.recordCallBtn.addEventListener("click", () => {
+        this.recordCallBtn.classList.toggle("active");
+      });
+    }
+
+    if (this.callHistoryToggleBtn) {
+      this.callHistoryToggleBtn.addEventListener("click", () => {
+        console.log("[CallUI] Call history toggle clicked");
+      });
+    }
+
+    // Video upgrade overlay
+    if (this.videoUpgradeAcceptMobile) {
+      this.videoUpgradeAcceptMobile.addEventListener("click", () => {
+        this._acceptVideoUpgrade();
+      });
+    }
+    if (this.videoUpgradeDeclineMobile) {
+      this.videoUpgradeDeclineMobile.addEventListener("click", () => {
+        this._declineVideoUpgrade();
+      });
+    }
+    if (this.videoUpgradeAcceptDesktop) {
+      this.videoUpgradeAcceptDesktop.addEventListener("click", () => {
+        this._acceptVideoUpgrade();
+      });
+    }
+    if (this.videoUpgradeDeclineDesktop) {
+      this.videoUpgradeDeclineDesktop.addEventListener("click", () => {
+        this._declineVideoUpgrade();
+      });
+    }
+
+    // PiP swap (double-click / double-tap)
+    if (this.localPip && this.enablePipSwap) {
+      this.localPip.addEventListener("dblclick", () => {
+        this._swapPipWithMain();
+      });
+      this.localPip.addEventListener("touchend", (e) => {
+        if (e.detail === 2) {
+          this._swapPipWithMain();
+        }
+      });
+    }
+
+    // Auto-hide controls
+    let lastMove = Date.now();
+    const showControls = () => {
       if (!this.callControls) return;
-      if (Date.now() - lastMove > 4000) {
-        hideControls();
-      }
-    }, 1000);
+      this.callControls.classList.remove("hidden-soft");
+    };
+    const hideControls = () => {
+      if (!this.callControls) return;
+      this.callControls.classList.add("hidden-soft");
+    };
+
+    if (this.callBody) {
+      this.callBody.addEventListener("mousemove", () => {
+        lastMove = Date.now();
+        showControls();
+      });
+      this.callBody.addEventListener("touchstart", () => {
+        lastMove = Date.now();
+        showControls();
+      });
+
+      setInterval(() => {
+        if (!this.callControls) return;
+        if (Date.now() - lastMove > 4000) {
+          hideControls();
+        }
+      }, 1000);
+    }
   }
-}
 
   // ============================================================
   // PIP DRAGGING
@@ -412,7 +398,6 @@ export class CallUI {
       const el = this.pipDragState.target;
       this.pipDragState.active = false;
 
-      // Snap to nearest edge (simple)
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const rect = el.getBoundingClientRect();
@@ -454,7 +439,7 @@ export class CallUI {
     this._startTimer(Date.now());
     this._openWindow();
 
-    // In 1:1 video, remote full, local PiP overlay
+    // 1:1 video → remote full, local PiP overlay
     if (this.currentMode === "meet" || this.currentMode === "discord") {
       this._ensureRemoteTile(peerId);
       this._showLocalPip(true);
@@ -472,7 +457,6 @@ export class CallUI {
       this._updateIosVoiceStatus("Call ended");
     }
 
-    // Small delay then close window
     setTimeout(() => {
       this.closeWindow();
     }, 800);
@@ -504,9 +488,16 @@ export class CallUI {
 
   _onScreenShareStarted() {
     this.isScreenSharing = true;
+
     if (this.localTile) {
-      this.localTile.classList.add("presenting");
+      this.localTile.classList.add("presenting", "stage");
     }
+
+    // Simple stage/filmstrip: local is stage, remotes are filmstrip
+    this.remoteTiles.forEach((tile) => {
+      tile.el.classList.add("filmstrip");
+    });
+
     if (this.callGrid) {
       this.callGrid.classList.add("screen-share-mode");
     }
@@ -514,9 +505,15 @@ export class CallUI {
 
   _onScreenShareStopped() {
     this.isScreenSharing = false;
+
     if (this.localTile) {
-      this.localTile.classList.remove("presenting");
+      this.localTile.classList.remove("presenting", "stage");
     }
+
+    this.remoteTiles.forEach((tile) => {
+      tile.el.classList.remove("filmstrip");
+    });
+
     if (this.callGrid) {
       this.callGrid.classList.remove("screen-share-mode");
     }
@@ -544,7 +541,6 @@ export class CallUI {
 
     if (mode === "meet") {
       this.root.classList.add("meet-mode");
-      // Google Meet style grid
     } else if (mode === "discord") {
       this.root.classList.add("discord-mode");
       this.callGrid.classList.add("discord-layout");
@@ -552,16 +548,12 @@ export class CallUI {
       this.root.classList.add("ios-voice-mode");
     }
 
-    // Voice-only vs camera
     if (audioOnly) {
-      this.root.classList.add("voice-only-call");
-      this.root.classList.add("camera-off");
+      this.root.classList.add("voice-only-call", "camera-off");
     } else {
-      this.root.classList.remove("voice-only-call");
-      this.root.classList.remove("camera-off");
+      this.root.classList.remove("voice-only-call", "camera-off");
     }
 
-    // iOS voice UI visibility
     if (this.iosVoiceUI) {
       if (mode === "ios-voice") {
         this.iosVoiceUI.classList.remove("hidden");
@@ -646,13 +638,10 @@ export class CallUI {
   _updateParticipantTile(peerId, data) {
     peerId = String(peerId);
     if (peerId === "local" || peerId === window.rtcState?.selfId) {
-      // Local tile
       if (!this.localTile) return;
-      if (data?.voiceOnly) {
-        this.localTile.classList.add("voice-only");
-      } else {
-        this.localTile.classList.remove("voice-only");
-      }
+      this.localTile.classList.toggle("voice-only", !!data?.voiceOnly);
+      this.localTile.classList.toggle("speaking", !!data?.speaking);
+      this.localTile.classList.toggle("active-speaker", !!data?.activeSpeaker);
       return;
     }
 
@@ -675,7 +664,7 @@ export class CallUI {
     this.remoteTiles.forEach((tile) => tile.el.remove());
     this.remoteTiles.clear();
     if (this.localTile) {
-      this.localTile.classList.remove("presenting", "voice-only", "speaking", "active-speaker");
+      this.localTile.classList.remove("presenting", "voice-only", "speaking", "active-speaker", "stage");
     }
   }
 
@@ -699,8 +688,6 @@ export class CallUI {
     if (!this.enablePipSwap) return;
     if (!this.localPip || !this.localVideo) return;
 
-    // For 1:1: remote is "main", local is PiP.
-    // Swap the video elements' srcObject.
     const mainRemote = [...this.remoteTiles.values()][0];
     if (!mainRemote || !mainRemote.videoEl) return;
 
@@ -711,8 +698,13 @@ export class CallUI {
     mainVideo.srcObject = pipVideo.srcObject;
     pipVideo.srcObject = tmp;
 
-    // Optional: toggle a class to indicate which is "primary"
     mainRemote.el.classList.toggle("active-speaker");
+
+    // Small FaceTime-style snap
+    this.localPip.classList.add("shrink");
+    setTimeout(() => {
+      this.localPip.classList.remove("shrink");
+    }, 180);
   }
 
   // ============================================================
@@ -720,9 +712,6 @@ export class CallUI {
   // ============================================================
 
   showVideoUpgradeOverlay(peerId, offer) {
-    this.incomingUpgradePeerId = peerId;
-    this.incomingUpgradeOffer = offer;
-
     if (!this.videoUpgradeOverlay) return;
 
     this.videoUpgradeOverlay.classList.remove("hidden");
@@ -742,23 +731,29 @@ export class CallUI {
     this.videoUpgradeOverlay.classList.add("hidden");
     this.root.classList.remove("video-upgrade-mode");
     this.callGrid.classList.remove("desktop-video-preview", "mobile-video-preview");
-    this.incomingUpgradeOffer = null;
-    this.incomingUpgradePeerId = null;
   }
 
   _acceptVideoUpgrade() {
-    // Caller side: controller.upgradeToVideo()
-    // Callee side: controller.answerCall() with incomingIsVideo=true already handled.
+    // If we were in iOS voice, transition to Meet-style video
+    const wasIosVoice = this.currentMode === "ios-voice";
+
     if (window.rtcState?.isCaller) {
       this.controller.upgradeToVideo();
     } else {
       this.controller.answerCall();
     }
+
+    if (wasIosVoice) {
+      // iOS voice → Meet video transition
+      this._setMode("meet", { audioOnly: false });
+      this._showLocalPip(true);
+      this._updateIosVoiceStatus("");
+    }
+
     this._hideVideoUpgradeOverlay();
   }
 
   _declineVideoUpgrade() {
-    // Keep audio only; optionally send a decline reason via signaling if you want.
     this._hideVideoUpgradeOverlay();
   }
 
@@ -785,11 +780,7 @@ export class CallUI {
 
   _startTimer(startTs) {
     this._stopTimer();
-    if (startTs) {
-      this.callStartTs = startTs;
-    } else {
-      this.callStartTs = null;
-    }
+    this.callStartTs = startTs || null;
 
     this.callTimerInterval = setInterval(() => {
       if (!this.callTimerEl) return;
@@ -800,10 +791,12 @@ export class CallUI {
       const secs = Math.floor(elapsed / 1000);
       const mm = String(Math.floor(secs / 60)).padStart(2, "0");
       const ss = String(secs % 60).padStart(2, "0");
-      this.callTimerEl.textContent = `${mm}:${ss}`;
+      const text = `${mm}:${ss}`;
+
+      this.callTimerEl.textContent = text;
 
       if (this.currentMode === "ios-voice" && this.iosCallTimer) {
-        this.iosCallTimer.textContent = `${mm}:${ss}`;
+        this.iosCallTimer.textContent = text;
       }
     }, 1000);
   }
@@ -817,8 +810,9 @@ export class CallUI {
 
   _updateQualityIndicator(level) {
     if (!this.qualityIndicator) return;
-    this.qualityIndicator.dataset.level = level || "excellent";
-    this.qualityIndicator.textContent = level || "excellent";
+    const value = level || "excellent";
+    this.qualityIndicator.dataset.level = value;
+    this.qualityIndicator.textContent = value;
   }
 
   _toggleMoreControlsMenu() {
@@ -837,35 +831,41 @@ export class CallUI {
     this.moreControlsMenu.classList.add("hidden");
   }
 
-_toggleMute() {
-  this.isMuted = !this.isMuted;
+  _toggleMute() {
+    this.isMuted = !this.isMuted;
 
-  const stream = window.rtcState?.localStream;
-  if (stream) {
-    stream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
+    const stream = window.rtcState?.localStream;
+    if (stream) {
+      stream.getAudioTracks().forEach((t) => {
+        t.enabled = !this.isMuted;
+      });
+    }
+
+    if (this.muteBtn) {
+      this.muteBtn.classList.toggle("active", this.isMuted);
+    }
   }
 
-  this.muteBtn.classList.toggle("active", this.isMuted);
-}
+  _toggleCamera() {
+    this.isCameraOn = !this.isCameraOn;
 
+    const stream = window.rtcState?.localStream;
+    if (stream) {
+      stream.getVideoTracks().forEach((t) => {
+        t.enabled = this.isCameraOn;
+      });
+    }
 
-_toggleCamera() {
-  this.isCameraOn = !this.isCameraOn;
+    if (this.isCameraOn) {
+      this.root.classList.remove("camera-off");
+    } else {
+      this.root.classList.add("camera-off");
+    }
 
-  const stream = window.rtcState?.localStream;
-  if (stream) {
-    stream.getVideoTracks().forEach(t => t.enabled = this.isCameraOn);
+    if (this.cameraToggleBtn) {
+      this.cameraToggleBtn.classList.toggle("active", this.isCameraOn);
+    }
   }
-
-  if (this.isCameraOn) {
-    this.root.classList.remove("camera-off");
-  } else {
-    this.root.classList.add("camera-off");
-  }
-
-  this.cameraToggleBtn.classList.toggle("active", this.isCameraOn);
-}
-
 
   // ============================================================
   // iOS VOICE UI
@@ -900,7 +900,6 @@ _toggleCamera() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
-
 
 
 
