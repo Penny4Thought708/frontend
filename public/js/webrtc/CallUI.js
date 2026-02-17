@@ -641,6 +641,27 @@ export class CallUI {
       }
     }
   }
+_setInboundActiveState(isInbound) {
+  this.isInbound = isInbound;
+
+  if (!this.callControls) return;
+
+  if (isInbound) {
+    // Inbound call → show Answer + Decline, hide End Call
+    this.callControls.classList.add("inbound");
+
+    if (this.answerBtn) this.answerBtn.classList.remove("hidden");
+    if (this.declineBtn) this.declineBtn.classList.remove("hidden");
+    if (this.endCallBtn) this.endCallBtn.classList.add("hidden");
+  } else {
+    // Outbound or connected → hide Answer/Decline, show End Call
+    this.callControls.classList.remove("inbound");
+
+    if (this.answerBtn) this.answerBtn.classList.add("hidden");
+    if (this.declineBtn) this.declineBtn.classList.add("hidden");
+    if (this.endCallBtn) this.endCallBtn.classList.remove("hidden");
+  }
+}
 
   // ============================================================
   // WINDOW OPEN/CLOSE
@@ -672,6 +693,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
