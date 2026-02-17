@@ -337,13 +337,11 @@
 }
 
 .participant.remote {
-   
  display: block;
-    position: absolute;
-    opacity: 1;
-    width: 30%;
-    visibility: visible !important;
-
+ position: absolute;
+ opacity: 1;
+ width: 30%;
+ visibility: visible !important;
 }
 
 /* Speaking + active speaker */
@@ -416,7 +414,6 @@
 }
 
 .media-wrapper video {
- 
   object-fit: cover;
   opacity: 0;
   transition: opacity 0.25s var(--ease-out-soft);
@@ -431,10 +428,10 @@
 /* Local self-view should NOT be cropped */
 #localVideo,
 #localPipVideo {
-     object-fit: contain !important;
-    background-color: black;
-    transform: scaleX(-1);
-    height: 80px;
+  object-fit: contain !important;
+  background-color: black;
+  transform: scaleX(-1);
+  height: 80px;
 }
 
 /* Remote video should fill the tile */
@@ -532,13 +529,13 @@
   z-index: 999;
   opacity: 1;
   transform: scale(1) translate3d(0, 0, 0);
-  transition:
+transition:
     opacity 0.25s var(--ease-out-soft),
     transform 0.25s var(--ease-snap),
     box-shadow 0.25s var(--ease-out-soft),
     border-color 0.25s var(--ease-out-soft);
   cursor: grab;
-  will-change: transform, opacity, box-shadow
+  will-change: transform, opacity, box-shadow;
 }
 
 /* When dragging */
@@ -1062,3 +1059,4 @@
     opacity: 0;
   }
 }
+
