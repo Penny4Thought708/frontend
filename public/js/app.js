@@ -672,8 +672,12 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  // Create CallUI (internally creates WebRTCController)
-  const callUI = new CallUI(socket);
+  // -------------------------------------------------------
+  // Create WebRTCController FIRST
+  // Then pass it into CallUI (correct constructor)
+  // -------------------------------------------------------
+  const controller = new WebRTCController(socket);
+  const callUI = new CallUI(controller);
 
   // 🔔 Inbound call from backend → open call window
   socket.on("call:start", ({ from, type }) => {
@@ -687,7 +691,9 @@ socket.on("connect", async () => {
   // NEW voicemail system handles loading itself (VoicemailUI.js)
   // ❌ old loadVoicemails() removed
 
+  // -------------------------------------------------------
   // Open chat for a given contactId using new messaging.js
+  // -------------------------------------------------------
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
     setReceiver(contactId);
@@ -704,49 +710,55 @@ socket.on("connect", async () => {
     await loadMessages();
   };
 
+  // -------------------------------------------------------
   // Wire voice/video buttons in the messaging header
-const voiceBtn = getVoiceBtn();
-const videoBtn = getVideoBtn();
+  // -------------------------------------------------------
+  const voiceBtn = getVoiceBtn();
+  const videoBtn = getVideoBtn();
 
-if (voiceBtn) {
-  voiceBtn.addEventListener("click", () => {
-    const peerId = window.currentChatUserId;
-    if (!peerId) return;
+  if (voiceBtn) {
+    voiceBtn.addEventListener("click", () => {
+      const peerId = window.currentChatUserId;
+      if (!peerId) return;
 
-    // Mobile → iOS voice UI
-    // Desktop → Meet audio-only
-    const mode = callUI._isMobile() ? "ios-voice" : "meet";
+      // Mobile → iOS voice UI
+      // Desktop → Meet audio-only
+      const mode = callUI._isMobile() ? "ios-voice" : "meet";
 
-    callUI.openForOutgoing(peerId, {
-      audio: true,
-      video: false,
-      mode
+      callUI.openForOutgoing(peerId, {
+        audio: true,
+        video: false,
+        mode
+      });
     });
-  });
-}
+  }
 
-if (videoBtn) {
-  videoBtn.addEventListener("click", () => {
-    const peerId = window.currentChatUserId;
-    if (!peerId) return;
+  if (videoBtn) {
+    videoBtn.addEventListener("click", () => {
+      const peerId = window.currentChatUserId;
+      if (!peerId) return;
 
-    // Video calls always use Meet UI
-    callUI.openForOutgoing(peerId, {
-      audio: true,
-      video: true,
-      mode: "meet"
+      // Video calls always use Meet UI
+      callUI.openForOutgoing(peerId, {
+        audio: true,
+        video: true,
+        mode: "meet"
+      });
     });
-  });
-}
+  }
 
-
+  // -------------------------------------------------------
+  // Contacts menu + DND
+  // -------------------------------------------------------
   initContentMenu();
   initDndFromContactsMenu?.();
 
-  // Expose callUI globally (voicemail callback, debugging, etc.)
+  // -------------------------------------------------------
+  // Expose globally for debugging + voicemail callbacks
+  // -------------------------------------------------------
   window.callUI = callUI;
+  window.rtc = controller;
 });
-
 
 
 
