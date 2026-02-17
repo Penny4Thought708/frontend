@@ -691,12 +691,13 @@ socket.on("connect", async () => {
 
   // Create CallUI and expose globally
   window.callUI = new CallUI(socket);
-
+/*
   // Inbound call from backend → open call window
   socket.on("call:start", ({ from, type }) => {
     const isVideo = type === "video";
     window.callUI.receiveInboundCall(from, isVideo);
   });
+  */
 
   initCallLogs({ socket });
   loadMessageList();
@@ -753,6 +754,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu?.();
 });
+
 
 
 
