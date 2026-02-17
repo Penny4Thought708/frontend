@@ -303,6 +303,39 @@ export function getParticipant(peerId) {
 export function getAllParticipants() {
   return Array.from(participants.values());
 }
+/* -------------------------------------------------------
+   Active Speaker Highlight (CallUI-driven)
+------------------------------------------------------- */
+export function markActiveSpeaker(peerId) {
+  peerId = String(peerId);
+
+  // Remove from all remote tiles
+  for (const [, entry] of participants.entries()) {
+    try {
+      entry.el.classList.remove("active-speaker");
+    } catch {}
+  }
+
+  // Remove from local tile
+  if (localTileEl) {
+    try {
+      localTileEl.classList.remove("active-speaker");
+    } catch {}
+  }
+
+  // Apply to target
+  if (peerId === "local") {
+    if (localTileEl) {
+      localTileEl.classList.add("active-speaker");
+    }
+    return;
+  }
+
+  const entry = participants.get(peerId);
+  if (entry && entry.el) {
+    entry.el.classList.add("active-speaker");
+  }
+}
 
 /* -------------------------------------------------------
    Clear All Participants (on call end)
