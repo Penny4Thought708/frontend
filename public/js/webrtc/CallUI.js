@@ -8,7 +8,7 @@ import { attachLocalStream } from "./WebRTCMedia.js";
 import { rtcState } from "./WebRTCState.js";
 
 // Optional: if you want to use helpers from session.js instead of raw DOM:
-// import { getVoiceBtn, getVideoBtn } from "../session.js";
+ import { getVoiceBtn, getVideoBtn } from "../session.js";
 
 export class CallUI {
   constructor(socket) {
@@ -873,6 +873,7 @@ export class CallUI {
 }
 
 export default CallUI;
+
 
 
 
