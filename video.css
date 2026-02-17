@@ -1,957 +1,855 @@
-/* ============================================================
-   THEME TOKENS + ANIMATION VARS
-============================================================ */
+/* video.css
+ * Layout + animations for full-window call UI:
+ * - Mobile: FaceTime / iOS Voice
+ * - Web: Google Meet + Discord-style grid
+ */
+
+/* ===========================
+   ROOT + GLOBAL
+=========================== */
+
 :root {
-  /* Theme colors (light default) */
-  --bg-1: #f5f7fb;
-  --bg-2: #e3e7f2;
-  --bg-3: #ffffff;
-  --text: #0b1020;
-  --text-muted: #6b7280;
-  --accent: #4da3ff;
-  --accent-strong: #1f7ae6;
-  --danger: #ff4b5c;
-  --danger-strong: #e03140;
-  --border: rgba(15, 23, 42, 0.12);
-  --border-strong: rgba(15, 23, 42, 0.28);
-
-  /* Glass + blur */
-  --glass: rgba(255, 255, 255, 0.12);
-  --glass-heavy: rgba(255, 255, 255, 0.18);
-  --blur-heavy: 26px;
-
-  /* Radii + shadows */
-  --radius: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.25);
-  --shadow-strong: 0 22px 60px rgba(15, 23, 42, 0.55);
-  --accent-glow: 0 0 40px rgba(77, 163, 255, 0.55);
-
-  /* Timing + easing */
-  --fast: 120ms;
-  --med: 220ms;
-  --slow: 360ms;
-  --ease-out-soft: cubic-bezier(0.16, 0.84, 0.44, 1);
-  --ease-snap: cubic-bezier(0.18, 0.89, 0.32, 1.28);
-
-  /* GPU hint */
-  --gpu-translate: translate3d(0, 0, 0);
-
-  /* Typography */
-  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Segoe UI", sans-serif;
+  --call-bg: #05060a;
+  --call-bg-elevated: #10131a;
+  --call-bg-overlay: rgba(0, 0, 0, 0.65);
+  --call-accent: #4caf50;
+  --call-accent-danger: #f44336;
+  --call-accent-warn: #ffb300;
+  --call-text: #ffffff;
+  --call-text-muted: #b0b3c1;
+  --call-border-subtle: rgba(255, 255, 255, 0.08);
+  --call-radius-lg: 18px;
+  --call-radius-md: 12px;
+  --call-radius-sm: 8px;
+  --call-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+  --call-shadow-pip: 0 10px 30px rgba(0, 0, 0, 0.7);
+  --call-transition-fast: 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --call-transition-med: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --call-transition-slow: 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --call-voice-pulse: rgba(76, 175, 80, 0.45);
+  --call-voice-pulse-strong: rgba(76, 175, 80, 0.9);
+  --call-quality-excellent: #4caf50;
+  --call-quality-good: #ffb300;
+  --call-quality-poor: #f44336;
 }
 
-/* Dark theme */
-:root[data-theme="dark"] {
-  --bg-1: #020308;
-  --bg-2: #050814;
-  --bg-3: #070b18;
-  --text: #e5e7f5;
-  --text-muted: #9ca3af;
-  --accent: #4da3ff;
-  --accent-strong: #7bb5ff;
-  --danger: #ff4b5c;
-  --danger-strong: #ff6b7a;
-  --border: rgba(148, 163, 184, 0.24);
-  --border-strong: rgba(148, 163, 184, 0.45);
+/* Utility visibility */
 
-  --glass: rgba(15, 23, 42, 0.55);
-  --glass-heavy: rgba(15, 23, 42, 0.78);
-  --blur-heavy: 30px;
-
-  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.65);
-  --shadow-strong: 0 26px 70px rgba(0, 0, 0, 0.9);
-  --accent-glow: 0 0 40px rgba(77, 163, 255, 0.75);
+.hidden {
+  display: none !important;
 }
 
-/* ============================================================
-   CALL WINDOW — FULLSCREEN OVERLAY (FaceTime-style)
-============================================================ */
+/* ===========================
+   CALL WINDOW SHELL
+=========================== */
+
 .call-window {
   position: fixed;
   inset: 0;
+  background: radial-gradient(circle at top, #151827 0, #05060a 55%, #000 100%);
+  color: var(--call-text);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999999;
-  background:
-    radial-gradient(circle at top left, rgba(77, 163, 255, 0.22), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.9), #020308);
+  flex-direction: column;
   opacity: 0;
   pointer-events: none;
-  transform: scale(0.96) translate3d(0, 0, 0);
-  transform-origin: 90% 10%;
+  transform: translateY(10px);
   transition:
-    opacity var(--med) var(--ease-out-soft),
-    transform var(--med) var(--ease-out-soft);
-  will-change: opacity, transform;
+    opacity var(--call-transition-med),
+    transform var(--call-transition-med);
+  z-index: 1000;
 }
 
-.call-window.hidden {
-  display: none;
-}
-
-.call-window.is-open {
-  display: flex;
+.call-window:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
-  transform: scale(1) var(--gpu-translate);
+  transform: translateY(0);
 }
 
-.call-window.call-opening {
-  animation: callExpand var(--med) var(--ease-out-soft);
-}
+/* Body container */
 
-@keyframes callExpand {
-  0% {
-    opacity: 0;
-    transform: scale(0.85) translate3d(0, 0, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-}
-
-/* Voice-only mode */
-.call-window.voice-only-call video,
-.call-window.voice-only-call .participant.remote video {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-.call-window.voice-only-call .participant .avatar-wrapper {
-  display: flex !important;
-  opacity: 1 !important;
-}
-
-/* Camera-off mode */
-.call-window.camera-off video {
-  display: none !important;
-  opacity: 0 !important;
-}
-
-.call-window.camera-off .avatar-wrapper {
-  display: flex !important;
-  opacity: 1 !important;
-}
-
-/* Soft hide */
-.hidden-soft {
-  opacity: 0.25;
-  pointer-events: none;
-}
-
-/* ============================================================
-   PIP — SNAP-AWAY + EDGE SNAPPING + SWAP ANIMATIONS
-============================================================ */
-.pip-anim {
-  transition:
-    transform 0.25s var(--ease-snap),
-    opacity 0.25s var(--ease-out-soft),
-    box-shadow 0.25s var(--ease-out-soft),
-    border-color 0.25s var(--ease-out-soft);
-  will-change: transform, opacity, box-shadow;
-}
-
-.pip-anim.fade-out {
-  opacity: 0;
-  transform: scale(0.85) translate3d(0, 0, 0);
-}
-
-.pip-anim.fade-in {
-  opacity: 1;
-  transform: scale(1) translate3d(0, 0, 0);
-}
-
-.pip-anim.shrink {
-  transform: scale(0.75) translate3d(0, 0, 0);
-}
-
-.pip-anim.snap-warning {
-  box-shadow: 0 0 18px rgba(255, 200, 0, 0.55);
-}
-
-/* ============================================================
-   CALL BODY — GLASS PANEL (FaceTime blur)
-============================================================ */
 .call-body {
-  width: min(1120px, 96vw);
-  height: min(640px, 82vh);
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%) contrast(1.05);
-  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%) contrast(1.05);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong), var(--accent-glow);
-  display: grid;
-  grid-template-rows: 1fr auto auto;
-  overflow: hidden;
   position: relative;
-  font-family: var(--font-body);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* ============================================================
-   PARTICIPANT GRID — DESKTOP (Google Meet / Discord hybrid)
-============================================================ */
+/* ===========================
+   MODE LAYERS
+   (used as state flags)
+=========================== */
+
+.mode-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* We’ll use classes on #callWindow like:
+   .mode-meet, .mode-discord, .mode-ios-voice
+   to drive layout differences.
+*/
+
+.call-window.mode-meet .mode-layer.meet-mode,
+.call-window.mode-discord .mode-layer.discord-mode,
+.call-window.mode-ios-voice .mode-layer.ios-voice-mode {
+  opacity: 1;
+}
+
+/* ===========================
+   PARTICIPANT GRID
+   (Meet + Discord)
+=========================== */
+
 .call-grid {
-    position: relative;
-    padding: 16px;
-    height: 530px;
-    padding-bottom: 96px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    grid-auto-rows: minmax(180px, 1fr);
-    gap: 14px;
-    transition: grid-template-columns 0.25s var(--ease-out-soft), grid-auto-rows 0.25s var(--ease-out-soft), filter 0.25s var(--ease-out-soft), opacity 0.25s var(--ease-out-soft);
-}
-
-/* Google Meet–style sizing */
-.call-grid.participants-1 {
-  grid-template-columns: 1fr;
-}
-
-.call-grid.participants-2 {
-  grid-template-columns: 1fr 1fr;
-}
-
-.call-grid.participants-3,
-.call-grid.participants-4 {
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: minmax(200px, 1fr);
-}
-
-.call-grid.participants-5,
-.call-grid.participants-6 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-.call-grid.participants-7,
-.call-grid.participants-8,
-.call-grid.participants-9 {
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-auto-rows: minmax(160px, 1fr);
-}
-
-.call-grid.participants-many {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-}
-
-/* Discord-style dense layout */
-.call-grid.discord-layout {
+  position: relative;
+  flex: 1;
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   grid-auto-rows: minmax(160px, 1fr);
   gap: 10px;
+  padding: 12px 12px 80px;
+  box-sizing: border-box;
+  transition: padding var(--call-transition-med);
 }
 
-.call-grid.discord-layout .participant {
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.35);
-}
-
-/* ============================================================
-   STAGE MODE — SCREEN SHARE
-============================================================ */
-.call-grid.screen-share-mode {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  grid-template-rows: 1fr;
-  gap: 12px;
-}
-
-.participant.stage {
-  grid-column: 1;
-  grid-row: 1;
-  width: 100%;
-  height: 100%;
-  z-index: 5;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-strong);
-  animation: stageInDesktop 0.35s var(--ease-out-soft) forwards;
-}
-
-.participant.stage .media-wrapper video {
-  object-fit: contain !important;
-  background: radial-gradient(circle at center, #000000, #020308);
-}
-
-.participant.filmstrip {
-  grid-column: 2;
-  width: 100%;
-  height: 160px;
-  opacity: 0.9;
-  transform: scale(0.92) translate3d(0, 0, 0);
-  border-radius: var(--radius-md);
-  animation: filmstripInDesktop 0.35s var(--ease-out-soft) forwards;
-}
-
-@keyframes stageInDesktop {
-  0% {
-    transform: scale(0.9) translate3d(0, 0, 0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1) translate3d(0, 0, 0);
-    opacity: 1;
+/* 1:1 call: center tiles a bit more on large screens */
+@media (min-width: 900px) {
+  .call-grid {
+    padding: 16px 16px 96px;
   }
 }
 
-@keyframes filmstripInDesktop {
-  0% {
-    transform: translate3d(0, 10px, 0) scale(0.92);
-    opacity: 0;
-  }
-  100% {
-    transform: translate3d(0, 0, 0) scale(0.92);
-    opacity: 1;
-  }
-}
+/* Participant tile */
 
-/* ============================================================
-   PARTICIPANT TILE — BASE
-============================================================ */
 .participant {
   position: relative;
-  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at top, #262a3b 0, #11131c 55%, #05060a 100%);
+  border-radius: var(--call-radius-md);
   overflow: hidden;
-  background: var(--bg-3);
-  border: 1px solid var(--border);
-  isolation: isolate;
-  transition:
-    border-color 0.2s var(--ease-out-soft),
-    box-shadow 0.2s var(--ease-out-soft),
-    transform 0.25s var(--ease-out-soft),
-    opacity 0.25s var(--ease-out-soft);
-  z-index: 1;
-  will-change: transform, box-shadow, opacity;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--call-border-subtle);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  transform: scale(0.96);
+  opacity: 0;
+  animation: participant-in var(--call-transition-med) forwards;
 }
 
 .participant.local {
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .participant.remote {
- display: block;
- position: absolute;
- opacity: 1;
- width: 30%;
- visibility: visible !important;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Speaking + active speaker */
-.participant.speaking {
-  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
+/* Media wrapper */
 
-.participant.active-speaker:not(.stage) {
-  box-shadow: 0 0 14px 4px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-  transform: scale(1.02) translate3d(0, 0, 0);
-  z-index: 3;
-}
-
-/* ============================================================
-   NAME TAG
-============================================================ */
-.name-tag {
-  position: absolute;
-  left: 16px;
-  bottom: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 500;
-  pointer-events: none;
-  z-index: 4;
-}
-
-/* ============================================================
-   PRESENTING BADGE
-============================================================ */
-.presenting-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #000;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0;
-  transform: translate3d(0, -6px, 0);
-  transition:
-    opacity 0.25s var(--ease-out-soft),
-    transform 0.25s var(--ease-out-soft);
-  pointer-events: none;
-  z-index: 5;
-}
-
-.participant.presenting .presenting-badge {
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-}
-
-/* ============================================================
-   MEDIA WRAPPER — VIDEO + AVATAR
-============================================================ */
 .media-wrapper {
   position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+/* Video elements */
+
+#localVideo,
+.remoteVideo,
+#localPipVideo,
+#remotePipVideo {
   width: 100%;
   height: 100%;
-  min-height: 160px;
-  background: #000;
-  overflow: hidden;
-}
-
-.media-wrapper video {
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 0.25s var(--ease-out-soft);
   background: #000;
-  display: block;
 }
 
-.media-wrapper video.show {
-  opacity: 1;
-}
+/* Avatar fallback */
 
-/* Local self-view should NOT be cropped */
-#localVideo,
-#localPipVideo {
-  object-fit: contain !important;
-  background-color: black;
-  transform: scaleX(-1);
-  height: 80px;
-}
-
-/* Remote video should fill the tile */
-.remoteVideo {
-  object-fit: cover !important;
-}
-
-/* Ensure remote video sits above avatar when active */
-.remoteVideo.show {
-  z-index: 4 !important;
-}
-
-/* Avatar wrapper */
 .avatar-wrapper {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.25s var(--ease-out-soft);
-  z-index: 3;
+  transition: opacity var(--call-transition-med);
 }
 
-.avatar-wrapper.hidden {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  z-index: 0 !important;
+.avatar-wrapper img,
+.avatar-img,
+#localAvatarImg,
+#iosVoiceAvatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ============================================================
-   VOICE PULSE
-============================================================ */
+/* Voice pulse ring */
+
 .voice-pulse {
   position: absolute;
-  width: 90px;
-  height: 90px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
-  border: 2px solid rgba(77, 163, 255, 0.6);
-  animation: voicePulse 1.4s infinite ease-out;
-  transform: scale(calc(0.7 + var(--audio-level, 0) * 0.6));
-  pointer-events: none;
+  border: 2px solid var(--call-voice-pulse);
+  box-shadow: 0 0 0 0 var(--call-voice-pulse);
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity var(--call-transition-fast),
+    transform var(--call-transition-fast);
 }
 
-@keyframes voicePulse {
-  0% {
-    transform: scale(0.7);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
+/* Active speaking state (JS toggles .speaking on participant) */
+
+.participant.speaking .voice-pulse {
+  opacity: 1;
+  animation: voice-pulse 1.2s infinite;
 }
 
-/* ============================================================
-   VOICE-ONLY MODE (PER-PARTICIPANT)
-============================================================ */
-.participant.voice-only .media-wrapper video {
-  display: none !important;
-  opacity: 0 !important;
-}
+/* Presenting badge */
 
-.participant.voice-only .avatar-wrapper {
-  display: flex !important;
-  opacity: 1 !important;
-}
-
-.participant.voice-only {
-  background: var(--bg-2);
-}
-
-.participant.voice-only.speaking {
-  box-shadow: 0 0 12px 3px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
-
-/* ============================================================
-   LOCAL PIP — NEON GLASS
-============================================================ */
-.local-pip {
+.presenting-badge {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 200px;
-  height: 120px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--call-text);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--call-transition-fast),
+    transform var(--call-transition-fast);
+}
+
+/* JS can toggle .is-presenting on participant */
+
+.participant.is-presenting .presenting-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Name tag */
+
+.name-tag {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--call-text);
+  font-size: 12px;
+  max-width: 70%;
+  white-space: nowrap;
   overflow: hidden;
-  z-index: 999;
-  opacity: 1;
-  transform: scale(1) translate3d(0, 0, 0);
-transition:
-    opacity 0.25s var(--ease-out-soft),
-    transform 0.25s var(--ease-snap),
-    box-shadow 0.25s var(--ease-out-soft),
-    border-color 0.25s var(--ease-out-soft);
-  cursor: grab;
-  will-change: transform, opacity, box-shadow;
+  text-overflow: ellipsis;
 }
 
-/* When dragging */
-.local-pip.dragging {
-  cursor: grabbing;
-  transition: none;
-  box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
-}
+/* ===========================
+   PIP (Meet / FaceTime)
+=========================== */
 
-.local-pip video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 1;
-  transition: opacity 0.25s var(--ease-out-soft);
-}
-
-.call-window.voice-only-call .local-pip,
-.call-window.camera-off .local-pip {
-  display: none !important;
-}
-
-.local-pip.hidden {
-  display: none !important;
-}
-
-/* ============================================================
-   REMOTE PIP — MIRRORS LOCAL PIP
-============================================================ */
+.local-pip,
 .remote-pip {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
-  width: 200px;
-  height: 120px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
+  width: 140px;
+  height: 80px;
+  bottom: 96px;
+  right: 16px;
+  border-radius: 16px;
   overflow: hidden;
-  z-index: 999;
-  opacity: 1;
-  transform: scale(1) translate3d(0, 0, 0);
+  background: #000;
+  box-shadow: var(--call-shadow-pip);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transform: translateY(20px) scale(0.9);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: pointer;
   transition:
-    opacity 0.25s var(--ease-out-soft),
-    transform 0.25s var(--ease-snap),
-    box-shadow 0.25s var(--ease-out-soft),
-    border-color 0.25s var(--ease-out-soft);
-  cursor: grab;
-  will-change: transform, opacity, box-shadow;
+    opacity var(--call-transition-med),
+    transform var(--call-transition-med),
+    box-shadow var(--call-transition-fast);
+  z-index: 20;
 }
 
-.remote-pip video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.local-pip:not(.hidden),
+.remote-pip:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
-.remote-pip.hidden {
-  display: none !important;
+.local-pip:hover,
+.remote-pip:hover {
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9);
 }
 
-/* Active speaker on PIP */
-.local-pip.speaking,
-.remote-pip.speaking {
-  box-shadow: 0 0 18px 4px rgba(0, 200, 255, 0.75);
-  border-color: rgba(0, 200, 255, 0.9);
-}
+/* Mobile PiP sizing */
 
-/* ============================================================
-   MOBILE PIP
-============================================================ */
-@media (max-width: 900px) {
+@media (max-width: 600px) {
   .local-pip,
   .remote-pip {
-    width: 140px;
-    height: 90px;
-    bottom: 96px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-strong);
-  }
-
-  .local-pip.dragging,
-  .remote-pip.dragging {
-    box-shadow: 0 0 22px rgba(77, 163, 255, 0.45);
-  }
-
-  .remote-pip {
-    z-index: 999;
-    pointer-events: auto;
-  }
-
-  .remote-pip.dragging {
-    cursor: grabbing;
-    box-shadow: 0 0 24px rgba(77, 163, 255, 0.45);
+    width: 120px;
+    height: 72px;
+    bottom: 88px;
+    right: 12px;
+    border-radius: 14px;
   }
 }
 
-/* ============================================================
-   CONTROL BAR — GLASSMORPHIC + AUTO-HIDE
-============================================================ */
-.call-controls {
+/* ===========================
+   iPHONE VOICE UI
+=========================== */
+
+.ios-voice-ui {
   position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translate3d(-50%, 0, 0);
+  inset: 0;
   display: flex;
-  gap: var(--gap-md, 10px);
-  padding: 12px 20px;
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur-heavy)) saturate(180%);
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, #151827 0, #05060a 55%, #000 100%);
+  padding: 32px 16px 24px;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
   transition:
-    opacity var(--med) var(--ease-out-soft),
-    transform var(--med) var(--ease-out-soft);
-  z-index: 40;
-  will-change: opacity, transform;
+    opacity var(--call-transition-med),
+    transform var(--call-transition-med);
 }
 
-.call-controls.hidden {
+/* When in iOS voice mode, show this and hide grid */
+
+.call-window.mode-ios-voice .ios-voice-ui {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.call-window.mode-ios-voice .call-grid,
+.call-window.mode-ios-voice .local-pip,
+.call-window.mode-ios-voice .remote-pip {
   opacity: 0;
-  transform: translate3d(-50%, 10px, 0);
   pointer-events: none;
 }
 
-.call-controls.hidden-soft {
-  opacity: 0;
-  transform: translate3d(-50%, 14px, 0);
-  pointer-events: none;
+/* Avatar */
+
+.ios-avatar {
+  margin-bottom: 18px;
 }
 
-.control-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: var(--glass);
-  border: 1px solid var(--border);
+.ios-avatar img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+
+/* Status + timer */
+
+.ios-call-status {
+  font-size: 16px;
+  color: var(--call-text-muted);
+  margin-bottom: 4px;
+}
+
+.ios-call-timer {
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  margin-bottom: 32px;
+}
+
+/* Controls grid */
+
+.ios-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+  max-width: 360px;
+  justify-items: center;
+}
+
+.ios-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--call-text);
+  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text);
+  text-align: center;
+  padding: 0 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  transition:
+    background var(--call-transition-fast),
+    transform var(--call-transition-fast),
+    box-shadow var(--call-transition-fast);
+}
+
+.ios-btn.end {
+  background: var(--call-accent-danger);
+}
+
+.ios-btn:active {
+  transform: scale(0.94);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
+}
+
+/* ===========================
+   CALL STATUS + TIMER (TOP)
+=========================== */
+
+.call-top-info {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.call-status {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  color: var(--call-text-muted);
+}
+
+.call-timer {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+/* ===========================
+   CALL CONTROLS (BOTTOM)
+=========================== */
+
+.call-controls {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.78);
+  box-shadow: var(--call-shadow-soft);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--call-transition-med),
+    transform var(--call-transition-med);
+  z-index: 30;
+}
+
+.call-controls:not(.hidden) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Control buttons */
+
+.control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--call-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition:
-    background var(--fast) var(--ease-out-soft),
-    transform var(--fast) var(--ease-out-soft),
-    box-shadow var(--fast) var(--ease-out-soft),
-    color var(--fast) var(--ease-out-soft);
+    background var(--call-transition-fast),
+    transform var(--call-transition-fast),
+    box-shadow var(--call-transition-fast);
 }
+
+.control-btn span.material-symbols-outlined {
+  font-size: 22px;
+}
+
+/* Primary actions */
+
+#end-call,
+#decline-call {
+  background: var(--call-accent-danger);
+}
+
+#answer-call {
+  background: var(--call-accent);
+}
+
+/* Hover / active */
 
 .control-btn:hover {
-  background: var(--glass-heavy);
-  transform: translate3d(0, -2px, 0);
-  box-shadow: var(--shadow-soft);
+  background: rgba(255, 255, 255, 0.12);
 }
 
-#end-call.control-btn,
-#decline-call.control-btn {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
+.control-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
 }
 
-#end-call.control-btn:hover,
-#decline-call.control-btn:hover {
-  box-shadow: 0 0 24px rgba(255, 75, 92, 0.7);
-}
+/* Inbound vs active states
+   (JS toggles .inbound-only / .active-only visibility)
+*/
 
-/* Inbound vs active */
-.call-window.inbound-mode .active-only {
+.inbound-only {
   display: none;
 }
 
-.call-window.active-mode .inbound-only {
+.active-only {
   display: none;
 }
 
-/* More controls */
+/* Example: when inbound */
+.call-controls.inbound .inbound-only {
+  display: inline-flex;
+}
+
+/* Example: when active */
+.call-controls.active .active-only {
+  display: inline-flex;
+}
+
+/* ===========================
+   MORE CONTROLS MENU
+=========================== */
+
 .more-controls {
   position: relative;
 }
+
+#more-controls-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Dropdown */
 
 .more-controls-menu {
   position: absolute;
   bottom: 52px;
   right: 0;
   min-width: 190px;
-  background: var(--bg-3);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  background: rgba(10, 12, 18, 0.98);
+  border-radius: 12px;
+  box-shadow: var(--call-shadow-soft);
+  border: 1px solid var(--call-border-subtle);
   padding: 6px 0;
-  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   opacity: 0;
+  transform: translateY(6px);
   pointer-events: none;
-  transform: translate3d(0, 6px, 0);
   transition:
-    opacity var(--fast) var(--ease-out-soft),
-    transform var(--fast) var(--ease-out-soft);
+    opacity var(--call-transition-med),
+    transform var(--call-transition-med);
+  z-index: 40;
+}
+
+.more-controls-menu:not(.hidden) {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .more-controls-menu button {
   width: 100%;
   padding: 8px 12px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--call-text);
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  background: transparent;
-  border: none;
-  color: var(--text);
   cursor: pointer;
+  transition: background var(--call-transition-fast);
+}
+
+.more-controls-menu button span.material-symbols-outlined {
+  font-size: 18px;
 }
 
 .more-controls-menu button:hover {
-  background: var(--glass);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.more-controls-menu.hidden {
-  display: none !important;
+/* ===========================
+   REMOTE AUDIO
+=========================== */
+
+#remoteAudio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.more-controls-menu.show {
-  display: block;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate3d(0, 0, 0);
-}
+/* ===========================
+   CALL INFO BAR
+=========================== */
 
-#ai-noise-toggle.active,
-#record-call.active {
-  background: rgba(77, 163, 255, 0.16);
-}
-
-/* ============================================================
-   INFO BAR
-============================================================ */
 .call-info-bar {
   position: absolute;
-  left: 16px;
-  bottom: 16px;
+  bottom: 12px;
+  left: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
-  z-index: 30;
+  z-index: 25;
 }
 
 .quality-indicator {
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  color: var(--text);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--call-quality-excellent);
 }
+
+/* Quality levels via data-level */
 
 .quality-indicator[data-level="excellent"] {
-  color: #4cff8f;
-}
-.quality-indicator[data-level="good"] {
-  color: #a4ff4c;
-}
-.quality-indicator[data-level="fair"] {
-  color: #ffd24c;
-}
-.quality-indicator[data-level="poor"] {
-  color: #ff9b4c;
-}
-.quality-indicator[data-level="bad"] {
-  color: #ff4b5c;
+  color: var(--call-quality-excellent);
 }
 
-/* ============================================================
+.quality-indicator[data-level="good"] {
+  color: var(--call-quality-good);
+}
+
+.quality-indicator[data-level="poor"] {
+  color: var(--call-quality-poor);
+}
+
+/* Debug toggle */
+
+.debug-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--call-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background var(--call-transition-fast),
+    transform var(--call-transition-fast);
+}
+
+.debug-toggle span.material-symbols-outlined {
+  font-size: 18px;
+}
+
+.debug-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.debug-toggle:active {
+  transform: scale(0.92);
+}
+
+/* ===========================
    VIDEO UPGRADE OVERLAY
-============================================================ */
+=========================== */
+
 .video-upgrade-overlay {
   position: absolute;
   inset: 0;
-  z-index: 60;
-  pointer-events: none;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
-  transition: opacity var(--med) var(--ease-out-soft);
+  pointer-events: none;
+  transition: opacity var(--call-transition-med);
+  z-index: 50;
 }
 
-.video-upgrade-overlay.show {
+.video-upgrade-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
 }
 
-.video-upgrade-overlay.hidden {
-  display: none !important;
-}
+/* MOBILE CARD */
 
-/* Mobile card */
 .video-upgrade-card {
-  position: absolute;
-  left: 50%;
-  bottom: 80px;
-  transform: translate3d(-50%, 0, 0);
-  width: min(360px, 92vw);
-  padding: 14px 16px;
-  border-radius: var(--radius-lg);
-  background: var(--glass-heavy);
-  backdrop-filter: blur(var(--blur-heavy));
-  -webkit-backdrop-filter: blur(var(--blur-heavy));
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
+  width: 90%;
+  max-width: 360px;
+  border-radius: 22px;
+  background: rgba(10, 12, 18, 0.96);
+  box-shadow: var(--call-shadow-soft);
+  padding: 16px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  transform: translateY(20px);
+  opacity: 0;
+  animation: upgrade-card-in var(--call-transition-med) forwards;
 }
 
 .video-upgrade-preview {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(76, 175, 80, 0.16);
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
 }
 
 .video-upgrade-preview .video-icon {
-  font-size: 26px;
-  color: var(--accent);
+  font-size: 28px;
+  color: var(--call-accent);
 }
 
 .video-upgrade-text .title {
+  font-size: 16px;
   font-weight: 600;
-  font-size: 15px;
-  color: var(--text);
+  margin-bottom: 2px;
 }
 
 .video-upgrade-text .subtitle {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--call-text-muted);
 }
 
 .video-upgrade-actions {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 6px;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-.btn-upgrade-accept,
-.btn-upgrade-decline {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
+.btn-upgrade-decline,
+.btn-upgrade-accept {
   border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 14px;
+  border: none;
+  outline: none;
+  padding: 6px 12px;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
+  transition:
+    background var(--call-transition-fast),
+    transform var(--call-transition-fast);
+}
+
+.btn-upgrade-decline {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--call-text);
 }
 
 .btn-upgrade-accept {
-  background: var(--accent);
+  background: var(--call-accent);
   color: #fff;
-  border-color: var(--accent-strong);
 }
 
-.btn-upgrade-decline {
-  background: var(--glass);
-  color: var(--text);
-  border-color: var(--border-strong);
+.btn-upgrade-decline span.material-symbols-outlined,
+.btn-upgrade-accept span.material-symbols-outlined {
+  font-size: 18px;
 }
 
-/* Desktop overlay */
+.btn-upgrade-decline:active,
+.btn-upgrade-accept:active {
+  transform: scale(0.96);
+}
+
+/* DESKTOP OVERLAY */
+
 .video-upgrade-desktop-overlay {
-  position: absolute;
-  inset: 0;
-  backdrop-filter: blur(18px) brightness(0.7);
-  -webkit-backdrop-filter: blur(18px) brightness(0.7);
-  background: radial-gradient(
-    circle at top,
-    rgba(0, 0, 0, 0.55),
-    rgba(0, 0, 0, 0.9)
-  );
-  display: flex;
+  width: 100%;
+  height: 100%;
+  display: none;
   align-items: center;
   justify-content: center;
 }
 
 .video-upgrade-desktop-inner {
-  padding: 20px 24px;
-  border-radius: var(--radius-lg);
-  background: var(--glass-heavy);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-strong);
+  min-width: 320px;
+  max-width: 420px;
+  border-radius: 18px;
+  background: rgba(10, 12, 18, 0.96);
+  box-shadow: var(--call-shadow-soft);
+  padding: 18px 18px 14px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-width: 320px;
+  gap: 10px;
+  transform: scale(0.96);
+  opacity: 0;
+  animation: upgrade-desktop-in var(--call-transition-med) forwards;
 }
 
 .video-upgrade-desktop-text .title {
+  font-size: 18px;
   font-weight: 600;
-  font-size: 17px;
-  color: var(--text);
+  margin-bottom: 4px;
 }
 
 .video-upgrade-desktop-text .subtitle {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--call-text-muted);
 }
 
 .video-upgrade-desktop-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
-/* Mobile vs desktop visibility */
+/* Responsive: show mobile vs desktop */
+
 .mobile-only {
   display: none;
 }
@@ -960,103 +858,116 @@ transition:
   display: flex;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .mobile-only {
-    display: block;
+    display: flex;
   }
   .desktop-only {
     display: none;
   }
 }
 
-/* Grid blur during upgrade */
-.call-grid.desktop-video-preview {
-  filter: blur(10px);
-  opacity: 0.6;
-}
+/* ===========================
+   MOBILE FULLSCREEN REMOTE
+   (FaceTime-style)
+=========================== */
 
-.call-grid.mobile-video-preview {
-  opacity: 1;
-}
+/* When on mobile, we want remote video to fill the call window.
+   JS can add .mobile-fullscreen-remote to #callWindow when appropriate.
+*/
 
-/* ============================================================
-   CALLEE BLURRED PREVIEW DURING UPGRADE
-============================================================ */
-.call-window.video-upgrade-mode .call-grid.desktop-video-preview {
-  filter: blur(14px) brightness(0.6);
-  opacity: 0.7;
-}
-
-@media (max-width: 900px) {
-  .call-window.video-upgrade-mode .call-grid.mobile-video-preview {
-    filter: blur(14px) brightness(0.6);
-    opacity: 0.9;
+@media (max-width: 768px) {
+  .call-window.mobile-fullscreen-remote .call-grid {
+    display: block;
+    padding: 0;
   }
-}
 
-.call-window.video-upgrade-mode .call-controls .active-only {
-  display: none !important;
-}
+  .call-window.mobile-fullscreen-remote .participant.remote,
+  .call-window.mobile-fullscreen-remote .participant.local {
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    animation: none;
+    transform: none;
+  }
 
-/* ============================================================
-   MODE FLAGS
-============================================================ */
-.call-window.meet-mode .call-grid {}
-
-.call-window.discord-mode .call-grid {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  grid-auto-rows: minmax(160px, 1fr);
-  gap: 10px;
-}
-
-.call-window.voice-only-call .call-grid {
-  filter: none;
-}
-
-/* ============================================================
-   SMALL UTILITY ANIMATIONS
-============================================================ */
-@keyframes slideUp {
-  0% {
-    transform: translate3d(0, 8px, 0);
+  .call-window.mobile-fullscreen-remote .participant.remote .avatar-wrapper {
     opacity: 0;
   }
-  100% {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
+
+  .call-window.mobile-fullscreen-remote .participant.local {
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
-@keyframes slideDown {
-  0% {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-  }
-  100% {
-    transform: translate3d(0, 8px, 0);
+/* ===========================
+   DISCORD-STYLE GROUP FEEL
+=========================== */
+
+/* Slightly tighter grid, more “tile” feel when in Discord mode */
+
+.call-window.mode-discord .call-grid {
+  gap: 8px;
+  padding-bottom: 88px;
+}
+
+.call-window.mode-discord .participant {
+  background: radial-gradient(circle at top, #202331 0, #0b0d14 55%, #05060a 100%);
+  border-radius: 14px;
+}
+
+/* ===========================
+   ANIMATIONS
+=========================== */
+
+@keyframes participant-in {
+  from {
     opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes popIn {
+@keyframes voice-pulse {
   0% {
-    transform: scale(0.9) translate3d(0, 0, 0);
-    opacity: 0;
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 var(--call-voice-pulse);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 14px transparent;
   }
   100% {
-    transform: scale(1) translate3d(0, 0, 0);
-    opacity: 1;
+    transform: scale(0.8);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-@keyframes popOut {
-  0% {
-    transform: scale(1) translate3d(0, 0, 0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.9) translate3d(0, 0, 0);
+@keyframes upgrade-card-in {
+  from {
     opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes upgrade-desktop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
