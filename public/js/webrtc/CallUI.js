@@ -4,14 +4,15 @@
 // - Web: Google Meet-style layout
 // - Group: Discord-style grid
 
-import { WebRTCController } from "./WebRTCController.js";
 import { rtcState } from "./WebRTCState.js";
 
 export class CallUI {
-  constructor(socket, options = {}) {
-    // Controller (source of truth for signaling + media)
-    this.rtc = new WebRTCController(socket);
-    this.controller = this.rtc;
+  constructor(controller, options = {}) {
+    // IMPORTANT FIX:
+    // CallUI NO LONGER creates its own WebRTCController.
+    // It now receives the controller instance from app.js.
+    this.controller = controller;
+    this.rtc = controller;
 
     // Mode preferences / feature flags
     this.enablePipSwap = options.enablePipSwap ?? true;
@@ -98,10 +99,6 @@ export class CallUI {
   // PUBLIC API
   // ============================================================
 
-  /**
-   * Open call window for an outgoing call.
-   * mode: "meet" | "discord" | "ios-voice"
-   */
   openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     this.isInbound = false;
     this._setMode(mode, { audioOnly: audio && !video });
@@ -109,24 +106,17 @@ export class CallUI {
     this._setInboundActiveState(false);
 
     this._setStatusText("Calling…");
-    this._startTimer(null); // start when controller says call started
+    this._startTimer(null);
 
     this.controller.startCall(peerId, { audio, video });
   }
 
-  /**
-   * Called from app when backend emits call:start.
-   * Keeps a simple API: callUI.receiveInboundCall(from, isVideo)
-   */
   receiveInboundCall(peerId, isVideo) {
     this.showInboundRinging(peerId, {
       incomingIsVideo: !!isVideo,
     });
   }
 
-  /**
-   * Called when an inbound offer arrives from WebRTCController.
-   */
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
 
@@ -142,7 +132,7 @@ export class CallUI {
     this._setInboundActiveState(true);
 
     this._setStatusText("Incoming call…");
-    this._startTimer(null); // start when answered
+    this._startTimer(null);
   }
 
   closeWindow() {
@@ -174,7 +164,6 @@ export class CallUI {
     };
 
     c.onIncomingOffer = (peerId, offer) => {
-      // Distinguish between fresh inbound call vs in-call video upgrade
       const isUpgrade =
         rtcState.status === "in-call" &&
         rtcState.incomingIsVideo &&
@@ -229,7 +218,6 @@ export class CallUI {
     };
 
     c.onRemoteUpgradedToVideo = () => {
-      // Ensure UI is in active video mode when remote upgrades
       this._enterActiveVideoMode();
     };
   }
@@ -239,7 +227,6 @@ export class CallUI {
   // ============================================================
 
   _bindUI() {
-    // Inbound / active controls
     if (this.declineBtn) {
       this.declineBtn.addEventListener("click", () => {
         this.controller.declineCall("declined");
@@ -272,7 +259,6 @@ export class CallUI {
       });
     }
 
-    // More controls menu
     if (this.moreControlsBtn && this.moreControlsMenu) {
       this.moreControlsBtn.addEventListener("click", () => {
         this._toggleMoreControlsMenu();
@@ -288,7 +274,6 @@ export class CallUI {
       });
     }
 
-    // Screen share
     if (this.shareScreenBtn) {
       this.shareScreenBtn.addEventListener("click", async () => {
         if (!this.isScreenSharing) {
@@ -301,7 +286,6 @@ export class CallUI {
       });
     }
 
-    // AI noise + recording toggles (UI only for now)
     if (this.aiNoiseBtn) {
       this.aiNoiseBtn.addEventListener("click", () => {
         this.aiNoiseBtn.classList.toggle("active");
@@ -320,7 +304,6 @@ export class CallUI {
       });
     }
 
-    // Video upgrade overlay
     if (this.videoUpgradeAcceptMobile) {
       this.videoUpgradeAcceptMobile.addEventListener("click", () => {
         this._acceptVideoUpgrade();
@@ -342,7 +325,6 @@ export class CallUI {
       });
     }
 
-    // PiP swap (double-click / double-tap)
     if (this.localPip && this.enablePipSwap) {
       this.localPip.addEventListener("dblclick", () => {
         this._swapPipWithMain();
@@ -354,7 +336,6 @@ export class CallUI {
       });
     }
 
-    // Auto-hide controls
     let lastMove = Date.now();
     const showControls = () => {
       if (!this.callControls) return;
@@ -462,7 +443,6 @@ export class CallUI {
     this._startTimer(Date.now());
     this._openWindow();
 
-    // 1:1 video → remote full, local PiP overlay
     if (this.currentMode === "meet" || this.currentMode === "discord") {
       this._ensureRemoteTile(peerId);
       this._showLocalPip(true);
@@ -516,7 +496,6 @@ export class CallUI {
       this.localTile.classList.add("presenting", "stage");
     }
 
-    // Simple stage/filmstrip: local is stage, remotes are filmstrip
     this.remoteTiles.forEach((tile) => {
       tile.el.classList.add("filmstrip");
     });
@@ -541,7 +520,6 @@ export class CallUI {
       this.callGrid.classList.remove("screen-share-mode");
     }
   }
-
   _onPeerUnavailable(reason) {
     this._setStatusText(reason || "User unavailable");
     if (this.currentMode === "ios-voice") {
@@ -739,7 +717,6 @@ export class CallUI {
 
     mainRemote.el.classList.toggle("active-speaker");
 
-    // Small FaceTime-style snap
     this.localPip.classList.add("shrink");
     setTimeout(() => {
       this.localPip.classList.remove("shrink");
@@ -937,4 +914,5 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
