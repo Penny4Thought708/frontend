@@ -689,22 +689,19 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  // Create CallUI (internally creates WebRTCController)
-  const callUI = new CallUI(socket);
+  // Create CallUI and expose globally
+  window.callUI = new CallUI(socket);
 
-  // 🔔 Inbound call from backend → open call window
+  // Inbound call from backend → open call window
   socket.on("call:start", ({ from, type }) => {
     const isVideo = type === "video";
-    callUI.receiveInboundCall(from, isVideo);
+    window.callUI.receiveInboundCall(from, isVideo);
   });
 
   initCallLogs({ socket });
   loadMessageList();
 
-  // NEW voicemail system handles loading itself (VoicemailUI.js)
-  // ❌ old loadVoicemails() removed
-
-  // Open chat for a given contactId using new messaging.js
+  // Open chat for a given contactId
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
     setReceiver(contactId);
@@ -721,20 +718,18 @@ socket.on("connect", async () => {
     await loadMessages();
   };
 
-  // Wire voice/video buttons in the messaging header
-  const voiceBtn = getVoiceBtn();
-  const videoBtn = getVideoBtn();
+  // Wire voice/video buttons
+  const voiceBtn = document.getElementById("voiceBtn");
+  const videoBtn = document.getElementById("videoBtn");
 
   if (voiceBtn) {
     voiceBtn.addEventListener("click", () => {
       const peerId = window.currentChatUserId;
       if (!peerId) return;
 
-      // Mobile → iOS voice UI
-      // Desktop → Meet audio-only
-      const mode = callUI._isMobile() ? "ios-voice" : "meet";
+      const mode = window.callUI._isMobile() ? "ios-voice" : "meet";
 
-      callUI.openForOutgoing(peerId, {
+      window.callUI.openForOutgoing(peerId, {
         audio: true,
         video: false,
         mode
@@ -747,8 +742,7 @@ socket.on("connect", async () => {
       const peerId = window.currentChatUserId;
       if (!peerId) return;
 
-      // Video calls always use Meet UI
-      callUI.openForOutgoing(peerId, {
+      window.callUI.openForOutgoing(peerId, {
         audio: true,
         video: true,
         mode: "meet"
@@ -758,11 +752,7 @@ socket.on("connect", async () => {
 
   initContentMenu();
   initDndFromContactsMenu?.();
-
-  // Expose callUI globally (voicemail callback, debugging, etc.)
-  window.callUI = callUI;
 });
-
 
 
 
