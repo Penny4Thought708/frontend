@@ -64,6 +64,10 @@ export class CallUI {
     this.videoUpgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
     this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
 
+    // Audio elements
+    this.ringtone = document.getElementById("ringtone");
+    this.ringback = document.getElementById("ringback");
+
     // Internal state
     this.currentMode = "meet";
     this.callTimerInterval = null;
@@ -100,6 +104,7 @@ export class CallUI {
     this._openWindow();
     this._setInboundActiveState(false);
 
+    this._playRingback();
     this._setStatusText("Calling…");
     this._startTimer(null);
 
@@ -114,6 +119,8 @@ export class CallUI {
 
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
+
+    this._playRingtone();
 
     const audioOnly = !incomingIsVideo;
     let mode = modeHint || "meet";
@@ -132,10 +139,13 @@ export class CallUI {
 
   closeWindow() {
     this._stopTimer();
-    this._clearParticipants();
-    this._hideVideoUpgradeOverlay();
+    this._clearParticipants?.();
+    this._hideVideoUpgradeOverlay?.();
     this._setStatusText("Idle");
     this._setMode("meet", { audioOnly: false });
+
+    this._stopRingtone();
+    this._stopRingback();
 
     if (!this.root) return;
 
@@ -169,7 +179,7 @@ export class CallUI {
         rtcState.audioOnly;
 
       if (isUpgrade) {
-        this.showVideoUpgradeOverlay(peerId, offer);
+        this.showVideoUpgradeOverlay?.(peerId, offer);
       } else {
         this.showInboundRinging(peerId, {
           incomingIsVideo: rtcState.incomingIsVideo,
@@ -182,23 +192,23 @@ export class CallUI {
     };
 
     c.onRemoteJoin = (peerId) => {
-      this._ensureRemoteTile(peerId);
-      this._recomputeGridLayout();
+      this._ensureRemoteTile?.(peerId);
+      this._recomputeGridLayout?.();
     };
 
     c.onRemoteLeave = (peerId) => {
-      this._removeRemoteTile(peerId);
-      this._recomputeGridLayout();
+      this._removeRemoteTile?.(peerId);
+      this._recomputeGridLayout?.();
     };
 
     c.onParticipantUpdate = (peerId, data) => {
-      this._updateParticipantTile(peerId, data);
-      this._recomputeGridLayout();
+      this._updateParticipantTile?.(peerId, data);
+      this._recomputeGridLayout?.();
     };
 
     c.onScreenShareStarted = () => this._onScreenShareStarted();
     c.onScreenShareStopped = () => this._onScreenShareStopped();
-    c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
+    c.onQualityUpdate = (level) => this._updateQualityIndicator?.(level);
     c.onCallStatusChange = (status) => this._onCallStatusChange(status);
     c.onPeerUnavailable = (reason) => this._onPeerUnavailable(reason);
     c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
@@ -211,6 +221,7 @@ export class CallUI {
   _bindUI() {
     if (this.declineBtn) {
       this.declineBtn.addEventListener("click", () => {
+        this._stopRingtone();
         this.controller.declineCall("declined");
         this._setStatusText("Declined");
       });
@@ -218,6 +229,7 @@ export class CallUI {
 
     if (this.answerBtn) {
       this.answerBtn.addEventListener("click", async () => {
+        this._stopRingtone();
         await this.controller.answerCall();
         this._setInboundActiveState(false);
       });
@@ -230,16 +242,16 @@ export class CallUI {
     }
 
     if (this.muteBtn) {
-      this.muteBtn.addEventListener("click", () => this._toggleMute());
+      this.muteBtn.addEventListener("click", () => this._toggleMute?.());
     }
 
     if (this.cameraToggleBtn) {
-      this.cameraToggleBtn.addEventListener("click", () => this._toggleCamera());
+      this.cameraToggleBtn.addEventListener("click", () => this._toggleCamera?.());
     }
 
     if (this.moreControlsBtn && this.moreControlsMenu) {
       this.moreControlsBtn.addEventListener("click", () => {
-        this._toggleMoreControlsMenu();
+        this._toggleMoreControlsMenu?.();
       });
 
       document.addEventListener("click", (e) => {
@@ -247,7 +259,7 @@ export class CallUI {
           !this.moreControlsMenu.contains(e.target) &&
           e.target !== this.moreControlsBtn
         ) {
-          this._hideMoreControlsMenu();
+          this._hideMoreControlsMenu?.();
         }
       });
     }
@@ -284,29 +296,29 @@ export class CallUI {
 
     if (this.videoUpgradeAcceptMobile) {
       this.videoUpgradeAcceptMobile.addEventListener("click", () =>
-        this._acceptVideoUpgrade()
+        this._acceptVideoUpgrade?.()
       );
     }
     if (this.videoUpgradeDeclineMobile) {
       this.videoUpgradeDeclineMobile.addEventListener("click", () =>
-        this._declineVideoUpgrade()
+        this._declineVideoUpgrade?.()
       );
     }
     if (this.videoUpgradeAcceptDesktop) {
       this.videoUpgradeAcceptDesktop.addEventListener("click", () =>
-        this._acceptVideoUpgrade()
+        this._acceptVideoUpgrade?.()
       );
     }
     if (this.videoUpgradeDeclineDesktop) {
       this.videoUpgradeDeclineDesktop.addEventListener("click", () =>
-        this._declineVideoUpgrade()
+        this._declineVideoUpgrade?.()
       );
     }
 
     if (this.localPip && this.enablePipSwap) {
-      this.localPip.addEventListener("dblclick", () => this._swapPipWithMain());
+      this.localPip.addEventListener("dblclick", () => this._swapPipWithMain?.());
       this.localPip.addEventListener("touchend", (e) => {
-        if (e.detail === 2) this._swapPipWithMain();
+        if (e.detail === 2) this._swapPipWithMain?.();
       });
     }
 
@@ -411,10 +423,15 @@ export class CallUI {
   // ============================================================
 
   _onCallStarted(peerId) {
+    this._stopRingback();
+    this._stopRingtone();
+
     this._setInboundActiveState(false);
     this._setStatusText("Connected");
     this._startTimer(Date.now());
     this._openWindow();
+
+    this._attachLocalStreamFromState();
 
     if (this.localTile) {
       this.localTile.classList.add("hidden");
@@ -425,24 +442,27 @@ export class CallUI {
       this.callControls.classList.remove("hidden-soft");
     }
 
-    this._setInboundButtonsVisible(false);
+    this._setInboundButtonsVisible?.(false);
 
     if (this.currentMode === "meet" || this.currentMode === "discord") {
-      this._ensureRemoteTile(peerId);
-      this._showLocalPip(true);
+      this._ensureRemoteTile?.(peerId);
+      this._showLocalPip?.(true);
     }
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus("Connected");
+      this._updateIosVoiceStatus?.("Connected");
     }
   }
 
   _onCallEnded(reason) {
+    this._stopRingback();
+    this._stopRingtone();
+
     this._stopTimer();
     this._setStatusText("Call ended");
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus("Call ended");
+      this._updateIosVoiceStatus?.("Call ended");
     }
 
     setTimeout(() => this.closeWindow(), 800);
@@ -453,13 +473,13 @@ export class CallUI {
       case "ringing":
         this._setStatusText("Ringing…");
         if (this.currentMode === "ios-voice") {
-          this._updateIosVoiceStatus("Calling…");
+          this._updateIosVoiceStatus?.("Calling…");
         }
         break;
       case "in-call":
         this._setStatusText("Connected");
         if (this.currentMode === "ios-voice") {
-          this._updateIosVoiceStatus("Connected");
+          this._updateIosVoiceStatus?.("Connected");
         }
         break;
       case "on-hold":
@@ -500,10 +520,13 @@ export class CallUI {
   }
 
   _onPeerUnavailable(reason) {
+    this._stopRingback();
+    this._stopRingtone();
+
     this._setStatusText(reason || "User unavailable");
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus(reason || "User unavailable");
+      this._updateIosVoiceStatus?.(reason || "User unavailable");
     }
 
     setTimeout(() => this.closeWindow(), 1200);
@@ -512,9 +535,73 @@ export class CallUI {
   _enterActiveVideoMode() {
     if (this.currentMode === "ios-voice") {
       this._setMode("meet", { audioOnly: false });
-      this._showLocalPip(true);
-      this._updateIosVoiceStatus("");
+      this._showLocalPip?.(true);
+      this._updateIosVoiceStatus?.("");
     }
+  }
+
+  // ============================================================
+  // AUDIO HELPERS
+  // ============================================================
+
+  _playRingtone() {
+    try {
+      this._stopRingback();
+      if (this.ringtone) {
+        this.ringtone.currentTime = 0;
+        this.ringtone.play().catch(() => {});
+      }
+    } catch {}
+  }
+
+  _stopRingtone() {
+    try {
+      if (this.ringtone) {
+        this.ringtone.pause();
+        this.ringtone.currentTime = 0;
+      }
+    } catch {}
+  }
+
+  _playRingback() {
+    try {
+      this._stopRingtone();
+      if (this.ringback) {
+        this.ringback.currentTime = 0;
+        this.ringback.play().catch(() => {});
+      }
+    } catch {}
+  }
+
+  _stopRingback() {
+    try {
+      if (this.ringback) {
+        this.ringback.pause();
+        this.ringback.currentTime = 0;
+      }
+    } catch {}
+  }
+
+  // ============================================================
+  // LOCAL MEDIA ATTACH
+  // ============================================================
+
+  _attachLocalStreamFromState() {
+    const stream = rtcState.localStream;
+    if (!stream) return;
+
+    const attach = (el) => {
+      if (!el) return;
+      if (el.srcObject === stream) return;
+      el.srcObject = stream;
+      el.muted = true;
+      el.playsInline = true;
+      el.autoplay = true;
+      el.play?.().catch(() => {});
+    };
+
+    attach(this.localVideo);
+    attach(this.localPipVideo);
   }
 
   // ============================================================
@@ -585,6 +672,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
