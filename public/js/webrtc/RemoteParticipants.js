@@ -1,15 +1,5 @@
 // public/js/webrtc/RemoteParticipants.js
-// ============================================================
-// PURE TILE MANAGER — no layout logic, no screen-share layout,
-// no active-speaker layout. CallUI.js owns ALL layout behavior.
-//
-// This file ONLY manages:
-//   - participant tiles
-//   - media binding
-//   - basic state (cameraOff, speaking, avatar/name)
-//   - safe creation/removal
-//   - robust autoplay handling
-// ============================================================
+// Pro-grade participant tile manager for Meet/Discord-style grid
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -30,6 +20,7 @@ function ensureInitialized() {
     localTileEl = document.getElementById("localParticipant") || null;
     if (localTileEl) {
       localTileEl.dataset.peerId = "local";
+      localTileEl.classList.add("participant", "local");
     }
   }
 }
@@ -48,6 +39,7 @@ export function registerLocalTile(el) {
   localTileEl = el || null;
   if (localTileEl) {
     localTileEl.dataset.peerId = "local";
+    localTileEl.classList.add("participant", "local");
   }
 }
 
@@ -86,10 +78,9 @@ function createTile(peerId, displayName, avatarUrl) {
   const node = safeCloneTemplate("remoteParticipantTemplate");
   if (!node) return null;
 
-  // ⭐ REQUIRED FOR CallUI layout engine
+  // Required for CallUI layout engine
   node.classList.add("participant", "remote");
-
-  node.dataset.peerId = String(peerId);
+  node.dataset.peerId = peerId;
 
   const videoEl = node.querySelector("video");
   const avatarEl = node.querySelector(".avatar-wrapper");
@@ -99,6 +90,7 @@ function createTile(peerId, displayName, avatarUrl) {
   if (nameEl && displayName) nameEl.textContent = displayName;
   if (avatarUrl && imgEl) imgEl.src = avatarUrl;
 
+  // Join animation hook
   node.classList.add("joining");
   gridEl.appendChild(node);
   requestAnimationFrame(() => {
@@ -156,18 +148,26 @@ export function attachParticipantStream(peerId, stream) {
   peerId = String(peerId);
 
   if (!peerId && peerId !== 0) {
-    console.warn("[RemoteParticipants] attachParticipantStream called without peerId");
+    console.warn(
+      "[RemoteParticipants] attachParticipantStream called without peerId"
+    );
   }
 
   if (!stream) {
-    console.warn("[RemoteParticipants] attachParticipantStream called with null stream for peer:", peerId);
+    console.warn(
+      "[RemoteParticipants] attachParticipantStream called with null stream for peer:",
+      peerId
+    );
   }
 
   ensureInitialized();
 
   const entry = participants.get(peerId) || createTile(peerId);
   if (!entry) {
-    console.warn("[RemoteParticipants] attachParticipantStream: no entry for peer:", peerId);
+    console.warn(
+      "[RemoteParticipants] attachParticipantStream: no entry for peer:",
+      peerId
+    );
     return null;
   }
 
@@ -175,9 +175,11 @@ export function attachParticipantStream(peerId, stream) {
 
   if (entry.videoEl && stream) {
     try {
-      entry.videoEl.srcObject = stream;
+      if (entry.videoEl.srcObject !== stream) {
+        entry.videoEl.srcObject = stream;
+      }
       entry.videoEl.playsInline = true;
-      entry.videoEl.muted = true; // video muted; audio comes from #remoteAudio
+      entry.videoEl.muted = true; // audio comes from #remoteAudio
       entry.videoEl.classList.add("show");
 
       const tryPlay = () => {
@@ -303,6 +305,7 @@ export function getParticipant(peerId) {
 export function getAllParticipants() {
   return Array.from(participants.values());
 }
+
 /* -------------------------------------------------------
    Active Speaker Highlight (CallUI-driven)
 ------------------------------------------------------- */
@@ -356,6 +359,7 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
+
 
 
 
