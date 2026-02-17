@@ -338,11 +338,11 @@
   z-index: 1;
   pointer-events: auto;
 }
-
 .participant.remote {
-  display: block;
-  opacity: 1;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
+
 
 /* Speaking + active speaker */
 .participant.speaking {
@@ -430,6 +430,9 @@
 .media-wrapper video.hidden-soft {
   opacity: 0;
 }
+#localPipVideo {
+  object-fit: contain !important;
+}
 
 /* Local self-view should NOT be cropped */
 #localVideo,
@@ -441,6 +444,10 @@
 /* Remote video should fill the tile */
 .remoteVideo {
   object-fit: cover !important;
+}
+/* Ensure remote video sits above avatar when active */
+.remoteVideo.show {
+  z-index: 4 !important;
 }
 
 
@@ -474,6 +481,8 @@
 
 .avatar-wrapper.hidden {
   opacity: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ============================================================
