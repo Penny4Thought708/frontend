@@ -16,8 +16,6 @@ import {
   getMyUserId,
   getJson,
   postForm,
-  getVoiceBtn,
-  getVideoBtn,
 } from "./session.js";
 import { socket } from "./socket.js";
 import { DEBUG } from "./debug.js";
@@ -746,6 +744,7 @@ socket.on("connect", async () => {
   // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
