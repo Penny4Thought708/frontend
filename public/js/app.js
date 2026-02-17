@@ -17,7 +17,7 @@ import {
   getJson,
   postForm,
 } from "./session.js";
-import { socket } from "./socket.js";
+
 import { DEBUG } from "./debug.js";
 
 // Messaging (new engine: pure logic in messaging.js)
@@ -30,7 +30,25 @@ import { loadContacts, openMessagesFor } from "./dashboard/contacts.js";
 import { initCallLogs } from "./call-log.js";
 
 // WebRTC (CallUI internally creates WebRTCController)
+import { getVoiceBtn, getVideoBtn } from "./session.js";
 import { CallUI } from "./webrtc/CallUI.js";
+import { socket } from "./socket.js";
+
+window.callUI = new CallUI(socket);
+
+// Voice call
+getVoiceBtn()?.addEventListener("click", () => {
+  const peerId = window.selectedContactId; // however you store it
+  if (!peerId) return console.warn("No contact selected");
+  callUI.openForOutgoing(peerId, { audio: true, video: false });
+});
+
+// Video call
+getVideoBtn()?.addEventListener("click", () => {
+  const peerId = window.selectedContactId;
+  if (!peerId) return console.warn("No contact selected");
+  callUI.openForOutgoing(peerId, { audio: true, video: true });
+});
 
 
 // Components
@@ -744,6 +762,7 @@ socket.on("connect", async () => {
   // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
 });
+
 
 
 
