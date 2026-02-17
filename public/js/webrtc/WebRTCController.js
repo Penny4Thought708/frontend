@@ -1,20 +1,5 @@
 // public/js/webrtc/WebRTCController.js
-// ============================================================
-// WebRTCController: signaling, peer connection, media, upgrades,
-// screen share, remote track handling, call waiting, inbound queue,
-// and group-call–ready architecture.
-//
-// UI owns:
-//   - PiP, swap, layouts, toasts, voicemail, etc.
-// This file focuses on:
-//   - signaling
-//   - peer connection lifecycle
-//   - media routing
-//   - screen share
-//   - call queue + status
-//   - clean decline/timeout/busy semantics
-//   - TURN-ready ICE + robust diagnostics
-// ============================================================
+// High-performance, multi-peer WebRTC controller for FaceTime / Meet / Discord UX
 
 import { rtcState } from "./WebRTCState.js";
 import {
@@ -38,12 +23,11 @@ function err(...args) {
   console.error("[WebRTC]", ...args);
 }
 
-// High-end ICE configuration (STUN + TURN-ready)
-// Replace TURN config with your own credentials in production.
-const ICE_CONFIG = {
+// Base ICE config; will be overridden/extended by rtcState.iceServers if present
+const ICE_CONFIG_BASE = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    // Example TURN — replace with your own
+    // Example TURN — replace with your own in production
     // {
     //   urls: "turn:global.relay.metered.ca:80",
     //   username: "yourUsername",
@@ -52,6 +36,16 @@ const ICE_CONFIG = {
   ],
   iceCandidatePoolSize: 4,
 };
+
+function buildIceConfig() {
+  if (rtcState.iceServers && Array.isArray(rtcState.iceServers)) {
+    return {
+      ...ICE_CONFIG_BASE,
+      iceServers: rtcState.iceServers,
+    };
+  }
+  return ICE_CONFIG_BASE;
+}
 
 // Connection state mapping for UI/analytics
 const PC_STATE_MAP = {
@@ -106,14 +100,17 @@ export class WebRTCController {
   ------------------------------------------------------- */
   _setStatus(status) {
     rtcState.status = status;
-    if (this.onCallStatusChange) {
-      this.onCallStatusChange(status);
+    try {
+      this.onCallStatusChange?.(status);
+    } catch (e) {
+      warn("onCallStatusChange handler error:", e);
     }
   }
 
   _addParticipant(peerId, extra = {}) {
     peerId = String(peerId);
     if (!rtcState.participants) rtcState.participants = new Map();
+
     const existing = rtcState.participants.get(peerId) || {};
     const merged = {
       ...existing,
@@ -122,18 +119,26 @@ export class WebRTCController {
       state: extra.state || existing.state || "connected",
       ...extra,
     };
+
     rtcState.participants.set(peerId, merged);
-    if (this.onParticipantUpdate) {
-      this.onParticipantUpdate(peerId, merged);
+
+    try {
+      this.onParticipantUpdate?.(peerId, merged);
+    } catch (e) {
+      warn("onParticipantUpdate handler error:", e);
     }
   }
 
   _removeParticipant(peerId) {
     peerId = String(peerId);
     if (!rtcState.participants) return;
+
     rtcState.participants.delete(peerId);
-    if (this.onParticipantUpdate) {
-      this.onParticipantUpdate(peerId, null);
+
+    try {
+      this.onParticipantUpdate?.(peerId, null);
+    } catch (e) {
+      warn("onParticipantUpdate handler error:", e);
     }
   }
 
@@ -191,16 +196,16 @@ export class WebRTCController {
         case "leave":
           this._handleLeave(from);
           break;
-       case "unavailable":
-            // If we're already in a call, ignore late "unavailable" noise
-            if (rtcState.inCall) {
-              log("Ignoring 'unavailable' signal during active call");
-              break;
-            }
-            if (this.onPeerUnavailable) {
-              this.onPeerUnavailable(reason || "User unavailable");
-            }
+        case "unavailable":
+          // If we're already in a call, ignore late "unavailable" noise
+          if (rtcState.inCall) {
+            log("Ignoring 'unavailable' signal during active call");
             break;
+          }
+          if (this.onPeerUnavailable) {
+            this.onPeerUnavailable(reason || "User unavailable");
+          }
+          break;
         default:
           warn("Unknown webrtc:signal type:", type, msg);
           break;
@@ -208,16 +213,15 @@ export class WebRTCController {
     });
 
     // Dedicated decline/busy/timeout channels from server
-     this.socket.on("call:declined", (msg) => {
+    this.socket.on("call:declined", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
-    
-      // If we're already in a call, this is stale noise — ignore
+
       if (rtcState.inCall) {
         log("Ignoring call:declined during active call from", from, reason);
         return;
       }
-    
+
       log("call:declined from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call declined");
@@ -225,16 +229,15 @@ export class WebRTCController {
       this._remoteEndWithoutPc(from, reason || "declined");
     });
 
-
-       this.socket.on("call:busy", (msg) => {
+    this.socket.on("call:busy", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
-    
+
       if (rtcState.inCall) {
         log("Ignoring call:busy during active call from", from, reason);
         return;
       }
-    
+
       log("call:busy from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "User busy");
@@ -242,23 +245,21 @@ export class WebRTCController {
       this._remoteEndWithoutPc(from, reason || "busy");
     });
 
-
-      this.socket.on("call:timeout", (msg) => {
+    this.socket.on("call:timeout", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
-    
+
       if (rtcState.inCall) {
         log("Ignoring call:timeout during active call from", from, reason);
         return;
       }
-    
+
       log("call:timeout from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call timed out");
       }
       this._remoteEndWithoutPc(from, reason || "timeout");
     });
-
   }
 
   _remoteEndWithoutPc(peerId, reason) {
@@ -281,20 +282,24 @@ export class WebRTCController {
       return this.pcMap.get(peerId);
     }
 
-    const pc = new RTCPeerConnection(ICE_CONFIG);
+    const pc = new RTCPeerConnection(buildIceConfig());
     this.pcMap.set(peerId, pc);
 
-    log("Created RTCPeerConnection for peer:", peerId, ICE_CONFIG);
+    log("Created RTCPeerConnection for peer:", peerId, buildIceConfig());
 
     pc.onicecandidate = (evt) => {
       if (evt.candidate) {
-        this.socket.emit("webrtc:signal", {
-          type: "ice",
-          to: peerId,
-          from: rtcState.selfId,
-          callId: rtcState.callId,
-          candidate: evt.candidate,
-        });
+        try {
+          this.socket.emit("webrtc:signal", {
+            type: "ice",
+            to: peerId,
+            from: rtcState.selfId,
+            callId: rtcState.callId,
+            candidate: evt.candidate,
+          });
+        } catch (e) {
+          err("Error emitting ICE candidate:", e);
+        }
       }
     };
 
@@ -316,7 +321,11 @@ export class WebRTCController {
       log("PeerConnection state:", peerId, state);
 
       if (this.onQualityUpdate) {
-        this.onQualityUpdate(PC_STATE_MAP[state] || state);
+        try {
+          this.onQualityUpdate(PC_STATE_MAP[state] || state);
+        } catch (e) {
+          warn("onQualityUpdate handler error:", e);
+        }
       }
 
       if (state === "failed") {
@@ -336,12 +345,16 @@ export class WebRTCController {
       log("ontrack from", peerId, evt.track.kind, evt.track.id);
       attachRemoteTrack(peerId, evt);
       this._addParticipant(peerId, { state: "connected" });
-      this.onRemoteJoin(peerId);
+      try {
+        this.onRemoteJoin?.(peerId);
+      } catch (e) {
+        warn("onRemoteJoin handler error:", e);
+      }
     };
 
     pc.onnegotiationneeded = async () => {
       log("onnegotiationneeded for peer:", peerId);
-      // Optional renegotiation hook
+      // Optional renegotiation hook (SFU / advanced flows)
     };
 
     return pc;
@@ -398,7 +411,7 @@ export class WebRTCController {
     rtcState.callStartTs = Date.now();
     this._setStatus("in-call");
     this._addParticipant(peerId, { state: "connecting" });
-    this.onCallStarted(peerId);
+    this.onCallStarted?.(peerId);
   }
 
   /* -------------------------------------------------------
@@ -429,7 +442,7 @@ export class WebRTCController {
       rtcState.peerId = peerId;
       rtcState.incomingOffer = offer;
       rtcState.incomingIsVideo = true;
-      this.onIncomingOffer(peerId, offer);
+      this.onIncomingOffer?.(peerId, offer);
       return;
     }
 
@@ -442,9 +455,7 @@ export class WebRTCController {
         incomingIsVideo,
         callId: callId || rtcState.callId,
       });
-      if (this.onIncomingOfferQueued) {
-        this.onIncomingOfferQueued(peerId, offer, callId || rtcState.callId);
-      }
+      this.onIncomingOfferQueued?.(peerId, offer, callId || rtcState.callId);
       return;
     }
 
@@ -454,7 +465,7 @@ export class WebRTCController {
     rtcState.incomingIsVideo = incomingIsVideo;
     this._setStatus("ringing");
 
-    this.onIncomingOffer(peerId, offer);
+    this.onIncomingOffer?.(peerId, offer);
   }
 
   /* -------------------------------------------------------
@@ -520,7 +531,7 @@ export class WebRTCController {
     rtcState.callStartTs = rtcState.callStartTs || Date.now();
     this._setStatus("in-call");
     this._addParticipant(peerId, { state: "connected" });
-    this.onCallStarted(peerId);
+    this.onCallStarted?.(peerId);
   }
 
   /* -------------------------------------------------------
@@ -766,7 +777,7 @@ export class WebRTCController {
     this.pcMap.delete(peerId);
 
     this._removeParticipant(peerId);
-    this.onRemoteLeave(peerId);
+    this.onRemoteLeave?.(peerId);
 
     if (!this._hasActiveParticipants()) {
       cleanupMedia();
@@ -799,7 +810,7 @@ export class WebRTCController {
     log("Processing next queued call:", next);
 
     this._setStatus("ringing");
-    this.onIncomingOffer(next.from, next.offer);
+    this.onIncomingOffer?.(next.from, next.offer);
   }
 
   /* -------------------------------------------------------
@@ -827,6 +838,8 @@ export class WebRTCController {
     }
   }
 }
+
+
 
 
 
