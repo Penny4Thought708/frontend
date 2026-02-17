@@ -963,22 +963,24 @@ export class CallUI {
   // WINDOW OPEN/CLOSE
   // ============================================================
 
-  _openWindow() {
-    if (!this.root) return;
-    this.root.classList.remove("hidden");
-    this.root.classList.add("is-open", "call-opening");
-    this.root.style.opacity = "1";
+_openWindow() {
+  if (!this.root) return;
 
-    // Ensure controls are at least initialized hidden-soft only
-    if (this.callControls) {
-      this.callControls.classList.remove("hidden");
-      this.callControls.classList.add("hidden-soft");
-    }
+  this.root.classList.remove("hidden");
+  this.root.classList.add("is-open", "call-opening");
+  this.root.style.opacity = "1";
 
-    setTimeout(() => {
-      this.root.classList.remove("call-opening");
-    }, 260);
+  // FIX: Make call controls fully visible immediately
+  if (this.callControls) {
+    this.callControls.classList.remove("hidden");
+    this.callControls.classList.remove("hidden-soft");
   }
+
+  setTimeout(() => {
+    this.root.classList.remove("call-opening");
+  }, 260);
+}
+
 
   // ============================================================
   // UTIL
@@ -988,6 +990,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
