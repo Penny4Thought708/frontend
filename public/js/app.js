@@ -673,12 +673,8 @@ socket.on("connect", async () => {
   await waitForIdentity();
   await loadContacts();
 
-  // -------------------------------------------------------
-  // Create WebRTCController FIRST
-  // Then pass it into CallUI (correct constructor)
-  // -------------------------------------------------------
-  const controller = new WebRTCController(socket);
-  const callUI = new CallUI(controller);
+  // Create CallUI (internally creates WebRTCController)
+  const callUI = new CallUI(socket);
 
   // 🔔 Inbound call from backend → open call window
   socket.on("call:start", ({ from, type }) => {
@@ -692,9 +688,7 @@ socket.on("connect", async () => {
   // NEW voicemail system handles loading itself (VoicemailUI.js)
   // ❌ old loadVoicemails() removed
 
-  // -------------------------------------------------------
   // Open chat for a given contactId using new messaging.js
-  // -------------------------------------------------------
   window.openChat = async function (contactId) {
     window.currentChatUserId = contactId;
     setReceiver(contactId);
@@ -711,9 +705,7 @@ socket.on("connect", async () => {
     await loadMessages();
   };
 
-  // -------------------------------------------------------
   // Wire voice/video buttons in the messaging header
-  // -------------------------------------------------------
   const voiceBtn = getVoiceBtn();
   const videoBtn = getVideoBtn();
 
@@ -748,17 +740,11 @@ socket.on("connect", async () => {
     });
   }
 
-  // -------------------------------------------------------
-  // Contacts menu + DND
-  // -------------------------------------------------------
   initContentMenu();
   initDndFromContactsMenu?.();
 
-  // -------------------------------------------------------
-  // Expose globally for debugging + voicemail callbacks
-  // -------------------------------------------------------
+  // Expose callUI globally (voicemail callback, debugging, etc.)
   window.callUI = callUI;
-  window.rtc = controller;
 });
 
 
