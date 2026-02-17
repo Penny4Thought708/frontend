@@ -1,16 +1,5 @@
-
 // ============================================================
-// CallUI.js — Corrected + Aligned with HTML/CSS/UX
-// ============================================================
-// Responsibilities:
-//   - Owns WebRTCController
-//   - Manages call window UI state
-//   - Controls primary vs PiP layout
-//   - Handles FaceTime-style slide animations
-//   - Handles Meet/Discord grid modes
-//   - Handles iOS voice mode
-//   - Handles video upgrade overlay
-//   - Syncs with RemoteParticipants.js
+// CallUI.js — Compact, Full, Enhanced
 // ============================================================
 
 import { WebRTCController } from "./WebRTCController.js";
@@ -19,93 +8,70 @@ import { attachLocalStream } from "./WebRTCMedia.js";
 import { rtcState } from "./WebRTCState.js";
 
 export class CallUI {
+  // WINDOW + DOM + STATE
   constructor(socket) {
     this.socket = socket;
 
-    // ------------------------------------------------------------
-    // DOM References
-    // ------------------------------------------------------------
+    // DOM
     this.callWindow = document.getElementById("callWindow");
-    this.callBody = this.callWindow.querySelector(".call-body");
+    this.callBody = this.callWindow?.querySelector(".call-body");
     this.callGrid = document.getElementById("callGrid");
 
-    // Local tile + video
     this.localTile = document.getElementById("localParticipant");
     this.localVideo = document.getElementById("localVideo");
     this.localAvatar = this.localTile?.querySelector(".avatar-wrapper");
 
-    // PiP containers
     this.localPip = document.getElementById("localPip");
     this.localPipVideo = document.getElementById("localPipVideo");
 
     this.remotePip = document.getElementById("remotePip");
     this.remotePipVideo = document.getElementById("remotePipVideo");
 
-    // Controls
     this.callControls = document.getElementById("call-controls");
     this.callStatus = document.getElementById("call-status");
     this.callTimer = document.getElementById("call-timer");
 
-    // Video upgrade overlay
     this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
 
-    // ------------------------------------------------------------
-    // State
-    // ------------------------------------------------------------
-
-    // Local is primary until callee answers
+    // STATE
     this.primaryIsRemote = false;
-
-    // PiP position (default bottom-right)
     this.pipPos = { x: 0, y: 0 };
-
-    // Track whether remote has answered
     this.remoteAnswered = false;
-
-    // Track whether remote video has arrived
     this.remoteHasVideo = false;
-
-    // Track animation state
     this.isAnimatingSwap = false;
+    this._timerStart = 0;
+    this._timerInterval = null;
+    this._controlsHideTimeout = null;
+    this._lastPointerMove = 0;
 
-    // ------------------------------------------------------------
-    // Create WebRTC Controller
-    // ------------------------------------------------------------
+    // CONTROLLER
     this.rtc = new WebRTCController(socket);
 
-    // Bind controller → UI events
     this._bindControllerEvents();
-
-    // Bind UI events (buttons, PiP drag, etc.)
     this._bindUIEvents();
-
-    // Initialize window hidden
     this._hideCallWindow();
+    this._init();
   }
 
-  // ============================================================
-  // UI WINDOW CONTROL
-  // ============================================================
-
+  // WINDOW
   _showCallWindow() {
+    if (!this.callWindow) return;
     this.callWindow.classList.remove("hidden");
     requestAnimationFrame(() => {
-      this.callWindow.classList.add("is-open");
-      this.callWindow.classList.add("call-opening");
+      this.callWindow.classList.add("is-open", "call-opening");
+      this._scheduleControlsAutoHide();
     });
   }
 
   _hideCallWindow() {
+    if (!this.callWindow) return;
     this.callWindow.classList.remove("is-open");
     setTimeout(() => {
       this.callWindow.classList.add("hidden");
     }, 220);
   }
 
-  // ============================================================
   // STATUS + TIMER
-  // ============================================================
-
   _setStatus(text) {
     if (this.callStatus) this.callStatus.textContent = text;
   }
@@ -113,999 +79,755 @@ export class CallUI {
   _startTimer() {
     this._timerStart = Date.now();
     clearInterval(this._timerInterval);
-
     this._timerInterval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this._timerStart) / 1000);
       const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
       const s = String(elapsed % 60).padStart(2, "0");
-      this.callTimer.textContent = `${m}:${s}`;
+      if (this.callTimer) this.callTimer.textContent = `${m}:${s}`;
     }, 1000);
   }
 
   _stopTimer() {
     clearInterval(this._timerInterval);
+    this._timerInterval = null;
   }
 
-  // ============================================================
-  // EVENT BINDING (Controller → UI)
-  // ============================================================
-
+  // CONTROLLER → UI
   _bindControllerEvents() {
     const rtc = this.rtc;
 
-    // Local stream attached
     rtc.onLocalStream = (stream) => {
       attachLocalStream(stream);
       this._onLocalVideoReady();
     };
 
-    // Remote stream arrives
     rtc.onRemoteStream = (peerId, stream) => {
       this._onRemoteVideoReady(peerId, stream);
     };
 
-    // Remote answered call
     rtc.onCallAnswered = () => {
       this._onRemoteAnswered();
     };
 
-    // Remote ended call
     rtc.onCallEnded = () => {
       this._endCall();
     };
+
+    rtc.onScreenShareStarted = (peerId) => {
+      this._enterScreenShareMode(peerId);
+    };
+
+    rtc.onScreenShareStopped = () => {
+      this._exitScreenShareMode();
+    };
+
+    rtc.onRequestVideoUpgrade = () => {
+      this._showVideoUpgradeOverlay();
+    };
   }
 
-  // ============================================================
-  // EVENT BINDING (UI → Controller)
-  // ============================================================
-
-  _bindUIEvents() {
-    // TODO: buttons, PiP drag, swap, etc.
-    // Will be implemented in Part 2
-  }
-
-  // ============================================================
-  // LOCAL VIDEO READY
-  // ============================================================
-
+  // LOCAL VIDEO READY (MEDIA)
   _onLocalVideoReady() {
-    // Show local tile
-    this.localTile.classList.remove("hidden");
-
-    // Hide avatar
-    this.localAvatar?.classList.add("hidden");
-
-    // Local is primary at start
+    if (this.localTile) this.localTile.classList.remove("hidden");
+    if (this.localAvatar) this.localAvatar.classList.add("hidden");
+    if (this.localVideo) this.localVideo.classList.add("show");
     this.primaryIsRemote = false;
-
-    // Show call window
     this._showCallWindow();
-
-    // Update status
     this._setStatus("Calling…");
+    this._applyPrimaryLayout();
   }
 
-  // ============================================================
-  // REMOTE ANSWERED
-  // ============================================================
-
+  // REMOTE ANSWERED (CONTROLLER EVENT)
   _onRemoteAnswered() {
     this.remoteAnswered = true;
     this._setStatus("Connected");
     this._startTimer();
-  }
-
-  // ============================================================
-  // REMOTE VIDEO READY
-  // ============================================================
-
-  _onRemoteVideoReady(peerId, stream) {
-    this.remoteHasVideo = true;
-
-    // Attach stream via RemoteParticipants
-    const entry = RemoteParticipants.attachParticipantStream(peerId, stream);
-
-    // If remote answered, animate swap
-    if (this.remoteAnswered && !this.primaryIsRemote) {
-      this._animateRemoteBecomingPrimary(entry.el);
+    if (this.remoteHasVideo && !this.primaryIsRemote && this.callGrid) {
+      const remotes = this.callGrid.querySelectorAll(".participant.remote");
+      if (remotes.length > 0) this._animateRemoteBecomingPrimary(remotes[0]);
     }
   }
 
-  // ============================================================
-  // ANIMATION: REMOTE BECOMES PRIMARY
-  // ============================================================
+  // REMOTE VIDEO READY
+  _onRemoteVideoReady(peerId, stream) {
+    this.remoteHasVideo = true;
+    const entry = RemoteParticipants.attachParticipantStream(peerId, stream);
+    if (this.remoteAnswered && !this.primaryIsRemote && entry?.el) {
+      this._animateRemoteBecomingPrimary(entry.el);
+    } else {
+      this._applyPrimaryLayout();
+    }
+  }
 
+  // ANIMATION: REMOTE BECOMES PRIMARY
   _animateRemoteBecomingPrimary(remoteEl) {
-    if (this.isAnimatingSwap) return;
+    if (!remoteEl || this.isAnimatingSwap) return;
     this.isAnimatingSwap = true;
 
-    // Prepare remote tile for slide-up
     remoteEl.classList.add("pre-enter");
+    if (this.localPip) this.localPip.classList.add("pre-enter");
 
-    // Prepare local PiP for slide-down
-    this.localPip.classList.add("pre-enter");
-
-    // Show remote tile
     remoteEl.classList.remove("hidden");
 
-    // Move local video into PiP
-    this.localPipVideo.srcObject = this.localVideo.srcObject;
-    this.localPip.classList.remove("hidden");
+    if (this.localPipVideo && this.localVideo)
+      this.localPipVideo.srcObject = this.localVideo.srcObject;
+    if (this.localPip) this.localPip.classList.remove("hidden");
+    if (this.localTile) this.localTile.classList.add("hidden");
 
-    // Hide local tile
-    this.localTile.classList.add("hidden");
-
-    // Trigger animation
     requestAnimationFrame(() => {
       remoteEl.classList.add("enter-active");
-      this.localPip.classList.add("enter-active");
+      if (this.localPip) this.localPip.classList.add("enter-active");
     });
 
-    // Cleanup after animation
     setTimeout(() => {
       remoteEl.classList.remove("pre-enter", "enter-active");
-      this.localPip.classList.remove("pre-enter", "enter-active");
-
+      if (this.localPip) this.localPip.classList.remove("pre-enter", "enter-active");
       this.primaryIsRemote = true;
       this.isAnimatingSwap = false;
-
-      // Apply normal layout rules
       this._applyPrimaryLayout();
     }, 350);
   }
-
-  // ============================================================
-  // PRIMARY LAYOUT ENGINE
-  // ============================================================
-_applyPrimaryLayout() {
-  if (this.isAnimatingSwap) return;
-
-  let remoteEl = null;
-  const allRemotes = this.callGrid.querySelectorAll(".participant.remote");
-
-  for (const el of allRemotes) {
-    const peerId = el.dataset.peerId;
-    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
-
-    if (entry && entry.stream) {
-      remoteEl = el;
-      break;
-    }
-  }
-
-  const hasRemote = !!remoteEl;
-
-  const count = hasRemote ? 2 : 1;
-
-  this.callGrid.classList.remove(
-    "participants-1",
-    "participants-2",
-    "participants-3",
-    "participants-4",
-    "participants-5",
-    "participants-6",
-    "participants-7",
-    "participants-8",
-    "participants-9",
-    "participants-many"
-  );
-
-  if (count === 1) this.callGrid.classList.add("participants-1");
-  if (count === 2) this.callGrid.classList.add("participants-2");
-
-  if (!hasRemote) {
-    this.primaryIsRemote = false;
-    this.localTile.classList.remove("hidden");
-    if (remoteEl) remoteEl.classList.add("hidden");
-    this.localPip.classList.add("hidden");
-    this.remotePip.classList.add("hidden");
-    return;
-  }
-
-  if (this.primaryIsRemote) {
-    remoteEl.classList.remove("hidden");
-    this.localTile.classList.add("hidden");
-    this.localPip.classList.remove("hidden");
-    this.remotePip.classList.add("hidden");
-    this.localPipVideo.srcObject = this.localVideo.srcObject;
-    this._applyPipTransform(this.localPip);
-  } else {
-    this.localTile.classList.remove("hidden");
-    remoteEl.classList.add("hidden");
-    this.remotePip.classList.remove("hidden");
-    this.localPip.classList.add("hidden");
-
-    const peerId = remoteEl.dataset.peerId;
-    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
-    if (entry?.videoEl?.srcObject) {
-      this.remotePipVideo.srcObject = entry.videoEl.srcObject;
-    }
-
-    this._applyPipTransform(this.remotePip);
-  }
 }
+// ============================================================
+// LAYOUT ENGINE + PIP + DRAG + SWAP + AUTO‑HIDE CONTROLS
+// ============================================================
 
+  // PRIMARY LAYOUT ENGINE
+  _applyPrimaryLayout() {
+    if (this.isAnimatingSwap || !this.callGrid) return;
 
-  // ============================================================
+    let remoteEl = null;
+    const allRemotes = this.callGrid.querySelectorAll(".participant.remote");
+    for (const el of allRemotes) {
+      const entry = RemoteParticipants.getParticipant(el.dataset.peerId);
+      if (entry?.stream) {
+        remoteEl = el;
+        break;
+      }
+    }
+
+    const hasRemote = !!remoteEl;
+    const count = hasRemote ? 2 : 1;
+
+    this.callGrid.classList.remove(
+      "participants-1","participants-2","participants-3","participants-4",
+      "participants-5","participants-6","participants-7","participants-8",
+      "participants-9","participants-many"
+    );
+    this.callGrid.classList.add(`participants-${count}`);
+
+    if (!hasRemote) {
+      this.primaryIsRemote = false;
+      if (this.localTile) this.localTile.classList.remove("hidden");
+      if (remoteEl) remoteEl.classList.add("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
+      if (this.remotePip) this.remotePip.classList.add("hidden");
+      return;
+    }
+
+    if (this.primaryIsRemote) {
+      remoteEl.classList.remove("hidden");
+      if (this.localTile) this.localTile.classList.add("hidden");
+      if (this.localPip) this.localPip.classList.remove("hidden");
+      if (this.remotePip) this.remotePip.classList.add("hidden");
+      if (this.localPipVideo && this.localVideo)
+        this.localPipVideo.srcObject = this.localVideo.srcObject;
+      this._applyPipTransform(this.localPip);
+    } else {
+      if (this.localTile) this.localTile.classList.remove("hidden");
+      remoteEl.classList.add("hidden");
+      if (this.remotePip) this.remotePip.classList.remove("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
+
+      const entry = RemoteParticipants.getParticipant(remoteEl.dataset.peerId);
+      if (entry?.videoEl?.srcObject)
+        this.remotePipVideo.srcObject = entry.videoEl.srcObject;
+
+      this._applyPipTransform(this.remotePip);
+    }
+  }
+
+  // APPLY PIP TRANSFORM
+  _applyPipTransform(pipEl) {
+    if (!pipEl) return;
+    if (!this.pipPos || typeof this.pipPos.x !== "number")
+      this.pipPos = { x: 0, y: 0 };
+    pipEl.style.transform = `translate3d(${this.pipPos.x}px,${this.pipPos.y}px,0)`;
+  }
+
+  // SWAP PRIMARY
+  _swapPrimary() {
+    if (this.isAnimatingSwap) return;
+    this.primaryIsRemote = !this.primaryIsRemote;
+    this._applyPrimaryLayout();
+  }
+
+  // DRAG HANDLER FOR PIP
+  _enablePipDrag(pipEl) {
+    if (!pipEl) return;
+    let dragging = false, startX = 0, startY = 0;
+
+    pipEl.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      pipEl.classList.add("dragging");
+      startX = e.clientX - this.pipPos.x;
+      startY = e.clientY - this.pipPos.y;
+      pipEl.setPointerCapture(e.pointerId);
+      this._showControls();
+    });
+
+    pipEl.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      this.pipPos.x = e.clientX - startX;
+      this.pipPos.y = e.clientY - startY;
+      pipEl.style.transform = `translate3d(${this.pipPos.x}px,${this.pipPos.y}px,0)`;
+    });
+
+    pipEl.addEventListener("pointerup", (e) => {
+      dragging = false;
+      pipEl.classList.remove("dragging");
+      pipEl.releasePointerCapture(e.pointerId);
+      this._snapPipToEdges(pipEl);
+      this._scheduleControlsAutoHide();
+    });
+  }
+
+  // PIP SNAP (MAGNETIC EDGES)
+  _snapPipToEdges(pipEl) {
+    if (!pipEl) return;
+    const margin = 12;
+    const rect = pipEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const snapLeft = rect.left < vw / 2;
+    const snapTop = rect.top < vh / 2;
+
+    this.pipPos.x = snapLeft ? margin : vw - rect.width - margin;
+    this.pipPos.y = snapTop ? margin : vh - rect.height - margin;
+
+    pipEl.style.transition = "transform 0.18s cubic-bezier(.25,.8,.25,1)";
+    pipEl.style.transform = `translate3d(${this.pipPos.x}px,${this.pipPos.y}px,0)`;
+    setTimeout(() => (pipEl.style.transition = ""), 200);
+  }
+
+  // AUTO‑HIDE CONTROLS
+  _scheduleControlsAutoHide() {
+    clearTimeout(this._controlsHideTimeout);
+    this._controlsHideTimeout = setTimeout(() => {
+      if (this.callControls) this.callControls.classList.add("auto-hide");
+    }, 2500);
+  }
+
+  _showControls() {
+    if (this.callControls)
+      this.callControls.classList.remove("auto-hide");
+    this._scheduleControlsAutoHide();
+  }
+
+  // UI → CONTROLLER EVENTS
+  _bindUIEvents() {
+    const answerBtn = document.getElementById("answer-call");
+    if (answerBtn)
+      answerBtn.addEventListener("click", () => {
+        this.rtc.answerCall();
+        this._setStatus("Connecting…");
+        this.callWindow.classList.remove("inbound-mode");
+        this.callWindow.classList.add("active-mode");
+      });
+
+    const declineBtn = document.getElementById("decline-call");
+    if (declineBtn)
+      declineBtn.addEventListener("click", () => {
+        this.rtc.endCall();
+        this._endCall();
+      });
+
+    const endBtn = document.getElementById("end-call");
+    if (endBtn)
+      endBtn.addEventListener("click", () => {
+        this.rtc.endCall();
+        this._endCall();
+      });
+
+    const muteBtn = document.getElementById("mute-call");
+    if (muteBtn)
+      muteBtn.addEventListener("click", () => {
+        const muted = this.rtc.toggleMute();
+        muteBtn.classList.toggle("active", muted);
+        this._showControls();
+      });
+
+    const camBtn = document.getElementById("camera-toggle");
+    if (camBtn)
+      camBtn.addEventListener("click", () => {
+        const off = this.rtc.toggleCamera();
+        camBtn.classList.toggle("active", off);
+        if (off) {
+          this.localAvatar?.classList.remove("hidden");
+          this.localVideo?.classList.remove("show");
+        } else {
+          this.localAvatar?.classList.add("hidden");
+          this.localVideo?.classList.add("show");
+        }
+        this._applyPrimaryLayout();
+        this._showControls();
+      });
+
+    const moreBtn = document.getElementById("more-controls-btn");
+    const moreMenu = document.getElementById("more-controls-menu");
+    if (moreBtn && moreMenu) {
+      moreBtn.addEventListener("click", () => {
+        const open = moreMenu.classList.contains("show");
+        moreMenu.classList.toggle("show", !open);
+        moreMenu.classList.toggle("hidden", open);
+        this._showControls();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
+          moreMenu.classList.add("hidden");
+          moreMenu.classList.remove("show");
+        }
+      });
+    }
+
+    this._enablePipDrag(this.localPip);
+    this._enablePipDrag(this.remotePip);
+
+    let lastTap = 0;
+    const dbl = () => {
+      const now = Date.now();
+      if (now - lastTap < 300) this._swapPrimary();
+      lastTap = now;
+    };
+    this.localPip?.addEventListener("pointerdown", dbl);
+    this.remotePip?.addEventListener("pointerdown", dbl);
+
+    document.addEventListener("pointermove", () => this._showControls());
+    document.addEventListener("pointerdown", () => this._showControls());
+  }
+
+// ============================================================
+// CALL LIFECYCLE + VOICE MODE + VIDEO UPGRADE + SCREEN SHARE
+// ============================================================
+
+  // START OUTBOUND CALL
+  startOutboundCall() {
+    this._resetCallUI();
+    this._showCallWindow();
+    this.callWindow.classList.remove("inbound-mode");
+    this.callWindow.classList.add("active-mode");
+    this.primaryIsRemote = false;
+    this._setStatus("Calling…");
+    this._applyPrimaryLayout();
+  }
+
+  // INBOUND CALL
+  showInboundCall(callerName = "Incoming Call") {
+    this._resetCallUI();
+    this._showCallWindow();
+    this.callWindow.classList.add("inbound-mode");
+    this.callWindow.classList.remove("active-mode");
+    this._setStatus(callerName);
+  }
+
+  // ANSWERED (UI SIDE)
+  onAnswered() {
+    this.callWindow.classList.remove("inbound-mode");
+    this.callWindow.classList.add("active-mode");
+    this._setStatus("Connecting…");
+  }
+
   // END CALL
-  // ============================================================
-
   _endCall() {
     this._stopTimer();
     this._setStatus("Call Ended");
-
     this.callWindow.classList.remove("is-open");
-    setTimeout(() => {
-      this.callWindow.classList.add("hidden");
-    }, 220);
-  }
-}
+    setTimeout(() => this.callWindow.classList.add("hidden"), 220);
 
+    RemoteParticipants.clearAllParticipants();
 
-  // ------------------------------------------------------------
-  // 1. Detect remote participant with a real video stream
-  // ------------------------------------------------------------
-  let remoteEl = null;
-  const allRemotes = this.callGrid.querySelectorAll(".participant.remote");
-
-  for (const el of allRemotes) {
-    const peerId = el.dataset.peerId;
-    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
-
-    if (entry && entry.stream) {
-      remoteEl = el;
-      break;
-    }
-  }
-
-  const hasRemote = !!remoteEl;
-
-  // ------------------------------------------------------------
-  // 2. Update grid participant count classes
-  // ------------------------------------------------------------
-  const count = hasRemote ? 2 : 1;
-
-  this.callGrid.classList.remove(
-    "participants-1",
-    "participants-2",
-    "participants-3",
-    "participants-4",
-    "participants-5",
-    "participants-6",
-    "participants-7",
-    "participants-8",
-    "participants-9",
-    "participants-many"
-  );
-
-  if (count === 1) this.callGrid.classList.add("participants-1");
-  if (count === 2) this.callGrid.classList.add("participants-2");
-
-  // ------------------------------------------------------------
-  // 3. Apply primary vs PiP layout
-  // ------------------------------------------------------------
-
-  if (!hasRemote) {
-    // ----------------------------------------------------------
-    // ONLY LOCAL VIDEO EXISTS
-    // ----------------------------------------------------------
+    this.remoteAnswered = false;
+    this.remoteHasVideo = false;
     this.primaryIsRemote = false;
 
-    // Local tile visible
-    this.localTile.classList.remove("hidden");
-
-    // Remote tile hidden
-    if (remoteEl) remoteEl.classList.add("hidden");
-
-    // PiPs hidden
-    this.localPip.classList.add("hidden");
-    this.remotePip.classList.add("hidden");
-
-    return;
+    this._resetCallUI();
   }
 
-  // ------------------------------------------------------------
-  // REMOTE EXISTS — APPLY PRIMARY LOGIC
-  // ------------------------------------------------------------
+  // RESET UI
+  _resetCallUI() {
+    this.callWindow.classList.remove(
+      "inbound-mode","active-mode","voice-only-call","camera-off",
+      "meet-mode","discord-mode","ios-voice-mode","video-upgrade-mode",
+      "screen-share-mode"
+    );
 
-  if (this.primaryIsRemote) {
-    // ----------------------------------------------------------
-    // REMOTE IS PRIMARY
-    // ----------------------------------------------------------
+    this.localPip?.classList.add("hidden");
+    this.remotePip?.classList.add("hidden");
 
-    // Remote tile visible
-    remoteEl.classList.remove("hidden");
-
-    // Local tile hidden
-    this.localTile.classList.add("hidden");
-
-    // Local PiP visible
-    this.localPip.classList.remove("hidden");
-    this.remotePip.classList.add("hidden");
-
-    // Sync PiP video
-    this.localPipVideo.srcObject = this.localVideo.srcObject;
-
-    // Apply PiP transform
-    this._applyPipTransform(this.localPip);
-
-  } else {
-    // ----------------------------------------------------------
-    // LOCAL IS PRIMARY
-    // ----------------------------------------------------------
-
-    // Local tile visible
-    this.localTile.classList.remove("hidden");
-
-    // Remote tile hidden
-    remoteEl.classList.add("hidden");
-
-    // Remote PiP visible
-    this.remotePip.classList.remove("hidden");
-    this.localPip.classList.add("hidden");
-
-    // Sync PiP video
-    const peerId = remoteEl.dataset.peerId;
-    const entry = window.RemoteParticipants?.getParticipant?.(peerId);
-    if (entry?.videoEl?.srcObject) {
-      this.remotePipVideo.srcObject = entry.videoEl.srcObject;
-    }
-
-    // Apply PiP transform
-    this._applyPipTransform(this.remotePip);
-  }
-}
-
-// ============================================================
-// APPLY PIP TRANSFORM
-// ============================================================
-//
-// Moves PiP to the saved drag position.
-// If no drag position exists, resets to bottom-right.
-// ============================================================
-
-_applyPipTransform(pipEl) {
-  if (!pipEl) return;
-
-  // Default PiP position (bottom-right)
-  if (!this.pipPos || typeof this.pipPos.x !== "number") {
     this.pipPos = { x: 0, y: 0 };
+    if (this.localPip) this.localPip.style.transform = "";
+    if (this.remotePip) this.remotePip.style.transform = "";
+
+    this.localTile?.classList.add("hidden");
+    this.localAvatar?.classList.remove("hidden");
+    this.localVideo?.classList.remove("show");
+
+    const remotes = this.callGrid?.querySelectorAll(".participant.remote") || [];
+    remotes.forEach((el) => el.classList.add("hidden"));
+
+    this._setStatus("Connecting…");
+    if (this.callTimer) this.callTimer.textContent = "00:00";
+    this._stopTimer();
   }
 
-  pipEl.style.transform = `translate3d(${this.pipPos.x}px, ${this.pipPos.y}px, 0)`;
-}
+  // ============================================================
+  // iOS VOICE MODE
+  // ============================================================
 
-// ============================================================
-// SWAP PRIMARY (DOUBLE-TAP OR BUTTON)
-// ============================================================
-//
-// This allows the user to swap primary manually.
-// ============================================================
+  _enterIOSVoiceMode() {
+    this.callWindow.classList.add("ios-voice-mode","voice-only-call");
 
-_swapPrimary() {
-  if (this.isAnimatingSwap) return;
+    this.localVideo?.classList.remove("show");
+    this.localAvatar?.classList.remove("hidden");
 
-  this.primaryIsRemote = !this.primaryIsRemote;
-  this._applyPrimaryLayout();
-}
-
-// ============================================================
-// DRAG HANDLER FOR PIP
-// ============================================================
-//
-// This enables dragging PiP around the screen.
-// ============================================================
-
-_enablePipDrag(pipEl) {
-  if (!pipEl) return;
-
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-
-  pipEl.addEventListener("pointerdown", (e) => {
-    isDragging = true;
-    pipEl.classList.add("dragging");
-
-    startX = e.clientX - this.pipPos.x;
-    startY = e.clientY - this.pipPos.y;
-
-    pipEl.setPointerCapture(e.pointerId);
-  });
-
-  pipEl.addEventListener("pointermove", (e) => {
-    if (!isDragging) return;
-
-    this.pipPos.x = e.clientX - startX;
-    this.pipPos.y = e.clientY - startY;
-
-    pipEl.style.transform = `translate3d(${this.pipPos.x}px, ${this.pipPos.y}px, 0)`;
-  });
-
-  pipEl.addEventListener("pointerup", (e) => {
-    isDragging = false;
-    pipEl.classList.remove("dragging");
-    pipEl.releasePointerCapture(e.pointerId);
-  });
-}
-// ============================================================
-// UI → CONTROLLER EVENT BINDING
-// ============================================================
-
-_bindUIEvents() {
-  // ------------------------------------------------------------
-  // CALL CONTROL BUTTONS
-  // ------------------------------------------------------------
-
-  // Answer incoming call
-  const answerBtn = document.getElementById("answer-call");
-  if (answerBtn) {
-    answerBtn.addEventListener("click", () => {
-      this.rtc.answerCall();
-      this._setStatus("Connecting…");
-      this.callWindow.classList.remove("inbound-mode");
-      this.callWindow.classList.add("active-mode");
+    const remotes = this.callGrid?.querySelectorAll(".participant.remote") || [];
+    remotes.forEach((el) => {
+      const entry = RemoteParticipants.getParticipant(el.dataset.peerId);
+      entry?.videoEl?.classList.remove("show");
+      entry?.avatarEl?.classList.remove("hidden");
     });
+
+    this.localPip?.classList.add("hidden");
+    this.remotePip?.classList.add("hidden");
+
+    this._setStatus("Audio Call");
   }
 
-  // Decline incoming call
-  const declineBtn = document.getElementById("decline-call");
-  if (declineBtn) {
-    declineBtn.addEventListener("click", () => {
-      this.rtc.endCall();
-      this._endCall();
-    });
-  }
+  _exitIOSVoiceMode() {
+    this.callWindow.classList.remove("ios-voice-mode","voice-only-call");
 
-  // End active call
-  const endBtn = document.getElementById("end-call");
-  if (endBtn) {
-    endBtn.addEventListener("click", () => {
-      this.rtc.endCall();
-      this._endCall();
-    });
-  }
+    if (!this.rtc.isCameraOff) {
+      this.localVideo?.classList.add("show");
+      this.localAvatar?.classList.add("hidden");
+    }
 
-  // Toggle mute
-  const muteBtn = document.getElementById("mute-call");
-  if (muteBtn) {
-    muteBtn.addEventListener("click", () => {
-      const muted = this.rtc.toggleMute();
-      muteBtn.classList.toggle("active", muted);
-    });
-  }
-
-  // Toggle camera
-  const camBtn = document.getElementById("camera-toggle");
-  if (camBtn) {
-    camBtn.addEventListener("click", () => {
-      const off = this.rtc.toggleCamera();
-      camBtn.classList.toggle("active", off);
-
-      if (off) {
-        this.localAvatar?.classList.remove("hidden");
-        this.localVideo.classList.remove("show");
-      } else {
-        this.localAvatar?.classList.add("hidden");
-        this.localVideo.classList.add("show");
+    const remotes = this.callGrid?.querySelectorAll(".participant.remote") || [];
+    remotes.forEach((el) => {
+      const entry = RemoteParticipants.getParticipant(el.dataset.peerId);
+      if (!entry?.cameraOff) {
+        entry?.videoEl?.classList.add("show");
+        entry?.avatarEl?.classList.add("hidden");
       }
     });
+
+    this._applyPrimaryLayout();
   }
 
-  // ------------------------------------------------------------
-  // MORE CONTROLS MENU
-  // ------------------------------------------------------------
+  // ============================================================
+  // VIDEO UPGRADE
+  // ============================================================
 
-  const moreBtn = document.getElementById("more-controls-btn");
-  const moreMenu = document.getElementById("more-controls-menu");
-
-  if (moreBtn && moreMenu) {
-    moreBtn.addEventListener("click", () => {
-      const isOpen = moreMenu.classList.contains("show");
-      moreMenu.classList.toggle("show", !isOpen);
-      moreMenu.classList.toggle("hidden", isOpen);
-    });
-
-    // Close menu when clicking outside
-    document.addEventListener("click", (e) => {
-      if (!moreBtn.contains(e.target) && !moreMenu.contains(e.target)) {
-        moreMenu.classList.add("hidden");
-        moreMenu.classList.remove("show");
-      }
+  _showVideoUpgradeOverlay() {
+    this.callWindow.classList.add("video-upgrade-mode");
+    this.callGrid?.classList.add("desktop-video-preview");
+    this.videoUpgradeOverlay?.classList.remove("hidden");
+    requestAnimationFrame(() => {
+      this.videoUpgradeOverlay?.classList.add("show");
     });
   }
 
-  // ------------------------------------------------------------
-  // PIP DRAG ENABLED
-  // ------------------------------------------------------------
-
-  this._enablePipDrag(this.localPip);
-  this._enablePipDrag(this.remotePip);
-
-  // ------------------------------------------------------------
-  // DOUBLE-TAP TO SWAP PRIMARY
-  // ------------------------------------------------------------
-
-  let lastTap = 0;
-
-  const handleDoubleTap = () => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      this._swapPrimary();
-    }
-    lastTap = now;
-  };
-
-  // Attach to both PiPs
-  this.localPip?.addEventListener("pointerdown", handleDoubleTap);
-  this.remotePip?.addEventListener("pointerdown", handleDoubleTap);
-
-  // ------------------------------------------------------------
-  // PREVENT TEXT SELECTION DURING DRAG
-  // ------------------------------------------------------------
-
-  document.addEventListener("selectstart", (e) => {
-    if (this.localPip.classList.contains("dragging") ||
-        this.remotePip.classList.contains("dragging")) {
-      e.preventDefault();
-    }
-  });
-}
-// ============================================================
-// LOCAL VIDEO READY (MEDIA HANDLING)
-// ============================================================
-//
-// Called when WebRTCMedia attaches the local stream to #localVideo.
-// This is where we:
-//   - Show the local tile
-//   - Hide the avatar
-//   - Mark local video as active
-//   - Ensure local is primary (until remote answers)
-// ============================================================
-
-_onLocalVideoReady() {
-  // Show local tile
-  this.localTile.classList.remove("hidden");
-
-  // Hide avatar
-  this.localAvatar?.classList.add("hidden");
-
-  // Mark video as active
-  this.localVideo.classList.add("show");
-
-  // Local is primary at start
-  this.primaryIsRemote = false;
-
-  // Show call window
-  this._showCallWindow();
-
-  // Update status
-  this._setStatus("Calling…");
-}
-// ============================================================
-// CALL LIFECYCLE — START OUTBOUND CALL
-// ============================================================
-//
-// Called when the user initiates a call.
-// This prepares the UI for the "calling…" state.
-// ============================================================
-
-startOutboundCall() {
-  // Reset UI state
-  this._resetCallUI();
-
-  // Show call window
-  this._showCallWindow();
-
-  // Outbound calls start in active mode (not inbound)
-  this.callWindow.classList.remove("inbound-mode");
-  this.callWindow.classList.add("active-mode");
-
-  // Local is primary until remote answers
-  this.primaryIsRemote = false;
-
-  // Status
-  this._setStatus("Calling…");
-}
-// ============================================================
-// INBOUND CALL — SHOW INBOUND UI
-// ============================================================
-//
-// Called when someone calls YOU.
-// This shows the inbound UI with Answer/Decline buttons.
-// ============================================================
-
-showInboundCall(callerName = "Incoming Call") {
-  // Reset UI
-  this._resetCallUI();
-
-  // Show call window
-  this._showCallWindow();
-
-  // Inbound mode
-  this.callWindow.classList.add("inbound-mode");
-  this.callWindow.classList.remove("active-mode");
-
-  // Status
-  this._setStatus(callerName);
-}
-// ============================================================
-// ANSWER CALL (UI SIDE)
-// ============================================================
-//
-// Called after the user presses "Answer".
-// The controller will then trigger onCallAnswered().
-// ============================================================
-
-onAnswered() {
-  this.callWindow.classList.remove("inbound-mode");
-  this.callWindow.classList.add("active-mode");
-
-  this._setStatus("Connecting…");
-}
-// ============================================================
-// REMOTE ANSWERED (CONTROLLER EVENT)
-// ============================================================
-//
-// Called when the remote peer accepts the call.
-// This is where the FaceTime-style transition becomes possible.
-// ============================================================
-
-_onRemoteAnswered() {
-  this.remoteAnswered = true;
-
-  // Update status + start timer
-  this._setStatus("Connected");
-  this._startTimer();
-
-  // If remote video already arrived, animate swap now
-  if (this.remoteHasVideo && !this.primaryIsRemote) {
-    const remotes = this.callGrid.querySelectorAll(".participant.remote");
-    if (remotes.length > 0) {
-      this._animateRemoteBecomingPrimary(remotes[0]);
-    }
-  }
-}
-// ============================================================
-// END CALL (UI + CONTROLLER)
-// ============================================================
-//
-// Called when either side ends the call.
-// This cleans up EVERYTHING and returns UI to pristine state.
-// ============================================================
-
-_endCall() {
-  // Stop timer
-  this._stopTimer();
-
-  // Status
-  this._setStatus("Call Ended");
-
-  // Fade out window
-  this.callWindow.classList.remove("is-open");
-
-  setTimeout(() => {
-    this.callWindow.classList.add("hidden");
-  }, 220);
-
-  // Reset UI state
-  this._resetCallUI();
-
-  // Clear participants
-  RemoteParticipants.clearAllParticipants();
-
-  // Reset flags
-  this.remoteAnswered = false;
-  this.remoteHasVideo = false;
-  this.primaryIsRemote = false;
-}
-// ============================================================
-// RESET CALL UI (INTERNAL)
-// ============================================================
-//
-// This resets the UI to a clean state so a new call can start.
-// ============================================================
-
-_resetCallUI() {
-  // Remove all mode flags
-  this.callWindow.classList.remove(
-    "inbound-mode",
-    "active-mode",
-    "voice-only-call",
-    "camera-off",
-    "meet-mode",
-    "discord-mode",
-    "ios-voice-mode",
-    "video-upgrade-mode"
-  );
-
-  // Hide PiPs
-  this.localPip.classList.add("hidden");
-  this.remotePip.classList.add("hidden");
-
-  // Reset PiP position
-  this.pipPos = { x: 0, y: 0 };
-  this.localPip.style.transform = "";
-  this.remotePip.style.transform = "";
-
-  // Reset local tile
-  this.localTile.classList.add("hidden");
-  this.localAvatar?.classList.remove("hidden");
-  this.localVideo.classList.remove("show");
-
-  // Reset remote tiles (if any)
-  const remotes = this.callGrid.querySelectorAll(".participant.remote");
-  remotes.forEach((el) => {
-    el.classList.add("hidden");
-  });
-
-  // Reset status + timer
-  this._setStatus("Connecting…");
-  this.callTimer.textContent = "00:00";
-  this._stopTimer();
-}
-// ============================================================
-// iOS VOICE MODE — ENTER
-// ============================================================
-//
-// This activates the iPhone-style audio call UI.
-// Used when:
-//   - Outbound audio-only call
-//   - Remote declines video
-//   - User toggles video off before connecting
-// ============================================================
-
-_enterIOSVoiceMode() {
-  this.callWindow.classList.add("ios-voice-mode");
-  this.callWindow.classList.add("voice-only-call");
-
-  // Hide all videos
-  this.localVideo.classList.remove("show");
-  this.localAvatar?.classList.remove("hidden");
-
-  const remotes = this.callGrid.querySelectorAll(".participant.remote");
-  remotes.forEach((el) => {
-    const entry = RemoteParticipants.getParticipant(el.dataset.peerId);
-    if (!entry) return;
-
-    entry.videoEl?.classList.remove("show");
-    entry.avatarEl?.classList.remove("hidden");
-  });
-
-  // Hide PiPs
-  this.localPip.classList.add("hidden");
-  this.remotePip.classList.add("hidden");
-
-  // Status
-  this._setStatus("Audio Call");
-}
-// ============================================================
-// iOS VOICE MODE — EXIT
-// ============================================================
-//
-// Called when switching from audio → video.
-// ============================================================
-
-_exitIOSVoiceMode() {
-  this.callWindow.classList.remove("ios-voice-mode");
-  this.callWindow.classList.remove("voice-only-call");
-
-  // Restore local video if camera is on
-  if (!this.rtc.isCameraOff) {
-    this.localVideo.classList.add("show");
-    this.localAvatar?.classList.add("hidden");
+  _hideVideoUpgradeOverlay() {
+    this.callWindow.classList.remove("video-upgrade-mode");
+    this.callGrid?.classList.remove("desktop-video-preview");
+    this.videoUpgradeOverlay?.classList.remove("show");
+    setTimeout(() => {
+      this.videoUpgradeOverlay?.classList.add("hidden");
+    }, 220);
   }
 
-  // Restore remote video if available
-  const remotes = this.callGrid.querySelectorAll(".participant.remote");
-  remotes.forEach((el) => {
-    const entry = RemoteParticipants.getParticipant(el.dataset.peerId);
-    if (!entry) return;
-
-    if (!entry.cameraOff) {
-      entry.videoEl?.classList.add("show");
-      entry.avatarEl?.classList.add("hidden");
-    }
-  });
-
-  this._applyPrimaryLayout();
-}
-// ============================================================
-// VIDEO UPGRADE — SHOW OVERLAY
-// ============================================================
-//
-// Called when remote requests to switch from audio → video.
-// ============================================================
-
-_showVideoUpgradeOverlay() {
-  this.callWindow.classList.add("video-upgrade-mode");
-
-  // Blur grid
-  this.callGrid.classList.add("desktop-video-preview");
-
-  // Show overlay
-  this.videoUpgradeOverlay.classList.remove("hidden");
-  requestAnimationFrame(() => {
-    this.videoUpgradeOverlay.classList.add("show");
-  });
-}
-// ============================================================
-// VIDEO UPGRADE — HIDE OVERLAY
-// ============================================================
-
-_hideVideoUpgradeOverlay() {
-  this.callWindow.classList.remove("video-upgrade-mode");
-
-  // Remove blur
-  this.callGrid.classList.remove("desktop-video-preview");
-
-  // Hide overlay
-  this.videoUpgradeOverlay.classList.remove("show");
-  setTimeout(() => {
-    this.videoUpgradeOverlay.classList.add("hidden");
-  }, 220);
-}
-// ============================================================
-// USER ACCEPTS VIDEO UPGRADE
-// ============================================================
-
-_acceptVideoUpgrade() {
-  this._hideVideoUpgradeOverlay();
-
-  // Exit voice-only mode
-  this._exitIOSVoiceMode();
-
-  // Enable camera
-  this.rtc.enableCamera();
-
-  // Status
-  this._setStatus("Switching to video…");
-}
-// ============================================================
-// USER DECLINES VIDEO UPGRADE
-// ============================================================
-
-_declineVideoUpgrade() {
-  this._hideVideoUpgradeOverlay();
-
-  // Stay in voice-only mode
-  this._enterIOSVoiceMode();
-
-  // Notify remote
-  this.rtc.declineVideoUpgrade();
-
-  this._setStatus("Audio Only");
-}
-// ============================================================
-// BIND VIDEO UPGRADE BUTTONS
-// ============================================================
-
-_bindVideoUpgradeButtons() {
-  const acceptMobile = document.getElementById("video-upgrade-accept");
-  const declineMobile = document.getElementById("video-upgrade-decline");
-
-  const acceptDesktop = document.getElementById("video-upgrade-accept-desktop");
-  const declineDesktop = document.getElementById("video-upgrade-decline-desktop");
-
-  if (acceptMobile) acceptMobile.addEventListener("click", () => this._acceptVideoUpgrade());
-  if (declineMobile) declineMobile.addEventListener("click", () => this._declineVideoUpgrade());
-
-  if (acceptDesktop) acceptDesktop.addEventListener("click", () => this._acceptVideoUpgrade());
-  if (declineDesktop) declineDesktop.addEventListener("click", () => this._declineVideoUpgrade());
-}
-// ============================================================
-// MODE HELPERS (Meet / Discord / iOS)
-// ============================================================
-//
-// These allow you to switch between layout modes dynamically.
-// CallUI can use these based on participant count, device type,
-// or user preference.
-// ============================================================
-
-_setMeetMode() {
-  this.callWindow.classList.add("meet-mode");
-  this.callWindow.classList.remove("discord-mode");
-}
-
-_setDiscordMode() {
-  this.callWindow.classList.add("discord-mode");
-  this.callWindow.classList.remove("meet-mode");
-}
-
-_setIOSVoiceMode() {
-  this._enterIOSVoiceMode();
-}
-
-_exitIOSMode() {
-  this._exitIOSVoiceMode();
-}
-// ============================================================
-// SCREEN SHARE MODE
-// ============================================================
-//
-// When remote or local starts screen sharing, the grid switches
-// into a stage + filmstrip layout.
-// ============================================================
-
-_enterScreenShareMode(peerId) {
-  this.callGrid.classList.add("screen-share-mode");
-
-  // Mark the presenting participant
-  const entry = RemoteParticipants.getParticipant(peerId);
-  if (entry?.el) {
-    entry.el.classList.add("stage");
+  _acceptVideoUpgrade() {
+    this._hideVideoUpgradeOverlay();
+    this._exitIOSVoiceMode();
+    this.rtc.enableCamera();
+    this._setStatus("Switching to video…");
   }
 
-  // Everyone else becomes filmstrip
-  const remotes = this.callGrid.querySelectorAll(".participant.remote");
-  remotes.forEach((el) => {
-    if (el.dataset.peerId !== peerId) {
-      el.classList.add("filmstrip");
-    }
-  });
-
-  // Local tile becomes filmstrip if not presenting
-  if (peerId !== "local") {
-    this.localTile.classList.add("filmstrip");
+  _declineVideoUpgrade() {
+    this._hideVideoUpgradeOverlay();
+    this._enterIOSVoiceMode();
+    this.rtc.declineVideoUpgrade();
+    this._setStatus("Audio Only");
   }
 
-  // Hide PiPs during screen share
-  this.localPip.classList.add("hidden");
-  this.remotePip.classList.add("hidden");
+  _bindVideoUpgradeButtons() {
+    const acceptMobile = document.getElementById("video-upgrade-accept");
+    const declineMobile = document.getElementById("video-upgrade-decline");
+    const acceptDesktop = document.getElementById("video-upgrade-accept-desktop");
+    const declineDesktop = document.getElementById("video-upgrade-decline-desktop");
+
+    acceptMobile?.addEventListener("click", () => this._acceptVideoUpgrade());
+    declineMobile?.addEventListener("click", () => this._declineVideoUpgrade());
+    acceptDesktop?.addEventListener("click", () => this._acceptVideoUpgrade());
+    declineDesktop?.addEventListener("click", () => this._declineVideoUpgrade());
+  }
+
+  // ============================================================
+  // SCREEN SHARE MODE
+  // ============================================================
+
+  _enterScreenShareMode(peerId) {
+    this.callGrid?.classList.add("screen-share-mode");
+
+    const entry = RemoteParticipants.getParticipant(peerId);
+    entry?.el?.classList.add("stage");
+
+    const remotes = this.callGrid?.querySelectorAll(".participant.remote") || [];
+    remotes.forEach((el) => {
+      if (el.dataset.peerId !== peerId) el.classList.add("filmstrip");
+    });
+
+    if (peerId !== "local") this.localTile?.classList.add("filmstrip");
+
+    this.localPip?.classList.add("hidden");
+    this.remotePip?.classList.add("hidden");
+  }
+
+  _exitScreenShareMode() {
+    this.callGrid?.classList.remove("screen-share-mode");
+
+    const all = this.callGrid?.querySelectorAll(".participant") || [];
+    all.forEach((el) => el.classList.remove("stage","filmstrip"));
+
+    this._applyPrimaryLayout();
+  }
+
+// ============================================================
+// MODES + ADAPTIVE LAYOUT + DEBUG + INIT + EXPORT
+// ============================================================
+
+  // MODE HELPERS
+  _setMeetMode() {
+    this.callWindow.classList.add("meet-mode");
+    this.callWindow.classList.remove("discord-mode");
+  }
+
+  _setDiscordMode() {
+    this.callWindow.classList.add("discord-mode");
+    this.callWindow.classList.remove("meet-mode");
+  }
+
+  _setIOSVoiceMode() {
+    this._enterIOSVoiceMode();
+  }
+
+  _exitIOSMode() {
+    this._exitIOSVoiceMode();
+  }
+
+  // ============================================================
+  // ADAPTIVE LAYOUT (PORTRAIT / LANDSCAPE)
+  // ============================================================
+
+  _handleResizeOrientation() {
+    if (!this.callWindow) return;
+    const portrait = window.innerHeight >= window.innerWidth;
+    this.callWindow.classList.toggle("portrait-layout", portrait);
+    this.callWindow.classList.toggle("landscape-layout", !portrait);
+  }
+
+  _bindAdaptiveLayout() {
+    this._handleResizeOrientation();
+    let resizeTimeout = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => this._handleResizeOrientation(), 120);
+    });
+    window.addEventListener("orientationchange", () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => this._handleResizeOrientation(), 120);
+    });
+  }
+
+  // ============================================================
+  // ACCESSIBILITY
+  // ============================================================
+
+  _applyAccessibility() {
+    if (this.callWindow) {
+      this.callWindow.setAttribute("role", "dialog");
+      this.callWindow.setAttribute("aria-modal", "true");
+    }
+    if (this.callControls)
+      this.callControls.setAttribute("role", "toolbar");
+    if (this.callStatus)
+      this.callStatus.setAttribute("role", "status");
+  }
+
+  // ============================================================
+  // DEBUG PANEL TOGGLE
+  // ============================================================
+
+  _toggleDebug() {
+    const debugBtn = document.getElementById("call-debug-toggle");
+    if (!debugBtn) return;
+    debugBtn.addEventListener("click", () => {
+      document.body.classList.toggle("debug-call-ui");
+    });
+  }
+
+  // ============================================================
+  // FINAL INITIALIZATION
+  // ============================================================
+
+  _init() {
+    this._bindVideoUpgradeButtons();
+    this._bindAdaptiveLayout();
+    this._applyAccessibility();
+    this._toggleDebug();
+    this._setMeetMode();
+  }
 }
-
-_exitScreenShareMode() {
-  this.callGrid.classList.remove("screen-share-mode");
-
-  // Remove stage/filmstrip classes
-  const all = this.callGrid.querySelectorAll(".participant");
-  all.forEach((el) => {
-    el.classList.remove("stage", "filmstrip");
-  });
-
-  // Restore PiP layout
-  this._applyPrimaryLayout();
-}
-// ============================================================
-// DEBUG PANEL TOGGLE
-// ============================================================
-
-_toggleDebug() {
-  const debugBtn = document.getElementById("call-debug-toggle");
-  if (!debugBtn) return;
-
-  debugBtn.addEventListener("click", () => {
-    document.body.classList.toggle("debug-call-ui");
-  });
-}
-// ============================================================
-// FINAL INITIALIZATION
-// ============================================================
-//
-// Called automatically by constructor.
-// Wires up:
-//   - Video upgrade buttons
-//   - Debug toggle
-//   - Default mode
-// ============================================================
-
-_init() {
-  this._bindVideoUpgradeButtons();
-  this._toggleDebug();
-
-  // Default to Meet mode
-  this._setMeetMode();
-}
-// ============================================================
-// EXPORT
-// ============================================================
 
 export default CallUI;
 
+// ============================================================
+// PERFORMANCE + HAPTICS + ADVANCED GRID LOGIC
+// ============================================================
 
+// PERFORMANCE: RAF BATCHING FOR LAYOUT
+_updateLayoutRAF() {
+  if (this._layoutScheduled) return;
+  this._layoutScheduled = true;
+  requestAnimationFrame(() => {
+    this._layoutScheduled = false;
+    this._applyPrimaryLayout();
+  });
+}
 
+// PERFORMANCE: DEBOUNCED GRID UPDATE
+_updateGridDebounced() {
+  clearTimeout(this._gridTimeout);
+  this._gridTimeout = setTimeout(() => this._applyDynamicGrid(), 80);
+}
 
+// ADVANCED GRID LOGIC (3–9 PARTICIPANTS)
+_applyDynamicGrid() {
+  if (!this.callGrid) return;
+  const remotes = this.callGrid.querySelectorAll(".participant.remote");
+  const count = remotes.length + 1; // + local
 
+  this.callGrid.classList.remove(
+    "grid-1","grid-2","grid-3","grid-4","grid-5",
+    "grid-6","grid-7","grid-8","grid-9"
+  );
+
+  if (count <= 1) this.callGrid.classList.add("grid-1");
+  else if (count === 2) this.callGrid.classList.add("grid-2");
+  else if (count === 3) this.callGrid.classList.add("grid-3");
+  else if (count === 4) this.callGrid.classList.add("grid-4");
+  else if (count === 5) this.callGrid.classList.add("grid-5");
+  else if (count === 6) this.callGrid.classList.add("grid-6");
+  else if (count === 7) this.callGrid.classList.add("grid-7");
+  else if (count === 8) this.callGrid.classList.add("grid-8");
+  else this.callGrid.classList.add("grid-9");
+}
+
+// HOOK FOR VOICE‑ACTIVITY PULSE (CSS handles visuals)
+_updateSpeakingIndicator(peerId, isSpeaking) {
+  const entry = RemoteParticipants.getParticipant(peerId);
+  if (!entry?.el) return;
+  entry.el.classList.toggle("speaking", isSpeaking);
+}
+
+// HAPTIC‑STYLE BUTTON FEEDBACK
+_enableHaptics() {
+  const buttons = document.querySelectorAll(
+    "#call-controls button, #more-controls-menu button"
+  );
+  buttons.forEach((btn) => {
+    btn.addEventListener("pointerdown", () => {
+      btn.style.transform = "scale(0.92)";
+    });
+    btn.addEventListener("pointerup", () => {
+      btn.style.transform = "scale(1)";
+    });
+    btn.addEventListener("pointerleave", () => {
+      btn.style.transform = "scale(1)";
+    });
+  });
+}
+
+// PERFORMANCE: ZERO‑THRASH PIP MOVEMENT (pointermove batching)
+_bindOptimizedPointerMove() {
+  let lastX = 0, lastY = 0, activePip = null, dragging = false;
+
+  const move = () => {
+    if (!dragging || !activePip) return;
+    activePip.style.transform = `translate3d(${lastX}px,${lastY}px,0)`;
+    requestAnimationFrame(move);
+  };
+
+  const start = (pipEl, e) => {
+    dragging = true;
+    activePip = pipEl;
+    pipEl.classList.add("dragging");
+    pipEl.setPointerCapture(e.pointerId);
+    requestAnimationFrame(move);
+  };
+
+  const end = (pipEl, e) => {
+    dragging = false;
+    pipEl.classList.remove("dragging");
+    pipEl.releasePointerCapture(e.pointerId);
+    this.pipPos.x = lastX;
+    this.pipPos.y = lastY;
+    this._snapPipToEdges(pipEl);
+  };
+
+  const bind = (pipEl) => {
+    if (!pipEl) return;
+    let offsetX = 0, offsetY = 0;
+
+    pipEl.addEventListener("pointerdown", (e) => {
+      offsetX = e.clientX - this.pipPos.x;
+      offsetY = e.clientY - this.pipPos.y;
+      start(pipEl, e);
+    });
+
+    pipEl.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      lastX = e.clientX - offsetX;
+      lastY = e.clientY - offsetY;
+    });
+
+    pipEl.addEventListener("pointerup", (e) => end(pipEl, e));
+  };
+
+  bind(this.localPip);
+  bind(this.remotePip);
+}
+
+// ============================================================
+// FINAL ENHANCEMENT INITIALIZATION HOOK
+// ============================================================
+
+_initEnhancements() {
+  this._enableHaptics();
+  this._bindOptimizedPointerMove();
+  this._updateGridDebounced();
+}
+
+// Patch into existing init
+_init() {
+  this._bindVideoUpgradeButtons();
+  this._bindAdaptiveLayout();
+  this._applyAccessibility();
+  this._toggleDebug();
+  this._setMeetMode();
+  this._initEnhancements();
+}
 
 
 
