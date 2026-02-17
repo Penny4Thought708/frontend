@@ -191,11 +191,16 @@ export class WebRTCController {
         case "leave":
           this._handleLeave(from);
           break;
-        case "unavailable":
-          if (this.onPeerUnavailable) {
-            this.onPeerUnavailable(reason || "User unavailable");
-          }
-          break;
+       case "unavailable":
+            // If we're already in a call, ignore late "unavailable" noise
+            if (rtcState.inCall) {
+              log("Ignoring 'unavailable' signal during active call");
+              break;
+            }
+            if (this.onPeerUnavailable) {
+              this.onPeerUnavailable(reason || "User unavailable");
+            }
+            break;
         default:
           warn("Unknown webrtc:signal type:", type, msg);
           break;
@@ -203,9 +208,16 @@ export class WebRTCController {
     });
 
     // Dedicated decline/busy/timeout channels from server
-    this.socket.on("call:declined", (msg) => {
+     this.socket.on("call:declined", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
+    
+      // If we're already in a call, this is stale noise — ignore
+      if (rtcState.inCall) {
+        log("Ignoring call:declined during active call from", from, reason);
+        return;
+      }
+    
       log("call:declined from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call declined");
@@ -213,9 +225,16 @@ export class WebRTCController {
       this._remoteEndWithoutPc(from, reason || "declined");
     });
 
-    this.socket.on("call:busy", (msg) => {
+
+       this.socket.on("call:busy", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
+    
+      if (rtcState.inCall) {
+        log("Ignoring call:busy during active call from", from, reason);
+        return;
+      }
+    
       log("call:busy from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "User busy");
@@ -223,15 +242,23 @@ export class WebRTCController {
       this._remoteEndWithoutPc(from, reason || "busy");
     });
 
-    this.socket.on("call:timeout", (msg) => {
+
+      this.socket.on("call:timeout", (msg) => {
       if (this._destroyed) return;
       const { from, reason } = msg || {};
+    
+      if (rtcState.inCall) {
+        log("Ignoring call:timeout during active call from", from, reason);
+        return;
+      }
+    
       log("call:timeout from", from, reason);
       if (this.onPeerUnavailable) {
         this.onPeerUnavailable(reason || "Call timed out");
       }
       this._remoteEndWithoutPc(from, reason || "timeout");
     });
+
   }
 
   _remoteEndWithoutPc(peerId, reason) {
@@ -800,6 +827,7 @@ export class WebRTCController {
     }
   }
 }
+
 
 
 
