@@ -33,6 +33,8 @@ import { initCallLogs } from "./call-log.js";
 import { getVoiceBtn, getVideoBtn } from "./session.js";
 import { CallUI } from "./webrtc/CallUI.js";
 import { socket } from "./socket.js";
+window.socket = socket;
+
 
 window.callUI = new CallUI(socket);
 
@@ -754,6 +756,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu?.();
 });
+
 
 
 
