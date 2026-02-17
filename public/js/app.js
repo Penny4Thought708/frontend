@@ -33,6 +33,7 @@ import { initCallLogs } from "./call-log.js";
 
 // WebRTC (CallUI internally creates WebRTCController)
 import { CallUI } from "./webrtc/CallUI.js";
+import { WebRTCController } from "./webrtc/WebRTCController.js";
 
 // Components
 import "../components/ContactsMenu.js";
@@ -759,6 +760,7 @@ socket.on("connect", async () => {
   window.callUI = callUI;
   window.rtc = controller;
 });
+
 
 
 
