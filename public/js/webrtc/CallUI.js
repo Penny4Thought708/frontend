@@ -1263,12 +1263,18 @@ _openWindow() {
   // ============================================================
   // VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
   // ============================================================
+showVideoUpgradeOverlay() {
+  // disable fallback overlay entirely for upgrades
+  return;
+}
+
+  /*
   showVideoUpgradeOverlay(peerId, offer) {
     this._pendingVideoUpgrade = { peerId, offer };
     if (!this.videoUpgradeOverlay) return;
     this.videoUpgradeOverlay.classList.remove("hidden");
   }
-
+*/
   _hideVideoUpgradeOverlay() {
     if (!this.videoUpgradeOverlay) return;
     this.videoUpgradeOverlay.classList.add("hidden");
@@ -1301,6 +1307,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
