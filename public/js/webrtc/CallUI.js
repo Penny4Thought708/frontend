@@ -1268,19 +1268,30 @@ showVideoUpgradeOverlay(peerId, offer) {
   this._pendingVideoUpgrade = { peerId, offer };
   if (!this.videoUpgradeOverlay) return;
 
-  // Mark web upgrade state so CSS can blur/fade the remote tile
-  this.root?.classList.add("web-upgrade-pending");
+  // Hide normal inbound controls while upgrade prompt is visible
+  if (this.callControls) {
+    this.callControls.classList.add("hidden");
+    this.callControls.classList.remove("inbound");
+    this.callControls.classList.remove("active");
+  }
 
+  this.root?.classList.add("web-upgrade-pending");
   this.videoUpgradeOverlay.classList.remove("hidden");
 }
+
 
 _hideVideoUpgradeOverlay() {
   if (!this.videoUpgradeOverlay) return;
   this.videoUpgradeOverlay.classList.add("hidden");
   this._pendingVideoUpgrade = null;
-
-  // Remove web blur state
   this.root?.classList.remove("web-upgrade-pending");
+
+  // If still ringing and not answered, show inbound controls again
+  if (this.isInbound && this.callControls) {
+    this.callControls.classList.remove("hidden-soft");
+    this.callControls.classList.remove("hidden");
+    this.callControls.classList.add("inbound");
+  }
 }
 
 
@@ -1310,6 +1321,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
