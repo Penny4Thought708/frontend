@@ -877,26 +877,22 @@
   pointer-events: auto;
 }
 
+/* ============================================================
+   MOBILE CALLER — CLEAN LOCAL PREVIEW (NO BLUR)
+============================================================ */
+
 .ios-caller-preview {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
 
-/* Caller preview should NOT be blurred */
-.ios-caller-preview {
+  /* Caller preview must NEVER be blurred */
   filter: none !important;
   opacity: 1 !important;
 }
 
-/* Caller preview starts invisible and extra blurred */
-.ios-caller-preview {
-  opacity: 0;
-  filter: blur(22px) brightness(0.7);
-  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
-}
 
 /* When overlay becomes active, fade in + reduce blur */
 .ios-caller-upgrade.active .ios-caller-preview {
@@ -1250,3 +1246,25 @@
   object-fit: cover !important;
 }
 
+/* ============================================================
+   WEB CALLEE VIDEO UPGRADE — BLURRED REMOTE PREVIEW
+============================================================ */
+
+/* When web upgrade is pending, blur ONLY the remote participant video */
+.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
+  opacity: 0;
+  filter: blur(22px) brightness(0.6);
+  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
+}
+
+/* Fade-in + reduce blur when overlay becomes visible */
+.call-window.web-upgrade-pending .video-upgrade-overlay:not(.hidden)
+  ~ .call-body .participant.remote .media-wrapper video,
+.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
+  opacity: 1;
+  filter: blur(18px) brightness(0.6);
+}
+/* Hide desktop controls during upgrade prompt */
+.call-window.web-upgrade-pending .call-controls {
+  display: none !important;
+}
