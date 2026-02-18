@@ -288,11 +288,14 @@ export function attachRemoteTrack(peerId, event) {
   peerId = String(peerId);
   ensureRemoteStreams();
 
-  if (!rtcState.remoteStreams[peerId]) {
-    rtcState.remoteStreams[peerId] = new MediaStream();
+  // 🔥 Always create or reuse the canonical remote stream FIRST
+  let stream = rtcState.remoteStreams[peerId];
+  if (!stream) {
+    stream = new MediaStream();
+    rtcState.remoteStreams[peerId] = stream;
   }
 
-  const stream = rtcState.remoteStreams[peerId];
+  // 🔥 Ensure the track is added to the canonical stream
   if (!stream.getTracks().includes(event.track)) {
     stream.addTrack(event.track);
   }
@@ -305,48 +308,45 @@ export function attachRemoteTrack(peerId, event) {
 
   const { remoteAudio, remotePipVideo } = getDom();
 
+  // AUDIO
   if (event.track.kind === "audio" && remoteAudio) {
-    const audioEl = remoteAudio;
-    audioEl.srcObject = stream;
-    audioEl.playsInline = true;
-    audioEl.removeAttribute("muted");
-    const tryPlay = () => audioEl.play().catch(() => {});
-    if (audioEl.readyState >= 2) tryPlay();
-    else audioEl.onloadedmetadata = tryPlay;
+    remoteAudio.srcObject = stream;
+    remoteAudio.playsInline = true;
+    remoteAudio.removeAttribute("muted");
+    remoteAudio.play?.().catch(() => {});
   }
 
+  // 🔥 Attach to RemoteParticipants tile using the SAME stream
   const entry = attachParticipantStream(peerId, stream);
   if (!entry) return;
 
   const videoEl = entry.videoEl;
   const avatarEl = entry.avatarEl;
 
+  // VIDEO
   if (event.track.kind === "video" && videoEl) {
     videoEl.srcObject = stream;
     videoEl.playsInline = true;
-    videoEl.setAttribute("autoplay", "true");
-    const tryPlay = () => videoEl.play().catch(() => {});
-    if (videoEl.readyState >= 2) tryPlay();
-    else videoEl.onloadedmetadata = tryPlay;
-
+    videoEl.autoplay = true;
+    videoEl.play?.().catch(() => {});
     videoEl.classList.add("show");
-    if (avatarEl) avatarEl.classList.add("hidden");
+    avatarEl?.classList.add("hidden");
   }
 
+  // PiP
   if (event.track.kind === "video" && remotePipVideo) {
-    const pip = remotePipVideo;
-    pip.srcObject = stream;
-    pip.playsInline = true;
-    pip.setAttribute("autoplay", "true");
-    const tryPlay = () => pip.play().catch(() => {});
-    if (pip.readyState >= 2) tryPlay();
-    else pip.onloadedmetadata = tryPlay;
+    remotePipVideo.srcObject = stream;
+    remotePipVideo.playsInline = true;
+    remotePipVideo.autoplay = true;
+    remotePipVideo.play?.().catch(() => {});
   }
 
+  // Speaking detection
   if (event.track.kind === "audio") {
     startSpeakingDetection(peerId, stream);
   }
 }
+
 
 // ============================================================
 // SCREEN SHARE
@@ -435,6 +435,7 @@ export function cleanupMedia() {
     remoteAudio.srcObject = null;
   }
 }
+
 
 
 
