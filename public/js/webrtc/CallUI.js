@@ -138,6 +138,9 @@ export class CallUI {
     this._bindUI();
     this._bindPipDrag();
   }
+_ensureRemoteTile(peerId) {
+  return null;
+}
 
   // ============================================================
   // PUBLIC API
@@ -291,6 +294,12 @@ export class CallUI {
       console.log("[CallUI] Incoming offer queued", peerId, callId);
     };
 
+
+        // RemoteParticipants.js handles remote tiles now
+    c.onRemoteJoin = () => {};
+    c.onParticipantUpdate = () => {};
+
+  /*
     c.onRemoteJoin = (peerId) => {
       if (!this._isMobile()) {
         this._ensureRemoteTile(peerId);
@@ -304,7 +313,7 @@ export class CallUI {
         this._recomputeGridLayout();
       }
     };
-
+*/
     c.onParticipantUpdate = (peerId, data) => {
       if (!this._isMobile()) {
         this._updateParticipantTile(peerId, data);
@@ -815,11 +824,11 @@ _upgradeToVideo() {
     }
 
     this._setInboundButtonsVisible(false);
-
+    
     if (this.currentMode === "meet" || this.currentMode === "discord") {
-      this._ensureRemoteTile(peerId);
       this._showLocalPip(true);
     }
+
 
     if (this.currentMode === "ios-voice") {
       this._updateIosVoiceStatus("Connected");
@@ -1359,6 +1368,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
