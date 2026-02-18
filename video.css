@@ -74,6 +74,13 @@
   flex-direction: column;
   overflow: hidden;
 }
+/* Visually mark camera-off state */
+.call-window.camera-off .media-wrapper video,
+.call-window.camera-off .local-pip video {
+  opacity: 0.08;
+  filter: grayscale(1);
+  transition: opacity 160ms ease, filter 160ms ease;
+}
 
 /* ===========================
    MODE LAYERS
