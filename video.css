@@ -1072,6 +1072,28 @@
   background: radial-gradient(circle at top, #202331 0, #0b0d14 55%, #05060a 100%);
   border-radius: 14px;
 }
+/* ============================================================
+   ORIENTATION-AWARE REMOTE VIDEO (FaceTime-style)
+   Applied by RemoteParticipants.setParticipantOrientation()
+============================================================ */
+
+/* Portrait mode: remote video should be narrow, centered,
+   with black bars left/right (like FaceTime portrait video) */
+.participant.remote.portrait video {
+  object-fit: contain !important;
+  width: auto !important;
+  height: 100% !important;
+  max-width: 420px;
+  margin: 0 auto;
+  background: #000;
+}
+
+/* Landscape mode: remote video should fill the tile */
+.participant.remote.landscape video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
 
 /* ===========================
    ANIMATIONS
