@@ -40,14 +40,14 @@ window.callUI = new CallUI(socket);
 
 // Voice call
 getVoiceBtn()?.addEventListener("click", () => {
-  const peerId = window.selectedContactId; // however you store it
+  const peerId = window.currentChatUserId; // however you store it
   if (!peerId) return console.warn("No contact selected");
   callUI.openForOutgoing(peerId, { audio: true, video: false });
 });
 
 // Video call
 getVideoBtn()?.addEventListener("click", () => {
-  const peerId = window.selectedContactId;
+  const peerId = window.currentChatUserId;
   if (!peerId) return console.warn("No contact selected");
   callUI.openForOutgoing(peerId, { audio: true, video: true });
 });
@@ -690,17 +690,6 @@ socket.on("connect", async () => {
 
   await waitForIdentity();
   await loadContacts();
-
-  // Create CallUI and expose globally
-  window.callUI = new CallUI(socket);
-/*
-  // Inbound call from backend → open call window
-  socket.on("call:start", ({ from, type }) => {
-    const isVideo = type === "video";
-    window.callUI.receiveInboundCall(from, isVideo);
-  });
-  */
-
   initCallLogs({ socket });
   loadMessageList();
 
@@ -756,6 +745,7 @@ socket.on("connect", async () => {
   initContentMenu();
   initDndFromContactsMenu?.();
 });
+
 
 
 
