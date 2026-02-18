@@ -315,12 +315,18 @@ export class CallUI {
     c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
   }
 
-  // ============================================================
-  // UI BINDING
-  // ============================================================
+// ============================================================
+// UI BINDING (FINAL iOS‑STYLE UPGRADE FLOW)
+// ============================================================
 
-  _bindUI() {
-    // Desktop inbound controls
+_bindUI() {
+  const isMobile = this._isMobile();
+
+  // ============================================================
+  // DESKTOP CONTROLS (ONLY WHEN NOT MOBILE)
+  // ============================================================
+  if (!isMobile) {
+
     if (this.declineBtn) {
       this.declineBtn.addEventListener("click", () => {
         this._stopRingtone();
@@ -334,9 +340,7 @@ export class CallUI {
         this._stopRingtone();
         await this.controller.answerCall();
         this._setInboundActiveState(false);
-        if (this.callControls) {
-          this.callControls.classList.add("active");
-        }
+        this.callControls?.classList.add("active");
         this._resetControlsTimer();
         this._startControlsAutoHide();
       });
@@ -403,17 +407,7 @@ export class CallUI {
       });
     }
 
-    // Generic video upgrade overlay buttons (desktop / legacy mobile)
-    if (this.videoUpgradeAcceptMobile) {
-      this.videoUpgradeAcceptMobile.addEventListener("click", () =>
-        this._acceptVideoUpgrade()
-      );
-    }
-    if (this.videoUpgradeDeclineMobile) {
-      this.videoUpgradeDeclineMobile.addEventListener("click", () =>
-        this._declineVideoUpgrade()
-      );
-    }
+    // Desktop upgrade overlay
     if (this.videoUpgradeAcceptDesktop) {
       this.videoUpgradeAcceptDesktop.addEventListener("click", () =>
         this._acceptVideoUpgrade()
@@ -432,8 +426,13 @@ export class CallUI {
         if (e.detail === 2) this._swapPipWithMain();
       });
     }
+  }
 
-    // iOS voice buttons
+  // ============================================================
+  // iOS CONTROLS (ONLY WHEN MOBILE, iOS‑17 STYLE)
+  // ============================================================
+  if (isMobile) {
+
     if (this.iosMuteBtn) {
       this.iosMuteBtn.addEventListener("click", () => this._toggleMute());
     }
@@ -450,8 +449,13 @@ export class CallUI {
       this.iosAddBtn.addEventListener("click", () => this._addCall());
     }
 
+    // Caller presses video → trigger upgrade request
     if (this.iosVideoBtn) {
-      this.iosVideoBtn.addEventListener("click", () => this._onIosVideoPressed());
+      this.iosVideoBtn.addEventListener("click", () => {
+        // Class hook for iOS‑17 style animation on caller side
+        this.root?.classList.add("ios-upgrade-requested");
+        this._onIosVideoPressed();
+      });
     }
 
     if (this.iosEndBtn) {
@@ -460,68 +464,73 @@ export class CallUI {
       );
     }
 
-    // iOS caller upgrade overlay
+    // Caller upgrade overlay (full local video while waiting)
     if (this.iosCallerUpgradeCancel) {
       this.iosCallerUpgradeCancel.addEventListener("click", () => {
         this._hideCallerVideoUpgrade();
+        this.root?.classList.remove("ios-upgrade-requested");
         this.controller.cancelVideoUpgrade?.();
       });
     }
 
-    // iOS callee upgrade overlay
+    // Callee upgrade overlay (blurred remote video + label)
     if (this.iosCalleeUpgradeAccept) {
       this.iosCalleeUpgradeAccept.addEventListener("click", async () => {
+        // Accept upgrade: stop ringtone, answer, flip to video
         await this._acceptVideoUpgrade();
+        this.root?.classList.remove("ios-upgrade-pending");
       });
     }
+
     if (this.iosCalleeUpgradeDecline) {
       this.iosCalleeUpgradeDecline.addEventListener("click", () => {
         this._declineVideoUpgrade();
+        this.root?.classList.remove("ios-upgrade-pending");
       });
     }
 
-    // Auto-hide controls (desktop only)
-    const showControls = () => {
-      if (!this.callControls) return;
-      this.callControls.classList.remove("hidden-soft");
-    };
-    const hideControls = () => {
-      if (!this.callControls) return;
-      this.callControls.classList.add("hidden-soft");
-    };
-
-    this._showControls = showControls;
-    this._hideControls = hideControls;
-
-    if (this.callBody) {
-      this.callBody.addEventListener("mousemove", () => {
-        this._resetControlsTimer();
-        showControls();
+    // Fallback mobile overlay buttons (if present in markup)
+    if (this.videoUpgradeAcceptMobile) {
+      this.videoUpgradeAcceptMobile.addEventListener("click", async () => {
+        await this._acceptVideoUpgrade();
+        this.root?.classList.remove("ios-upgrade-pending");
       });
-      this.callBody.addEventListener("touchstart", () => {
-        this._resetControlsTimer();
-        showControls();
+    }
+    if (this.videoUpgradeDeclineMobile) {
+      this.videoUpgradeDeclineMobile.addEventListener("click", () => {
+        this._declineVideoUpgrade();
+        this.root?.classList.remove("ios-upgrade-pending");
       });
     }
   }
 
-  _startControlsAutoHide() {
-    if (this._isMobile()) return;
-    if (this._controlsHideInterval) return;
-    this._controlsHideInterval = setInterval(() => {
-      if (!this.callControls) return;
-      if (Date.now() - this._lastControlsMove > 4000) {
-        this._hideControls?.();
-      }
-    }, 1000);
-  }
+  // ============================================================
+  // AUTO-HIDE CONTROLS (DESKTOP ONLY)
+  // ============================================================
+  const showControls = () => {
+    if (!this.callControls) return;
+    this.callControls.classList.remove("hidden-soft");
+  };
 
-  _stopControlsAutoHide() {
-    if (this._controlsHideInterval) {
-      clearInterval(this._controlsHideInterval);
-      this._controlsHideInterval = null;
-    }
+  const hideControls = () => {
+    if (!this.callControls) return;
+    this.callControls.classList.add("hidden-soft");
+  };
+
+  this._showControls = showControls;
+  this._hideControls = hideControls;
+
+  if (this.callBody) {
+    this.callBody.addEventListener("mousemove", () => {
+      this._resetControlsTimer();
+      showControls();
+    });
+    this.callBody.addEventListener("touchstart", () => {
+      this._resetControlsTimer();
+      showControls();
+    });
   }
+}
 
   // ============================================================
   // iOS HELPERS + UPGRADE FLOW
