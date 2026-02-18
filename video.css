@@ -1154,4 +1154,11 @@
     transform: scale(1);
   }
 }
+.participant.remote.portrait .remoteVideo {
+  object-fit: contain !important;
+}
+
+.participant.remote.landscape .remoteVideo {
+  object-fit: cover !important;
+}
 
