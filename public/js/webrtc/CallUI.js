@@ -430,12 +430,23 @@ export class CallUI {
         this.iosAddBtn.addEventListener("click", () => this._addCall());
       }
 
-      if (this.iosVideoBtn) {
-        this.iosVideoBtn.addEventListener("click", () => {
-          this.root?.classList.add("ios-upgrade-requested");
-          this._onIosVideoPressed();
-        });
-      }
+    if (this.iosVideoBtn) {
+  this.iosVideoBtn.addEventListener("click", () => {
+    // Mark UI state for animation
+    this.root?.classList.add("ios-upgrade-requested");
+
+    // Ensure camera state is correct before upgrade
+    this.isCameraOn = true;
+    this.root?.classList.remove("camera-off");
+
+    // Trigger the upgrade flow
+    this._onIosVideoPressed();
+
+    // Immediately refresh local video so it doesn't go black
+    this._attachLocalStreamFromState?.();
+  });
+}
+
 
       if (this.iosEndBtn) {
         this.iosEndBtn.addEventListener("click", () =>
@@ -1280,6 +1291,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
