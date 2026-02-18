@@ -640,33 +640,35 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     this.root?.classList.remove("camera-off");
   }
 
-  _showCallerVideoUpgrade() {
-    if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
+_showCallerVideoUpgrade() {
+  if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
 
-    this._hideIosUpgradeOverlays();
+  this._hideIosUpgradeOverlays();
 
-    const stream = rtcState.localStream;
-    if (stream) {
-      this.iosCallerUpgradePreview.srcObject = stream;
-      this.iosCallerUpgradePreview.muted = true;
-      this.iosCallerUpgradePreview.playsInline = true;
-      this.iosCallerUpgradePreview.autoplay = true;
-      this.iosCallerUpgradePreview.play?.().catch(() => {});
-    }
+  // 🔥 Ensure local stream is attached / refreshed first
+  this._attachLocalStreamFromState();
 
-    const name = rtcState.peerName || "them";
-    if (this.iosCallerUpgradeLabel) {
-      this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
-    }
-
-    // Hide iOS voice UI while upgrade overlay is active
-    if (this.iosVoiceUI) {
-      this.iosVoiceUI.classList.add("hidden");
-    }
-
-    this.iosCallerUpgradeOverlay.classList.remove("hidden");
-    this.iosCallerUpgradeOverlay.classList.add("active");
+  const stream = rtcState.localStream;
+  if (stream) {
+    this.iosCallerUpgradePreview.srcObject = stream;
+    this.iosCallerUpgradePreview.muted = true;
+    this.iosCallerUpgradePreview.playsInline = true;
+    this.iosCallerUpgradePreview.autoplay = true;
+    this.iosCallerUpgradePreview.play?.().catch(() => {});
   }
+
+  const name = rtcState.peerName || "them";
+  if (this.iosCallerUpgradeLabel) {
+    this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
+  }
+
+  if (this.iosVoiceUI) {
+    this.iosVoiceUI.classList.add("hidden");
+  }
+
+  this.iosCallerUpgradeOverlay.classList.remove("hidden");
+  this.iosCallerUpgradeOverlay.classList.add("active");
+}
 
   _hideCallerVideoUpgrade() {
     if (!this.iosCallerUpgradeOverlay) return;
@@ -682,36 +684,44 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     }
   }
 
-  _showCalleeVideoUpgrade(peerId) {
-    this._pendingUpgradePeerId = peerId;
+_showCalleeVideoUpgrade(peerId) {
+  this._pendingUpgradePeerId = peerId;
 
-    if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
-      this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
-      return;
-    }
-
-    this._hideIosUpgradeOverlays();
-
-    const id = String(peerId);
-    const remoteStream = rtcState.remoteStreams?.[id];
-    if (remoteStream) {
-      this.iosCalleeUpgradePreview.srcObject = remoteStream;
-      this.iosCalleeUpgradePreview.playsInline = true;
-      this.iosCalleeUpgradePreview.autoplay = true;
-      this.iosCalleeUpgradePreview.play?.().catch(() => {});
-    }
-
-    const name = rtcState.peerName || "Caller";
-    if (this.iosCalleeUpgradeLabel) {
-      this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
-    }
-
-    this._playRingtone();
-
-    this.iosCalleeUpgradeOverlay.classList.remove("hidden");
-    this.iosCalleeUpgradeOverlay.classList.add("active");
-    this.root?.classList.add("ios-upgrade-pending");
+  if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
+    this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
+    return;
   }
+
+  this._hideIosUpgradeOverlays();
+
+  const id = String(peerId);
+  let remoteStream = rtcState.remoteStreams?.[id];
+
+  // 🔥 Fallback: try to grab whatever remote video is already in the DOM
+  if (!remoteStream && this.remotePipVideo?.srcObject) {
+    remoteStream = this.remotePipVideo.srcObject;
+  }
+
+  if (remoteStream) {
+    this.iosCalleeUpgradePreview.srcObject = remoteStream;
+    this.iosCalleeUpgradePreview.muted = true;
+    this.iosCalleeUpgradePreview.playsInline = true;
+    this.iosCalleeUpgradePreview.autoplay = true;
+    this.iosCalleeUpgradePreview.play?.().catch(() => {});
+  }
+
+  const name = rtcState.peerName || "Caller";
+  if (this.iosCalleeUpgradeLabel) {
+    this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+  }
+
+  this._playRingtone();
+
+  this.iosCalleeUpgradeOverlay.classList.remove("hidden");
+  this.iosCalleeUpgradeOverlay.classList.add("active");
+  this.root?.classList.add("ios-upgrade-pending");
+}
+
 
   _hideCalleeVideoUpgrade() {
     if (!this.iosCalleeUpgradeOverlay) return;
@@ -1079,24 +1089,44 @@ _enterActiveVideoMode() {
   // ============================================================
   // WINDOW OPEN/CLOSE
   // ============================================================
-  _openWindow() {
-    if (!this.root) return;
+_openWindow() {
+  if (!this.root) return;
 
-    this.root.classList.remove("hidden");
-    this.root.classList.add("is-open", "call-opening");
-    this.root.style.opacity = "1";
+  this.root.classList.remove("hidden");
+  this.root.classList.add("is-open", "call-opening");
+  this.root.style.opacity = "1";
 
-    if (!this._isMobile()) {
-      this.callControls?.classList.remove("hidden");
-      this.callControls?.classList.remove("hidden-soft");
-    } else {
-      this.callControls?.classList.add("hidden");
+  if (!this._isMobile()) {
+    this.callControls?.classList.remove("hidden");
+    this.callControls?.classList.remove("hidden-soft");
+  } else {
+    this.callControls?.classList.add("hidden");
+
+    // 🔥 Force an orientation sync when the call UI opens on mobile
+    try {
+      let orientation = "portrait";
+
+      if (screen.orientation && screen.orientation.type) {
+        orientation = screen.orientation.type.startsWith("portrait")
+          ? "portrait"
+          : "landscape";
+      } else if (typeof window.orientation === "number") {
+        const angle = window.orientation;
+        orientation =
+          angle === 0 || angle === 180 ? "portrait" : "landscape";
+      }
+
+      this.controller.sendOrientation(orientation);
+    } catch (e) {
+      console.warn("[CallUI] orientation sync failed:", e);
     }
-
-    setTimeout(() => {
-      this.root.classList.remove("call-opening");
-    }, 260);
   }
+
+  setTimeout(() => {
+    this.root.classList.remove("call-opening");
+  }, 260);
+}
+
 
   // ============================================================
   // TIMER HELPERS
@@ -1240,6 +1270,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
