@@ -163,10 +163,16 @@ export class CallUI {
   }
 
   receiveInboundCall(peerId, isVideo) {
+    if (this._isMobile()) {
+      this._showIosInboundControls(peerId);
+      return;
+    }
+  
     this.showInboundRinging(peerId, {
       incomingIsVideo: !!isVideo,
     });
   }
+
 
   _setStatusText(text) {
     if (this.callStatusEl) {
@@ -1353,6 +1359,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
