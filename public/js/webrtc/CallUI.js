@@ -553,6 +553,30 @@ export class CallUI {
       this._controlsHideInterval = null;
     }
   }
+_showIosInboundControls(peerId) {
+  this.isInbound = true;
+  this._openWindow();
+  this._setMode("ios-voice", { audioOnly: !rtcState.incomingIsVideo });
+
+  const inbound = this.root.querySelector(".ios-inbound-controls");
+  const normal = this.root.querySelector(".ios-controls");
+
+  inbound?.classList.remove("hidden");
+  normal?.classList.add("hidden");
+
+  // Bind buttons
+  inbound.querySelector(".answer")?.addEventListener("click", async () => {
+    this._stopRingtone();
+    await this.controller.answerCall();
+    this._enterActiveVideoMode();
+  });
+
+  inbound.querySelector(".decline")?.addEventListener("click", () => {
+    this._stopRingtone();
+    this.controller.declineCall("declined");
+    this.closeWindow();
+  });
+}
 
   // ============================================================
   // iOS HELPERS + UPGRADE FLOW
@@ -867,7 +891,16 @@ _enterActiveVideoMode() {
   }
 
   this._hideIosUpgradeOverlays();
+
+  // Switch to Meet layout for video
   this._setMode("meet", { audioOnly: false });
+
+  // Show normal iOS controls again
+  const inbound = this.root.querySelector(".ios-inbound-controls");
+  const normal = this.root.querySelector(".ios-controls");
+  inbound?.classList.add("hidden");
+  normal?.classList.remove("hidden");
+
   this._showLocalPip(true);
   this._updateIosVoiceStatus("");
 }
@@ -1309,6 +1342,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
