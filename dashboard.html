@@ -417,6 +417,39 @@ window.currentUserAvatar = user.avatar;
         <button class="ios-btn end">End</button>
       </div>
     </div>
+<!-- ============================================================
+     iOS CALLER UPGRADE OVERLAY (Full Local Video)
+============================================================ -->
+<div class="ios-caller-upgrade hidden">
+  <video class="ios-caller-preview" autoplay playsinline muted></video>
+
+  <div class="ios-caller-upgrade-content">
+    <div class="ios-caller-upgrade-label">Waiting…</div>
+
+    <button class="ios-caller-upgrade-cancel">
+      Cancel
+    </button>
+  </div>
+</div>
+<!-- ============================================================
+     iOS CALLEE UPGRADE OVERLAY (Blurred Remote Video)
+============================================================ -->
+<div class="ios-callee-upgrade hidden">
+  <video class="ios-callee-preview" autoplay playsinline></video>
+
+  <div class="ios-callee-blur-layer"></div>
+
+  <div class="ios-callee-upgrade-content">
+    <div class="ios-callee-upgrade-label">
+      Someone wants to switch to video
+    </div>
+
+    <div class="ios-callee-upgrade-actions">
+      <button class="ios-callee-upgrade-decline">Keep Audio</button>
+      <button class="ios-callee-upgrade-accept">Join Video</button>
+    </div>
+  </div>
+</div>
 
     <!-- ============================================================
          CALL STATUS + TIMER
@@ -1668,6 +1701,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
