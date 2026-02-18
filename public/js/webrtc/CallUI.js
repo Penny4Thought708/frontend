@@ -75,7 +75,7 @@ export class CallUI {
     this.qualityIndicator = document.getElementById("call-quality-indicator");
     this.debugToggle = document.getElementById("call-debug-toggle");
 
-    // Generic video upgrade overlay (mobile + desktop fallback)
+    // Generic video upgrade overlay (desktop + mobile fallback)
     this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
     this.videoUpgradeAcceptMobile = document.getElementById("video-upgrade-accept");
     this.videoUpgradeDeclineMobile = document.getElementById("video-upgrade-decline");
@@ -443,6 +443,7 @@ export class CallUI {
         );
       }
 
+      // Caller upgrade overlay
       if (this.iosCallerUpgradeCancel) {
         this.iosCallerUpgradeCancel.addEventListener("click", () => {
           this._hideCallerVideoUpgrade();
@@ -451,6 +452,7 @@ export class CallUI {
         });
       }
 
+      // Callee upgrade overlay
       if (this.iosCalleeUpgradeAccept) {
         this.iosCalleeUpgradeAccept.addEventListener("click", async () => {
           await this._acceptVideoUpgrade();
@@ -465,6 +467,7 @@ export class CallUI {
         });
       }
 
+      // Fallback mobile overlay buttons
       if (this.videoUpgradeAcceptMobile) {
         this.videoUpgradeAcceptMobile.addEventListener("click", async () => {
           await this._acceptVideoUpgrade();
@@ -479,7 +482,7 @@ export class CallUI {
       }
     }
 
-    // AUTO-HIDE CONTROLS (DESKTOP ONLY)
+    // AUTO-HIDE CONTROLS (desktop)
     const showControls = () => {
       if (!this.callControls) return;
       this.callControls.classList.remove("hidden-soft");
@@ -1260,16 +1263,6 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
