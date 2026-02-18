@@ -1276,13 +1276,17 @@ _openWindow() {
     this._pendingVideoUpgrade = null;
   }
 
-  async _acceptVideoUpgrade() {
-    this._stopRingtone();
-    await this.controller.answerCall();
-    this._enterActiveVideoMode();
-    this._hideVideoUpgradeOverlay();
-    this._hideCalleeVideoUpgrade();
-  }
+async _acceptVideoUpgrade() {
+  this._stopRingtone();
+
+  // We already answered at the WebRTC level.
+  // Now just flip UI to full video mode.
+  this._enterActiveVideoMode();
+
+  this._hideVideoUpgradeOverlay();
+  this._hideCalleeVideoUpgrade();
+}
+
 
   _declineVideoUpgrade() {
     this._stopRingtone();
@@ -1298,6 +1302,7 @@ _openWindow() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
