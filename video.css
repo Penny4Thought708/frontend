@@ -176,6 +176,14 @@
   object-fit: cover;
   background: #000;
 }
+/* Override global object-fit for orientation-aware remote video */
+.participant.remote.portrait .remoteVideo {
+  object-fit: contain !important;
+}
+
+.participant.remote.landscape .remoteVideo {
+  object-fit: cover !important;
+}
 
 /* Avatar fallback */
 
