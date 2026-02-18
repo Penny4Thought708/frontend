@@ -132,7 +132,7 @@ export async function initWebRTC() {
       }
     }
 
-    ui._setStatus("Reconnected");
+    ui._setStatusText("Reconnected");
   };
 
   /* -------------------------------------------------------
