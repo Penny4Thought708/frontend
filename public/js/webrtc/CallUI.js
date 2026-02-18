@@ -179,12 +179,15 @@ export class CallUI {
   // ============================================================
   // PUBLIC API
   // ============================================================
+// ============================================================
+// PUBLIC API
+// ============================================================
 openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
   this.isInbound = false;
 
-  const audioOnly = audio && !video;
+  let audioOnly = audio && !video;
 
-  // Mobile voice call → force ios-voice mode
+  // If the caller explicitly chose audio-only, prefer iOS voice UI on mobile
   if (this._isMobile() && audioOnly) {
     mode = "ios-voice";
   }
@@ -192,6 +195,7 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
   // 🔥 Force audio-only on mobile when in ios-voice mode
   if (this._isMobile() && mode === "ios-voice") {
     video = false;
+    audioOnly = true;
   }
 
   this._setMode(mode, { audioOnly });
@@ -1236,6 +1240,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
