@@ -194,6 +194,14 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
+/* Explicit camera-off state */
+.call-window.camera-off video {
+  opacity: 0;
+}
+
+.call-window.camera-off .avatar-wrapper {
+  opacity: 1;
+}
 
 /* Voice pulse ring */
 
