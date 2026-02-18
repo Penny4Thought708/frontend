@@ -309,7 +309,7 @@ _ensurePC(peerId) {
     if (evt.channel?.label === "orientation") {
       this._wireOrientationChannel(peerId, evt.channel);
     }
-
+  };
     pc.onicecandidate = (evt) => {
       if (evt.candidate) {
         try {
@@ -982,6 +982,7 @@ async upgradeToVideo() {
     }
   }
 }
+
 
 
 
