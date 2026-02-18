@@ -556,9 +556,20 @@ export class CallUI {
     this._upgradeToVideo();
   }
 
-  _upgradeToVideo() {
-    this.controller.upgradeToVideo?.();
+_upgradeToVideo() {
+  // Trigger the controller upgrade
+  this.controller.upgradeToVideo?.();
+
+  // Immediately refresh the UI with the new local video stream
+  // (prevents black video after upgrade)
+  this._attachLocalStreamFromState?.();
+
+  // Ensure camera state is correct
+  this.isCameraOn = true;
+  if (this.root) {
+    this.root.classList.remove("camera-off");
   }
+}
 
   _showCallerVideoUpgrade() {
     if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
@@ -821,12 +832,18 @@ export class CallUI {
     setTimeout(() => this.closeWindow(), 1200);
   }
 
-  _enterActiveVideoMode() {
-    this._hideIosUpgradeOverlays();
-    this._setMode("meet", { audioOnly: false });
-    this._showLocalPip(true);
-    this._updateIosVoiceStatus("");
+_enterActiveVideoMode() {
+  // Release caller preview stream so the main local video can render
+  if (this.iosCallerUpgradePreview) {
+    this.iosCallerUpgradePreview.srcObject = null;
   }
+
+  this._hideIosUpgradeOverlays();
+  this._setMode("meet", { audioOnly: false });
+  this._showLocalPip(true);
+  this._updateIosVoiceStatus("");
+}
+
 
   // ============================================================
   // AUDIO HELPERS
@@ -1263,6 +1280,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
