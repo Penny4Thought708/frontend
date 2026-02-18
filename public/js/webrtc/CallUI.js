@@ -241,23 +241,40 @@ export class CallUI {
     };
 
     c.onIncomingOffer = (peerId, offer) => {
+      // Always store the offer first
+      rtcState.incomingOffer = offer;
+    
+      // Detect if this offer contains video
+      rtcState.incomingIsVideo =
+        offer?.offerToReceiveVideo ||
+        offer?.sdp?.includes("m=video");
+    
       const isUpgrade =
-        rtcState.status === "in-call" &&
-        rtcState.incomingIsVideo &&
-        rtcState.audioOnly;
-
+        rtcState.inCall &&
+        rtcState.audioOnly &&
+        rtcState.incomingIsVideo;
+    
       if (isUpgrade) {
+        // VIDEO UPGRADE
         if (this._isMobile()) {
           this._showCalleeVideoUpgrade(peerId);
         } else {
           this.showVideoUpgradeOverlay(peerId, offer);
         }
+        return;
+      }
+    
+      // INITIAL INBOUND CALL
+      if (this._isMobile()) {
+        this._showIosInboundControls(peerId);
       } else {
         this.showInboundRinging(peerId, {
           incomingIsVideo: rtcState.incomingIsVideo,
         });
       }
     };
+
+
 
     c.onIncomingOfferQueued = (peerId, offer, callId) => {
       console.log("[CallUI] Incoming offer queued", peerId, callId);
@@ -1292,6 +1309,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
