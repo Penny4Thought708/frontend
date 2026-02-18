@@ -3,6 +3,7 @@
 // - Mobile: iOS 17-style voice + video upgrade
 // - Web: Google Meet-style layout
 // - Group: Discord-style grid
+// - RemoteParticipants.js owns ALL remote tiles
 
 import { WebRTCController } from "./WebRTCController.js";
 import { rtcState } from "./WebRTCState.js";
@@ -53,7 +54,7 @@ export class CallUI {
     this.iosInboundControls = this.root?.querySelector(".ios-inbound-controls");
     this.iosInboundAnswerBtn = this.root?.querySelector(".ios-inbound-controls .answer");
     this.iosInboundDeclineBtn = this.root?.querySelector(".ios-inbound-controls .decline");
-    
+
     // Desktop status + timer
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
@@ -88,13 +89,11 @@ export class CallUI {
     this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
 
     // iOS 17-style upgrade overlays (mobile)
-    // Caller: full-screen local video + "Waiting for <Name>…"
     this.iosCallerUpgradeOverlay = this.root?.querySelector(".ios-caller-upgrade");
     this.iosCallerUpgradePreview = this.root?.querySelector(".ios-caller-preview");
     this.iosCallerUpgradeLabel = this.root?.querySelector(".ios-caller-upgrade-label");
     this.iosCallerUpgradeCancel = this.root?.querySelector(".ios-caller-upgrade-cancel");
 
-    // Callee: blurred remote video + "<Name> wants to switch to video"
     this.iosCalleeUpgradeOverlay = this.root?.querySelector(".ios-callee-upgrade");
     this.iosCalleeUpgradePreview = this.root?.querySelector(".ios-callee-preview");
     this.iosCalleeUpgradeLabel = this.root?.querySelector(".ios-callee-upgrade-label");
@@ -108,7 +107,7 @@ export class CallUI {
     // ============================================================
     // INTERNAL STATE
     // ============================================================
-    this.currentMode = "meet"; // "meet" | "discord" | "ios-voice"
+    this.currentMode = "meet";
     this.callTimerInterval = null;
     this.callStartTs = null;
     this.isMuted = false;
@@ -126,26 +125,32 @@ export class CallUI {
       origY: 0,
     };
 
-    this.remoteTiles = new Map();
+    // Remote tile system disabled (RemoteParticipants.js owns tiles)
+    this.remoteTiles = null;
+
     this._lastControlsMove = Date.now();
     this._controlsHideInterval = null;
 
     // Video upgrade state
-    this._pendingVideoUpgrade = null; // { peerId, offer }
-    this._pendingUpgradePeerId = null; // for iOS overlays
+    this._pendingVideoUpgrade = null;
+    this._pendingUpgradePeerId = null;
 
     this._bindController();
     this._bindUI();
     this._bindPipDrag();
   }
-_ensureRemoteTile(peerId) {
-  return null;
-}
+
+  // ============================================================
+  // REMOTE TILE SYSTEM DISABLED
+  // ============================================================
+  _ensureRemoteTile() { return null; }
+  _removeRemoteTile() {}
+  _updateParticipantTile() {}
+  _clearParticipants() {}
 
   // ============================================================
   // PUBLIC API
   // ============================================================
-
   openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     this.isInbound = false;
 
@@ -170,20 +175,15 @@ _ensureRemoteTile(peerId) {
       this._showIosInboundControls(peerId);
       return;
     }
-  
+
     this.showInboundRinging(peerId, {
       incomingIsVideo: !!isVideo,
     });
   }
 
-
   _setStatusText(text) {
-    if (this.callStatusEl) {
-      this.callStatusEl.textContent = text || "";
-    }
-    if (this.iosCallStatus) {
-      this.iosCallStatus.textContent = text || "";
-    }
+    if (this.callStatusEl) this.callStatusEl.textContent = text || "";
+    if (this.iosCallStatus) this.iosCallStatus.textContent = text || "";
   }
 
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
@@ -208,7 +208,6 @@ _ensureRemoteTile(peerId) {
 
   closeWindow() {
     this._stopTimer();
-    this._clearParticipants();
     this._hideVideoUpgradeOverlay();
     this._hideIosUpgradeOverlays();
     this._setStatusText("Idle");
@@ -238,7 +237,6 @@ _ensureRemoteTile(peerId) {
   // ============================================================
   // CONTROLLER BINDING
   // ============================================================
-
   _bindController() {
     const c = this.controller;
 
@@ -255,21 +253,18 @@ _ensureRemoteTile(peerId) {
     };
 
     c.onIncomingOffer = (peerId, offer) => {
-      // Always store the offer first
       rtcState.incomingOffer = offer;
-    
-      // Detect if this offer contains video
+
       rtcState.incomingIsVideo =
         offer?.offerToReceiveVideo ||
         offer?.sdp?.includes("m=video");
-    
+
       const isUpgrade =
         rtcState.inCall &&
         rtcState.audioOnly &&
         rtcState.incomingIsVideo;
-    
+
       if (isUpgrade) {
-        // VIDEO UPGRADE
         if (this._isMobile()) {
           this._showCalleeVideoUpgrade(peerId);
         } else {
@@ -277,8 +272,7 @@ _ensureRemoteTile(peerId) {
         }
         return;
       }
-    
-      // INITIAL INBOUND CALL
+
       if (this._isMobile()) {
         this._showIosInboundControls(peerId);
       } else {
@@ -288,38 +282,10 @@ _ensureRemoteTile(peerId) {
       }
     };
 
-
-
-    c.onIncomingOfferQueued = (peerId, offer, callId) => {
-      console.log("[CallUI] Incoming offer queued", peerId, callId);
-    };
-
-
-        // RemoteParticipants.js handles remote tiles now
+    // RemoteParticipants.js owns remote tiles
     c.onRemoteJoin = () => {};
     c.onParticipantUpdate = () => {};
-
-  /*
-    c.onRemoteJoin = (peerId) => {
-      if (!this._isMobile()) {
-        this._ensureRemoteTile(peerId);
-        this._recomputeGridLayout();
-      }
-    };
-
-    c.onRemoteLeave = (peerId) => {
-      if (!this._isMobile()) {
-        this._removeRemoteTile(peerId);
-        this._recomputeGridLayout();
-      }
-    };
-*/
-    c.onParticipantUpdate = (peerId, data) => {
-      if (!this._isMobile()) {
-        this._updateParticipantTile(peerId, data);
-        this._recomputeGridLayout();
-      }
-    };
+    c.onRemoteLeave = () => {};
 
     c.onScreenShareStarted = () => {
       if (!this._isMobile()) this._onScreenShareStarted();
@@ -342,9 +308,8 @@ _ensureRemoteTile(peerId) {
   }
 
   // ============================================================
-  // UI BINDING (FINAL iOS‑STYLE UPGRADE FLOW)
+  // UI BINDING (iOS + DESKTOP)
   // ============================================================
-
   _bindUI() {
     const isMobile = this._isMobile();
 
@@ -467,23 +432,15 @@ _ensureRemoteTile(peerId) {
         this.iosAddBtn.addEventListener("click", () => this._addCall());
       }
 
-    if (this.iosVideoBtn) {
-  this.iosVideoBtn.addEventListener("click", () => {
-    // Mark UI state for animation
-    this.root?.classList.add("ios-upgrade-requested");
-
-    // Ensure camera state is correct before upgrade
-    this.isCameraOn = true;
-    this.root?.classList.remove("camera-off");
-
-    // Trigger the upgrade flow
-    this._onIosVideoPressed();
-
-    // Immediately refresh local video so it doesn't go black
-    this._attachLocalStreamFromState?.();
-  });
-}
-
+      if (this.iosVideoBtn) {
+        this.iosVideoBtn.addEventListener("click", () => {
+          this.root?.classList.add("ios-upgrade-requested");
+          this.isCameraOn = true;
+          this.root?.classList.remove("camera-off");
+          this._onIosVideoPressed();
+          this._attachLocalStreamFromState?.();
+        });
+      }
 
       if (this.iosEndBtn) {
         this.iosEndBtn.addEventListener("click", () =>
@@ -549,7 +506,7 @@ _ensureRemoteTile(peerId) {
         this._resetControlsTimer();
         showControls();
       });
-      this.callBody.addEventListener("touchstart", () => {
+           this.callBody.addEventListener("touchstart", () => {
         this._resetControlsTimer();
         showControls();
       });
@@ -559,6 +516,7 @@ _ensureRemoteTile(peerId) {
   _startControlsAutoHide() {
     if (this._isMobile()) return;
     if (this._controlsHideInterval) return;
+
     this._controlsHideInterval = setInterval(() => {
       if (!this.callControls) return;
       if (Date.now() - this._lastControlsMove > 4000) {
@@ -573,41 +531,42 @@ _ensureRemoteTile(peerId) {
       this._controlsHideInterval = null;
     }
   }
-_showIosInboundControls(peerId) {
-  this.isInbound = true;
-  this._openWindow();
-  this._setMode("ios-voice", { audioOnly: !rtcState.incomingIsVideo });
 
-  const inbound = this.root.querySelector(".ios-inbound-controls");
-  const normal = this.root.querySelector(".ios-controls");
+  // ============================================================
+  // iOS INBOUND CONTROLS
+  // ============================================================
+  _showIosInboundControls(peerId) {
+    this.isInbound = true;
+    this._openWindow();
+    this._setMode("ios-voice", { audioOnly: !rtcState.incomingIsVideo });
 
-  inbound?.classList.remove("hidden");
-  normal?.classList.add("hidden");
+    const inbound = this.root.querySelector(".ios-inbound-controls");
+    const normal = this.root.querySelector(".ios-controls");
 
-  // Bind buttons
-  inbound.querySelector(".answer")?.addEventListener("click", async () => {
-    this._stopRingtone();
-    await this.controller.answerCall();
-    this._enterActiveVideoMode();
-  });
+    inbound?.classList.remove("hidden");
+    normal?.classList.add("hidden");
 
-  inbound.querySelector(".decline")?.addEventListener("click", () => {
-    this._stopRingtone();
-    this.controller.declineCall("declined");
-    this.closeWindow();
-  });
-}
+    // Bind buttons (safe because they exist only once)
+    this.iosInboundAnswerBtn?.addEventListener("click", async () => {
+      this._stopRingtone();
+      await this.controller.answerCall();
+      this._enterActiveVideoMode();
+    });
+
+    this.iosInboundDeclineBtn?.addEventListener("click", () => {
+      this._stopRingtone();
+      this.controller.declineCall("declined");
+      this.closeWindow();
+    });
+  }
 
   // ============================================================
   // iOS HELPERS + UPGRADE FLOW
   // ============================================================
-
   _toggleSpeaker() {
     if (!this.remoteAudio) return;
     this.remoteAudio.muted = !this.remoteAudio.muted;
-    if (this.iosSpeakerBtn) {
-      this.iosSpeakerBtn.classList.toggle("active", !this.remoteAudio.muted);
-    }
+    this.iosSpeakerBtn?.classList.toggle("active", !this.remoteAudio.muted);
   }
 
   _openKeypad() {
@@ -618,37 +577,31 @@ _showIosInboundControls(peerId) {
     console.log("[CallUI] iOS add call pressed — implement call merging here");
   }
 
-_onIosVideoPressed() {
-  if (!rtcState.inCall) return;
+  _onIosVideoPressed() {
+    if (!rtcState.inCall) return;
 
-  if (!this._isMobile()) {
+    if (!this._isMobile()) {
+      this._upgradeToVideo();
+      return;
+    }
+
     this._upgradeToVideo();
-    return;
+
+    // Give upgraded stream a moment to attach
+    setTimeout(() => {
+      this._showCallerVideoUpgrade();
+    }, 50);
   }
 
-  this._upgradeToVideo();
+  _upgradeToVideo() {
+    this.controller.upgradeToVideo?.();
 
-  // Wait one microtask so upgraded stream is ready
-  setTimeout(() => {
-    this._showCallerVideoUpgrade();
-  }, 50);
-}
+    // Refresh UI immediately
+    this._attachLocalStreamFromState?.();
 
-
-_upgradeToVideo() {
-  // Trigger the controller upgrade
-  this.controller.upgradeToVideo?.();
-
-  // Immediately refresh the UI with the new local video stream
-  // (prevents black video after upgrade)
-  this._attachLocalStreamFromState?.();
-
-  // Ensure camera state is correct
-  this.isCameraOn = true;
-  if (this.root) {
-    this.root.classList.remove("camera-off");
+    this.isCameraOn = true;
+    this.root?.classList.remove("camera-off");
   }
-}
 
   _showCallerVideoUpgrade() {
     if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
@@ -730,7 +683,6 @@ _upgradeToVideo() {
   // ============================================================
   // PIP DRAGGING
   // ============================================================
-
   _bindPipDrag() {
     const startDrag = (el, evt) => {
       evt.preventDefault();
@@ -798,7 +750,6 @@ _upgradeToVideo() {
   // ============================================================
   // CONTROLLER EVENT HANDLERS
   // ============================================================
-
   _onCallStarted(peerId) {
     this._setInboundActiveState(false);
     this._setStatusText("Connected");
@@ -814,21 +765,18 @@ _upgradeToVideo() {
     }
 
     if (this._isMobile()) {
-      if (this.callControls) this.callControls.classList.add("hidden");
+      this.callControls?.classList.add("hidden");
     } else {
-      if (this.callControls) {
-        this.callControls.classList.remove("hidden");
-        this.callControls.classList.remove("hidden-soft");
-        this.callControls.classList.add("active");
-      }
+      this.callControls?.classList.remove("hidden");
+      this.callControls?.classList.remove("hidden-soft");
+      this.callControls?.classList.add("active");
     }
 
     this._setInboundButtonsVisible(false);
-    
+
     if (this.currentMode === "meet" || this.currentMode === "discord") {
       this._showLocalPip(true);
     }
-
 
     if (this.currentMode === "ios-voice") {
       this._updateIosVoiceStatus("Connected");
@@ -856,15 +804,18 @@ _upgradeToVideo() {
           this._updateIosVoiceStatus("Calling…");
         }
         break;
+
       case "in-call":
         this._setStatusText("Connected");
         if (this.currentMode === "ios-voice") {
           this._updateIosVoiceStatus("Connected");
         }
         break;
+
       case "on-hold":
         this._setStatusText("On hold");
         break;
+
       default:
         this._setStatusText("Idle");
         break;
@@ -878,8 +829,6 @@ _upgradeToVideo() {
       this.localTile.classList.add("presenting", "stage");
     }
 
-    this.remoteTiles.forEach((tile) => tile.el.classList.add("filmstrip"));
-
     if (this.callGrid) {
       this.callGrid.classList.add("screen-share-mode");
     }
@@ -891,8 +840,6 @@ _upgradeToVideo() {
     if (this.localTile) {
       this.localTile.classList.remove("presenting", "stage");
     }
-
-    this.remoteTiles.forEach((tile) => tile.el.classList.remove("filmstrip"));
 
     if (this.callGrid) {
       this.callGrid.classList.remove("screen-share-mode");
@@ -911,32 +858,27 @@ _upgradeToVideo() {
     setTimeout(() => this.closeWindow(), 1200);
   }
 
-_enterActiveVideoMode() {
-  if (this.iosCallerUpgradePreview) {
-    this.iosCallerUpgradePreview.srcObject = null;
+  _enterActiveVideoMode() {
+    if (this.iosCallerUpgradePreview) {
+      this.iosCallerUpgradePreview.srcObject = null;
+    }
+
+    this._hideIosUpgradeOverlays();
+
+    this._setMode("meet", { audioOnly: false });
+
+    const inbound = this.root.querySelector(".ios-inbound-controls");
+    const normal = this.root.querySelector(".ios-controls");
+    inbound?.classList.add("hidden");
+    normal?.classList.remove("hidden");
+
+    this._showLocalPip(true);
+    this._updateIosVoiceStatus("");
   }
-
-  this._hideIosUpgradeOverlays();
-
-  // Switch to Meet layout for video
-  this._setMode("meet", { audioOnly: false });
-
-  // Show normal iOS controls again
-  const inbound = this.root.querySelector(".ios-inbound-controls");
-  const normal = this.root.querySelector(".ios-controls");
-  inbound?.classList.add("hidden");
-  normal?.classList.remove("hidden");
-
-  this._showLocalPip(true);
-  this._updateIosVoiceStatus("");
-}
-
-
 
   // ============================================================
   // AUDIO HELPERS
   // ============================================================
-
   _playRingtone() {
     try {
       this._stopRingback();
@@ -977,15 +919,12 @@ _enterActiveVideoMode() {
 
   _resetControlsTimer() {
     this._lastControlsMove = Date.now();
-    if (this.callControls) {
-      this.callControls.classList.remove("hidden-soft");
-    }
+    this.callControls?.classList.remove("hidden-soft");
   }
 
   // ============================================================
   // LOCAL MEDIA ATTACH
   // ============================================================
-
   _attachLocalStreamFromState() {
     const stream = rtcState.localStream;
     if (!stream) return;
@@ -1007,7 +946,6 @@ _enterActiveVideoMode() {
   // ============================================================
   // MODE + LAYOUT
   // ============================================================
-
   _setMode(mode, { audioOnly = false } = {}) {
     this.currentMode = mode;
 
@@ -1016,9 +954,9 @@ _enterActiveVideoMode() {
     this.root.classList.remove("mode-meet", "mode-discord", "mode-ios-voice");
 
     if (this._isMobile()) {
-      if (this.callControls) this.callControls.classList.add("hidden");
-      if (this.localPip) this.localPip.classList.add("hidden");
-      if (this.remotePip) this.remotePip.classList.add("hidden");
+      this.callControls?.classList.add("hidden");
+      this.localPip?.classList.add("hidden");
+      this.remotePip?.classList.add("hidden");
     }
 
     if (mode === "meet") {
@@ -1053,16 +991,16 @@ _enterActiveVideoMode() {
       this.callControls.classList.add("inbound");
       this.callControls.classList.remove("active");
 
-      if (this.answerBtn) this.answerBtn.classList.remove("hidden");
-      if (this.declineBtn) this.declineBtn.classList.remove("hidden");
-      if (this.endCallBtn) this.endCallBtn.classList.add("hidden");
+      this.answerBtn?.classList.remove("hidden");
+      this.declineBtn?.classList.remove("hidden");
+      this.endCallBtn?.classList.add("hidden");
     } else {
       this.callControls.classList.remove("inbound");
       this.callControls.classList.add("active");
 
-      if (this.answerBtn) this.answerBtn.classList.add("hidden");
-      if (this.declineBtn) this.declineBtn.classList.add("hidden");
-      if (this.endCallBtn) this.endCallBtn.classList.remove("hidden");
+      this.answerBtn?.classList.add("hidden");
+      this.declineBtn?.classList.add("hidden");
+      this.endCallBtn?.classList.remove("hidden");
     }
   }
 
@@ -1080,7 +1018,6 @@ _enterActiveVideoMode() {
   // ============================================================
   // WINDOW OPEN/CLOSE
   // ============================================================
-
   _openWindow() {
     if (!this.root) return;
 
@@ -1088,12 +1025,11 @@ _enterActiveVideoMode() {
     this.root.classList.add("is-open", "call-opening");
     this.root.style.opacity = "1";
 
-    if (this.callControls && !this._isMobile()) {
-      this.callControls.classList.remove("hidden");
-      this.callControls.classList.remove("hidden-soft");
-    }
-    if (this._isMobile()) {
-      if (this.callControls) this.callControls.classList.add("hidden");
+    if (!this._isMobile()) {
+      this.callControls?.classList.remove("hidden");
+      this.callControls?.classList.remove("hidden-soft");
+    } else {
+      this.callControls?.classList.add("hidden");
     }
 
     setTimeout(() => {
@@ -1104,7 +1040,6 @@ _enterActiveVideoMode() {
   // ============================================================
   // TIMER HELPERS
   // ============================================================
-
   _startTimer(startTs) {
     this._stopTimer();
     this.callStartTs = startTs || Date.now();
@@ -1115,8 +1050,8 @@ _enterActiveVideoMode() {
       const s = String(elapsed % 60).padStart(2, "0");
       const text = `${m}:${s}`;
 
-      if (this.callTimerEl) this.callTimerEl.textContent = text;
-      if (this.iosCallTimer) this.iosCallTimer.textContent = text;
+      this.callTimerEl && (this.callTimerEl.textContent = text);
+      this.iosCallTimer && (this.iosCallTimer.textContent = text);
     };
 
     update();
@@ -1131,164 +1066,17 @@ _enterActiveVideoMode() {
   }
 
   // ============================================================
-  // GRID + PARTICIPANTS
+  // MUTE / CAMERA / MORE
   // ============================================================
-
-  _ensureRemoteTile(peerId) {
-    if (!this.callGrid) return null;
-    const id = String(peerId);
-
-    if (this.remoteTiles.has(id)) {
-      return this.remoteTiles.get(id);
-    }
-
-    let el;
-    if (this.remoteTemplate && "content" in this.remoteTemplate) {
-      const clone = this.remoteTemplate.content
-        ? this.remoteTemplate.content.cloneNode(true)
-        : this.remoteTemplate.cloneNode(true);
-      el = clone.querySelector(".participant") || clone.firstElementChild;
-      if (!el) {
-        el = document.createElement("div");
-        el.className = "participant remote";
-      }
-      this.callGrid.appendChild(el);
-    } else {
-      el = document.createElement("div");
-      el.className = "participant remote";
-      el.innerHTML = `
-        <div class="media-wrapper">
-          <video class="remoteVideo" autoplay playsinline></video>
-          <div class="avatar-wrapper">
-            <div class="voice-pulse"></div>
-          </div>
-          <div class="presenting-badge">Presenting</div>
-          <div class="name-tag"></div>
-        </div>
-      `;
-      this.callGrid.appendChild(el);
-    }
-
-    const videoEl = el.querySelector("video.remoteVideo") || el.querySelector("video");
-    const avatarWrapper = el.querySelector(".avatar-wrapper");
-    const nameTag = el.querySelector(".name-tag");
-
-    const tile = { el, videoEl, avatarWrapper, nameTag };
-    this.remoteTiles.set(id, tile);
-
-    return tile;
-  }
-
-  _removeRemoteTile(peerId) {
-    const id = String(peerId);
-    const tile = this.remoteTiles.get(id);
-    if (!tile) return;
-    if (tile.el && tile.el.parentNode) {
-      tile.el.parentNode.removeChild(tile.el);
-    }
-    this.remoteTiles.delete(id);
-  }
-
-  _recomputeGridLayout() {
-    // CSS auto-fit grid handles layout; hook left for future logic.
-  }
-
-  _updateParticipantTile(peerId, data) {
-    if (!data) {
-      this._removeRemoteTile(peerId);
-      return;
-    }
-    const tile = this._ensureRemoteTile(peerId);
-    if (!tile) return;
-
-    if (tile.nameTag && data.displayName) {
-      tile.nameTag.textContent = data.displayName;
-    }
-
-    if (tile.el) {
-      if (data.isPresenting) {
-        tile.el.classList.add("is-presenting");
-      } else {
-        tile.el.classList.remove("is-presenting");
-      }
-
-      if (data.speaking) {
-        tile.el.classList.add("speaking");
-      } else {
-        tile.el.classList.remove("speaking");
-      }
-    }
-  }
-
-  _clearParticipants() {
-    this.remoteTiles.forEach((tile) => {
-      if (tile.el && tile.el.parentNode) {
-        tile.el.parentNode.removeChild(tile.el);
-      }
-    });
-    this.remoteTiles.clear();
-  }
-
-  // ============================================================
-  // QUALITY INDICATOR
-  // ============================================================
-
-  _updateQualityIndicator(level) {
-    if (!this.qualityIndicator) return;
-    this.qualityIndicator.dataset.level = level || "excellent";
-    this.qualityIndicator.textContent = `Connection: ${level || "excellent"}`;
-  }
-
-  // ============================================================
-  // VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
-  // ============================================================
-
-  showVideoUpgradeOverlay(peerId, offer) {
-    this._pendingVideoUpgrade = { peerId, offer };
-    if (!this.videoUpgradeOverlay) return;
-    this.videoUpgradeOverlay.classList.remove("hidden");
-  }
-
-  _hideVideoUpgradeOverlay() {
-    if (!this.videoUpgradeOverlay) return;
-    this.videoUpgradeOverlay.classList.add("hidden");
-    this._pendingVideoUpgrade = null;
-  }
-
-  async _acceptVideoUpgrade() {
-    this._stopRingtone();
-    await this.controller.answerCall();
-    this._enterActiveVideoMode();
-    this._hideVideoUpgradeOverlay();
-    this._hideCalleeVideoUpgrade();
-  }
-
-  _declineVideoUpgrade() {
-    this._stopRingtone();
-    this._hideVideoUpgradeOverlay();
-    this._hideCalleeVideoUpgrade();
-    this.controller.declineCall?.("video_upgrade_declined");
-  }
-
-  // ============================================================
-  // CONTROLS HELPERS
-  // ============================================================
-
   _toggleMute() {
     const stream = rtcState.localStream;
     if (!stream) return;
 
     this.isMuted = !this.isMuted;
-    stream.getAudioTracks().forEach((t) => {
-      t.enabled = !this.isMuted;
-    });
+    stream.getAudioTracks().forEach((t) => (t.enabled = !this.isMuted));
 
-    if (this.muteBtn) {
-      this.muteBtn.classList.toggle("active", this.isMuted);
-    }
-    if (this.iosMuteBtn) {
-      this.iosMuteBtn.classList.toggle("active", this.isMuted);
-    }
+    this.muteBtn?.classList.toggle("active", this.isMuted);
+    this.iosMuteBtn?.classList.toggle("active", this.isMuted);
 
     rtcState.micMuted = this.isMuted;
   }
@@ -1298,13 +1086,9 @@ _enterActiveVideoMode() {
     if (!stream) return;
 
     this.isCameraOn = !this.isCameraOn;
-    stream.getVideoTracks().forEach((t) => {
-      t.enabled = this.isCameraOn;
-    });
+    stream.getVideoTracks().forEach((t) => (t.enabled = this.isCameraOn));
 
-    if (this.cameraToggleBtn) {
-      this.cameraToggleBtn.classList.toggle("active", !this.isCameraOn);
-    }
+    this.cameraToggleBtn?.classList.toggle("active", !this.isCameraOn);
 
     if (this.root) {
       if (this.isCameraOn) {
@@ -1318,15 +1102,16 @@ _enterActiveVideoMode() {
   }
 
   _toggleMoreControlsMenu() {
-    if (!this.moreControlsMenu) return;
-    this.moreControlsMenu.classList.toggle("hidden");
+    this.moreControlsMenu?.classList.toggle("hidden");
   }
 
   _hideMoreControlsMenu() {
-    if (!this.moreControlsMenu) return;
-    this.moreControlsMenu.classList.add("hidden");
+    this.moreControlsMenu?.classList.add("hidden");
   }
 
+  // ============================================================
+  // LOCAL PIP
+  // ============================================================
   _showLocalPip(show) {
     if (!this.localPip) return;
     if (show) {
@@ -1346,14 +1131,13 @@ _enterActiveVideoMode() {
     this.localVideo.srcObject = pipStream;
     this.localPipVideo.srcObject = mainStream;
 
-    if (this.localVideo.srcObject) {
-      this.localVideo.play?.().catch(() => {});
-    }
-    if (this.localPipVideo.srcObject) {
-      this.localPipVideo.play?.().catch(() => {});
-    }
+    this.localVideo.srcObject && this.localVideo.play?.().catch(() => {});
+    this.localPipVideo.srcObject && this.localPipVideo.play?.().catch(() => {});
   }
 
+  // ============================================================
+  // iOS VOICE STATUS
+  // ============================================================
   _updateIosVoiceStatus(text) {
     if (this.iosCallStatus) {
       this.iosCallStatus.textContent = text || "";
@@ -1363,23 +1147,8 @@ _enterActiveVideoMode() {
   // ============================================================
   // UTIL
   // ============================================================
-
   _isMobile() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
