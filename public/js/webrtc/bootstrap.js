@@ -161,9 +161,10 @@ export async function initWebRTC() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (!isMobile) return;
 
+
     const send = () => {
       let orientation = "portrait";
-
+console.log("[BOOTSTRAP] sending orientation:", orientation);
       // Modern API
       if (screen.orientation && screen.orientation.type) {
         orientation = screen.orientation.type.startsWith("portrait")
