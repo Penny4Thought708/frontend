@@ -150,6 +150,50 @@ export async function initWebRTC() {
     } catch {}
   };
 
+  /* -------------------------------------------------------
+     8. Mobile Orientation Sync (FaceTime-style)
+     - Uses modern screen.orientation when available
+     - Falls back to window.orientation for older iPhones
+  ------------------------------------------------------- */
+  (function setupOrientationSync() {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    const send = () => {
+      let orientation = "portrait";
+
+      // Modern API
+      if (screen.orientation && screen.orientation.type) {
+        orientation = screen.orientation.type.startsWith("portrait")
+          ? "portrait"
+          : "landscape";
+      }
+      // Legacy iOS fallback
+      else if (typeof window.orientation === "number") {
+        const angle = window.orientation;
+        orientation =
+          angle === 0 || angle === 180 ? "portrait" : "landscape";
+      }
+
+      try {
+        controller.sendOrientation(orientation);
+      } catch (err) {
+        console.warn("[BOOTSTRAP] Failed to send orientation:", err);
+      }
+    };
+
+    // Modern listener
+    if (screen.orientation && typeof screen.orientation.addEventListener === "function") {
+      screen.orientation.addEventListener("change", send);
+    }
+
+    // Legacy listener
+    window.addEventListener("orientationchange", send);
+
+    // Initial sync
+    send();
+  })();
+
   log("WebRTC bootstrap complete");
   return { controller, ui };
 }
