@@ -400,27 +400,30 @@ window.currentUserAvatar = user.avatar;
     <!-- ============================================================
          iPHONE VOICE UI (Mobile Audio Calls)
     ============================================================ -->
-    <div class="ios-voice-ui hidden">
-      <div class="ios-avatar">
-        <img id="iosVoiceAvatar" src="img/defaultUser.png" alt="Avatar" />
-      </div>
+ <div class="ios-voice-ui hidden">
+  <div class="ios-avatar">
+    <img id="iosVoiceAvatar" src="img/defaultUser.png" alt="Avatar" />
+  </div>
 
-      <div class="ios-call-status">Calling…</div>
-      <div class="ios-call-timer">00:00</div>
+  <div class="ios-call-status">Calling…</div>
+  <div class="ios-call-timer">00:00</div>
 
-      <div class="ios-controls">
-        <button class="ios-btn mute">Mute</button>
-        <button class="ios-btn speaker">Speaker</button>
-        <button class="ios-btn keypad">Keypad</button>
-        <button class="ios-btn add">Add Call</button>
-        <button class="ios-btn video">Video</button>
-        <button class="ios-btn end">End</button>
-      </div>
-    </div>
-    <div class="ios-inbound-controls hidden">
-  <button class="ios-btn answer">Answer</button>
-  <button class="ios-btn decline">Decline</button>
+  <!-- MUST BE INSIDE ios-voice-ui -->
+  <div class="ios-inbound-controls hidden">
+    <button class="ios-btn answer">Answer</button>
+    <button class="ios-btn decline">Decline</button>
+  </div>
+
+  <div class="ios-controls">
+    <button class="ios-btn mute">Mute</button>
+    <button class="ios-btn speaker">Speaker</button>
+    <button class="ios-btn keypad">Keypad</button>
+    <button class="ios-btn add">Add Call</button>
+    <button class="ios-btn video">Video</button>
+    <button class="ios-btn end">End</button>
+  </div>
 </div>
+
 
 <!-- ============================================================
      iOS CALLER UPGRADE OVERLAY (Full Local Video)
@@ -1706,6 +1709,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
