@@ -1268,32 +1268,37 @@ showVideoUpgradeOverlay(peerId, offer) {
   this._pendingVideoUpgrade = { peerId, offer };
   if (!this.videoUpgradeOverlay) return;
 
-  // Hide normal inbound controls while upgrade prompt is visible
+  // 🔥 Hide default desktop inbound controls completely
   if (this.callControls) {
     this.callControls.classList.add("hidden");
     this.callControls.classList.remove("inbound");
     this.callControls.classList.remove("active");
   }
 
+  // 🔥 Mark web upgrade state so CSS can blur remote preview
   this.root?.classList.add("web-upgrade-pending");
+
+  // 🔥 Show the desktop/web upgrade overlay
   this.videoUpgradeOverlay.classList.remove("hidden");
 }
 
-
 _hideVideoUpgradeOverlay() {
   if (!this.videoUpgradeOverlay) return;
+
+  // Hide the overlay
   this.videoUpgradeOverlay.classList.add("hidden");
   this._pendingVideoUpgrade = null;
+
+  // Remove blur state
   this.root?.classList.remove("web-upgrade-pending");
 
-  // If still ringing and not answered, show inbound controls again
+  // 🔥 If still inbound (call not answered), restore inbound controls
   if (this.isInbound && this.callControls) {
-    this.callControls.classList.remove("hidden-soft");
     this.callControls.classList.remove("hidden");
+    this.callControls.classList.remove("hidden-soft");
     this.callControls.classList.add("inbound");
   }
 }
-
 
 async _acceptVideoUpgrade() {
   this._stopRingtone();
@@ -1321,6 +1326,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
