@@ -332,7 +332,7 @@ _setStatusText(text) {
     }
 
     // Auto-hide controls
-    let lastMove = Date.now();
+    this._lastControlsMove = Date.now();
     const showControls = () => {
       if (!this.callControls) return;
       this.callControls.classList.remove("hidden-soft");
@@ -344,18 +344,19 @@ _setStatusText(text) {
 
     if (this.callBody) {
       this.callBody.addEventListener("mousemove", () => {
-        lastMove = Date.now();
+        this._lastControlsMove = Date.now();
         showControls();
       });
       this.callBody.addEventListener("touchstart", () => {
-        lastMove = Date.now();
+        this._lastControlsMove = Date.now();
         showControls();
       });
-
+/*
       setInterval(() => {
         if (!this.callControls) return;
-        if (Date.now() - lastMove > 4000) hideControls();
-      }, 1000);
+        if (Date.now() - this._lastControlsMove > 4000) hideControls();
+      }, 1000); 
+      */
     }
   }
 
@@ -441,6 +442,7 @@ _setStatusText(text) {
     this._openWindow();
 
     this._attachLocalStreamFromState();
+    this._resetControlsTimer();
 
     if (this.localTile) {
       this.localTile.classList.add("hidden");
@@ -590,6 +592,12 @@ _setStatusText(text) {
       }
     } catch {}
   }
+_resetControlsTimer() {
+  this._lastControlsMove = Date.now();
+  if (this.callControls) {
+    this.callControls.classList.remove("hidden-soft");
+  }
+}
 
   // ============================================================
   // LOCAL MEDIA ATTACH
@@ -740,6 +748,7 @@ _stopTimer() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
