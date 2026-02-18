@@ -427,6 +427,25 @@
   transform: scale(0.94);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
 }
+.ios-inbound-controls {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.ios-inbound-controls .ios-btn {
+  width: 90px;
+  height: 90px;
+  font-size: 16px;
+}
+
+.ios-inbound-controls .answer {
+  background: var(--call-accent);
+}
+
+.ios-inbound-controls .decline {
+  background: var(--call-accent-danger);
+}
 
 /* ===========================
    CALL STATUS + TIMER (TOP)
