@@ -708,13 +708,9 @@ _setStatusText(text) {
 // ============================================================
 _startTimer(startTs) {
   this._stopTimer();
-
-  // If a timestamp is provided, use it. Otherwise, timer starts now.
   this.callStartTs = startTs || Date.now();
 
   const update = () => {
-    if (!this.callTimerEl && !this.iosCallTimer) return;
-
     const elapsed = Math.floor((Date.now() - this.callStartTs) / 1000);
     const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
     const s = String(elapsed % 60).padStart(2, "0");
@@ -735,6 +731,7 @@ _stopTimer() {
   }
 }
 
+
   // ============================================================
   // UTIL
   // ============================================================
@@ -743,6 +740,7 @@ _stopTimer() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
