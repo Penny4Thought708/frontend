@@ -786,67 +786,61 @@ async _handleAnswer(peerId, answer) {
     }
   }
 
-  /* -------------------------------------------------------
-     UPGRADE VOICE → VIDEO (CALLER INITIATES)
-  ------------------------------------------------------- */
-  async upgradeToVideo() {
-    const peerId = rtcState.peerId;
-    if (!peerId) {
-      warn("upgradeToVideo called with no peerId");
-      return;
-    }
-// In WebRTCController.upgradeToVideo()
-if (window.callUI?._attachLocalStreamFromState) {
-  window.callUI._attachLocalStreamFromState();
-} else if (window.callUIInstance?._attachLocalStreamFromState) {
-  window.callUIInstance._attachLocalStreamFromState();
-}
-
-    const pc = this._ensurePC(peerId);
-
-    log("upgradeToVideo →", { peerId });
-
-    // Get upgraded local stream (audio → audio+video)
-    const newStream = await upgradeLocalToVideo();
-    rtcState.localStream = newStream;
-    rtcState.audioOnly = false;
-    rtcState.cameraOff = false;
-
-    // Replace or add video track
-    newStream.getVideoTracks().forEach((track) => {
-      const sender = pc
-        .getSenders()
-        .find((s) => s.track && s.track.kind === "video");
-
-      if (sender) {
-        sender.replaceTrack(track);
-      } else {
-        pc.addTrack(track, newStream);
-      }
-    });
-
-    // Re-attach upgraded stream to UI immediately
-    if (window.callUIInstance?._attachLocalStreamFromState) {
-      window.callUIInstance._attachLocalStreamFromState();
-    }
-
-    // Create and send renegotiation offer
-    const offer = await pc.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
-
-    await pc.setLocalDescription(offer);
-
-    this.socket.emit("webrtc:signal", {
-      type: "offer",
-      to: peerId,
-      from: rtcState.selfId,
-      callId: rtcState.callId,
-      offer,
-      isVideoUpgrade: true,
-    });
+ /* -------------------------------------------------------
+   UPGRADE VOICE → VIDEO (CALLER INITIATES)
+------------------------------------------------------- */
+async upgradeToVideo() {
+  const peerId = rtcState.peerId;
+  if (!peerId) {
+    warn("upgradeToVideo called with no peerId");
+    return;
   }
+
+  const pc = this._ensurePC(peerId);
+
+  log("upgradeToVideo →", { peerId });
+
+  // Get upgraded local stream (audio → audio+video)
+  const newStream = await upgradeLocalToVideo();
+  rtcState.localStream = newStream;
+  rtcState.audioOnly = false;
+  rtcState.cameraOff = false;
+
+  // Replace or add video track
+  newStream.getVideoTracks().forEach((track) => {
+    const sender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === "video");
+
+    if (sender) {
+      sender.replaceTrack(track);
+    } else {
+      pc.addTrack(track, newStream);
+    }
+  });
+
+  // 🔥 Now that rtcState.localStream is upgraded, reattach to UI
+  if (window.callUIInstance?._attachLocalStreamFromState) {
+    window.callUIInstance._attachLocalStreamFromState();
+  }
+
+  // Create and send renegotiation offer
+  const offer = await pc.createOffer({
+    offerToReceiveAudio: true,
+    offerToReceiveVideo: true,
+  });
+
+  await pc.setLocalDescription(offer);
+
+  this.socket.emit("webrtc:signal", {
+    type: "offer",
+    to: peerId,
+    from: rtcState.selfId,
+    callId: rtcState.callId,
+    offer,
+    isVideoUpgrade: true,
+  });
+}
 
   /* -------------------------------------------------------
      END CALL (LOCAL HANGUP)
@@ -988,6 +982,7 @@ if (window.callUI?._attachLocalStreamFromState) {
     }
   }
 }
+
 
 
 
