@@ -603,16 +603,22 @@ _showIosInboundControls(peerId) {
     console.log("[CallUI] iOS add call pressed — implement call merging here");
   }
 
-  _onIosVideoPressed() {
-    if (!rtcState.inCall) return;
-    if (!this._isMobile()) {
-      this._upgradeToVideo();
-      return;
-    }
+_onIosVideoPressed() {
+  if (!rtcState.inCall) return;
+
+  if (!this._isMobile()) {
     this._upgradeToVideo();
-    this._showCallerVideoUpgrade();
-    
+    return;
   }
+
+  this._upgradeToVideo();
+
+  // Wait one microtask so upgraded stream is ready
+  setTimeout(() => {
+    this._showCallerVideoUpgrade();
+  }, 50);
+}
+
 
 _upgradeToVideo() {
   // Trigger the controller upgrade
@@ -1347,6 +1353,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
