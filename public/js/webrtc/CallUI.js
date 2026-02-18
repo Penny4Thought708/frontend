@@ -179,24 +179,31 @@ export class CallUI {
   // ============================================================
   // PUBLIC API
   // ============================================================
-  openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
-    this.isInbound = false;
+openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
+  this.isInbound = false;
 
-    const audioOnly = audio && !video;
-    if (this._isMobile() && audioOnly) {
-      mode = "ios-voice";
-    }
+  const audioOnly = audio && !video;
 
-    this._setMode(mode, { audioOnly });
-    this._openWindow();
-    this._setInboundActiveState(false);
-
-    this._playRingback();
-    this._setStatusText("Calling…");
-    this._startTimer(null);
-
-    this.controller.startCall(peerId, { audio, video });
+  // Mobile voice call → force ios-voice mode
+  if (this._isMobile() && audioOnly) {
+    mode = "ios-voice";
   }
+
+  // 🔥 Force audio-only on mobile when in ios-voice mode
+  if (this._isMobile() && mode === "ios-voice") {
+    video = false;
+  }
+
+  this._setMode(mode, { audioOnly });
+  this._openWindow();
+  this._setInboundActiveState(false);
+
+  this._playRingback();
+  this._setStatusText("Calling…");
+  this._startTimer(null);
+
+  this.controller.startCall(peerId, { audio, video });
+}
 
   receiveInboundCall(peerId, isVideo) {
     if (this._isMobile()) {
@@ -1229,6 +1236,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
