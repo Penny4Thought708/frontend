@@ -52,8 +52,12 @@ export class CallUI {
 
     // iOS inbound controls (mobile incoming call)
     this.iosInboundControls = this.root?.querySelector(".ios-inbound-controls");
-    this.iosInboundAnswerBtn = this.root?.querySelector(".ios-inbound-controls .answer");
-    this.iosInboundDeclineBtn = this.root?.querySelector(".ios-inbound-controls .decline");
+    this.iosInboundAnswerBtn = this.root?.querySelector(
+      ".ios-inbound-controls .answer"
+    );
+    this.iosInboundDeclineBtn = this.root?.querySelector(
+      ".ios-inbound-controls .decline"
+    );
 
     // Desktop status + timer
     this.callStatusEl = document.getElementById("call-status");
@@ -83,22 +87,44 @@ export class CallUI {
 
     // Generic video upgrade overlay (desktop + mobile fallback)
     this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
-    this.videoUpgradeAcceptMobile = document.getElementById("video-upgrade-accept");
-    this.videoUpgradeDeclineMobile = document.getElementById("video-upgrade-decline");
-    this.videoUpgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
-    this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
+    this.videoUpgradeAcceptMobile = document.getElementById(
+      "video-upgrade-accept"
+    );
+    this.videoUpgradeDeclineMobile = document.getElementById(
+      "video-upgrade-decline"
+    );
+    this.videoUpgradeAcceptDesktop = document.getElementById(
+      "video-upgrade-accept-desktop"
+    );
+    this.videoUpgradeDeclineDesktop = document.getElementById(
+      "video-upgrade-decline-desktop"
+    );
 
     // iOS 17-style upgrade overlays (mobile)
-    this.iosCallerUpgradeOverlay = this.root?.querySelector(".ios-caller-upgrade");
-    this.iosCallerUpgradePreview = this.root?.querySelector(".ios-caller-preview");
-    this.iosCallerUpgradeLabel = this.root?.querySelector(".ios-caller-upgrade-label");
-    this.iosCallerUpgradeCancel = this.root?.querySelector(".ios-caller-upgrade-cancel");
+    this.iosCallerUpgradeOverlay =
+      this.root?.querySelector(".ios-caller-upgrade");
+    this.iosCallerUpgradePreview =
+      this.root?.querySelector(".ios-caller-preview");
+    this.iosCallerUpgradeLabel = this.root?.querySelector(
+      ".ios-caller-upgrade-label"
+    );
+    this.iosCallerUpgradeCancel = this.root?.querySelector(
+      ".ios-caller-upgrade-cancel"
+    );
 
-    this.iosCalleeUpgradeOverlay = this.root?.querySelector(".ios-callee-upgrade");
-    this.iosCalleeUpgradePreview = this.root?.querySelector(".ios-callee-preview");
-    this.iosCalleeUpgradeLabel = this.root?.querySelector(".ios-callee-upgrade-label");
-    this.iosCalleeUpgradeAccept = this.root?.querySelector(".ios-callee-upgrade-accept");
-    this.iosCalleeUpgradeDecline = this.root?.querySelector(".ios-callee-upgrade-decline");
+    this.iosCalleeUpgradeOverlay =
+      this.root?.querySelector(".ios-callee-upgrade");
+    this.iosCalleeUpgradePreview =
+      this.root?.querySelector(".ios-callee-preview");
+    this.iosCalleeUpgradeLabel = this.root?.querySelector(
+      ".ios-callee-upgrade-label"
+    );
+    this.iosCalleeUpgradeAccept = this.root?.querySelector(
+      ".ios-callee-upgrade-accept"
+    );
+    this.iosCalleeUpgradeDecline = this.root?.querySelector(
+      ".ios-callee-upgrade-decline"
+    );
 
     // Audio elements
     this.ringtone = document.getElementById("ringtone");
@@ -143,7 +169,9 @@ export class CallUI {
   // ============================================================
   // REMOTE TILE SYSTEM DISABLED
   // ============================================================
-  _ensureRemoteTile() { return null; }
+  _ensureRemoteTile() {
+    return null;
+  }
   _removeRemoteTile() {}
   _updateParticipantTile() {}
   _clearParticipants() {}
@@ -256,13 +284,10 @@ export class CallUI {
       rtcState.incomingOffer = offer;
 
       rtcState.incomingIsVideo =
-        offer?.offerToReceiveVideo ||
-        offer?.sdp?.includes("m=video");
+        offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
 
       const isUpgrade =
-        rtcState.inCall &&
-        rtcState.audioOnly &&
-        rtcState.incomingIsVideo;
+        rtcState.inCall && rtcState.audioOnly && rtcState.incomingIsVideo;
 
       if (isUpgrade) {
         if (this._isMobile()) {
@@ -345,7 +370,9 @@ export class CallUI {
       }
 
       if (this.cameraToggleBtn) {
-        this.cameraToggleBtn.addEventListener("click", () => this._toggleCamera());
+        this.cameraToggleBtn.addEventListener("click", () =>
+          this._toggleCamera()
+        );
       }
 
       if (this.moreControlsBtn && this.moreControlsMenu) {
@@ -407,7 +434,9 @@ export class CallUI {
       }
 
       if (this.localPip && this.enablePipSwap) {
-        this.localPip.addEventListener("dblclick", () => this._swapPipWithMain());
+        this.localPip.addEventListener("dblclick", () =>
+          this._swapPipWithMain()
+        );
         this.localPip.addEventListener("touchend", (e) => {
           if (e.detail === 2) this._swapPipWithMain();
         });
@@ -421,7 +450,9 @@ export class CallUI {
       }
 
       if (this.iosSpeakerBtn) {
-        this.iosSpeakerBtn.addEventListener("click", () => this._toggleSpeaker());
+        this.iosSpeakerBtn.addEventListener("click", () =>
+          this._toggleSpeaker()
+        );
       }
 
       if (this.iosKeypadBtn) {
@@ -485,6 +516,23 @@ export class CallUI {
           this.root?.classList.remove("ios-upgrade-pending");
         });
       }
+
+      // iOS inbound answer/decline wired once
+      if (this.iosInboundAnswerBtn) {
+        this.iosInboundAnswerBtn.addEventListener("click", async () => {
+          this._stopRingtone();
+          await this.controller.answerCall();
+          this._enterActiveVideoMode();
+        });
+      }
+
+      if (this.iosInboundDeclineBtn) {
+        this.iosInboundDeclineBtn.addEventListener("click", () => {
+          this._stopRingtone();
+          this.controller.declineCall("declined");
+          this.closeWindow();
+        });
+      }
     }
 
     // AUTO-HIDE CONTROLS (desktop)
@@ -506,7 +554,7 @@ export class CallUI {
         this._resetControlsTimer();
         showControls();
       });
-           this.callBody.addEventListener("touchstart", () => {
+      this.callBody.addEventListener("touchstart", () => {
         this._resetControlsTimer();
         showControls();
       });
@@ -545,19 +593,6 @@ export class CallUI {
 
     inbound?.classList.remove("hidden");
     normal?.classList.add("hidden");
-
-    // Bind buttons (safe because they exist only once)
-    this.iosInboundAnswerBtn?.addEventListener("click", async () => {
-      this._stopRingtone();
-      await this.controller.answerCall();
-      this._enterActiveVideoMode();
-    });
-
-    this.iosInboundDeclineBtn?.addEventListener("click", () => {
-      this._stopRingtone();
-      this.controller.declineCall("declined");
-      this.closeWindow();
-    });
   }
 
   // ============================================================
@@ -596,7 +631,7 @@ export class CallUI {
   _upgradeToVideo() {
     this.controller.upgradeToVideo?.();
 
-    // Refresh UI immediately
+    // Refresh UI immediately so local video is visible
     this._attachLocalStreamFromState?.();
 
     this.isCameraOn = true;
@@ -689,8 +724,10 @@ export class CallUI {
       const rect = el.getBoundingClientRect();
       this.pipDragState.active = true;
       this.pipDragState.target = el;
-      this.pipDragState.startX = evt.clientX || evt.touches?.[0]?.clientX || 0;
-      this.pipDragState.startY = evt.clientY || evt.touches?.[0]?.clientY || 0;
+      this.pipDragState.startX =
+        evt.clientX || evt.touches?.[0]?.clientX || 0;
+      this.pipDragState.startY =
+        evt.clientY || evt.touches?.[0]?.clientY || 0;
       this.pipDragState.origX = rect.left;
       this.pipDragState.origY = rect.top;
       el.classList.add("dragging");
@@ -699,8 +736,10 @@ export class CallUI {
     const moveDrag = (evt) => {
       if (!this.pipDragState.active || !this.pipDragState.target) return;
       const el = this.pipDragState.target;
-      const currentX = evt.clientX || evt.touches?.[0]?.clientX || 0;
-      const currentY = evt.clientY || evt.touches?.[0]?.clientY || 0;
+      const currentX =
+        evt.clientX || evt.touches?.[0]?.clientX || 0;
+      const currentY =
+        evt.clientY || evt.touches?.[0]?.clientY || 0;
       const dx = currentX - this.pipDragState.startX;
       const dy = currentY - this.pipDragState.startY;
       const x = this.pipDragState.origX + dx;
@@ -1050,8 +1089,8 @@ export class CallUI {
       const s = String(elapsed % 60).padStart(2, "0");
       const text = `${m}:${s}`;
 
-      this.callTimerEl && (this.callTimerEl.textContent = text);
-      this.iosCallTimer && (this.iosCallTimer.textContent = text);
+      if (this.callTimerEl) this.callTimerEl.textContent = text;
+      if (this.iosCallTimer) this.iosCallTimer.textContent = text;
     };
 
     update();
@@ -1123,16 +1162,22 @@ export class CallUI {
   }
 
   _swapPipWithMain() {
-    if (!this.localPipVideo || !this.localVideo) return;
+    if (!this.localPipVideo) return;
 
-    const mainStream = this.localVideo.srcObject;
+    // Swap local PiP with the primary remote video in the grid
+    const mainRemoteVideo =
+      this.callGrid?.querySelector("video") || null;
+    if (!mainRemoteVideo) return;
+
+    const mainStream = mainRemoteVideo.srcObject;
     const pipStream = this.localPipVideo.srcObject;
 
-    this.localVideo.srcObject = pipStream;
+    mainRemoteVideo.srcObject = pipStream;
     this.localPipVideo.srcObject = mainStream;
 
-    this.localVideo.srcObject && this.localVideo.play?.().catch(() => {});
-    this.localPipVideo.srcObject && this.localPipVideo.play?.().catch(() => {});
+    mainRemoteVideo.srcObject && mainRemoteVideo.play?.().catch(() => {});
+    this.localPipVideo.srcObject &&
+      this.localPipVideo.play?.().catch(() => {});
   }
 
   // ============================================================
@@ -1145,10 +1190,52 @@ export class CallUI {
   }
 
   // ============================================================
+  // QUALITY INDICATOR
+  // ============================================================
+  _updateQualityIndicator(level) {
+    if (!this.qualityIndicator) return;
+    this.qualityIndicator.dataset.level = level || "excellent";
+    this.qualityIndicator.textContent = `Connection: ${
+      level || "excellent"
+    }`;
+  }
+
+  // ============================================================
+  // VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
+  // ============================================================
+  showVideoUpgradeOverlay(peerId, offer) {
+    this._pendingVideoUpgrade = { peerId, offer };
+    if (!this.videoUpgradeOverlay) return;
+    this.videoUpgradeOverlay.classList.remove("hidden");
+  }
+
+  _hideVideoUpgradeOverlay() {
+    if (!this.videoUpgradeOverlay) return;
+    this.videoUpgradeOverlay.classList.add("hidden");
+    this._pendingVideoUpgrade = null;
+  }
+
+  async _acceptVideoUpgrade() {
+    this._stopRingtone();
+    await this.controller.answerCall();
+    this._enterActiveVideoMode();
+    this._hideVideoUpgradeOverlay();
+    this._hideCalleeVideoUpgrade();
+  }
+
+  _declineVideoUpgrade() {
+    this._stopRingtone();
+    this._hideVideoUpgradeOverlay();
+    this._hideCalleeVideoUpgrade();
+    this.controller.declineCall?.("video_upgrade_declined");
+  }
+
+  // ============================================================
   // UTIL
   // ============================================================
   _isMobile() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
