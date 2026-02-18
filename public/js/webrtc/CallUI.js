@@ -34,7 +34,7 @@ export class CallUI {
     this.iosVoiceUI = this.root?.querySelector(".ios-voice-ui");
     this.iosVoiceAvatar = document.getElementById("iosVoiceAvatar");
     this.iosCallStatus = this.root?.querySelector(".ios-call-status");
-    this.iosCallTimer = this.root?.querySelector(".ios-call-timer");
+    this.iosCallTimer = document.getElementById("iosCallTimer") || this.root?.querySelector(".ios-call-timer");
 
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
@@ -88,6 +88,11 @@ export class CallUI {
     };
 
     this.remoteTiles = new Map();
+    this._lastControlsMove = Date.now();
+    this._controlsHideInterval = null;
+
+    // For video upgrade overlay
+    this._pendingVideoUpgrade = null;
 
     this._bindController();
     this._bindUI();
@@ -116,15 +121,15 @@ export class CallUI {
       incomingIsVideo: !!isVideo,
     });
   }
-_setStatusText(text) {
-  if (this.callStatusEl) {
-    this.callStatusEl.textContent = text || "";
-  }
 
-  if (this.iosCallStatus) {
-    this.iosCallStatus.textContent = text || "";
+  _setStatusText(text) {
+    if (this.callStatusEl) {
+      this.callStatusEl.textContent = text || "";
+    }
+    if (this.iosCallStatus) {
+      this.iosCallStatus.textContent = text || "";
+    }
   }
-}
 
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
@@ -148,8 +153,8 @@ _setStatusText(text) {
 
   closeWindow() {
     this._stopTimer();
-    this._clearParticipants?.();
-    this._hideVideoUpgradeOverlay?.();
+    this._clearParticipants();
+    this._hideVideoUpgradeOverlay();
     this._setStatusText("Idle");
     this._setMode("meet", { audioOnly: false });
 
@@ -170,6 +175,8 @@ _setStatusText(text) {
     if (this.localTile) {
       this.localTile.classList.add("hidden");
     }
+
+    this._stopControlsAutoHide();
   }
 
   // ============================================================
@@ -188,7 +195,7 @@ _setStatusText(text) {
         rtcState.audioOnly;
 
       if (isUpgrade) {
-        this.showVideoUpgradeOverlay?.(peerId, offer);
+        this.showVideoUpgradeOverlay(peerId, offer);
       } else {
         this.showInboundRinging(peerId, {
           incomingIsVideo: rtcState.incomingIsVideo,
@@ -201,23 +208,23 @@ _setStatusText(text) {
     };
 
     c.onRemoteJoin = (peerId) => {
-      this._ensureRemoteTile?.(peerId);
-      this._recomputeGridLayout?.();
+      this._ensureRemoteTile(peerId);
+      this._recomputeGridLayout();
     };
 
     c.onRemoteLeave = (peerId) => {
-      this._removeRemoteTile?.(peerId);
-      this._recomputeGridLayout?.();
+      this._removeRemoteTile(peerId);
+      this._recomputeGridLayout();
     };
 
     c.onParticipantUpdate = (peerId, data) => {
-      this._updateParticipantTile?.(peerId, data);
-      this._recomputeGridLayout?.();
+      this._updateParticipantTile(peerId, data);
+      this._recomputeGridLayout();
     };
 
     c.onScreenShareStarted = () => this._onScreenShareStarted();
     c.onScreenShareStopped = () => this._onScreenShareStopped();
-    c.onQualityUpdate = (level) => this._updateQualityIndicator?.(level);
+    c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
     c.onCallStatusChange = (status) => this._onCallStatusChange(status);
     c.onPeerUnavailable = (reason) => this._onPeerUnavailable(reason);
     c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
@@ -241,6 +248,11 @@ _setStatusText(text) {
         this._stopRingtone();
         await this.controller.answerCall();
         this._setInboundActiveState(false);
+        if (this.callControls) {
+          this.callControls.classList.add("active");
+        }
+        this._resetControlsTimer();
+        this._startControlsAutoHide();
       });
     }
 
@@ -251,24 +263,26 @@ _setStatusText(text) {
     }
 
     if (this.muteBtn) {
-      this.muteBtn.addEventListener("click", () => this._toggleMute?.());
+      this.muteBtn.addEventListener("click", () => this._toggleMute());
     }
 
     if (this.cameraToggleBtn) {
-      this.cameraToggleBtn.addEventListener("click", () => this._toggleCamera?.());
+      this.cameraToggleBtn.addEventListener("click", () => this._toggleCamera());
     }
 
     if (this.moreControlsBtn && this.moreControlsMenu) {
-      this.moreControlsBtn.addEventListener("click", () => {
-        this._toggleMoreControlsMenu?.();
+      this.moreControlsBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._toggleMoreControlsMenu();
       });
 
       document.addEventListener("click", (e) => {
         if (
+          this.moreControlsMenu &&
           !this.moreControlsMenu.contains(e.target) &&
           e.target !== this.moreControlsBtn
         ) {
-          this._hideMoreControlsMenu?.();
+          this._hideMoreControlsMenu();
         }
       });
     }
@@ -305,34 +319,33 @@ _setStatusText(text) {
 
     if (this.videoUpgradeAcceptMobile) {
       this.videoUpgradeAcceptMobile.addEventListener("click", () =>
-        this._acceptVideoUpgrade?.()
+        this._acceptVideoUpgrade()
       );
     }
     if (this.videoUpgradeDeclineMobile) {
       this.videoUpgradeDeclineMobile.addEventListener("click", () =>
-        this._declineVideoUpgrade?.()
+        this._declineVideoUpgrade()
       );
     }
     if (this.videoUpgradeAcceptDesktop) {
       this.videoUpgradeAcceptDesktop.addEventListener("click", () =>
-        this._acceptVideoUpgrade?.()
+        this._acceptVideoUpgrade()
       );
     }
     if (this.videoUpgradeDeclineDesktop) {
       this.videoUpgradeDeclineDesktop.addEventListener("click", () =>
-        this._declineVideoUpgrade?.()
+        this._declineVideoUpgrade()
       );
     }
 
     if (this.localPip && this.enablePipSwap) {
-      this.localPip.addEventListener("dblclick", () => this._swapPipWithMain?.());
+      this.localPip.addEventListener("dblclick", () => this._swapPipWithMain());
       this.localPip.addEventListener("touchend", (e) => {
-        if (e.detail === 2) this._swapPipWithMain?.();
+        if (e.detail === 2) this._swapPipWithMain();
       });
     }
 
     // Auto-hide controls
-    this._lastControlsMove = Date.now();
     const showControls = () => {
       if (!this.callControls) return;
       this.callControls.classList.remove("hidden-soft");
@@ -342,21 +355,35 @@ _setStatusText(text) {
       this.callControls.classList.add("hidden-soft");
     };
 
+    this._showControls = showControls;
+    this._hideControls = hideControls;
+
     if (this.callBody) {
       this.callBody.addEventListener("mousemove", () => {
-        this._lastControlsMove = Date.now();
+        this._resetControlsTimer();
         showControls();
       });
       this.callBody.addEventListener("touchstart", () => {
-        this._lastControlsMove = Date.now();
+        this._resetControlsTimer();
         showControls();
       });
-/*
-      setInterval(() => {
-        if (!this.callControls) return;
-        if (Date.now() - this._lastControlsMove > 4000) hideControls();
-      }, 1000); 
-      */
+    }
+  }
+
+  _startControlsAutoHide() {
+    if (this._controlsHideInterval) return;
+    this._controlsHideInterval = setInterval(() => {
+      if (!this.callControls) return;
+      if (Date.now() - this._lastControlsMove > 4000) {
+        this._hideControls?.();
+      }
+    }, 1000);
+  }
+
+  _stopControlsAutoHide() {
+    if (this._controlsHideInterval) {
+      clearInterval(this._controlsHideInterval);
+      this._controlsHideInterval = null;
     }
   }
 
@@ -443,6 +470,7 @@ _setStatusText(text) {
 
     this._attachLocalStreamFromState();
     this._resetControlsTimer();
+    this._startControlsAutoHide();
 
     if (this.localTile) {
       this.localTile.classList.add("hidden");
@@ -451,17 +479,18 @@ _setStatusText(text) {
     if (this.callControls) {
       this.callControls.classList.remove("hidden");
       this.callControls.classList.remove("hidden-soft");
+      this.callControls.classList.add("active");
     }
 
-    this._setInboundButtonsVisible?.(false);
+    this._setInboundButtonsVisible(false);
 
     if (this.currentMode === "meet" || this.currentMode === "discord") {
-      this._ensureRemoteTile?.(peerId);
-      this._showLocalPip?.(true);
+      this._ensureRemoteTile(peerId);
+      this._showLocalPip(true);
     }
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus?.("Connected");
+      this._updateIosVoiceStatus("Connected");
     }
   }
 
@@ -473,7 +502,7 @@ _setStatusText(text) {
     this._setStatusText("Call ended");
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus?.("Call ended");
+      this._updateIosVoiceStatus("Call ended");
     }
 
     setTimeout(() => this.closeWindow(), 800);
@@ -484,13 +513,13 @@ _setStatusText(text) {
       case "ringing":
         this._setStatusText("Ringing…");
         if (this.currentMode === "ios-voice") {
-          this._updateIosVoiceStatus?.("Calling…");
+          this._updateIosVoiceStatus("Calling…");
         }
         break;
       case "in-call":
         this._setStatusText("Connected");
         if (this.currentMode === "ios-voice") {
-          this._updateIosVoiceStatus?.("Connected");
+          this._updateIosVoiceStatus("Connected");
         }
         break;
       case "on-hold":
@@ -537,7 +566,7 @@ _setStatusText(text) {
     this._setStatusText(reason || "User unavailable");
 
     if (this.currentMode === "ios-voice") {
-      this._updateIosVoiceStatus?.(reason || "User unavailable");
+      this._updateIosVoiceStatus(reason || "User unavailable");
     }
 
     setTimeout(() => this.closeWindow(), 1200);
@@ -546,8 +575,8 @@ _setStatusText(text) {
   _enterActiveVideoMode() {
     if (this.currentMode === "ios-voice") {
       this._setMode("meet", { audioOnly: false });
-      this._showLocalPip?.(true);
-      this._updateIosVoiceStatus?.("");
+      this._showLocalPip(true);
+      this._updateIosVoiceStatus("");
     }
   }
 
@@ -592,12 +621,13 @@ _setStatusText(text) {
       }
     } catch {}
   }
-_resetControlsTimer() {
-  this._lastControlsMove = Date.now();
-  if (this.callControls) {
-    this.callControls.classList.remove("hidden-soft");
+
+  _resetControlsTimer() {
+    this._lastControlsMove = Date.now();
+    if (this.callControls) {
+      this.callControls.classList.remove("hidden-soft");
+    }
   }
-}
 
   // ============================================================
   // LOCAL MEDIA ATTACH
@@ -630,10 +660,8 @@ _resetControlsTimer() {
 
     if (!this.root || !this.callGrid) return;
 
-    // Remove old mode classes
     this.root.classList.remove("mode-meet", "mode-discord", "mode-ios-voice");
 
-    // Add correct mode class
     if (mode === "meet") {
       this.root.classList.add("mode-meet");
     } else if (mode === "discord") {
@@ -642,14 +670,12 @@ _resetControlsTimer() {
       this.root.classList.add("mode-ios-voice");
     }
 
-    // Audio-only state
     if (audioOnly) {
       this.root.classList.add("voice-only-call", "camera-off");
     } else {
       this.root.classList.remove("voice-only-call", "camera-off");
     }
 
-    // iOS voice UI visibility
     if (this.iosVoiceUI) {
       if (mode === "ios-voice") {
         this.iosVoiceUI.classList.remove("hidden");
@@ -658,37 +684,39 @@ _resetControlsTimer() {
       }
     }
   }
-_setInboundActiveState(isInbound) {
-  this.isInbound = isInbound;
 
-  if (!this.callControls) return;
+  _setInboundActiveState(isInbound) {
+    this.isInbound = isInbound;
 
-  if (isInbound) {
-    // Inbound call → show Answer + Decline, hide End Call
-    this.callControls.classList.add("inbound");
+    if (!this.callControls) return;
 
-    if (this.answerBtn) this.answerBtn.classList.remove("hidden");
-    if (this.declineBtn) this.declineBtn.classList.remove("hidden");
-    if (this.endCallBtn) this.endCallBtn.classList.add("hidden");
-  } else {
-    // Outbound or connected → hide Answer/Decline, show End Call
-    this.callControls.classList.remove("inbound");
+    if (isInbound) {
+      this.callControls.classList.add("inbound");
+      this.callControls.classList.remove("active");
 
-    if (this.answerBtn) this.answerBtn.classList.add("hidden");
-    if (this.declineBtn) this.declineBtn.classList.add("hidden");
-    if (this.endCallBtn) this.endCallBtn.classList.remove("hidden");
+      if (this.answerBtn) this.answerBtn.classList.remove("hidden");
+      if (this.declineBtn) this.declineBtn.classList.remove("hidden");
+      if (this.endCallBtn) this.endCallBtn.classList.add("hidden");
+    } else {
+      this.callControls.classList.remove("inbound");
+      this.callControls.classList.add("active");
+
+      if (this.answerBtn) this.answerBtn.classList.add("hidden");
+      if (this.declineBtn) this.declineBtn.classList.add("hidden");
+      if (this.endCallBtn) this.endCallBtn.classList.remove("hidden");
+    }
   }
-}
 
-_setStatusText(text) {
-  if (this.callStatusEl) {
-    this.callStatusEl.textContent = text || "";
+  _setInboundButtonsVisible(show) {
+    if (!this.callControls) return;
+    if (show) {
+      this.callControls.classList.add("inbound");
+      this.callControls.classList.remove("active");
+    } else {
+      this.callControls.classList.remove("inbound");
+      this.callControls.classList.add("active");
+    }
   }
-  if (this.iosCallStatus) {
-    this.iosCallStatus.textContent = text || "";
-  }
-}
-
 
   // ============================================================
   // WINDOW OPEN/CLOSE
@@ -701,7 +729,6 @@ _setStatusText(text) {
     this.root.classList.add("is-open", "call-opening");
     this.root.style.opacity = "1";
 
-    // Ensure controls are visible
     if (this.callControls) {
       this.callControls.classList.remove("hidden");
       this.callControls.classList.remove("hidden-soft");
@@ -711,34 +738,260 @@ _setStatusText(text) {
       this.root.classList.remove("call-opening");
     }, 260);
   }
-// ============================================================
-// TIMER HELPERS (REQUIRED)
-// ============================================================
-_startTimer(startTs) {
-  this._stopTimer();
-  this.callStartTs = startTs || Date.now();
 
-  const update = () => {
-    const elapsed = Math.floor((Date.now() - this.callStartTs) / 1000);
-    const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
-    const s = String(elapsed % 60).padStart(2, "0");
-    const text = `${m}:${s}`;
+  // ============================================================
+  // TIMER HELPERS
+  // ============================================================
 
-    if (this.callTimerEl) this.callTimerEl.textContent = text;
-    if (this.iosCallTimer) this.iosCallTimer.textContent = text;
-  };
+  _startTimer(startTs) {
+    this._stopTimer();
+    this.callStartTs = startTs || Date.now();
 
-  update();
-  this.callTimerInterval = setInterval(update, 1000);
-}
+    const update = () => {
+      const elapsed = Math.floor((Date.now() - this.callStartTs) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const s = String(elapsed % 60).padStart(2, "0");
+      const text = `${m}:${s}`;
 
-_stopTimer() {
-  if (this.callTimerInterval) {
-    clearInterval(this.callTimerInterval);
-    this.callTimerInterval = null;
+      if (this.callTimerEl) this.callTimerEl.textContent = text;
+      if (this.iosCallTimer) this.iosCallTimer.textContent = text;
+    };
+
+    update();
+    this.callTimerInterval = setInterval(update, 1000);
   }
-}
 
+  _stopTimer() {
+    if (this.callTimerInterval) {
+      clearInterval(this.callTimerInterval);
+      this.callTimerInterval = null;
+    }
+  }
+
+  // ============================================================
+  // GRID + PARTICIPANTS
+  // ============================================================
+
+  _ensureRemoteTile(peerId) {
+    if (!this.callGrid) return null;
+    const id = String(peerId);
+
+    if (this.remoteTiles.has(id)) {
+      return this.remoteTiles.get(id);
+    }
+
+    let el;
+    if (this.remoteTemplate && "content" in this.remoteTemplate) {
+      const clone = this.remoteTemplate.content
+        ? this.remoteTemplate.content.cloneNode(true)
+        : this.remoteTemplate.cloneNode(true);
+      el = clone.querySelector(".participant") || clone.firstElementChild;
+      if (!el) {
+        el = document.createElement("div");
+        el.className = "participant remote";
+      }
+      this.callGrid.appendChild(el);
+    } else {
+      el = document.createElement("div");
+      el.className = "participant remote";
+      el.innerHTML = `
+        <div class="media-wrapper">
+          <video class="remoteVideo" autoplay playsinline></video>
+          <div class="avatar-wrapper">
+            <div class="voice-pulse"></div>
+          </div>
+          <div class="presenting-badge">Presenting</div>
+          <div class="name-tag"></div>
+        </div>
+      `;
+      this.callGrid.appendChild(el);
+    }
+
+    const videoEl = el.querySelector("video.remoteVideo") || el.querySelector("video");
+    const avatarWrapper = el.querySelector(".avatar-wrapper");
+    const nameTag = el.querySelector(".name-tag");
+
+    const tile = { el, videoEl, avatarWrapper, nameTag };
+    this.remoteTiles.set(id, tile);
+
+    return tile;
+  }
+
+  _removeRemoteTile(peerId) {
+    const id = String(peerId);
+    const tile = this.remoteTiles.get(id);
+    if (!tile) return;
+    if (tile.el && tile.el.parentNode) {
+      tile.el.parentNode.removeChild(tile.el);
+    }
+    this.remoteTiles.delete(id);
+  }
+
+  _recomputeGridLayout() {
+    // For now, CSS auto-fit grid handles layout.
+    // Hook left here for future advanced layouts.
+  }
+
+  _updateParticipantTile(peerId, data) {
+    if (!data) {
+      this._removeRemoteTile(peerId);
+      return;
+    }
+    const tile = this._ensureRemoteTile(peerId);
+    if (!tile) return;
+
+    if (tile.nameTag && data.displayName) {
+      tile.nameTag.textContent = data.displayName;
+    }
+
+    if (tile.el) {
+      if (data.isPresenting) {
+        tile.el.classList.add("is-presenting");
+      } else {
+        tile.el.classList.remove("is-presenting");
+      }
+
+      if (data.speaking) {
+        tile.el.classList.add("speaking");
+      } else {
+        tile.el.classList.remove("speaking");
+      }
+    }
+  }
+
+  _clearParticipants() {
+    this.remoteTiles.forEach((tile) => {
+      if (tile.el && tile.el.parentNode) {
+        tile.el.parentNode.removeChild(tile.el);
+      }
+    });
+    this.remoteTiles.clear();
+  }
+
+  // ============================================================
+  // QUALITY INDICATOR
+  // ============================================================
+
+  _updateQualityIndicator(level) {
+    if (!this.qualityIndicator) return;
+    this.qualityIndicator.dataset.level = level || "excellent";
+    this.qualityIndicator.textContent = `Connection: ${level || "excellent"}`;
+  }
+
+  // ============================================================
+  // VIDEO UPGRADE OVERLAY
+  // ============================================================
+
+  showVideoUpgradeOverlay(peerId, offer) {
+    this._pendingVideoUpgrade = { peerId, offer };
+    if (!this.videoUpgradeOverlay) return;
+    this.videoUpgradeOverlay.classList.remove("hidden");
+  }
+
+  _hideVideoUpgradeOverlay() {
+    if (!this.videoUpgradeOverlay) return;
+    this.videoUpgradeOverlay.classList.add("hidden");
+    this._pendingVideoUpgrade = null;
+  }
+
+  async _acceptVideoUpgrade() {
+    if (!this._pendingVideoUpgrade) {
+      this._hideVideoUpgradeOverlay();
+      return;
+    }
+    // For upgrade, controller.answerCall() already knows rtcState.incomingOffer
+    await this.controller.answerCall();
+    this._enterActiveVideoMode();
+    this._hideVideoUpgradeOverlay();
+  }
+
+  _declineVideoUpgrade() {
+    // For now, just hide overlay and stay audio-only.
+    this._hideVideoUpgradeOverlay();
+  }
+
+  // ============================================================
+  // CONTROLS HELPERS
+  // ============================================================
+
+  _toggleMute() {
+    const stream = rtcState.localStream;
+    if (!stream) return;
+
+    this.isMuted = !this.isMuted;
+    stream.getAudioTracks().forEach((t) => {
+      t.enabled = !this.isMuted;
+    });
+
+    if (this.muteBtn) {
+      this.muteBtn.classList.toggle("active", this.isMuted);
+    }
+  }
+
+  _toggleCamera() {
+    const stream = rtcState.localStream;
+    if (!stream) return;
+
+    this.isCameraOn = !this.isCameraOn;
+    stream.getVideoTracks().forEach((t) => {
+      t.enabled = this.isCameraOn;
+    });
+
+    if (this.cameraToggleBtn) {
+      this.cameraToggleBtn.classList.toggle("active", !this.isCameraOn);
+    }
+
+    if (this.root) {
+      if (this.isCameraOn) {
+        this.root.classList.remove("camera-off");
+      } else {
+        this.root.classList.add("camera-off");
+      }
+    }
+  }
+
+  _toggleMoreControlsMenu() {
+    if (!this.moreControlsMenu) return;
+    this.moreControlsMenu.classList.toggle("hidden");
+  }
+
+  _hideMoreControlsMenu() {
+    if (!this.moreControlsMenu) return;
+    this.moreControlsMenu.classList.add("hidden");
+  }
+
+  _showLocalPip(show) {
+    if (!this.localPip) return;
+    if (show) {
+      this.localPip.classList.remove("hidden");
+      this._attachLocalStreamFromState();
+    } else {
+      this.localPip.classList.add("hidden");
+    }
+  }
+
+  _swapPipWithMain() {
+    if (!this.localPipVideo || !this.localVideo) return;
+
+    const mainStream = this.localVideo.srcObject;
+    const pipStream = this.localPipVideo.srcObject;
+
+    this.localVideo.srcObject = pipStream;
+    this.localPipVideo.srcObject = mainStream;
+
+    if (this.localVideo.srcObject) {
+      this.localVideo.play?.().catch(() => {});
+    }
+    if (this.localPipVideo.srcObject) {
+      this.localPipVideo.play?.().catch(() => {});
+    }
+  }
+
+  _updateIosVoiceStatus(text) {
+    if (this.iosCallStatus) {
+      this.iosCallStatus.textContent = text || "";
+    }
+  }
 
   // ============================================================
   // UTIL
@@ -748,6 +1001,8 @@ _stopTimer() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
+
 
 
 
