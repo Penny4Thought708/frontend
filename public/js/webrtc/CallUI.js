@@ -844,7 +844,6 @@ _upgradeToVideo() {
   }
 
 _enterActiveVideoMode() {
-  // Release caller preview stream so the main local video can render
   if (this.iosCallerUpgradePreview) {
     this.iosCallerUpgradePreview.srcObject = null;
   }
@@ -854,6 +853,7 @@ _enterActiveVideoMode() {
   this._showLocalPip(true);
   this._updateIosVoiceStatus("");
 }
+
 
 
   // ============================================================
@@ -1291,6 +1291,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
