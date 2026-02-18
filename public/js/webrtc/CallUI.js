@@ -1,6 +1,6 @@
 // public/js/webrtc/CallUI.js
 // High-performance, production-grade call window UI
-// - Mobile: iOS voice-style full-screen controls
+// - Mobile: iOS 17-style voice + video upgrade
 // - Web: Google Meet-style layout
 // - Group: Discord-style grid
 
@@ -14,7 +14,9 @@ export class CallUI {
 
     this.enablePipSwap = options.enablePipSwap ?? true;
 
-    // DOM refs
+    // ============================================================
+    // DOM REFS
+    // ============================================================
     this.root = document.getElementById("callWindow");
     this.callBody = this.root?.querySelector(".call-body");
     this.callGrid = document.getElementById("callGrid");
@@ -31,6 +33,7 @@ export class CallUI {
     this.remotePip = document.getElementById("remotePip");
     this.remotePipVideo = document.getElementById("remotePipVideo");
 
+    // iOS voice / mobile UI
     this.iosVoiceUI = this.root?.querySelector(".ios-voice-ui");
     this.iosVoiceAvatar = document.getElementById("iosVoiceAvatar");
     this.iosCallStatus = this.root?.querySelector(".ios-call-status");
@@ -38,9 +41,19 @@ export class CallUI {
       document.getElementById("iosCallTimer") ||
       this.root?.querySelector(".ios-call-timer");
 
+    // iOS inline controls
+    this.iosMuteBtn = this.root?.querySelector(".ios-btn.mute");
+    this.iosSpeakerBtn = this.root?.querySelector(".ios-btn.speaker");
+    this.iosKeypadBtn = this.root?.querySelector(".ios-btn.keypad");
+    this.iosAddBtn = this.root?.querySelector(".ios-btn.add");
+    this.iosVideoBtn = this.root?.querySelector(".ios-btn.video");
+    this.iosEndBtn = this.root?.querySelector(".ios-btn.end");
+
+    // Desktop status + timer
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
 
+    // Desktop controls
     this.callControls = document.getElementById("call-controls");
     this.declineBtn = document.getElementById("decline-call");
     this.answerBtn = document.getElementById("answer-call");
@@ -55,31 +68,42 @@ export class CallUI {
     this.recordCallBtn = document.getElementById("record-call");
     this.callHistoryToggleBtn = document.getElementById("call-history-toggle");
 
+    // Media elements
     this.remoteAudio = document.getElementById("remoteAudio");
 
+    // Quality + debug
     this.qualityIndicator = document.getElementById("call-quality-indicator");
     this.debugToggle = document.getElementById("call-debug-toggle");
 
+    // Generic video upgrade overlay (desktop)
     this.videoUpgradeOverlay = document.getElementById("video-upgrade-overlay");
     this.videoUpgradeAcceptMobile = document.getElementById("video-upgrade-accept");
     this.videoUpgradeDeclineMobile = document.getElementById("video-upgrade-decline");
     this.videoUpgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
     this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
 
-    // iOS voice controls
-    this.iosMuteBtn = this.root?.querySelector(".ios-btn.mute");
-    this.iosSpeakerBtn = this.root?.querySelector(".ios-btn.speaker");
-    this.iosKeypadBtn = this.root?.querySelector(".ios-btn.keypad");
-    this.iosAddBtn = this.root?.querySelector(".ios-btn.add");
-    this.iosVideoBtn = this.root?.querySelector(".ios-btn.video");
-    this.iosEndBtn = this.root?.querySelector(".ios-btn.end");
+    // iOS 17-style upgrade overlays (mobile)
+    // Caller: full-screen local video + "Waiting for <Name>…"
+    this.iosCallerUpgradeOverlay = document.getElementById("ios-caller-upgrade-overlay");
+    this.iosCallerUpgradePreview = document.getElementById("ios-caller-upgrade-preview");
+    this.iosCallerUpgradeLabel = document.getElementById("ios-caller-upgrade-label");
+    this.iosCallerUpgradeCancel = document.getElementById("ios-caller-upgrade-cancel");
+
+    // Callee: blurred remote video + "<Name> wants to switch to video"
+    this.iosCalleeUpgradeOverlay = document.getElementById("ios-callee-upgrade-overlay");
+    this.iosCalleeUpgradePreview = document.getElementById("ios-callee-upgrade-preview");
+    this.iosCalleeUpgradeLabel = document.getElementById("ios-callee-upgrade-label");
+    this.iosCalleeUpgradeAccept = document.getElementById("ios-callee-upgrade-accept");
+    this.iosCalleeUpgradeDecline = document.getElementById("ios-callee-upgrade-decline");
 
     // Audio elements
     this.ringtone = document.getElementById("ringtone");
     this.ringback = document.getElementById("ringback");
 
-    // Internal state
-    this.currentMode = "meet";
+    // ============================================================
+    // INTERNAL STATE
+    // ============================================================
+    this.currentMode = "meet"; // "meet" | "discord" | "ios-voice"
     this.callTimerInterval = null;
     this.callStartTs = null;
     this.isMuted = false;
@@ -101,8 +125,9 @@ export class CallUI {
     this._lastControlsMove = Date.now();
     this._controlsHideInterval = null;
 
-    // For video upgrade overlay
-    this._pendingVideoUpgrade = null;
+    // Video upgrade state
+    this._pendingVideoUpgrade = null; // { peerId, offer }
+    this._pendingUpgradePeerId = null; // for iOS overlays
 
     this._bindController();
     this._bindUI();
@@ -116,7 +141,6 @@ export class CallUI {
   openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     this.isInbound = false;
 
-    // On mobile, if audio-only, prefer iOS voice UI
     const audioOnly = audio && !video;
     if (this._isMobile() && audioOnly) {
       mode = "ios-voice";
@@ -126,7 +150,7 @@ export class CallUI {
     this._openWindow();
     this._setInboundActiveState(false);
 
-    // Caller hears ringback
+    // Caller hears ringback only
     this._playRingback();
     this._setStatusText("Calling…");
     this._startTimer(null);
@@ -152,13 +176,12 @@ export class CallUI {
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
 
-    // Callee hears ringtone
+    // Callee hears ringtone only
     this._playRingtone();
 
     const audioOnly = !incomingIsVideo;
     let mode = modeHint || "meet";
 
-    // On mobile, always use iOS voice UI for inbound
     if (this._isMobile()) {
       mode = "ios-voice";
     }
@@ -175,9 +198,11 @@ export class CallUI {
     this._stopTimer();
     this._clearParticipants();
     this._hideVideoUpgradeOverlay();
+    this._hideIosUpgradeOverlays();
     this._setStatusText("Idle");
     this._setMode("meet", { audioOnly: false });
 
+    // Stop any ringing audio
     this._stopRingtone();
     this._stopRingback();
 
@@ -222,7 +247,7 @@ export class CallUI {
       this._onCallEnded(reason);
     };
 
-    // Inbound offer
+    // Inbound offer (new call or upgrade)
     c.onIncomingOffer = (peerId, offer) => {
       const isUpgrade =
         rtcState.status === "in-call" &&
@@ -230,7 +255,12 @@ export class CallUI {
         rtcState.audioOnly;
 
       if (isUpgrade) {
-        this.showVideoUpgradeOverlay(peerId, offer);
+        // iOS 17-style upgrade flow on mobile
+        if (this._isMobile()) {
+          this._showCalleeVideoUpgrade(peerId);
+        } else {
+          this.showVideoUpgradeOverlay(peerId, offer);
+        }
       } else {
         this.showInboundRinging(peerId, {
           incomingIsVideo: rtcState.incomingIsVideo,
@@ -243,7 +273,6 @@ export class CallUI {
     };
 
     c.onRemoteJoin = (peerId) => {
-      // Desktop/grid only
       if (!this._isMobile()) {
         this._ensureRemoteTile(peerId);
         this._recomputeGridLayout();
@@ -282,6 +311,7 @@ export class CallUI {
       this._onPeerUnavailable(reason);
     };
 
+    // Remote upgraded to video (controller-level)
     c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
   }
 
@@ -293,7 +323,6 @@ export class CallUI {
     // Desktop inbound controls
     if (this.declineBtn) {
       this.declineBtn.addEventListener("click", () => {
-        // Decline stops ringtone
         this._stopRingtone();
         this.controller.declineCall("declined");
         this._setStatusText("Declined");
@@ -302,7 +331,6 @@ export class CallUI {
 
     if (this.answerBtn) {
       this.answerBtn.addEventListener("click", async () => {
-        // Answer stops ringtone
         this._stopRingtone();
         await this.controller.answerCall();
         this._setInboundActiveState(false);
@@ -375,7 +403,7 @@ export class CallUI {
       });
     }
 
-    // Video upgrade overlay buttons
+    // Generic video upgrade overlay buttons (desktop / legacy mobile)
     if (this.videoUpgradeAcceptMobile) {
       this.videoUpgradeAcceptMobile.addEventListener("click", () =>
         this._acceptVideoUpgrade()
@@ -423,13 +451,33 @@ export class CallUI {
     }
 
     if (this.iosVideoBtn) {
-      this.iosVideoBtn.addEventListener("click", () => this._upgradeToVideo());
+      this.iosVideoBtn.addEventListener("click", () => this._onIosVideoPressed());
     }
 
     if (this.iosEndBtn) {
       this.iosEndBtn.addEventListener("click", () =>
         this.controller.endCall("local_hangup")
       );
+    }
+
+    // iOS caller upgrade overlay
+    if (this.iosCallerUpgradeCancel) {
+      this.iosCallerUpgradeCancel.addEventListener("click", () => {
+        this._hideCallerVideoUpgrade();
+        this.controller.cancelVideoUpgrade?.();
+      });
+    }
+
+    // iOS callee upgrade overlay
+    if (this.iosCalleeUpgradeAccept) {
+      this.iosCalleeUpgradeAccept.addEventListener("click", async () => {
+        await this._acceptVideoUpgrade();
+      });
+    }
+    if (this.iosCalleeUpgradeDecline) {
+      this.iosCalleeUpgradeDecline.addEventListener("click", () => {
+        this._declineVideoUpgrade();
+      });
     }
 
     // Auto-hide controls (desktop only)
@@ -458,7 +506,7 @@ export class CallUI {
   }
 
   _startControlsAutoHide() {
-    if (this._isMobile()) return; // iOS mode: no auto-hide desktop bar
+    if (this._isMobile()) return;
     if (this._controlsHideInterval) return;
     this._controlsHideInterval = setInterval(() => {
       if (!this.callControls) return;
@@ -475,7 +523,10 @@ export class CallUI {
     }
   }
 
-  // iOS helpers
+  // ============================================================
+  // iOS HELPERS + UPGRADE FLOW
+  // ============================================================
+
   _toggleSpeaker() {
     if (!this.remoteAudio) return;
     this.remoteAudio.muted = !this.remoteAudio.muted;
@@ -492,8 +543,98 @@ export class CallUI {
     console.log("[CallUI] iOS add call pressed — implement call merging here");
   }
 
+  _onIosVideoPressed() {
+    // Caller pressing video during audio call
+    if (!rtcState.inCall) return;
+    if (!this._isMobile()) {
+      this._upgradeToVideo();
+      return;
+    }
+    this._showCallerVideoUpgrade();
+    this._upgradeToVideo();
+  }
+
   _upgradeToVideo() {
     this.controller.upgradeToVideo?.();
+  }
+
+  _showCallerVideoUpgrade() {
+    if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
+
+    this._hideIosUpgradeOverlays();
+
+    // Full-screen local video
+    const stream = rtcState.localStream;
+    if (stream) {
+      this.iosCallerUpgradePreview.srcObject = stream;
+      this.iosCallerUpgradePreview.muted = true;
+      this.iosCallerUpgradePreview.playsInline = true;
+      this.iosCallerUpgradePreview.autoplay = true;
+      this.iosCallerUpgradePreview.play?.().catch(() => {});
+    }
+
+    const name = rtcState.peerName || "them";
+    if (this.iosCallerUpgradeLabel) {
+      this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
+    }
+
+    this.iosCallerUpgradeOverlay.classList.remove("hidden");
+    this.iosCallerUpgradeOverlay.classList.add("active");
+  }
+
+  _hideCallerVideoUpgrade() {
+    if (!this.iosCallerUpgradeOverlay) return;
+    this.iosCallerUpgradeOverlay.classList.remove("active");
+    this.iosCallerUpgradeOverlay.classList.add("hidden");
+    if (this.iosCallerUpgradePreview) {
+      this.iosCallerUpgradePreview.srcObject = null;
+    }
+  }
+
+  _showCalleeVideoUpgrade(peerId) {
+    this._pendingUpgradePeerId = peerId;
+
+    if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
+      // Fallback to generic overlay if iOS overlay not present
+      this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
+      return;
+    }
+
+    this._hideIosUpgradeOverlays();
+
+    const id = String(peerId);
+    const remoteStream = rtcState.remoteStreams?.[id];
+    if (remoteStream) {
+      this.iosCalleeUpgradePreview.srcObject = remoteStream;
+      this.iosCalleeUpgradePreview.playsInline = true;
+      this.iosCalleeUpgradePreview.autoplay = true;
+      this.iosCalleeUpgradePreview.play?.().catch(() => {});
+    }
+
+    const name = rtcState.peerName || "Caller";
+    if (this.iosCalleeUpgradeLabel) {
+      this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+    }
+
+    // Callee hears ringtone while upgrade request is pending
+    this._playRingtone();
+
+    this.iosCalleeUpgradeOverlay.classList.remove("hidden");
+    this.iosCalleeUpgradeOverlay.classList.add("active");
+  }
+
+  _hideCalleeVideoUpgrade() {
+    if (!this.iosCalleeUpgradeOverlay) return;
+    this.iosCalleeUpgradeOverlay.classList.remove("active");
+    this.iosCalleeUpgradeOverlay.classList.add("hidden");
+    if (this.iosCalleeUpgradePreview) {
+      this.iosCalleeUpgradePreview.srcObject = null;
+    }
+  }
+
+  _hideIosUpgradeOverlays() {
+    this._hideCallerVideoUpgrade();
+    this._hideCalleeVideoUpgrade();
   }
 
   // ============================================================
@@ -582,7 +723,6 @@ export class CallUI {
       this.localTile.classList.add("hidden");
     }
 
-    // On mobile, hide desktop controls entirely
     if (this._isMobile()) {
       if (this.callControls) this.callControls.classList.add("hidden");
     } else {
@@ -612,6 +752,8 @@ export class CallUI {
     if (this.currentMode === "ios-voice") {
       this._updateIosVoiceStatus("Call ended");
     }
+
+    this._hideIosUpgradeOverlays();
 
     setTimeout(() => this.closeWindow(), 800);
   }
@@ -674,15 +816,17 @@ export class CallUI {
       this._updateIosVoiceStatus(reason || "User unavailable");
     }
 
+    this._hideIosUpgradeOverlays();
+
     setTimeout(() => this.closeWindow(), 1200);
   }
 
   _enterActiveVideoMode() {
-    if (this.currentMode === "ios-voice") {
-      this._setMode("meet", { audioOnly: false });
-      this._showLocalPip(true);
-      this._updateIosVoiceStatus("");
-    }
+    // When upgrade completes, move to full video mode
+    this._hideIosUpgradeOverlays();
+    this._setMode("meet", { audioOnly: false });
+    this._showLocalPip(true);
+    this._updateIosVoiceStatus("");
   }
 
   // ============================================================
@@ -767,7 +911,6 @@ export class CallUI {
 
     this.root.classList.remove("mode-meet", "mode-discord", "mode-ios-voice");
 
-    // On mobile, hide desktop UI elements
     if (this._isMobile()) {
       if (this.callControls) this.callControls.classList.add("hidden");
       if (this.localPip) this.localPip.classList.add("hidden");
@@ -993,7 +1136,7 @@ export class CallUI {
   }
 
   // ============================================================
-  // VIDEO UPGRADE OVERLAY
+  // VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
   // ============================================================
 
   showVideoUpgradeOverlay(peerId, offer) {
@@ -1009,17 +1152,19 @@ export class CallUI {
   }
 
   async _acceptVideoUpgrade() {
-    if (!this._pendingVideoUpgrade) {
-      this._hideVideoUpgradeOverlay();
-      return;
-    }
+    // For upgrade, controller.answerCall() already knows rtcState.incomingOffer
+    this._stopRingtone();
     await this.controller.answerCall();
     this._enterActiveVideoMode();
     this._hideVideoUpgradeOverlay();
+    this._hideCalleeVideoUpgrade();
   }
 
   _declineVideoUpgrade() {
+    this._stopRingtone();
     this._hideVideoUpgradeOverlay();
+    this._hideCalleeVideoUpgrade();
+    this.controller.declineCall?.("video_upgrade_declined");
   }
 
   // ============================================================
@@ -1031,8 +1176,6 @@ export class CallUI {
     if (!stream) return;
 
     this.isMuted = !this.isMuted;
-    rtcState.micMuted = this.isMuted;
-
     stream.getAudioTracks().forEach((t) => {
       t.enabled = !this.isMuted;
     });
@@ -1043,6 +1186,8 @@ export class CallUI {
     if (this.iosMuteBtn) {
       this.iosMuteBtn.classList.toggle("active", this.isMuted);
     }
+
+    rtcState.micMuted = this.isMuted;
   }
 
   _toggleCamera() {
@@ -1050,8 +1195,6 @@ export class CallUI {
     if (!stream) return;
 
     this.isCameraOn = !this.isCameraOn;
-    rtcState.cameraOff = !this.isCameraOn;
-
     stream.getVideoTracks().forEach((t) => {
       t.enabled = this.isCameraOn;
     });
@@ -1067,6 +1210,8 @@ export class CallUI {
         this.root.classList.add("camera-off");
       }
     }
+
+    rtcState.cameraOff = !this.isCameraOn;
   }
 
   _toggleMoreControlsMenu() {
@@ -1120,7 +1265,6 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
-
 
 
 
