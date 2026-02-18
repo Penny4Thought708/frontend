@@ -299,15 +299,12 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
 
       const isUpgrade =
         rtcState.inCall && rtcState.audioOnly && rtcState.incomingIsVideo;
+if (isUpgrade) {
+  // Always use the iOS-style blurred preview overlay
+  this._showCalleeVideoUpgrade(peerId);
+  return;
+}
 
-      if (isUpgrade) {
-        if (this._isMobile()) {
-          this._showCalleeVideoUpgrade(peerId);
-        } else {
-          this.showVideoUpgradeOverlay(peerId, offer);
-        }
-        return;
-      }
 
       if (this._isMobile()) {
         this._showIosInboundControls(peerId);
@@ -1302,6 +1299,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
