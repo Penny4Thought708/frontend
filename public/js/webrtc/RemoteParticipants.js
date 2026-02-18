@@ -1,5 +1,10 @@
 // public/js/webrtc/RemoteParticipants.js
 // Pro-grade participant tile manager for Meet/Discord-style grid
+// Updated for:
+// - Orientation-aware remote video (portrait/landscape)
+// - Primary remote video selection (for PiP-safe logic)
+// - Dedicated orientation data channel (A1)
+// - Full compatibility with updated CallUI.js
 
 const participants = new Map(); // peerId -> entry
 let gridEl = null;
@@ -68,17 +73,11 @@ function createTile(peerId, displayName, avatarUrl) {
     return null;
   }
 
-  if (peerId === undefined || peerId === null) {
-    console.warn("[RemoteParticipants] createTile called without peerId");
-    return null;
-  }
-
   if (participants.has(peerId)) return participants.get(peerId);
 
   const node = safeCloneTemplate("remoteParticipantTemplate");
   if (!node) return null;
 
-  // Required for CallUI layout engine
   node.classList.add("participant", "remote");
   node.dataset.peerId = peerId;
 
@@ -90,7 +89,7 @@ function createTile(peerId, displayName, avatarUrl) {
   if (nameEl && displayName) nameEl.textContent = displayName;
   if (avatarUrl && imgEl) imgEl.src = avatarUrl;
 
-  // Join animation hook
+  // Join animation
   node.classList.add("joining");
   gridEl.appendChild(node);
   requestAnimationFrame(() => {
@@ -110,6 +109,12 @@ function createTile(peerId, displayName, avatarUrl) {
     stream: null,
     cameraOff: false,
     speaking: false,
+
+    // NEW: orientation state
+    orientation: "landscape",
+
+    // NEW: primary remote tile flag
+    isPrimary: false,
   };
 
   participants.set(peerId, entry);
@@ -147,29 +152,10 @@ export function removeParticipant(peerId) {
 export function attachParticipantStream(peerId, stream) {
   peerId = String(peerId);
 
-  if (!peerId && peerId !== 0) {
-    console.warn(
-      "[RemoteParticipants] attachParticipantStream called without peerId"
-    );
-  }
-
-  if (!stream) {
-    console.warn(
-      "[RemoteParticipants] attachParticipantStream called with null stream for peer:",
-      peerId
-    );
-  }
-
   ensureInitialized();
 
   const entry = participants.get(peerId) || createTile(peerId);
-  if (!entry) {
-    console.warn(
-      "[RemoteParticipants] attachParticipantStream: no entry for peer:",
-      peerId
-    );
-    return null;
-  }
+  if (!entry) return null;
 
   entry.stream = stream || null;
 
@@ -292,6 +278,67 @@ export function setParticipantAvatar(peerId, url) {
 }
 
 /* -------------------------------------------------------
+   NEW: Orientation-aware remote video
+------------------------------------------------------- */
+export function setParticipantOrientation(peerId, orientation) {
+  peerId = String(peerId);
+  const entry = participants.get(peerId);
+  if (!entry || !entry.el) return;
+
+  entry.orientation = orientation === "portrait" ? "portrait" : "landscape";
+
+  entry.el.classList.remove("portrait", "landscape");
+  entry.el.classList.add(entry.orientation);
+
+  if (entry.videoEl) {
+    if (entry.orientation === "portrait") {
+      entry.videoEl.style.objectFit = "contain";
+    } else {
+      entry.videoEl.style.objectFit = "cover";
+    }
+  }
+}
+
+/* -------------------------------------------------------
+   NEW: Primary Remote Tile (for PiP-safe logic)
+------------------------------------------------------- */
+export function setPrimaryRemote(peerId) {
+  peerId = String(peerId);
+
+  for (const [, entry] of participants.entries()) {
+    entry.isPrimary = false;
+    entry.el.classList.remove("primary-remote");
+  }
+
+  const entry = participants.get(peerId);
+  if (entry) {
+    entry.isPrimary = true;
+    entry.el.classList.add("primary-remote");
+  }
+}
+
+/* -------------------------------------------------------
+   NEW: Get Primary Remote Video Element
+------------------------------------------------------- */
+export function getPrimaryRemoteVideo() {
+  // 1. Explicit primary
+  for (const [, entry] of participants.entries()) {
+    if (entry.isPrimary && entry.videoEl && entry.stream) {
+      return entry.videoEl;
+    }
+  }
+
+  // 2. First active video
+  for (const [, entry] of participants.entries()) {
+    if (entry.videoEl && entry.stream) {
+      return entry.videoEl;
+    }
+  }
+
+  return null;
+}
+
+/* -------------------------------------------------------
    Get Participant Entry (for CallUI / diagnostics)
 ------------------------------------------------------- */
 export function getParticipant(peerId) {
@@ -359,7 +406,3 @@ export function clearAllParticipants() {
     } catch {}
   }
 }
-
-
-
-
