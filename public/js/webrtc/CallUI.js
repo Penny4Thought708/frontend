@@ -618,17 +618,27 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     console.log("[CallUI] iOS add call pressed — implement call merging here");
   }
 
-  _onIosVideoPressed() {
-    if (!rtcState.inCall) return;
+_onIosVideoPressed() {
+  if (!rtcState.inCall) return;
 
-    // Do NOT switch mode yet; stay in ios-voice while showing upgrade overlay
-    this._upgradeToVideo();
+  // Start the upgrade (this triggers getUserMedia)
+  this._upgradeToVideo();
 
-    // Give upgraded stream a moment to attach, then show preview
-    setTimeout(() => {
+  // 🔥 Wait until the upgraded local video track exists
+  const waitForVideo = () => {
+    const stream = rtcState.localStream;
+
+    if (stream && stream.getVideoTracks().length > 0) {
+      // Now safe to show the overlay
       this._showCallerVideoUpgrade();
-    }, 50);
-  }
+    } else {
+      requestAnimationFrame(waitForVideo);
+    }
+  };
+
+  waitForVideo();
+}
+
 
   _upgradeToVideo() {
     this.controller.upgradeToVideo?.();
@@ -703,20 +713,30 @@ _showCalleeVideoUpgrade(peerId) {
   this._hideIosUpgradeOverlays();
 
   const id = String(peerId);
-  let remoteStream = rtcState.remoteStreams?.[id];
 
-  // 🔥 Fallback: try to grab whatever remote video is already in the DOM
-  if (!remoteStream && this.remotePipVideo?.srcObject) {
-    remoteStream = this.remotePipVideo.srcObject;
-  }
+  // 🔥 Wait until the remote video track exists
+  const waitForVideo = () => {
+    const stream = rtcState.remoteStreams?.[id];
 
-  if (remoteStream) {
-    this.iosCalleeUpgradePreview.srcObject = remoteStream;
-    this.iosCalleeUpgradePreview.muted = true;
-    this.iosCalleeUpgradePreview.playsInline = true;
-    this.iosCalleeUpgradePreview.autoplay = true;
-    this.iosCalleeUpgradePreview.play?.().catch(() => {});
-  }
+    if (stream && stream.getVideoTracks().length > 0) {
+      // We have a real video track — attach it
+      this.iosCalleePreviewReady(stream);
+    } else {
+      // Try again next frame
+      requestAnimationFrame(waitForVideo);
+    }
+  };
+
+  waitForVideo();
+}
+
+iosCalleePreviewReady(stream) {
+  // Attach the real remote video
+  this.iosCalleeUpgradePreview.srcObject = stream;
+  this.iosCalleeUpgradePreview.muted = true;
+  this.iosCalleeUpgradePreview.playsInline = true;
+  this.iosCalleeUpgradePreview.autoplay = true;
+  this.iosCalleeUpgradePreview.play?.().catch(() => {});
 
   const name = rtcState.peerName || "Caller";
   if (this.iosCalleeUpgradeLabel) {
@@ -1278,6 +1298,7 @@ _openWindow() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
