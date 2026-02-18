@@ -702,6 +702,11 @@ _showCallerVideoUpgrade() {
 _showCalleeVideoUpgrade(peerId) {
   this._pendingUpgradePeerId = peerId;
 
+  // Hide desktop inbound controls
+  this.callControls?.classList.add("hidden");
+  this.callControls?.classList.remove("inbound");
+  this.callControls?.classList.remove("active");
+
   if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
     this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
     return;
@@ -711,15 +716,12 @@ _showCalleeVideoUpgrade(peerId) {
 
   const id = String(peerId);
 
-  // 🔥 Wait until the remote video track exists
   const waitForVideo = () => {
     const stream = rtcState.remoteStreams?.[id];
 
     if (stream && stream.getVideoTracks().length > 0) {
-      // We have a real video track — attach it
       this.iosCalleePreviewReady(stream);
     } else {
-      // Try again next frame
       requestAnimationFrame(waitForVideo);
     }
   };
@@ -1299,6 +1301,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
