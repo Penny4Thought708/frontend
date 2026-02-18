@@ -468,10 +468,11 @@ export class WebRTCController {
     const pc = this._ensurePC(peerId);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
-    const offer = await pc.createOffer({
+        const offer = await pc.createOffer({
       offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
+      offerToReceiveVideo: video,   // 🔥 FIXED
+      });
+
     await pc.setLocalDescription(offer);
 
     this.socket.emit("webrtc:signal", {
@@ -983,5 +984,6 @@ if (window.callUI?._attachLocalStreamFromState) {
     }
   }
 }
+
 
 
