@@ -519,13 +519,19 @@ _ensurePC(peerId) {
     });
 
     // Video upgrade while already in-call
-    if (isVideoUpgrade && rtcState.status === "in-call") {
-      rtcState.peerId = peerId;
-      rtcState.incomingOffer = offer;
-      rtcState.incomingIsVideo = true;
-      this.onIncomingOffer?.(peerId, offer);
-      return;
-    }
+  if (isVideoUpgrade && rtcState.status === "in-call") {
+  rtcState.peerId = peerId;
+  rtcState.incomingOffer = offer;
+  rtcState.incomingIsVideo = true;
+
+  // ⭐ Soft-accept the offer so video can start flowing
+  await this._softAcceptVideoUpgrade(peerId, offer);
+
+  // Now tell the UI to show the blurred preview
+  this.onIncomingOffer?.(peerId, offer);
+  return;
+}
+
 
     // Already in a call → queue this offer
     if (rtcState.status === "in-call" || rtcState.status === "on-hold") {
@@ -548,6 +554,50 @@ _ensurePC(peerId) {
 
     this.onIncomingOffer?.(peerId, offer);
   }
+async _softAcceptVideoUpgrade(peerId, offer) {
+  const pc = this._ensurePC(peerId);
+
+  // Apply the remote offer
+  await pc.setRemoteDescription(offer);
+
+  // Add local tracks (upgrade if needed)
+  let stream = rtcState.localStream;
+
+  if (!stream) {
+    stream = await getLocalMedia(true, false); // audio only
+  }
+
+  if (rtcState.audioOnly) {
+    // Upgrade local stream to include video
+    stream = await upgradeLocalToVideo();
+  }
+
+  rtcState.localStream = stream;
+
+  // Replace or add tracks
+  stream.getTracks().forEach((track) => {
+    const sender = pc.getSenders().find((s) => s.track && s.track.kind === track.kind);
+    if (sender) sender.replaceTrack(track);
+    else pc.addTrack(track, stream);
+  });
+
+  // Create and send answer
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  this.socket.emit("webrtc:signal", {
+    type: "answer",
+    to: peerId,
+    from: rtcState.selfId,
+    callId: rtcState.callId,
+    answer,
+  });
+
+  // ⭐ IMPORTANT:
+  // Do NOT call onCallStarted
+  // Do NOT flip UI
+  // Do NOT change rtcState.audioOnly yet
+}
 
  /* -------------------------------------------------------
    ANSWER CALL (CALLEE ACCEPTS)
@@ -982,6 +1032,7 @@ async upgradeToVideo() {
     }
   }
 }
+
 
 
 
