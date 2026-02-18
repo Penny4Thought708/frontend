@@ -291,29 +291,34 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
       this._onCallEnded(reason);
     };
 
-    c.onIncomingOffer = (peerId, offer) => {
-      rtcState.incomingOffer = offer;
+  c.onIncomingOffer = (peerId, offer) => {
+  rtcState.incomingOffer = offer;
 
-      rtcState.incomingIsVideo =
-        offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
+  rtcState.incomingIsVideo =
+    offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
 
-      const isUpgrade =
-        rtcState.inCall && rtcState.audioOnly && rtcState.incomingIsVideo;
-if (isUpgrade) {
-  // Always use the iOS-style blurred preview overlay
-  this._showCalleeVideoUpgrade(peerId);
-  return;
-}
+  const isUpgrade =
+    rtcState.inCall && rtcState.audioOnly && rtcState.incomingIsVideo;
 
+  if (isUpgrade) {
+    // 🔥 Mobile → iOS blurred overlay
+    if (this._isMobile()) {
+      this._showCalleeVideoUpgrade(peerId);
+    } else {
+      // 🔥 Desktop/web → FaceTime-style blurred preview + message
+      this.showVideoUpgradeOverlay(peerId, offer);
+    }
+    return;
+  }
 
-      if (this._isMobile()) {
-        this._showIosInboundControls(peerId);
-      } else {
-        this.showInboundRinging(peerId, {
-          incomingIsVideo: rtcState.incomingIsVideo,
-        });
-      }
-    };
+  if (this._isMobile()) {
+    this._showIosInboundControls(peerId);
+  } else {
+    this.showInboundRinging(peerId, {
+      incomingIsVideo: rtcState.incomingIsVideo,
+    });
+  }
+};
 
     // RemoteParticipants.js owns remote tiles
     c.onRemoteJoin = () => {};
@@ -698,16 +703,11 @@ _showCallerVideoUpgrade() {
       this.iosVoiceUI.classList.remove("hidden");
     }
   }
-
 _showCalleeVideoUpgrade(peerId) {
   this._pendingUpgradePeerId = peerId;
 
-  // Hide desktop inbound controls
-  this.callControls?.classList.add("hidden");
-  this.callControls?.classList.remove("inbound");
-  this.callControls?.classList.remove("active");
-
   if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
+    // Mobile fallback: still use generic overlay if iOS markup missing
     this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
     return;
   }
@@ -1260,26 +1260,29 @@ _openWindow() {
     }`;
   }
 
-  // ============================================================
-  // VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
-  // ============================================================
-showVideoUpgradeOverlay() {
-  // disable fallback overlay entirely for upgrades
-  return;
+  
+// ============================================================
+// VIDEO UPGRADE OVERLAY (DESKTOP / FALLBACK)
+// ============================================================
+showVideoUpgradeOverlay(peerId, offer) {
+  this._pendingVideoUpgrade = { peerId, offer };
+  if (!this.videoUpgradeOverlay) return;
+
+  // Mark web upgrade state so CSS can blur/fade the remote tile
+  this.root?.classList.add("web-upgrade-pending");
+
+  this.videoUpgradeOverlay.classList.remove("hidden");
 }
 
-  /*
-  showVideoUpgradeOverlay(peerId, offer) {
-    this._pendingVideoUpgrade = { peerId, offer };
-    if (!this.videoUpgradeOverlay) return;
-    this.videoUpgradeOverlay.classList.remove("hidden");
-  }
-*/
-  _hideVideoUpgradeOverlay() {
-    if (!this.videoUpgradeOverlay) return;
-    this.videoUpgradeOverlay.classList.add("hidden");
-    this._pendingVideoUpgrade = null;
-  }
+_hideVideoUpgradeOverlay() {
+  if (!this.videoUpgradeOverlay) return;
+  this.videoUpgradeOverlay.classList.add("hidden");
+  this._pendingVideoUpgrade = null;
+
+  // Remove web blur state
+  this.root?.classList.remove("web-upgrade-pending");
+}
+
 
 async _acceptVideoUpgrade() {
   this._stopRingtone();
@@ -1307,6 +1310,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
