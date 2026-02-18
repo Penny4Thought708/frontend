@@ -13,7 +13,7 @@ export class CallUI {
     this.rtc = new WebRTCController(socket);
     this.controller = this.rtc;
 
-    this.enablePipSwap = options.enablePipSwap ?? true;
+    this.enablePipSwap = false; // P1: PiP always local after call is answered
 
     // ============================================================
     // DOM REFS
@@ -432,15 +432,6 @@ export class CallUI {
           this._declineVideoUpgrade()
         );
       }
-
-      if (this.localPip && this.enablePipSwap) {
-        this.localPip.addEventListener("dblclick", () =>
-          this._swapPipWithMain()
-        );
-        this.localPip.addEventListener("touchend", (e) => {
-          if (e.detail === 2) this._swapPipWithMain();
-        });
-      }
     }
 
     // iOS CONTROLS
@@ -465,11 +456,15 @@ export class CallUI {
 
       if (this.iosVideoBtn) {
         this.iosVideoBtn.addEventListener("click", () => {
+          // Mark UI state
           this.root?.classList.add("ios-upgrade-requested");
+
+          // Ensure camera is on
           this.isCameraOn = true;
           this.root?.classList.remove("camera-off");
+
+          // Trigger upgrade flow
           this._onIosVideoPressed();
-          this._attachLocalStreamFromState?.();
         });
       }
 
@@ -615,14 +610,10 @@ export class CallUI {
   _onIosVideoPressed() {
     if (!rtcState.inCall) return;
 
-    if (!this._isMobile()) {
-      this._upgradeToVideo();
-      return;
-    }
-
+    // Do NOT switch mode yet; stay in ios-voice while showing upgrade overlay
     this._upgradeToVideo();
 
-    // Give upgraded stream a moment to attach
+    // Give upgraded stream a moment to attach, then show preview
     setTimeout(() => {
       this._showCallerVideoUpgrade();
     }, 50);
@@ -631,7 +622,7 @@ export class CallUI {
   _upgradeToVideo() {
     this.controller.upgradeToVideo?.();
 
-    // Refresh UI immediately so local video is visible
+    // Refresh local video + PiP immediately
     this._attachLocalStreamFromState?.();
 
     this.isCameraOn = true;
@@ -657,6 +648,11 @@ export class CallUI {
       this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
     }
 
+    // Hide iOS voice UI while upgrade overlay is active
+    if (this.iosVoiceUI) {
+      this.iosVoiceUI.classList.add("hidden");
+    }
+
     this.iosCallerUpgradeOverlay.classList.remove("hidden");
     this.iosCallerUpgradeOverlay.classList.add("active");
   }
@@ -667,6 +663,11 @@ export class CallUI {
     this.iosCallerUpgradeOverlay.classList.add("hidden");
     if (this.iosCallerUpgradePreview) {
       this.iosCallerUpgradePreview.srcObject = null;
+    }
+
+    // Restore iOS voice UI if still in ios-voice mode
+    if (this.currentMode === "ios-voice" && this.iosVoiceUI) {
+      this.iosVoiceUI.classList.remove("hidden");
     }
   }
 
@@ -716,7 +717,7 @@ export class CallUI {
   }
 
   // ============================================================
-  // PIP DRAGGING
+  // PIP DRAGGING (PiP always local after call is answered)
   // ============================================================
   _bindPipDrag() {
     const startDrag = (el, evt) => {
@@ -778,7 +779,6 @@ export class CallUI {
     };
 
     attachDragHandlers(this.localPip);
-    attachDragHandlers(this.remotePip);
 
     window.addEventListener("mousemove", moveDrag);
     window.addEventListener("touchmove", moveDrag, { passive: false });
@@ -813,6 +813,7 @@ export class CallUI {
 
     this._setInboundButtonsVisible(false);
 
+    // P1: PiP always local after call is answered
     if (this.currentMode === "meet" || this.currentMode === "discord") {
       this._showLocalPip(true);
     }
@@ -904,6 +905,7 @@ export class CallUI {
 
     this._hideIosUpgradeOverlays();
 
+    // Switch to Meet layout for video
     this._setMode("meet", { audioOnly: false });
 
     const inbound = this.root.querySelector(".ios-inbound-controls");
@@ -1149,7 +1151,7 @@ export class CallUI {
   }
 
   // ============================================================
-  // LOCAL PIP
+  // LOCAL PIP (always local after call is answered)
   // ============================================================
   _showLocalPip(show) {
     if (!this.localPip) return;
@@ -1159,25 +1161,6 @@ export class CallUI {
     } else {
       this.localPip.classList.add("hidden");
     }
-  }
-
-  _swapPipWithMain() {
-    if (!this.localPipVideo) return;
-
-    // Swap local PiP with the primary remote video in the grid
-    const mainRemoteVideo =
-      this.callGrid?.querySelector("video") || null;
-    if (!mainRemoteVideo) return;
-
-    const mainStream = mainRemoteVideo.srcObject;
-    const pipStream = this.localPipVideo.srcObject;
-
-    mainRemoteVideo.srcObject = pipStream;
-    this.localPipVideo.srcObject = mainStream;
-
-    mainRemoteVideo.srcObject && mainRemoteVideo.play?.().catch(() => {});
-    this.localPipVideo.srcObject &&
-      this.localPipVideo.play?.().catch(() => {});
   }
 
   // ============================================================
@@ -1237,5 +1220,6 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
