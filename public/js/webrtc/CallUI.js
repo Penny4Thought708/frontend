@@ -1,6 +1,6 @@
 // public/js/webrtc/CallUI.js
 // High-performance, production-grade call window UI
-// - Mobile: iOS voice + FaceTime-style PiP
+// - Mobile: iOS voice-style full-screen controls
 // - Web: Google Meet-style layout
 // - Group: Discord-style grid
 
@@ -34,7 +34,9 @@ export class CallUI {
     this.iosVoiceUI = this.root?.querySelector(".ios-voice-ui");
     this.iosVoiceAvatar = document.getElementById("iosVoiceAvatar");
     this.iosCallStatus = this.root?.querySelector(".ios-call-status");
-    this.iosCallTimer = document.getElementById("iosCallTimer") || this.root?.querySelector(".ios-call-timer");
+    this.iosCallTimer =
+      document.getElementById("iosCallTimer") ||
+      this.root?.querySelector(".ios-call-timer");
 
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
@@ -63,12 +65,14 @@ export class CallUI {
     this.videoUpgradeDeclineMobile = document.getElementById("video-upgrade-decline");
     this.videoUpgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
     this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
-    this.iosMuteBtn = this.root.querySelector(".ios-btn.mute");
-    this.iosSpeakerBtn = this.root.querySelector(".ios-btn.speaker");
-    this.iosKeypadBtn = this.root.querySelector(".ios-btn.keypad");
-    this.iosAddBtn = this.root.querySelector(".ios-btn.add");
-    this.iosVideoBtn = this.root.querySelector(".ios-btn.video");
-    this.iosEndBtn = this.root.querySelector(".ios-btn.end");
+
+    // iOS voice controls
+    this.iosMuteBtn = this.root?.querySelector(".ios-btn.mute");
+    this.iosSpeakerBtn = this.root?.querySelector(".ios-btn.speaker");
+    this.iosKeypadBtn = this.root?.querySelector(".ios-btn.keypad");
+    this.iosAddBtn = this.root?.querySelector(".ios-btn.add");
+    this.iosVideoBtn = this.root?.querySelector(".ios-btn.video");
+    this.iosEndBtn = this.root?.querySelector(".ios-btn.end");
 
     // Audio elements
     this.ringtone = document.getElementById("ringtone");
@@ -111,10 +115,18 @@ export class CallUI {
 
   openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
     this.isInbound = false;
-    this._setMode(mode, { audioOnly: audio && !video });
+
+    // On mobile, if audio-only, prefer iOS voice UI
+    const audioOnly = audio && !video;
+    if (this._isMobile() && audioOnly) {
+      mode = "ios-voice";
+    }
+
+    this._setMode(mode, { audioOnly });
     this._openWindow();
     this._setInboundActiveState(false);
 
+    // Caller hears ringback
     this._playRingback();
     this._setStatusText("Calling…");
     this._startTimer(null);
@@ -140,15 +152,16 @@ export class CallUI {
   showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     this.isInbound = true;
 
+    // Callee hears ringtone
     this._playRingtone();
 
     const audioOnly = !incomingIsVideo;
     let mode = modeHint || "meet";
 
-  if (this._isMobile()) {
-  mode = "ios-voice";
-}
-
+    // On mobile, always use iOS voice UI for inbound
+    if (this._isMobile()) {
+      mode = "ios-voice";
+    }
 
     this._setMode(mode, { audioOnly });
     this._openWindow();
@@ -185,115 +198,102 @@ export class CallUI {
 
     this._stopControlsAutoHide();
   }
-// ============================================================
-// CONTROLLER BINDING  (FIXED FOR iOS‑ONLY MOBILE MODE)
-// ============================================================
 
-_bindController() {
-  const c = this.controller;
+  // ============================================================
+  // CONTROLLER BINDING
+  // ============================================================
 
-  // When the call actually connects
-  c.onCallStarted = (peerId) => {
-    // Stop audio ONLY here (correct behavior)
-    this._stopRingback();
-    this._stopRingtone();
+  _bindController() {
+    const c = this.controller;
 
-    this._onCallStarted(peerId);
-  };
+    // Call actually connects
+    c.onCallStarted = (peerId) => {
+      // Stop audio ONLY when connected
+      this._stopRingback();
+      this._stopRingtone();
+      this._onCallStarted(peerId);
+    };
 
-  // When the call ends (remote or local)
-  c.onCallEnded = (reason) => {
-    // Stop audio ONLY here
-    this._stopRingback();
-    this._stopRingtone();
+    // Call ends (remote or local)
+    c.onCallEnded = (reason) => {
+      // Stop audio ONLY when ended
+      this._stopRingback();
+      this._stopRingtone();
+      this._onCallEnded(reason);
+    };
 
-    this._onCallEnded(reason);
-  };
+    // Inbound offer
+    c.onIncomingOffer = (peerId, offer) => {
+      const isUpgrade =
+        rtcState.status === "in-call" &&
+        rtcState.incomingIsVideo &&
+        rtcState.audioOnly;
 
-  // When an inbound offer arrives
-  c.onIncomingOffer = (peerId, offer) => {
-    const isUpgrade =
-      rtcState.status === "in-call" &&
-      rtcState.incomingIsVideo &&
-      rtcState.audioOnly;
+      if (isUpgrade) {
+        this.showVideoUpgradeOverlay(peerId, offer);
+      } else {
+        this.showInboundRinging(peerId, {
+          incomingIsVideo: rtcState.incomingIsVideo,
+        });
+      }
+    };
 
-    // If already in a call and remote upgrades → show upgrade UI
-    if (isUpgrade) {
-      this.showVideoUpgradeOverlay(peerId, offer);
-      return;
-    }
+    c.onIncomingOfferQueued = (peerId, offer, callId) => {
+      console.log("[CallUI] Incoming offer queued", peerId, callId);
+    };
 
-    // Otherwise → inbound ringing
-    this.showInboundRinging(peerId, {
-      incomingIsVideo: rtcState.incomingIsVideo,
-    });
-  };
+    c.onRemoteJoin = (peerId) => {
+      // Desktop/grid only
+      if (!this._isMobile()) {
+        this._ensureRemoteTile(peerId);
+        this._recomputeGridLayout();
+      }
+    };
 
-  // When an inbound offer is queued (busy line)
-  c.onIncomingOfferQueued = (peerId, offer, callId) => {
-    console.log("[CallUI] Incoming offer queued", peerId, callId);
-  };
+    c.onRemoteLeave = (peerId) => {
+      if (!this._isMobile()) {
+        this._removeRemoteTile(peerId);
+        this._recomputeGridLayout();
+      }
+    };
 
-  // Remote peer joins (track arrives)
-  c.onRemoteJoin = (peerId) => {
-    // Desktop only — mobile iOS mode hides grid
-    if (!this._isMobile()) {
-      this._ensureRemoteTile(peerId);
-      this._recomputeGridLayout();
-    }
-  };
+    c.onParticipantUpdate = (peerId, data) => {
+      if (!this._isMobile()) {
+        this._updateParticipantTile(peerId, data);
+        this._recomputeGridLayout();
+      }
+    };
 
-  // Remote peer leaves
-  c.onRemoteLeave = (peerId) => {
-    if (!this._isMobile()) {
-      this._removeRemoteTile(peerId);
-      this._recomputeGridLayout();
-    }
-  };
+    c.onScreenShareStarted = () => {
+      if (!this._isMobile()) this._onScreenShareStarted();
+    };
 
-  // Participant metadata update (speaking, presenting, name)
-  c.onParticipantUpdate = (peerId, data) => {
-    if (!this._isMobile()) {
-      this._updateParticipantTile(peerId, data);
-      this._recomputeGridLayout();
-    }
-  };
+    c.onScreenShareStopped = () => {
+      if (!this._isMobile()) this._onScreenShareStopped();
+    };
 
-  // Screen share events (desktop only)
-  c.onScreenShareStarted = () => {
-    if (!this._isMobile()) this._onScreenShareStarted();
-  };
+    c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
+    c.onCallStatusChange = (status) => this._onCallStatusChange(status);
 
-  c.onScreenShareStopped = () => {
-    if (!this._isMobile()) this._onScreenShareStopped();
-  };
+    c.onPeerUnavailable = (reason) => {
+      // Timeout / busy / unavailable → stop audio here
+      this._stopRingback();
+      this._stopRingtone();
+      this._onPeerUnavailable(reason);
+    };
 
-  // Quality indicator
-  c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
-
-  // Status changes (ringing, in-call, on-hold)
-  c.onCallStatusChange = (status) => this._onCallStatusChange(status);
-
-  // Busy, unavailable, timeout, decline
-  c.onPeerUnavailable = (reason) => {
-    // Stop audio ONLY here
-    this._stopRingback();
-    this._stopRingtone();
-
-    this._onPeerUnavailable(reason);
-  };
-
-  // Remote upgrades audio → video
-  c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
-}
+    c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
+  }
 
   // ============================================================
   // UI BINDING
   // ============================================================
 
   _bindUI() {
+    // Desktop inbound controls
     if (this.declineBtn) {
       this.declineBtn.addEventListener("click", () => {
+        // Decline stops ringtone
         this._stopRingtone();
         this.controller.declineCall("declined");
         this._setStatusText("Declined");
@@ -302,6 +302,7 @@ _bindController() {
 
     if (this.answerBtn) {
       this.answerBtn.addEventListener("click", async () => {
+        // Answer stops ringtone
         this._stopRingtone();
         await this.controller.answerCall();
         this._setInboundActiveState(false);
@@ -374,6 +375,7 @@ _bindController() {
       });
     }
 
+    // Video upgrade overlay buttons
     if (this.videoUpgradeAcceptMobile) {
       this.videoUpgradeAcceptMobile.addEventListener("click", () =>
         this._acceptVideoUpgrade()
@@ -395,37 +397,42 @@ _bindController() {
       );
     }
 
+    // PiP swap (desktop only)
     if (this.localPip && this.enablePipSwap) {
       this.localPip.addEventListener("dblclick", () => this._swapPipWithMain());
       this.localPip.addEventListener("touchend", (e) => {
         if (e.detail === 2) this._swapPipWithMain();
       });
     }
+
+    // iOS voice buttons
     if (this.iosMuteBtn) {
       this.iosMuteBtn.addEventListener("click", () => this._toggleMute());
     }
-    
+
     if (this.iosSpeakerBtn) {
       this.iosSpeakerBtn.addEventListener("click", () => this._toggleSpeaker());
     }
-    
+
     if (this.iosKeypadBtn) {
       this.iosKeypadBtn.addEventListener("click", () => this._openKeypad());
     }
-    
+
     if (this.iosAddBtn) {
       this.iosAddBtn.addEventListener("click", () => this._addCall());
     }
-    
+
     if (this.iosVideoBtn) {
       this.iosVideoBtn.addEventListener("click", () => this._upgradeToVideo());
     }
-    
+
     if (this.iosEndBtn) {
-      this.iosEndBtn.addEventListener("click", () => this.controller.endCall("local_hangup"));
+      this.iosEndBtn.addEventListener("click", () =>
+        this.controller.endCall("local_hangup")
+      );
     }
 
-    // Auto-hide controls
+    // Auto-hide controls (desktop only)
     const showControls = () => {
       if (!this.callControls) return;
       this.callControls.classList.remove("hidden-soft");
@@ -451,6 +458,7 @@ _bindController() {
   }
 
   _startControlsAutoHide() {
+    if (this._isMobile()) return; // iOS mode: no auto-hide desktop bar
     if (this._controlsHideInterval) return;
     this._controlsHideInterval = setInterval(() => {
       if (!this.callControls) return;
@@ -466,35 +474,27 @@ _bindController() {
       this._controlsHideInterval = null;
     }
   }
-_toggleMute() {
-  const stream = rtcState.localStream;
-  if (!stream) return;
 
-  this.isMuted = !this.isMuted;
-  stream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
-
-  if (this.iosMuteBtn) {
-    this.iosMuteBtn.classList.toggle("active", this.isMuted);
+  // iOS helpers
+  _toggleSpeaker() {
+    if (!this.remoteAudio) return;
+    this.remoteAudio.muted = !this.remoteAudio.muted;
+    if (this.iosSpeakerBtn) {
+      this.iosSpeakerBtn.classList.toggle("active", !this.remoteAudio.muted);
+    }
   }
-}
-_toggleSpeaker() {
-  if (!this.remoteAudio) return;
 
-  this.remoteAudio.muted = !this.remoteAudio.muted;
-
-  if (this.iosSpeakerBtn) {
-    this.iosSpeakerBtn.classList.toggle("active", !this.remoteAudio.muted);
+  _openKeypad() {
+    console.log("[CallUI] iOS keypad pressed — implement keypad UI here");
   }
-}
-_openKeypad() {
-  console.log("Keypad pressed — implement keypad UI here");
-}
-_addCall() {
-  console.log("Add Call pressed — implement call merging here");
-}
-_upgradeToVideo() {
-  this.controller.upgradeToVideo();
-}
+
+  _addCall() {
+    console.log("[CallUI] iOS add call pressed — implement call merging here");
+  }
+
+  _upgradeToVideo() {
+    this.controller.upgradeToVideo?.();
+  }
 
   // ============================================================
   // PIP DRAGGING
@@ -569,9 +569,6 @@ _upgradeToVideo() {
   // ============================================================
 
   _onCallStarted(peerId) {
-    this._stopRingback();
-    this._stopRingtone();
-
     this._setInboundActiveState(false);
     this._setStatusText("Connected");
     this._startTimer(Date.now());
@@ -584,14 +581,16 @@ _upgradeToVideo() {
     if (this.localTile) {
       this.localTile.classList.add("hidden");
     }
+
+    // On mobile, hide desktop controls entirely
     if (this._isMobile()) {
       if (this.callControls) this.callControls.classList.add("hidden");
-    }
-
-    if (this.callControls) {
-      this.callControls.classList.remove("hidden");
-      this.callControls.classList.remove("hidden-soft");
-      this.callControls.classList.add("active");
+    } else {
+      if (this.callControls) {
+        this.callControls.classList.remove("hidden");
+        this.callControls.classList.remove("hidden-soft");
+        this.callControls.classList.add("active");
+      }
     }
 
     this._setInboundButtonsVisible(false);
@@ -607,9 +606,6 @@ _upgradeToVideo() {
   }
 
   _onCallEnded(reason) {
-    this._stopRingback();
-    this._stopRingtone();
-
     this._stopTimer();
     this._setStatusText("Call ended");
 
@@ -672,9 +668,6 @@ _upgradeToVideo() {
   }
 
   _onPeerUnavailable(reason) {
-    this._stopRingback();
-    this._stopRingtone();
-
     this._setStatusText(reason || "User unavailable");
 
     if (this.currentMode === "ios-voice") {
@@ -773,6 +766,8 @@ _upgradeToVideo() {
     if (!this.root || !this.callGrid) return;
 
     this.root.classList.remove("mode-meet", "mode-discord", "mode-ios-voice");
+
+    // On mobile, hide desktop UI elements
     if (this._isMobile()) {
       if (this.callControls) this.callControls.classList.add("hidden");
       if (this.localPip) this.localPip.classList.add("hidden");
@@ -846,7 +841,7 @@ _upgradeToVideo() {
     this.root.classList.add("is-open", "call-opening");
     this.root.style.opacity = "1";
 
-    if (this.callControls) {
+    if (this.callControls && !this._isMobile()) {
       this.callControls.classList.remove("hidden");
       this.callControls.classList.remove("hidden-soft");
     }
@@ -948,8 +943,7 @@ _upgradeToVideo() {
   }
 
   _recomputeGridLayout() {
-    // For now, CSS auto-fit grid handles layout.
-    // Hook left here for future advanced layouts.
+    // CSS auto-fit grid handles layout; hook left for future logic.
   }
 
   _updateParticipantTile(peerId, data) {
@@ -988,7 +982,7 @@ _upgradeToVideo() {
     this.remoteTiles.clear();
   }
 
-   // ============================================================
+  // ============================================================
   // QUALITY INDICATOR
   // ============================================================
 
@@ -1019,14 +1013,12 @@ _upgradeToVideo() {
       this._hideVideoUpgradeOverlay();
       return;
     }
-    // For upgrade, controller.answerCall() already knows rtcState.incomingOffer
     await this.controller.answerCall();
     this._enterActiveVideoMode();
     this._hideVideoUpgradeOverlay();
   }
 
   _declineVideoUpgrade() {
-    // For now, just hide overlay and stay audio-only.
     this._hideVideoUpgradeOverlay();
   }
 
@@ -1039,12 +1031,17 @@ _upgradeToVideo() {
     if (!stream) return;
 
     this.isMuted = !this.isMuted;
+    rtcState.micMuted = this.isMuted;
+
     stream.getAudioTracks().forEach((t) => {
       t.enabled = !this.isMuted;
     });
 
     if (this.muteBtn) {
       this.muteBtn.classList.toggle("active", this.isMuted);
+    }
+    if (this.iosMuteBtn) {
+      this.iosMuteBtn.classList.toggle("active", this.isMuted);
     }
   }
 
@@ -1053,6 +1050,8 @@ _upgradeToVideo() {
     if (!stream) return;
 
     this.isCameraOn = !this.isCameraOn;
+    rtcState.cameraOff = !this.isCameraOn;
+
     stream.getVideoTracks().forEach((t) => {
       t.enabled = this.isCameraOn;
     });
