@@ -643,20 +643,26 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
 _showCallerVideoUpgrade() {
   if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
 
-  this._hideIosUpgradeOverlays();
+  // 🔥 MUST happen first — otherwise CSS hides the preview
   this.root?.classList.remove("camera-off");
 
-  // 🔥 Ensure local stream is attached / refreshed first
+  // Hide other overlays AFTER camera-off is removed
+  this._hideIosUpgradeOverlays();
+
+  // Refresh local stream
   this._attachLocalStreamFromState();
 
-  const stream = rtcState.localStream;
-  if (stream) {
-    this.iosCallerUpgradePreview.srcObject = stream;
-    this.iosCallerUpgradePreview.muted = true;
-    this.iosCallerUpgradePreview.playsInline = true;
-    this.iosCallerUpgradePreview.autoplay = true;
-    this.iosCallerUpgradePreview.play?.().catch(() => {});
-  }
+  // Attach upgraded stream with a tiny delay (iOS timing fix)
+  setTimeout(() => {
+    const stream = rtcState.localStream;
+    if (stream) {
+      this.iosCallerUpgradePreview.srcObject = stream;
+      this.iosCallerUpgradePreview.muted = true;
+      this.iosCallerUpgradePreview.playsInline = true;
+      this.iosCallerUpgradePreview.autoplay = true;
+      this.iosCallerUpgradePreview.play?.().catch(() => {});
+    }
+  }, 50);
 
   const name = rtcState.peerName || "them";
   if (this.iosCallerUpgradeLabel) {
@@ -670,6 +676,7 @@ _showCallerVideoUpgrade() {
   this.iosCallerUpgradeOverlay.classList.remove("hidden");
   this.iosCallerUpgradeOverlay.classList.add("active");
 }
+
 
   _hideCallerVideoUpgrade() {
     if (!this.iosCallerUpgradeOverlay) return;
@@ -1271,6 +1278,7 @@ _openWindow() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
