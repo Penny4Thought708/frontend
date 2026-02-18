@@ -898,24 +898,33 @@ export class CallUI {
     setTimeout(() => this.closeWindow(), 1200);
   }
 
-  _enterActiveVideoMode() {
-    if (this.iosCallerUpgradePreview) {
-      this.iosCallerUpgradePreview.srcObject = null;
-    }
-
-    this._hideIosUpgradeOverlays();
-
-    // Switch to Meet layout for video
-    this._setMode("meet", { audioOnly: false });
-
-    const inbound = this.root.querySelector(".ios-inbound-controls");
-    const normal = this.root.querySelector(".ios-controls");
-    inbound?.classList.add("hidden");
-    normal?.classList.remove("hidden");
-
-    this._showLocalPip(true);
-    this._updateIosVoiceStatus("");
+_enterActiveVideoMode() {
+  // Release caller preview stream so the main local video can render
+  if (this.iosCallerUpgradePreview) {
+    this.iosCallerUpgradePreview.srcObject = null;
   }
+
+  // Hide all iOS upgrade overlays (caller + callee)
+  this._hideIosUpgradeOverlays();
+
+  // Switch UI mode to Meet (full video)
+  this._setMode("meet", { audioOnly: false });
+
+  // Ensure inbound controls are hidden and normal controls visible
+  const inbound = this.root.querySelector(".ios-inbound-controls");
+  const normal = this.root.querySelector(".ios-controls");
+  inbound?.classList.add("hidden");
+  normal?.classList.remove("hidden");
+
+  // 🔥 CRITICAL: reattach the upgraded local stream to both video elements
+  this._attachLocalStreamFromState();
+
+  // Show PiP (local video) immediately
+  this._showLocalPip(true);
+
+  // Clear iOS voice status text
+  this._updateIosVoiceStatus("");
+}
 
   // ============================================================
   // AUDIO HELPERS
@@ -1220,6 +1229,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
