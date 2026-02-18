@@ -873,6 +873,42 @@
   height: 100%;
   object-fit: cover;
 }
+/* Caller preview starts invisible and extra blurred */
+.ios-caller-preview {
+  opacity: 0;
+  filter: blur(22px) brightness(0.7);
+  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
+}
+
+/* When overlay becomes active, fade in + reduce blur */
+.ios-caller-upgrade.active .ios-caller-preview {
+  opacity: 1;
+  filter: blur(18px) brightness(0.7);
+}
+.ios-caller-blur-layer {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+  transition: opacity 0.22s ease-out, backdrop-filter 0.22s ease-out;
+}
+
+.ios-caller-upgrade.active .ios-caller-blur-layer {
+  opacity: 1;
+  backdrop-filter: blur(20px);
+}
+.ios-caller-upgrade-content {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease-out 0.12s, transform 0.25s ease-out 0.12s;
+}
+
+.ios-caller-upgrade.active .ios-caller-upgrade-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ios-caller-upgrade {
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
+}
 
 .ios-caller-upgrade-content {
   position: relative;
@@ -923,10 +959,30 @@
   object-fit: cover;
   filter: blur(18px) brightness(0.6);
 }
+.ios-callee-preview {
+  opacity: 0;
+  filter: blur(22px) brightness(0.6);
+  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
+}
+
+.ios-callee-upgrade.active .ios-callee-preview {
+  opacity: 1;
+  filter: blur(18px) brightness(0.6);
+}
 
 .ios-callee-blur-layer {
   position: absolute;
   inset: 0;
+  backdrop-filter: blur(20px);
+}
+.ios-callee-blur-layer {
+  opacity: 0;
+  backdrop-filter: blur(0px);
+  transition: opacity 0.22s ease-out, backdrop-filter 0.22s ease-out;
+}
+
+.ios-callee-upgrade.active .ios-callee-blur-layer {
+  opacity: 1;
   backdrop-filter: blur(20px);
 }
 
@@ -937,6 +993,20 @@
   text-align: center;
   color: white;
   z-index: 2;
+}
+.ios-callee-upgrade-content {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease-out 0.12s, transform 0.25s ease-out 0.12s;
+}
+
+.ios-callee-upgrade.active .ios-callee-upgrade-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ios-callee-upgrade {
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
 }
 
 .ios-callee-upgrade-label {
