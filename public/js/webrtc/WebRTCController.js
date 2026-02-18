@@ -282,29 +282,33 @@ export class WebRTCController {
   /* -------------------------------------------------------
      CREATE / GET PEER CONNECTION
   ------------------------------------------------------- */
-  _ensurePC(peerId) {
-    peerId = String(peerId);
+_ensurePC(peerId) {
+  peerId = String(peerId);
 
-    if (this.pcMap.has(peerId)) {
-      return this.pcMap.get(peerId);
+  if (this.pcMap.has(peerId)) {
+    return this.pcMap.get(peerId);
+  }
+
+  const pc = new RTCPeerConnection(buildIceConfig());
+  this.pcMap.set(peerId, pc);
+
+  log("Created RTCPeerConnection for peer:", peerId, buildIceConfig());
+
+  // 🔥 Orientation data channel: create it from the MOBILE side, not just the caller
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+
+  if (isMobile && !this.orientationChannels.has(peerId)) {
+    const dc = pc.createDataChannel("orientation");
+    this._wireOrientationChannel(peerId, dc);
+  }
+
+  pc.ondatachannel = (evt) => {
+    if (evt.channel?.label === "orientation") {
+      this._wireOrientationChannel(peerId, evt.channel);
     }
-
-    const pc = new RTCPeerConnection(buildIceConfig());
-    this.pcMap.set(peerId, pc);
-
-    log("Created RTCPeerConnection for peer:", peerId, buildIceConfig());
-
-    // Orientation data channel (A1)
-    if (rtcState.isCaller) {
-      const dc = pc.createDataChannel("orientation");
-      this._wireOrientationChannel(peerId, dc);
-    }
-
-    pc.ondatachannel = (evt) => {
-      if (evt.channel?.label === "orientation") {
-        this._wireOrientationChannel(peerId, evt.channel);
-      }
-    };
 
     pc.onicecandidate = (evt) => {
       if (evt.candidate) {
@@ -984,6 +988,7 @@ if (window.callUI?._attachLocalStreamFromState) {
     }
   }
 }
+
 
 
 
