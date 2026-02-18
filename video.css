@@ -38,6 +38,17 @@
 .hidden {
   display: none !important;
 }
+.ios-callee-preview {
+  z-index: 61 !important;
+}
+
+.ios-callee-blur-layer {
+  z-index: 62 !important;
+}
+
+.ios-callee-upgrade-content {
+  z-index: 63 !important;
+}
 
 /* ===========================
    CALL WINDOW SHELL
@@ -873,6 +884,13 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Caller preview should NOT be blurred */
+.ios-caller-preview {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
 /* Caller preview starts invisible and extra blurred */
 .ios-caller-preview {
   opacity: 0;
