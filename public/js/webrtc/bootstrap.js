@@ -43,6 +43,8 @@ export async function initWebRTC() {
   // Expose globally for debugging / reconnect helpers
   window.rtc = controller;
   window.callUI = ui;
+  window.callUIInstance = ui; // <-- add this line
+
 
   /* -------------------------------------------------------
      3. Initialize RemoteParticipants (tile manager)
