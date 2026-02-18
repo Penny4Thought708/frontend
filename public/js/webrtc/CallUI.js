@@ -49,6 +49,11 @@ export class CallUI {
     this.iosVideoBtn = this.root?.querySelector(".ios-btn.video");
     this.iosEndBtn = this.root?.querySelector(".ios-btn.end");
 
+    // iOS inbound controls (mobile incoming call)
+    this.iosInboundControls = this.root?.querySelector(".ios-inbound-controls");
+    this.iosInboundAnswerBtn = this.root?.querySelector(".ios-inbound-controls .answer");
+    this.iosInboundDeclineBtn = this.root?.querySelector(".ios-inbound-controls .decline");
+    
     // Desktop status + timer
     this.callStatusEl = document.getElementById("call-status");
     this.callTimerEl = document.getElementById("call-timer");
@@ -1342,6 +1347,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
