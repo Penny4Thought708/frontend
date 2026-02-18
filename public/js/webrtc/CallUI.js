@@ -644,6 +644,7 @@ _showCallerVideoUpgrade() {
   if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
 
   this._hideIosUpgradeOverlays();
+  this.root?.classList.remove("camera-off");
 
   // 🔥 Ensure local stream is attached / refreshed first
   this._attachLocalStreamFromState();
@@ -1270,6 +1271,7 @@ _openWindow() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
