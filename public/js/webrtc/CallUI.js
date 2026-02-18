@@ -563,8 +563,9 @@ export class CallUI {
       this._upgradeToVideo();
       return;
     }
-    this._showCallerVideoUpgrade();
     this._upgradeToVideo();
+    this._showCallerVideoUpgrade();
+    
   }
 
 _upgradeToVideo() {
@@ -1291,6 +1292,7 @@ _enterActiveVideoMode() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
