@@ -63,6 +63,12 @@ export class CallUI {
     this.videoUpgradeDeclineMobile = document.getElementById("video-upgrade-decline");
     this.videoUpgradeAcceptDesktop = document.getElementById("video-upgrade-accept-desktop");
     this.videoUpgradeDeclineDesktop = document.getElementById("video-upgrade-decline-desktop");
+    this.iosMuteBtn = this.root.querySelector(".ios-btn.mute");
+    this.iosSpeakerBtn = this.root.querySelector(".ios-btn.speaker");
+    this.iosKeypadBtn = this.root.querySelector(".ios-btn.keypad");
+    this.iosAddBtn = this.root.querySelector(".ios-btn.add");
+    this.iosVideoBtn = this.root.querySelector(".ios-btn.video");
+    this.iosEndBtn = this.root.querySelector(".ios-btn.end");
 
     // Audio elements
     this.ringtone = document.getElementById("ringtone");
@@ -139,9 +145,10 @@ export class CallUI {
     const audioOnly = !incomingIsVideo;
     let mode = modeHint || "meet";
 
-    if (this._isMobile() && audioOnly) {
-      mode = "ios-voice";
-    }
+  if (this._isMobile()) {
+  mode = "ios-voice";
+}
+
 
     this._setMode(mode, { audioOnly });
     this._openWindow();
@@ -178,57 +185,107 @@ export class CallUI {
 
     this._stopControlsAutoHide();
   }
+// ============================================================
+// CONTROLLER BINDING  (FIXED FOR iOS‑ONLY MOBILE MODE)
+// ============================================================
 
-  // ============================================================
-  // CONTROLLER BINDING
-  // ============================================================
+_bindController() {
+  const c = this.controller;
 
-  _bindController() {
-    const c = this.controller;
+  // When the call actually connects
+  c.onCallStarted = (peerId) => {
+    // Stop audio ONLY here (correct behavior)
+    this._stopRingback();
+    this._stopRingtone();
 
-    c.onCallStarted = (peerId) => this._onCallStarted(peerId);
-    c.onCallEnded = (reason) => this._onCallEnded(reason);
-    c.onIncomingOffer = (peerId, offer) => {
-      const isUpgrade =
-        rtcState.status === "in-call" &&
-        rtcState.incomingIsVideo &&
-        rtcState.audioOnly;
+    this._onCallStarted(peerId);
+  };
 
-      if (isUpgrade) {
-        this.showVideoUpgradeOverlay(peerId, offer);
-      } else {
-        this.showInboundRinging(peerId, {
-          incomingIsVideo: rtcState.incomingIsVideo,
-        });
-      }
-    };
+  // When the call ends (remote or local)
+  c.onCallEnded = (reason) => {
+    // Stop audio ONLY here
+    this._stopRingback();
+    this._stopRingtone();
 
-    c.onIncomingOfferQueued = (peerId, offer, callId) => {
-      console.log("[CallUI] Incoming offer queued", peerId, callId);
-    };
+    this._onCallEnded(reason);
+  };
 
-    c.onRemoteJoin = (peerId) => {
+  // When an inbound offer arrives
+  c.onIncomingOffer = (peerId, offer) => {
+    const isUpgrade =
+      rtcState.status === "in-call" &&
+      rtcState.incomingIsVideo &&
+      rtcState.audioOnly;
+
+    // If already in a call and remote upgrades → show upgrade UI
+    if (isUpgrade) {
+      this.showVideoUpgradeOverlay(peerId, offer);
+      return;
+    }
+
+    // Otherwise → inbound ringing
+    this.showInboundRinging(peerId, {
+      incomingIsVideo: rtcState.incomingIsVideo,
+    });
+  };
+
+  // When an inbound offer is queued (busy line)
+  c.onIncomingOfferQueued = (peerId, offer, callId) => {
+    console.log("[CallUI] Incoming offer queued", peerId, callId);
+  };
+
+  // Remote peer joins (track arrives)
+  c.onRemoteJoin = (peerId) => {
+    // Desktop only — mobile iOS mode hides grid
+    if (!this._isMobile()) {
       this._ensureRemoteTile(peerId);
       this._recomputeGridLayout();
-    };
+    }
+  };
 
-    c.onRemoteLeave = (peerId) => {
+  // Remote peer leaves
+  c.onRemoteLeave = (peerId) => {
+    if (!this._isMobile()) {
       this._removeRemoteTile(peerId);
       this._recomputeGridLayout();
-    };
+    }
+  };
 
-    c.onParticipantUpdate = (peerId, data) => {
+  // Participant metadata update (speaking, presenting, name)
+  c.onParticipantUpdate = (peerId, data) => {
+    if (!this._isMobile()) {
       this._updateParticipantTile(peerId, data);
       this._recomputeGridLayout();
-    };
+    }
+  };
 
-    c.onScreenShareStarted = () => this._onScreenShareStarted();
-    c.onScreenShareStopped = () => this._onScreenShareStopped();
-    c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
-    c.onCallStatusChange = (status) => this._onCallStatusChange(status);
-    c.onPeerUnavailable = (reason) => this._onPeerUnavailable(reason);
-    c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
-  }
+  // Screen share events (desktop only)
+  c.onScreenShareStarted = () => {
+    if (!this._isMobile()) this._onScreenShareStarted();
+  };
+
+  c.onScreenShareStopped = () => {
+    if (!this._isMobile()) this._onScreenShareStopped();
+  };
+
+  // Quality indicator
+  c.onQualityUpdate = (level) => this._updateQualityIndicator(level);
+
+  // Status changes (ringing, in-call, on-hold)
+  c.onCallStatusChange = (status) => this._onCallStatusChange(status);
+
+  // Busy, unavailable, timeout, decline
+  c.onPeerUnavailable = (reason) => {
+    // Stop audio ONLY here
+    this._stopRingback();
+    this._stopRingtone();
+
+    this._onPeerUnavailable(reason);
+  };
+
+  // Remote upgrades audio → video
+  c.onRemoteUpgradedToVideo = () => this._enterActiveVideoMode();
+}
 
   // ============================================================
   // UI BINDING
@@ -344,6 +401,29 @@ export class CallUI {
         if (e.detail === 2) this._swapPipWithMain();
       });
     }
+    if (this.iosMuteBtn) {
+      this.iosMuteBtn.addEventListener("click", () => this._toggleMute());
+    }
+    
+    if (this.iosSpeakerBtn) {
+      this.iosSpeakerBtn.addEventListener("click", () => this._toggleSpeaker());
+    }
+    
+    if (this.iosKeypadBtn) {
+      this.iosKeypadBtn.addEventListener("click", () => this._openKeypad());
+    }
+    
+    if (this.iosAddBtn) {
+      this.iosAddBtn.addEventListener("click", () => this._addCall());
+    }
+    
+    if (this.iosVideoBtn) {
+      this.iosVideoBtn.addEventListener("click", () => this._upgradeToVideo());
+    }
+    
+    if (this.iosEndBtn) {
+      this.iosEndBtn.addEventListener("click", () => this.controller.endCall("local_hangup"));
+    }
 
     // Auto-hide controls
     const showControls = () => {
@@ -386,6 +466,35 @@ export class CallUI {
       this._controlsHideInterval = null;
     }
   }
+_toggleMute() {
+  const stream = rtcState.localStream;
+  if (!stream) return;
+
+  this.isMuted = !this.isMuted;
+  stream.getAudioTracks().forEach(t => t.enabled = !this.isMuted);
+
+  if (this.iosMuteBtn) {
+    this.iosMuteBtn.classList.toggle("active", this.isMuted);
+  }
+}
+_toggleSpeaker() {
+  if (!this.remoteAudio) return;
+
+  this.remoteAudio.muted = !this.remoteAudio.muted;
+
+  if (this.iosSpeakerBtn) {
+    this.iosSpeakerBtn.classList.toggle("active", !this.remoteAudio.muted);
+  }
+}
+_openKeypad() {
+  console.log("Keypad pressed — implement keypad UI here");
+}
+_addCall() {
+  console.log("Add Call pressed — implement call merging here");
+}
+_upgradeToVideo() {
+  this.controller.upgradeToVideo();
+}
 
   // ============================================================
   // PIP DRAGGING
@@ -474,6 +583,9 @@ export class CallUI {
 
     if (this.localTile) {
       this.localTile.classList.add("hidden");
+    }
+    if (this._isMobile()) {
+      if (this.callControls) this.callControls.classList.add("hidden");
     }
 
     if (this.callControls) {
@@ -661,6 +773,11 @@ export class CallUI {
     if (!this.root || !this.callGrid) return;
 
     this.root.classList.remove("mode-meet", "mode-discord", "mode-ios-voice");
+    if (this._isMobile()) {
+      if (this.callControls) this.callControls.classList.add("hidden");
+      if (this.localPip) this.localPip.classList.add("hidden");
+      if (this.remotePip) this.remotePip.classList.add("hidden");
+    }
 
     if (mode === "meet") {
       this.root.classList.add("mode-meet");
@@ -732,6 +849,9 @@ export class CallUI {
     if (this.callControls) {
       this.callControls.classList.remove("hidden");
       this.callControls.classList.remove("hidden-soft");
+    }
+    if (this._isMobile()) {
+      if (this.callControls) this.callControls.classList.add("hidden");
     }
 
     setTimeout(() => {
@@ -1001,6 +1121,7 @@ export class CallUI {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
