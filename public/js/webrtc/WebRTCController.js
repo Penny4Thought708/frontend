@@ -467,71 +467,84 @@ export class WebRTCController {
     this.onIncomingOffer?.(peerId, offer);
   }
 
-  /* -------------------------------------------------------
+ /* -------------------------------------------------------
      ANSWER CALL (CALLEE ACCEPTS)
      - Handles both initial call and video upgrade accept.
-  ------------------------------------------------------- */
-  async answerCall() {
-    const peerId = rtcState.peerId;
-    const offer = rtcState.incomingOffer;
-    if (!peerId || !offer) {
-      warn("answerCall called without peerId or offer");
-      return;
-    }
-
-    log("answerCall →", { peerId, incomingIsVideo: rtcState.incomingIsVideo });
-
-    const pc = this._ensurePC(peerId);
-
-    await pc.setRemoteDescription(offer);
-
-    // Flush buffered ICE candidates for this peer
-    if (this._pendingCandidates[peerId]) {
-      for (const c of this._pendingCandidates[peerId]) {
-        try {
-          await pc.addIceCandidate(c);
-        } catch (e) {
-          log("Buffered ICE error (answerCall):", e);
-        }
-      }
-      delete this._pendingCandidates[peerId];
-    }
-
-    let stream = rtcState.localStream;
-
-    if (!stream) {
-      if (rtcState.incomingIsVideo) {
-        stream = await getLocalMedia(true, true);
-      } else {
-        stream = await getLocalMedia(true, false);
-      }
-      attachLocalStream(stream);
-    } else if (rtcState.incomingIsVideo && rtcState.audioOnly) {
-      stream = await upgradeLocalToVideo();
-    }
-
-    rtcState.localStream = stream;
-    rtcState.audioOnly = !rtcState.incomingIsVideo;
-
-    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    this.socket.emit("webrtc:signal", {
-      type: "answer",
-      to: peerId,
-      from: rtcState.selfId,
-      callId: rtcState.callId,
-      answer,
-    });
-
-    rtcState.inCall = true;
-    rtcState.callStartTs = rtcState.callStartTs || Date.now();
-    this._setStatus("in-call");
-    this._addParticipant(peerId, { state: "connected" });
-    this.onCallStarted?.(peerId);
+------------------------------------------------------- */
+async answerCall() {
+  const peerId = rtcState.peerId;
+  const offer = rtcState.incomingOffer;
+  if (!peerId || !offer) {
+    warn("answerCall called without peerId or offer");
+    return;
   }
+
+  log("answerCall →", { peerId, incomingIsVideo: rtcState.incomingIsVideo });
+
+  const pc = this._ensurePC(peerId);
+
+  await pc.setRemoteDescription(offer);
+
+  // Flush buffered ICE candidates for this peer
+  if (this._pendingCandidates[peerId]) {
+    for (const c of this._pendingCandidates[peerId]) {
+      try {
+        await pc.addIceCandidate(c);
+      } catch (e) {
+        log("Buffered ICE error (answerCall):", e);
+      }
+    }
+    delete this._pendingCandidates[peerId];
+  }
+
+  let stream = rtcState.localStream;
+
+  if (!stream) {
+    if (rtcState.incomingIsVideo) {
+      stream = await getLocalMedia(true, true);
+    } else {
+      stream = await getLocalMedia(true, false);
+    }
+    attachLocalStream(stream);
+  } else if (rtcState.incomingIsVideo && rtcState.audioOnly) {
+    // Upgrade existing audio-only stream to video
+    stream = await upgradeLocalToVideo();
+  }
+
+  rtcState.localStream = stream;
+  rtcState.audioOnly = !rtcState.incomingIsVideo;
+
+  // ✅ Replace or add tracks safely (no InvalidAccessError)
+  stream.getTracks().forEach((track) => {
+    const kind = track.kind;
+    const sender = pc
+      .getSenders()
+      .find((s) => s.track && s.track.kind === kind);
+
+    if (sender) {
+      sender.replaceTrack(track);
+    } else {
+      pc.addTrack(track, stream);
+    }
+  });
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  this.socket.emit("webrtc:signal", {
+    type: "answer",
+    to: peerId,
+    from: rtcState.selfId,
+    callId: rtcState.callId,
+    answer,
+  });
+
+  rtcState.inCall = true;
+  rtcState.callStartTs = rtcState.callStartTs || Date.now();
+  this._setStatus("in-call");
+  this._addParticipant(peerId, { state: "connected" });
+  this.onCallStarted?.(peerId);
+}
 
   /* -------------------------------------------------------
      HANDLE ANSWER (CALLER)
@@ -848,6 +861,7 @@ async upgradeToVideo() {
     }
   }
 }
+
 
 
 
