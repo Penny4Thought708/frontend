@@ -875,21 +875,23 @@ async upgradeToVideo() {
   }
 
   // Create and send renegotiation offer
-  const offer = await pc.createOffer({
-    offerToReceiveAudio: true,
-    offerToReceiveVideo: true,
-  });
+const offer = await pc.createOffer({
+  offerToReceiveAudio: true,
+  offerToReceiveVideo: true,
+});
 
-  await pc.setLocalDescription(offer);
+offer.isUpgrade = true;   // 🔥 REQUIRED
 
-  this.socket.emit("webrtc:signal", {
-    type: "offer",
-    to: peerId,
-    from: rtcState.selfId,
-    callId: rtcState.callId,
-    offer,
-    isVideoUpgrade: true,
-  });
+await pc.setLocalDescription(offer);
+
+this.socket.emit("webrtc:signal", {
+  type: "offer",
+  to: peerId,
+  from: rtcState.selfId,
+  callId: rtcState.callId,
+  offer,
+});
+
 }
 
   /* -------------------------------------------------------
@@ -1032,6 +1034,7 @@ async upgradeToVideo() {
     }
   }
 }
+
 
 
 
