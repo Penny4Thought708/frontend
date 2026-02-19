@@ -319,9 +319,6 @@ c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
   }
 };
 
-};
-
-
     // RemoteParticipants.js owns remote tiles
     c.onRemoteJoin = () => {};
     c.onParticipantUpdate = () => {};
@@ -1382,6 +1379,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
