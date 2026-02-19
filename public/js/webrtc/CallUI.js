@@ -770,72 +770,80 @@ export class CallUI {
   // ============================================================
   // PIP DRAGGING (PiP always local after call is answered)
   // ============================================================
-  _bindPipDrag() {
-    const startDrag = (el, evt) => {
-      evt.preventDefault();
-      const rect = el.getBoundingClientRect();
-      this.pipDragState.active = true;
-      this.pipDragState.target = el;
-      this.pipDragState.startX =
-        evt.clientX || evt.touches?.[0]?.clientX || 0;
-      this.pipDragState.startY =
-        evt.clientY || evt.touches?.[0]?.clientY || 0;
-      this.pipDragState.origX = rect.left;
-      this.pipDragState.origY = rect.top;
-      el.classList.add("dragging");
-    };
+ _bindPipDrag() {
+  const startDrag = (el, evt) => {
+    evt.preventDefault();
 
-    const moveDrag = (evt) => {
-      if (!this.pipDragState.active || !this.pipDragState.target) return;
-      const el = this.pipDragState.target;
-      const currentX =
-        evt.clientX || evt.touches?.[0]?.clientX || 0;
-      const currentY =
-        evt.clientY || evt.touches?.[0]?.clientY || 0;
-      const dx = currentX - this.pipDragState.startX;
-      const dy = currentY - this.pipDragState.startY;
-      const x = this.pipDragState.origX + dx;
-      const y = this.pipDragState.origY + dy;
+    const rect = el.getBoundingClientRect();
+    const match = /translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/.exec(
+      el.style.transform || ""
+    );
 
-      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    };
+    const currentTx = match ? parseFloat(match[1]) : 0;
+    const currentTy = match ? parseFloat(match[2]) : 0;
 
-    const endDrag = () => {
-      if (!this.pipDragState.active || !this.pipDragState.target) return;
-      const el = this.pipDragState.target;
-      this.pipDragState.active = false;
+    this.pipDragState.active = true;
+    this.pipDragState.target = el;
+    this.pipDragState.startX = evt.clientX || evt.touches?.[0]?.clientX || 0;
+    this.pipDragState.startY = evt.clientY || evt.touches?.[0]?.clientY || 0;
+    this.pipDragState.origX = currentTx;
+    this.pipDragState.origY = currentTy;
 
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+    el.classList.add("dragging");
+  };
 
-      const snapLeft = centerX < vw / 2;
-      const snapTop = centerY < vh / 2;
+  const moveDrag = (evt) => {
+    if (!this.pipDragState.active || !this.pipDragState.target) return;
+    const el = this.pipDragState.target;
 
-      const x = snapLeft ? 20 : vw - rect.width - 20;
-      const y = snapTop ? 20 : vh - rect.height - 20;
+    const currentX = evt.clientX || evt.touches?.[0]?.clientX || 0;
+    const currentY = evt.clientY || evt.touches?.[0]?.clientY || 0;
+    const dx = currentX - this.pipDragState.startX;
+    const dy = currentY - this.pipDragState.startY;
 
-      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      el.classList.remove("dragging");
-    };
+    const x = this.pipDragState.origX + dx;
+    const y = this.pipDragState.origY + dy;
 
-    const attachDragHandlers = (el) => {
-      if (!el) return;
-      el.addEventListener("mousedown", (e) => startDrag(el, e));
-      el.addEventListener("touchstart", (e) => startDrag(el, e), {
-        passive: false,
-      });
-    };
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  };
 
-    attachDragHandlers(this.localPip);
+  const endDrag = () => {
+    if (!this.pipDragState.active || !this.pipDragState.target) return;
+    const el = this.pipDragState.target;
+    this.pipDragState.active = false;
 
-    window.addEventListener("mousemove", moveDrag);
-    window.addEventListener("touchmove", moveDrag, { passive: false });
-    window.addEventListener("mouseup", endDrag);
-    window.addEventListener("touchend", endDrag);
-  }
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const snapLeft = centerX < vw / 2;
+    const snapTop = centerY < vh / 2;
+
+    const x = snapLeft ? 20 : vw - rect.width - 20;
+    const y = snapTop ? 20 : vh - rect.height - 20;
+
+    // Snap using transform only
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    el.classList.remove("dragging");
+  };
+
+  const attachDragHandlers = (el) => {
+    if (!el) return;
+    el.addEventListener("mousedown", (e) => startDrag(el, e));
+    el.addEventListener("touchstart", (e) => startDrag(el, e), {
+      passive: false,
+    });
+  };
+
+  attachDragHandlers(this.localPip);
+
+  window.addEventListener("mousemove", moveDrag);
+  window.addEventListener("touchmove", moveDrag, { passive: false });
+  window.addEventListener("mouseup", endDrag);
+  window.addEventListener("touchend", endDrag);
+}
 
   // ============================================================
   // CONTROLLER EVENT HANDLERS
@@ -948,24 +956,33 @@ export class CallUI {
     setTimeout(() => this.closeWindow(), 1200);
   }
 
-  _enterActiveVideoMode() {
-    if (this.iosCallerUpgradePreview) {
-      this.iosCallerUpgradePreview.srcObject = null;
-    }
-
-    this._hideIosUpgradeOverlays();
-
-    this._setMode("meet", { audioOnly: false });
-
-    const inbound = this.root.querySelector(".ios-inbound-controls");
-    const normal = this.root.querySelector(".ios-controls");
-    inbound?.classList.add("hidden");
-    normal?.classList.remove("hidden");
-
-    this._attachLocalStreamFromState();
-    this._showLocalPip(true);
-    this._updateIosVoiceStatus("");
+_enterActiveVideoMode() {
+  if (this.iosCallerUpgradePreview) {
+    this.iosCallerUpgradePreview.srcObject = null;
   }
+
+  this._hideIosUpgradeOverlays();
+  this._hideVideoUpgradeOverlay();
+
+  this._setMode("meet", { audioOnly: false });
+
+  const inbound = this.root.querySelector(".ios-inbound-controls");
+  const normal = this.root.querySelector(".ios-controls");
+  inbound?.classList.add("hidden");
+  normal?.classList.remove("hidden");
+
+  this._attachLocalStreamFromState();
+  this._showLocalPip(true);
+
+  // 🔥 Restore desktop controls
+  if (!this._isMobile() && this.callControls) {
+    this.callControls.classList.remove("hidden");
+    this.callControls.classList.remove("hidden-soft");
+    this.callControls.classList.add("active");
+  }
+
+  this._updateIosVoiceStatus("");
+}
 
   // ============================================================
   // AUDIO HELPERS
@@ -1317,6 +1334,7 @@ videoEl.addEventListener("loadeddata", () => {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
