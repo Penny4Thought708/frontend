@@ -1418,9 +1418,9 @@ videoEl.addEventListener("loadeddata", () => {
   // Accept here = flip UI + notify caller, no extra answerCall.
 async _acceptVideoUpgrade() {
   this._stopRingtone();
-
+/*
   await this.controller.answerCall();
-
+*/
   this._enterActiveVideoMode();
 
   // 🔥 Force-clear any upgrade blur state
@@ -1450,6 +1450,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
