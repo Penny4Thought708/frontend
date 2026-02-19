@@ -649,15 +649,36 @@ _onIosVideoPressed() {
 }
 
 
-  _upgradeToVideo() {
-    this.controller.upgradeToVideo?.();
+_upgradeToVideo() {
+  this.controller.upgradeToVideo?.();
 
-    // Refresh local video + PiP immediately
-    this._attachLocalStreamFromState?.();
+  // Refresh local video immediately
+  this._attachLocalStreamFromState?.();
+  this.isCameraOn = true;
+  this.root?.classList.remove("camera-off");
 
-    this.isCameraOn = true;
-    this.root?.classList.remove("camera-off");
+  // 🔥 Desktop caller upgrade overlay
+  if (!this._isMobile()) {
+    this._showCallerVideoUpgradeDesktop();
   }
+}
+_showCallerVideoUpgradeDesktop() {
+  if (!this.videoUpgradeOverlay) return;
+
+  // Hide controls
+  this.callControls?.classList.add("hidden");
+
+  // Blur remote preview
+  this.root?.classList.add("web-upgrade-pending");
+
+  // Show overlay
+  this.videoUpgradeOverlay.classList.remove("hidden");
+
+  // Update text
+  const label = this.videoUpgradeOverlay.querySelector(".title");
+  if (label) label.textContent = "Waiting for them…";
+}
+
 
 _showCallerVideoUpgrade() {
   if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
@@ -697,19 +718,24 @@ _showCallerVideoUpgrade() {
 }
 
 
-  _hideCallerVideoUpgrade() {
-    if (!this.iosCallerUpgradeOverlay) return;
+_hideCallerVideoUpgrade() {
+  // iOS overlay
+  if (this.iosCallerUpgradeOverlay) {
     this.iosCallerUpgradeOverlay.classList.remove("active");
     this.iosCallerUpgradeOverlay.classList.add("hidden");
     if (this.iosCallerUpgradePreview) {
       this.iosCallerUpgradePreview.srcObject = null;
     }
-
-    // Restore iOS voice UI if still in ios-voice mode
-    if (this.currentMode === "ios-voice" && this.iosVoiceUI) {
-      this.iosVoiceUI.classList.remove("hidden");
-    }
   }
+
+  // Desktop overlay
+  if (this.videoUpgradeOverlay) {
+    this.videoUpgradeOverlay.classList.add("hidden");
+    this.root?.classList.remove("web-upgrade-pending");
+    this.callGrid?.classList.remove("upgrade-pending");
+  }
+}
+
 _showCalleeVideoUpgrade(peerId) {
   this._pendingUpgradePeerId = peerId;
 
@@ -1345,6 +1371,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
