@@ -307,31 +307,40 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
       this._onCallEnded(reason);
     };
 
-    c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
-      rtcState.incomingOffer = offer;
-      rtcState.incomingIsVideo =
-        isVideoUpgrade || offer?.sdp?.includes("m=video");
+c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
+  rtcState.incomingOffer = offer;
 
-      const isUpgrade = !!isVideoUpgrade;
-      console.log("🔥 onIncomingOffer", { isVideoUpgrade, isUpgrade });
+  rtcState.incomingIsVideo =
+    isVideoUpgrade || offer?.sdp?.includes("m=video");
 
-      if (isUpgrade) {
-        if (this._isMobile()) {
-          this.;
-        } else {
-          this.showVideoUpgradeOverlay(peerId, offer);
-        }
-        return;
-      }
+  const isUpgrade = !!isVideoUpgrade;
+  console.log("🔥 onIncomingOffer", { isVideoUpgrade, isUpgrade });
 
-      if (this._isMobile()) {
-        this._showIosInboundControls(peerId);
-      } else {
-        this.showInboundRinging(peerId, {
-          incomingIsVideo: rtcState.incomingIsVideo,
-        });
-      }
-    };
+  // ============================================================
+  // VIDEO UPGRADE FLOW
+  // ============================================================
+  if (isUpgrade) {
+    if (this._isMobile()) {
+      // 🔥 FIXED — this was the broken line
+      this._showCalleeVideoUpgrade(peerId);
+    } else {
+      this.showVideoUpgradeOverlay(peerId, offer);
+    }
+    return;
+  }
+
+  // ============================================================
+  // NORMAL INBOUND CALL
+  // ============================================================
+  if (this._isMobile()) {
+    this._showIosInboundControls(peerId);
+  } else {
+    this.showInboundRinging(peerId, {
+      incomingIsVideo: rtcState.incomingIsVideo,
+    });
+  }
+};
+
 
     // RemoteParticipants.js owns remote tiles
     c.onRemoteJoin = () => {};
@@ -1440,6 +1449,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
