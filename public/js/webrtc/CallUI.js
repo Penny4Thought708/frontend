@@ -129,6 +129,8 @@ export class CallUI {
     // Audio elements
     this.ringtone = document.getElementById("ringtone");
     this.ringback = document.getElementById("ringback");
+    this.upgradeRingtone = document.getElementById("upgradeRingtone");
+    this.upgradeAcceptedTone = document.getElementById("upgradeAcceptedTone");
 
     // ============================================================
     // INTERNAL STATE
@@ -237,7 +239,7 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
       this._setStatusText("Incoming call…");
       this._startTimer(null);
 
-      this._showCalleeVideoUpgrade(peerId);
+      this.;
       return;
     } else {
       mode = "ios-voice";
@@ -309,7 +311,7 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
 
       if (isUpgrade) {
         if (this._isMobile()) {
-          this._showCalleeVideoUpgrade(peerId);
+          this.;
         } else {
           this.showVideoUpgradeOverlay(peerId, offer);
         }
@@ -654,131 +656,208 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
     }
   }
 
-  _showCallerVideoUpgradeDesktop() {
-    if (!this.videoUpgradeOverlay) return;
+/* ============================================================
+   CALLER — DESKTOP VIDEO UPGRADE OVERLAY
+============================================================ */
+_showCallerVideoUpgradeDesktop() {
+  if (!this.videoUpgradeOverlay) return;
 
-    this.callControls?.classList.add("hidden");
-    this.root?.classList.add("web-upgrade-pending");
-    this.videoUpgradeOverlay.classList.remove("hidden");
+  // Hide controls while waiting
+  this.callControls?.classList.add("hidden");
 
-    const label = this.videoUpgradeOverlay.querySelector(".title");
-    if (label) label.textContent = "Waiting for them…";
+  // Blur remote preview
+  this.root?.classList.add("web-upgrade-pending");
+  this.callGrid?.classList.add("upgrade-pending");
+
+  // Show overlay
+  this.videoUpgradeOverlay.classList.remove("hidden");
+
+  // Update label
+  const label = this.videoUpgradeOverlay.querySelector(".title");
+  if (label) label.textContent = "Waiting for them…";
+}
+
+/* ============================================================
+   CALLER — iOS VIDEO UPGRADE OVERLAY
+============================================================ */
+_showCallerVideoUpgrade() {
+  if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
+
+  // Ensure camera is visually active
+  this.root?.classList.remove("camera-off");
+
+  // Hide any other upgrade overlays
+  this._hideIosUpgradeOverlays();
+
+  // Attach upgraded local stream
+  this._attachLocalStreamFromState();
+
+  // iOS timing fix — attach after a tiny delay
+  setTimeout(() => {
+    const stream = rtcState.localStream;
+    if (stream) {
+      this.iosCallerUpgradePreview.srcObject = stream;
+      this.iosCallerUpgradePreview.muted = true;
+      this.iosCallerUpgradePreview.playsInline = true;
+      this.iosCallerUpgradePreview.autoplay = true;
+      this.iosCallerUpgradePreview.play?.().catch(() => {});
+    }
+  }, 50);
+
+  const name = rtcState.peerName || "them";
+  if (this.iosCallerUpgradeLabel) {
+    this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
   }
 
-  _showCallerVideoUpgrade() {
-    if (!this.iosCallerUpgradeOverlay || !this.iosCallerUpgradePreview) return;
-
-    this.root?.classList.remove("camera-off");
-    this._hideIosUpgradeOverlays();
-
-    this._attachLocalStreamFromState();
-
-    setTimeout(() => {
-      const stream = rtcState.localStream;
-      if (stream) {
-        this.iosCallerUpgradePreview.srcObject = stream;
-        this.iosCallerUpgradePreview.muted = true;
-        this.iosCallerUpgradePreview.playsInline = true;
-        this.iosCallerUpgradePreview.autoplay = true;
-        this.iosCallerUpgradePreview.play?.().catch(() => {});
-      }
-    }, 50);
-
-    const name = rtcState.peerName || "them";
-    if (this.iosCallerUpgradeLabel) {
-      this.iosCallerUpgradeLabel.textContent = `Waiting for ${name}…`;
-    }
-
-    if (this.iosVoiceUI) {
-      this.iosVoiceUI.classList.add("hidden");
-    }
-
-    this.iosCallerUpgradeOverlay.classList.remove("hidden");
-    this.iosCallerUpgradeOverlay.classList.add("active");
+  // Hide iOS voice UI if present
+  if (this.iosVoiceUI) {
+    this.iosVoiceUI.classList.add("hidden");
   }
 
-  _hideCallerVideoUpgrade() {
-    if (this.iosCallerUpgradeOverlay) {
-      this.iosCallerUpgradeOverlay.classList.remove("active");
-      this.iosCallerUpgradeOverlay.classList.add("hidden");
-      if (this.iosCallerUpgradePreview) {
-        this.iosCallerUpgradePreview.srcObject = null;
-      }
-    }
+  // Show overlay
+  this.iosCallerUpgradeOverlay.classList.remove("hidden");
+  this.iosCallerUpgradeOverlay.classList.add("active");
+}
 
-    if (this.videoUpgradeOverlay) {
-      this.videoUpgradeOverlay.classList.add("hidden");
-      this.root?.classList.remove("web-upgrade-pending");
-      this.callGrid?.classList.remove("upgrade-pending");
+/* ============================================================
+   CALLER — HIDE UPGRADE OVERLAYS
+============================================================ */
+_hideCallerVideoUpgrade() {
+  // iOS overlay
+  if (this.iosCallerUpgradeOverlay) {
+    this.iosCallerUpgradeOverlay.classList.remove("active");
+    this.iosCallerUpgradeOverlay.classList.add("hidden");
+    if (this.iosCallerUpgradePreview) {
+      this.iosCallerUpgradePreview.srcObject = null;
     }
   }
 
-  _showCalleeVideoUpgrade(peerId) {
-    this._pendingUpgradePeerId = peerId;
-    console.log("🔥 CALLEE UPGRADE OVERLAY TRIGGERED");
+  // Desktop overlay
+  if (this.videoUpgradeOverlay) {
+    this.videoUpgradeOverlay.classList.add("hidden");
+    this.root?.classList.remove("web-upgrade-pending");
+    this.callGrid?.classList.remove("upgrade-pending");
+  }
+}
 
-    if (!this.iosCalleeUpgradeOverlay) {
-      this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
-      return;
-    }
+/* ============================================================
+   CALLEE — iOS VIDEO UPGRADE OVERLAY
+============================================================ */
+_showCalleeVideoUpgrade(peerId) {
+  this._pendingUpgradePeerId = peerId;
+  console.log("🔥 CALLEE UPGRADE OVERLAY TRIGGERED");
 
-    this._hideIosUpgradeOverlays();
-
-    this.iosCalleeUpgradeOverlay.classList.remove("hidden");
-    this.iosCalleeUpgradeOverlay.classList.add("active");
-    this.root?.classList.add("ios-upgrade-pending");
-
-    const id = String(peerId);
-    const stream = rtcState.remoteStreams?.[id];
-
-    if (stream && this.iosCalleeUpgradePreview) {
-      this.iosCalleeUpgradePreview.srcObject = stream;
-      this.iosCalleeUpgradePreview.muted = true;
-      this.iosCalleeUpgradePreview.playsInline = true;
-      this.iosCalleeUpgradePreview.autoplay = true;
-      this.iosCalleeUpgradePreview.play?.().catch(() => {});
-    }
-
-    const name = rtcState.peerName || "Caller";
-    if (this.iosCalleeUpgradeLabel) {
-      this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
-    }
-
-    this._playRingtone();
+  if (!this.iosCalleeUpgradeOverlay) {
+    // Fallback to desktop overlay
+    this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
+    return;
   }
 
-  iosCalleePreviewReady(stream) {
+  // Hide any other upgrade overlays
+  this._hideIosUpgradeOverlays();
+
+  // Show overlay
+  this.iosCalleeUpgradeOverlay.classList.remove("hidden");
+  this.iosCalleeUpgradeOverlay.classList.add("active");
+  this.root?.classList.add("ios-upgrade-pending");
+
+  // Attach remote preview if available
+  const id = String(peerId);
+  const stream = rtcState.remoteStreams?.[id];
+
+  if (stream && this.iosCalleeUpgradePreview) {
     this.iosCalleeUpgradePreview.srcObject = stream;
     this.iosCalleeUpgradePreview.muted = true;
     this.iosCalleeUpgradePreview.playsInline = true;
     this.iosCalleeUpgradePreview.autoplay = true;
     this.iosCalleeUpgradePreview.play?.().catch(() => {});
+  }
 
-    const name = rtcState.peerName || "Caller";
-    if (this.iosCalleeUpgradeLabel) {
-      this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+  const name = rtcState.peerName || "Caller";
+  if (this.iosCalleeUpgradeLabel) {
+    this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+  }
+
+  // 🔥 Special ringtone for upgrade request
+  this._playUpgradeRingtone();
+}
+
+/* ============================================================
+   CALLEE — PREVIEW READY (OPTIONAL)
+============================================================ */
+iosCalleePreviewReady(stream) {
+  if (!this.iosCalleeUpgradePreview) return;
+
+  this.iosCalleeUpgradePreview.srcObject = stream;
+  this.iosCalleeUpgradePreview.muted = true;
+  this.iosCalleeUpgradePreview.playsInline = true;
+  this.iosCalleeUpgradePreview.autoplay = true;
+  this.iosCalleeUpgradePreview.play?.().catch(() => {});
+
+  const name = rtcState.peerName || "Caller";
+  if (this.iosCalleeUpgradeLabel) {
+    this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+  }
+
+  this._playUpgradeRingtone();
+
+  this.iosCalleeUpgradeOverlay.classList.remove("hidden");
+  this.iosCalleeUpgradeOverlay.classList.add("active");
+  this.root?.classList.add("ios-upgrade-pending");
+}
+
+/* ============================================================
+   CALLEE — HIDE OVERLAY
+============================================================ */
+_hideCalleeVideoUpgrade() {
+  if (!this.iosCalleeUpgradeOverlay) return;
+
+  this.iosCalleeUpgradeOverlay.classList.remove("active");
+  this.iosCalleeUpgradeOverlay.classList.add("hidden");
+
+  if (this.iosCalleeUpgradePreview) {
+    this.iosCalleeUpgradePreview.srcObject = null;
+  }
+}
+
+/* ============================================================
+   HIDE ALL UPGRADE OVERLAYS
+============================================================ */
+_hideIosUpgradeOverlays() {
+  this._hideCallerVideoUpgrade();
+  this._hideCalleeVideoUpgrade();
+}
+
+/* ============================================================
+   AUDIO — UPGRADE RINGTONES
+============================================================ */
+_playUpgradeRingtone() {
+  try {
+    this._stopRingtone();
+    if (this.upgradeRingtone) {
+      this.upgradeRingtone.currentTime = 0;
+      this.upgradeRingtone.play().catch(() => {});
     }
+  } catch {}
+}
 
-    this._playRingtone();
-
-    this.iosCalleeUpgradeOverlay.classList.remove("hidden");
-    this.iosCalleeUpgradeOverlay.classList.add("active");
-    this.root?.classList.add("ios-upgrade-pending");
-  }
-
-  _hideCalleeVideoUpgrade() {
-    if (!this.iosCalleeUpgradeOverlay) return;
-    this.iosCalleeUpgradeOverlay.classList.remove("active");
-    this.iosCalleeUpgradeOverlay.classList.add("hidden");
-    if (this.iosCalleeUpgradePreview) {
-      this.iosCalleeUpgradePreview.srcObject = null;
+_stopUpgradeRingtone() {
+  try {
+    if (this.upgradeRingtone) {
+      this.upgradeRingtone.pause();
+      this.upgradeRingtone.currentTime = 0;
     }
-  }
+  } catch {}
+}
 
-  _hideIosUpgradeOverlays() {
-    this._hideCallerVideoUpgrade();
-    this._hideCalleeVideoUpgrade();
-  }
+_playUpgradeAcceptedTone() {
+  try {
+    if (this.upgradeAcceptedTone) {
+      this.upgradeAcceptedTone.currentTime = 0;
+      this.upgradeAcceptedTone.play().catch(() => {});
+    }
+  } catch {}
+}
 
   // ============================================================
   // PIP DRAGGING (PiP always local after call is answered)
@@ -1355,6 +1434,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
