@@ -378,7 +378,26 @@ c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
   // ============================================================
   _bindUI() {
     const isMobile = this._isMobile();
-
+    const unlockAudio = () => {
+      const els = [
+        this.ringtone,
+        this.ringback,
+        this.upgradeRingtone,
+        this.upgradeAcceptedTone
+      ];
+      els.forEach(el => {
+        if (!el) return;
+        el.muted = true;
+        el.play().catch(() => {});
+        el.pause();
+        el.muted = false;
+      });
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+    
+    window.addEventListener("click", unlockAudio, { once: true });
+    window.addEventListener("touchstart", unlockAudio, { once: true });
     // DESKTOP CONTROLS
     if (!isMobile) {
       if (this.declineBtn) {
@@ -591,26 +610,7 @@ c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
       });
     }
   }
-const unlockAudio = () => {
-  const els = [
-    this.ringtone,
-    this.ringback,
-    this.upgradeRingtone,
-    this.upgradeAcceptedTone
-  ];
-  els.forEach(el => {
-    if (!el) return;
-    el.muted = true;
-    el.play().catch(() => {});
-    el.pause();
-    el.muted = false;
-  });
-  window.removeEventListener("click", unlockAudio);
-  window.removeEventListener("touchstart", unlockAudio);
-};
 
-window.addEventListener("click", unlockAudio, { once: true });
-window.addEventListener("touchstart", unlockAudio, { once: true });
 
   _startControlsAutoHide() {
     if (this._isMobile()) return;
@@ -1488,6 +1488,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
