@@ -54,9 +54,9 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med);
+ transition: 
+    opacity 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
   z-index: 1000;
 }
 
@@ -177,6 +177,17 @@
 
   background: #000;
 }
+.remoteVideo {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.remoteVideo.ready {
+  opacity: 1;
+}
+
+
+
 /* Override global object-fit for orientation-aware remote video */
 .participant.remote.portrait .remoteVideo {
   object-fit: contain !important;
@@ -309,10 +320,9 @@
   opacity: 0;
   pointer-events: auto;
   cursor: pointer;
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med),
-    box-shadow var(--call-transition-fast);
+  transition: opacity var(--call-transition-med),
+     transform 240ms cubic-bezier(0.18, 0.89, 0.32, 1.28),
+     box-shadow var(--call-transition-fast);
   z-index: 20;
 }
 
@@ -747,7 +757,7 @@
 .video-upgrade-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.31);
+  background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -902,6 +912,7 @@
 .ios-caller-upgrade.active .ios-caller-upgrade-content {
   opacity: 1;
   transform: translateY(0);
+   transition: opacity 260ms ease-out 80ms, transform 260ms ease-out 80ms;
 }
 .ios-caller-upgrade {
   opacity: 1;
@@ -955,7 +966,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(18px) brightness(0.6);
+  transition: filter 260ms cubic-bezier(0.2, 0.8, 0.2, 1),             opacity 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .ios-callee-preview {
   opacity: 0;
@@ -965,7 +976,7 @@
 
 .ios-callee-upgrade.active .ios-callee-preview {
   opacity: 1;
-  filter: blur(18px) brightness(0.6);
+  transition: filter 260ms cubic-bezier(0.2, 0.8, 0.2, 1),             opacity 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .ios-callee-blur-layer {
@@ -1170,17 +1181,13 @@
 /* ===========================
    ANIMATIONS
 =========================== */
-
 @keyframes participant-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  0%   { opacity: 0; transform: scale(0.92) translateY(8px); }
+  60%  { opacity: 1; transform: scale(1.02) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+
 
 @keyframes voice-pulse {
   0% {
@@ -1242,11 +1249,11 @@
   + .call-body .participant.remote .media-wrapper video,
 .call-window.web-upgrade-pending .participant.remote .media-wrapper video {
   opacity: 1;
-  filter: blur(18px) brightness(0.6);
+  transition: filter 260ms cubic-bezier(0.2, 0.8, 0.2, 1),             opacity 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .call-window.web-upgrade-pending .participant.remote .media-wrapper video {
   opacity: 1;
-  filter: blur(18px) brightness(0.6);
+  transition: filter 260ms cubic-bezier(0.2, 0.8, 0.2, 1),             opacity 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 /* Hide desktop controls during upgrade prompt */
