@@ -1308,16 +1308,24 @@ videoEl.addEventListener("loadeddata", () => {
 
   // FaceTime-style: callee has already soft-accepted at SDP level.
   // Accept here = flip UI + notify caller, no extra answerCall.
-  async _acceptVideoUpgrade() {
-    this._stopRingtone();
+async _acceptVideoUpgrade() {
+  this._stopRingtone();
 
-    this._enterActiveVideoMode();
+  await this.controller.answerCall();
 
-    this._hideVideoUpgradeOverlay();
-    this._hideCalleeVideoUpgrade();
+  this._enterActiveVideoMode();
 
-    this.controller.sendVideoUpgradeAccepted?.();
-  }
+  // 🔥 Force-clear any upgrade blur state
+  this.root?.classList.remove("web-upgrade-pending");
+  this.callGrid?.classList.remove("upgrade-pending");
+  this.root?.classList.remove("camera-off");
+
+  this._hideVideoUpgradeOverlay();
+  this._hideCalleeVideoUpgrade();
+
+  this.controller.sendVideoUpgradeAccepted?.();
+}
+
 
   _declineVideoUpgrade() {
     this._stopRingtone();
@@ -1334,6 +1342,7 @@ videoEl.addEventListener("loadeddata", () => {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
