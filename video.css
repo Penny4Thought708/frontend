@@ -973,11 +973,7 @@
   inset: 0;
   backdrop-filter: blur(20px);
 }
-.ios-callee-blur-layer {
-  opacity: 0;
-  backdrop-filter: blur(0px);
-  transition: opacity 0.22s ease-out, backdrop-filter 0.22s ease-out;
-}
+
 
 .ios-callee-upgrade.active .ios-callee-blur-layer {
   opacity: 1;
