@@ -157,7 +157,7 @@ export class WebRTCController {
               log("[WebRTC] Caller: video-upgrade-accepted");
             
               // 🔥 Play confirmation tone once
-              window.callUIInstance?._playUpgradeAcceptedTone?.();
+              window.callUIInstance = this;
             
               // 🔥 Trigger the normal upgrade flow
               this._handleVideoUpgradeAccepted(from);
@@ -978,6 +978,7 @@ _handleVideoUpgradeAccepted(from) {
     }
   }
 }
+
 
 
 
