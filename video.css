@@ -38,17 +38,7 @@
 .hidden {
   display: none !important;
 }
-.ios-callee-preview {
-  z-index: 61 !important;
-}
 
-.ios-callee-blur-layer {
-  z-index: 62 !important;
-}
-
-.ios-callee-upgrade-content {
-  z-index: 63 !important;
-}
 
 /* ===========================
    CALL WINDOW SHELL
@@ -893,12 +883,6 @@
   opacity: 1 !important;
 }
 
-
-/* When overlay becomes active, fade in + reduce blur */
-.ios-caller-upgrade.active .ios-caller-preview {
-  opacity: 1;
-  filter: blur(18px) brightness(0.7);
-}
 .ios-caller-blur-layer {
   opacity: 0;
   backdrop-filter: blur(0px);
@@ -1259,12 +1243,28 @@
 
 /* Fade-in + reduce blur when overlay becomes visible */
 .call-window.web-upgrade-pending .video-upgrade-overlay:not(.hidden)
-  ~ .call-body .participant.remote .media-wrapper video,
+  + .call-body .participant.remote .media-wrapper video,
 .call-window.web-upgrade-pending .participant.remote .media-wrapper video {
   opacity: 1;
   filter: blur(18px) brightness(0.6);
 }
+.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
+  opacity: 1;
+  filter: blur(18px) brightness(0.6);
+}
+
 /* Hide desktop controls during upgrade prompt */
 .call-window.web-upgrade-pending .call-controls {
   display: none !important;
+}
+.ios-callee-preview {
+  z-index: 61 !important;
+}
+
+.ios-callee-blur-layer {
+  z-index: 62 !important;
+}
+
+.ios-callee-upgrade-content {
+  z-index: 63 !important;
 }
