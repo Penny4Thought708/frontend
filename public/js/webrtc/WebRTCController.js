@@ -536,18 +536,18 @@ _ensurePC(peerId) {
     });
 
     // Video upgrade while already in-call
-  if (isVideoUpgrade && rtcState.status === "in-call") {
+if (isVideoUpgrade && rtcState.status === "in-call") {
   rtcState.peerId = peerId;
   rtcState.incomingOffer = offer;
   rtcState.incomingIsVideo = true;
 
-  // ⭐ Soft-accept the offer so video can start flowing
   await this._softAcceptVideoUpgrade(peerId, offer);
 
-  // Now tell the UI to show the blurred preview
-  this.onIncomingOffer?.(peerId, offer);
+  // ✅ Tell CallUI this *is* a video upgrade
+  this.onIncomingOffer?.(peerId, offer, true);
   return;
 }
+
 
 
     // Already in a call → queue this offer
@@ -569,9 +569,11 @@ _ensurePC(peerId) {
     rtcState.incomingIsVideo = incomingIsVideo;
     this._setStatus("ringing");
 
-    this.onIncomingOffer?.(peerId, offer);
+    this.onIncomingOffer?.(peerId, offer, isVideoUpgrade);
+
   }
-async _softAcceptVideoUpgrade(peerId, offer) {
+  
+  async _softAcceptVideoUpgrade(peerId, offer) {
   const pc = this._ensurePC(peerId);
 
   // Apply the remote offer
@@ -1069,6 +1071,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
