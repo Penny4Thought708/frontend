@@ -1105,10 +1105,12 @@ export class CallUI {
       this.callControls.classList.add("active");
     }
   }
+
+  /*
 videoEl.addEventListener("loadeddata", () => {
   videoEl.classList.add("ready");
 });
-
+*/
   // ============================================================
   // WINDOW OPEN/CLOSE
   // ============================================================
@@ -1315,6 +1317,7 @@ videoEl.addEventListener("loadeddata", () => {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
