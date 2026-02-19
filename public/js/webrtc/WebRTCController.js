@@ -213,6 +213,23 @@ export class WebRTCController {
             this.onPeerUnavailable(reason || "User unavailable");
           }
           break;
+
+          case "video-upgrade-accepted":
+  if (window.callUIInstance?._hideCallerVideoUpgrade) {
+    window.callUIInstance._hideCallerVideoUpgrade();
+  }
+  if (window.callUIInstance?._enterActiveVideoMode) {
+    window.callUIInstance._enterActiveVideoMode();
+  }
+  break;
+
+case "video-upgrade-declined":
+  if (window.callUIInstance?._hideCallerVideoUpgrade) {
+    window.callUIInstance._hideCallerVideoUpgrade();
+  }
+  // Optional: show toast or revert UI
+  break;
+
         default:
           warn("Unknown webrtc:signal type:", type, msg);
           break;
@@ -891,6 +908,27 @@ this.socket.emit("webrtc:signal", {
 });
 }
 
+// -------------------------------------------------------
+// CALLEE RESPONSES TO VIDEO UPGRADE
+// -------------------------------------------------------
+sendVideoUpgradeAccepted() {
+  this.socket.emit("webrtc:signal", {
+    type: "video-upgrade-accepted",
+    to: rtcState.peerId,
+    from: rtcState.selfId,
+    callId: rtcState.callId
+  });
+}
+
+sendVideoUpgradeDeclined() {
+  this.socket.emit("webrtc:signal", {
+    type: "video-upgrade-declined",
+    to: rtcState.peerId,
+    from: rtcState.selfId,
+    callId: rtcState.callId
+  });
+}
+
   /* -------------------------------------------------------
      END CALL (LOCAL HANGUP)
   ------------------------------------------------------- */
@@ -1031,6 +1069,7 @@ this.socket.emit("webrtc:signal", {
     }
   }
 }
+
 
 
 
