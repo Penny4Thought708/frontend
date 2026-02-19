@@ -8,6 +8,10 @@
 import { WebRTCController } from "./WebRTCController.js";
 import { rtcState } from "./WebRTCState.js";
 
+
+let audioCtx = null;
+let audioBuffers = {};
+
 export class CallUI {
   constructor(socket, options = {}) {
     this.rtc = new WebRTCController(socket);
@@ -169,8 +173,7 @@ export class CallUI {
     window.callUIInstance = this;
 
   }
-let audioCtx = null;
-let audioBuffers = {};
+
  // ============================================================
   // GENERIC TONE PLAYER (Web Audio + <audio> fallback)
   // ============================================================
@@ -1537,6 +1540,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
