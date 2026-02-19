@@ -879,9 +879,6 @@ const offer = await pc.createOffer({
   offerToReceiveAudio: true,
   offerToReceiveVideo: true,
 });
-
-offer.isUpgrade = true;   // 🔥 REQUIRED
-
 await pc.setLocalDescription(offer);
 
 this.socket.emit("webrtc:signal", {
@@ -890,8 +887,8 @@ this.socket.emit("webrtc:signal", {
   from: rtcState.selfId,
   callId: rtcState.callId,
   offer,
+  isVideoUpgrade: true,
 });
-
 }
 
   /* -------------------------------------------------------
@@ -1034,6 +1031,7 @@ this.socket.emit("webrtc:signal", {
     }
   }
 }
+
 
 
 
