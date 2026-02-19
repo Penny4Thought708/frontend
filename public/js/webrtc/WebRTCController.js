@@ -543,7 +543,7 @@ if (isVideoUpgrade && rtcState.status === "in-call") {
 
   await this._softAcceptVideoUpgrade(peerId, offer);
 
-  // ✅ Tell CallUI this *is* a video upgrade
+  // ✅ tell CallUI this *is* a video upgrade
   this.onIncomingOffer?.(peerId, offer, true);
   return;
 }
@@ -1071,6 +1071,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
