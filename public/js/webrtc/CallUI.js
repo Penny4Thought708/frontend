@@ -131,35 +131,7 @@ export class CallUI {
     this.ringback = document.getElementById("ringback");
     this.upgradeRingtone = document.getElementById("upgradeRingtone");
     this.upgradeAcceptedTone = document.getElementById("upgradeAcceptedTone");
-  // ============================================================
-  // GENERIC TONE PLAYER (Web Audio + <audio> fallback)
-  // ============================================================
-  _playTone(id) {
-    try {
-      // Prefer Web Audio if unlocked and buffer is loaded
-      if (audioCtx && audioBuffers[id]) {
-        audioCtx.resume?.();
-
-        const src = audioCtx.createBufferSource();
-        src.buffer = audioBuffers[id];
-        src.connect(audioCtx.destination);
-        src.start(0);
-        return;
-      }
-
-      // Fallback to the <audio> element
-      const el =
-        this[id] || document.getElementById(id); // e.g. this.ringtone, this.ringback, etc.
-      if (el) {
-        el.pause();
-        el.currentTime = 0;
-        el.play().catch(() => {});
-      }
-    } catch (e) {
-      console.warn("[CallUI] _playTone error for", id, e);
-    }
-  }
-
+ 
     // ============================================================
     // INTERNAL STATE
     // ============================================================
@@ -199,6 +171,34 @@ export class CallUI {
   }
 let audioCtx = null;
 let audioBuffers = {};
+ // ============================================================
+  // GENERIC TONE PLAYER (Web Audio + <audio> fallback)
+  // ============================================================
+  _playTone(id) {
+    try {
+      // Prefer Web Audio if unlocked and buffer is loaded
+      if (audioCtx && audioBuffers[id]) {
+        audioCtx.resume?.();
+
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioBuffers[id];
+        src.connect(audioCtx.destination);
+        src.start(0);
+        return;
+      }
+
+      // Fallback to the <audio> element
+      const el =
+        this[id] || document.getElementById(id); // e.g. this.ringtone, this.ringback, etc.
+      if (el) {
+        el.pause();
+        el.currentTime = 0;
+        el.play().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("[CallUI] _playTone error for", id, e);
+    }
+  }
 
   // ============================================================
   // REMOTE TILE SYSTEM DISABLED
@@ -1537,6 +1537,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
