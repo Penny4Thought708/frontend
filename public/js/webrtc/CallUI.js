@@ -305,7 +305,7 @@ const isUpgrade = offer?.isUpgrade === true;
   if (isUpgrade) {
     // 🔥 Mobile → iOS blurred overlay
     if (this._isMobile()) {
-      this._showCalleeVideoUpgrade(peerId);
+      this.(peerId);
     } else {
       // 🔥 Desktop/web → FaceTime-style blurred preview + message
       this.showVideoUpgradeOverlay(peerId, offer);
@@ -737,28 +737,44 @@ _hideCallerVideoUpgrade() {
 _showCalleeVideoUpgrade(peerId) {
   this._pendingUpgradePeerId = peerId;
 
-  if (!this.iosCalleeUpgradeOverlay || !this.iosCalleeUpgradePreview) {
+  if (!this.iosCalleeUpgradeOverlay) {
     // Mobile fallback: still use generic overlay if iOS markup missing
     this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
     return;
   }
 
+  // Hide any other upgrade overlays
   this._hideIosUpgradeOverlays();
 
+  // 🔥 Immediately show the iOS callee overlay
+  this.iosCalleeUpgradeOverlay.classList.remove("hidden");
+  this.iosCalleeUpgradeOverlay.classList.add("active");
+  this.root?.classList.add("ios-upgrade-pending");
+
+  // Try to attach remote preview if available, but DO NOT block on it
   const id = String(peerId);
+  const stream = rtcState.remoteStreams?.[id];
 
-  const waitForVideo = () => {
-    const stream = rtcState.remoteStreams?.[id];
+  if (stream && this.iosCalleeUpgradePreview) {
+    this.iosCalleeUpgradePreview.srcObject = stream;
+    this.iosCalleeUpgradePreview.muted = true;
+    this.iosCalleeUpgradePreview.playsInline = true;
+    this.iosCalleeUpgradePreview.autoplay = true;
+    this.iosCalleeUpgradePreview.play?.().catch(() => {});
+  }
 
-    if (stream && stream.getVideoTracks().length > 0) {
-      this.iosCalleePreviewReady(stream);
-    } else {
-      requestAnimationFrame(waitForVideo);
-    }
-  };
+  const name = rtcState.peerName || "Caller";
+  if (this.iosCalleeUpgradeLabel) {
+    this.iosCalleeUpgradeLabel.textContent = `${name} wants to switch to video`;
+  }
 
-  waitForVideo();
+  // Make sure ringtone is playing for the upgrade prompt
+  this._playRingtone();
 }
+
+// You can now delete iosCalleePreviewReady() entirely,
+// or leave it unused if you want, but it’s no longer needed.
+
 
 iosCalleePreviewReady(stream) {
   // Attach the real remote video
@@ -1369,6 +1385,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
