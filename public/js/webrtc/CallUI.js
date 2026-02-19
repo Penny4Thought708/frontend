@@ -177,31 +177,51 @@ export class CallUI {
  // ============================================================
   // GENERIC TONE PLAYER (Web Audio + <audio> fallback)
   // ============================================================
-  _playTone(id) {
-    try {
-      // Prefer Web Audio if unlocked and buffer is loaded
-      if (audioCtx && audioBuffers[id]) {
-        audioCtx.resume?.();
-
-        const src = audioCtx.createBufferSource();
-        src.buffer = audioBuffers[id];
-        src.connect(audioCtx.destination);
-        src.start(0);
-        return;
-      }
-
-      // Fallback to the <audio> element
-      const el =
-        this[id] || document.getElementById(id); // e.g. this.ringtone, this.ringback, etc.
-      if (el) {
-        el.pause();
-        el.currentTime = 0;
-        el.play().catch(() => {});
-      }
-    } catch (e) {
-      console.warn("[CallUI] _playTone error for", id, e);
+async _playTone(id) {
+  try {
+    // 1. Ensure AudioContext exists
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+
+    // 2. Resume context if suspended (Safari/Chrome do this randomly)
+    if (audioCtx.state === "suspended") {
+      await audioCtx.resume().catch(() => {});
+    }
+
+    // 3. If buffer exists, play via Web Audio
+    if (audioBuffers[id]) {
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffers[id];
+      src.connect(audioCtx.destination);
+      src.start(0);
+      return;
+    }
+
+    // 4. Fallback to <audio> element
+    const el = this[id] || document.getElementById(id);
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+
+      // Retry logic: browsers sometimes block the first attempt
+      const tryPlay = async (attempt = 0) => {
+        try {
+          await el.play();
+        } catch (e) {
+          if (attempt < 3) {
+            setTimeout(() => tryPlay(attempt + 1), 50);
+          }
+        }
+      };
+
+      tryPlay();
+    }
+  } catch (e) {
+    console.warn("[CallUI] _playTone error for", id, e);
   }
+}
+
 
   // ============================================================
   // REMOTE TILE SYSTEM DISABLED
@@ -1534,6 +1554,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
