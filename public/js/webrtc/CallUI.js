@@ -1351,6 +1351,9 @@ _hideVideoUpgradeOverlay() {
 async _acceptVideoUpgrade() {
   this._stopRingtone();
 
+  // 🔥 Upgrade local media + send answer
+  await this.controller.answerCall();
+
   // Switch UI to full video mode
   this._enterActiveVideoMode();
 
@@ -1381,6 +1384,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
