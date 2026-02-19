@@ -315,6 +315,7 @@ const isUpgrade =
     return;
   }
 
+if (!isUpgrade) {
   if (this._isMobile()) {
     this._showIosInboundControls(peerId);
   } else {
@@ -322,6 +323,8 @@ const isUpgrade =
       incomingIsVideo: rtcState.incomingIsVideo,
     });
   }
+}
+
 };
 
     // RemoteParticipants.js owns remote tiles
@@ -1272,31 +1275,35 @@ showVideoUpgradeOverlay(peerId, offer) {
   this._pendingVideoUpgrade = { peerId, offer };
   if (!this.videoUpgradeOverlay) return;
 
-  // 🔥 Hide default desktop inbound controls completely
+  // Hide ALL inbound/active controls
   if (this.callControls) {
     this.callControls.classList.add("hidden");
-    this.callControls.classList.remove("inbound");
-    this.callControls.classList.remove("active");
+    this.callControls.classList.remove("inbound", "active");
   }
 
-  // 🔥 Mark web upgrade state so CSS can blur remote preview
+  // Blur remote preview (CSS handles this)
   this.root?.classList.add("web-upgrade-pending");
 
-  // 🔥 Show the desktop/web upgrade overlay
+  // Ensure remote video stays visible behind overlay
+  this.callGrid?.classList.add("upgrade-pending");
+
+  // Show overlay
   this.videoUpgradeOverlay.classList.remove("hidden");
 }
+
 
 _hideVideoUpgradeOverlay() {
   if (!this.videoUpgradeOverlay) return;
 
-  // Hide the overlay
   this.videoUpgradeOverlay.classList.add("hidden");
   this._pendingVideoUpgrade = null;
 
-  // Remove blur state
+  // Remove blur + overlay state
   this.root?.classList.remove("web-upgrade-pending");
+  this.callGrid?.classList.remove("upgrade-pending");
 
-  // 🔥 If still inbound (call not answered), restore inbound controls
+  // Do NOT restore inbound controls for upgrades
+  // Only restore if this was a real inbound call
   if (this.isInbound && this.callControls) {
     this.callControls.classList.remove("hidden");
     this.callControls.classList.remove("hidden-soft");
@@ -1304,24 +1311,32 @@ _hideVideoUpgradeOverlay() {
   }
 }
 
+
 async _acceptVideoUpgrade() {
   this._stopRingtone();
 
-  // We already answered at the WebRTC level.
-  // Now just flip UI to full video mode.
+  // Switch UI to full video mode
   this._enterActiveVideoMode();
 
+  // Hide overlays
   this._hideVideoUpgradeOverlay();
   this._hideCalleeVideoUpgrade();
+
+  // Notify caller
+  this.controller.sendVideoUpgradeAccepted?.();
 }
 
 
-  _declineVideoUpgrade() {
-    this._stopRingtone();
-    this._hideVideoUpgradeOverlay();
-    this._hideCalleeVideoUpgrade();
-    this.controller.declineCall?.("video_upgrade_declined");
-  }
+
+_declineVideoUpgrade() {
+  this._stopRingtone();
+  this._hideVideoUpgradeOverlay();
+  this._hideCalleeVideoUpgrade();
+
+  // Notify caller
+  this.controller.sendVideoUpgradeDeclined?.();
+}
+
 
   // ============================================================
   // UTIL
@@ -1330,6 +1345,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
