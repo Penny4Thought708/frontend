@@ -101,6 +101,82 @@ export class WebRTCController {
 
     this._bindSocket();
   }
+  /* -------------------------------------------------------
+     SOCKET SIGNALING
+  ------------------------------------------------------- */
+  _bindSocket() {
+    if (!this.socket) {
+      err("No socket provided to WebRTCController");
+      return;
+    }
+
+    this.socket.on("webrtc:signal", async (msg) => {
+      if (this._destroyed) return;
+
+      const {
+        type,
+        from,
+        to,
+        callId,
+        offer,
+        answer,
+        candidate,
+        isVideoUpgrade,
+        reason,
+      } = msg || {};
+
+      if (!from && type !== "unavailable") {
+        warn("Received webrtc:signal without 'from':", msg);
+      }
+
+      if (!rtcState.callId && callId) {
+        rtcState.callId = callId;
+      }
+
+      switch (type) {
+        case "offer":
+          await this._handleOffer(from, offer, !!isVideoUpgrade, callId);
+          break;
+
+        case "answer":
+          await this._handleAnswer(from, answer);
+          break;
+
+        case "ice":
+          await this._handleIce(from, candidate);
+          break;
+
+        case "leave":
+          this._handleLeave(from);
+          break;
+
+        case "unavailable":
+          if (rtcState.inCall) {
+            log("Ignoring 'unavailable' signal during active call");
+            break;
+          }
+          if (this.onPeerUnavailable) {
+            this.onPeerUnavailable(reason || "User unavailable");
+          }
+          break;
+
+        case "video-upgrade-accepted":
+          log("[WebRTC] Caller: video-upgrade-accepted");
+          window.callUIInstance?._hideCallerVideoUpgrade?.();
+          window.callUIInstance?._enterActiveVideoMode?.();
+          break;
+
+        case "video-upgrade-declined":
+          log("[WebRTC] Caller: video-upgrade-declined");
+          window.callUIInstance?._hideCallerVideoUpgrade?.();
+          break;
+
+        default:
+          warn("Unknown webrtc:signal type:", type, msg);
+          break;
+      }
+    });
+  }
 
   /* -------------------------------------------------------
      INTERNAL STATE HELPERS
@@ -896,6 +972,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
