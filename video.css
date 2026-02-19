@@ -172,9 +172,9 @@
 .remoteVideo,
 #localPipVideo,
 #remotePipVideo {
-  width: 100%;
+
   height: 100%;
-  object-fit: cover;
+
   background: #000;
 }
 /* Override global object-fit for orientation-aware remote video */
