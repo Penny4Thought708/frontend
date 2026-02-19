@@ -872,12 +872,20 @@ _hideIosUpgradeOverlays() {
 _playUpgradeRingtone() {
   try {
     this._stopRingtone();
+    this._stopUpgradeAcceptedTone?.(); // optional but recommended
+
     if (this.upgradeRingtone) {
+      this.upgradeRingtone.pause();
       this.upgradeRingtone.currentTime = 0;
-      this.upgradeRingtone.play().catch(() => {});
+
+      setTimeout(() => {
+        this.upgradeRingtone.play().catch(() => {});
+      }, 50);
     }
   } catch {}
 }
+
+
 
 _stopUpgradeRingtone() {
   try {
@@ -890,13 +898,19 @@ _stopUpgradeRingtone() {
 
 _playUpgradeAcceptedTone() {
   try {
-    this._stopUpgradeRingtone();   // 🔥 REQUIRED
+    this._stopUpgradeRingtone(); // stop upgrade ringtone first
+
     if (this.upgradeAcceptedTone) {
+      this.upgradeAcceptedTone.pause();
       this.upgradeAcceptedTone.currentTime = 0;
-      this.upgradeAcceptedTone.play().catch(() => {});
+
+      setTimeout(() => {
+        this.upgradeAcceptedTone.play().catch(() => {});
+      }, 50); // small delay prevents race-condition
     }
   } catch {}
 }
+
 
 
   // ============================================================
@@ -1474,6 +1488,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
