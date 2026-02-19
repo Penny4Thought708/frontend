@@ -297,10 +297,8 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
   rtcState.incomingIsVideo =
     offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
 
-const isUpgrade =
-  offer?.isUpgrade === true &&
-  rtcState.inCall &&
-  rtcState.audioOnly;
+const isUpgrade = offer?.isUpgrade === true;
+
 
 
 
@@ -1371,6 +1369,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
