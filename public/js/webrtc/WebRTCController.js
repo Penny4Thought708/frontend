@@ -228,6 +228,19 @@ export class WebRTCController {
   _hasActiveParticipants() {
     return rtcState.participants && rtcState.participants.size > 0;
   }
+  /* -------------------------------------------------------
+     ENSURE PEER CONNECTION EXISTS
+  ------------------------------------------------------- */
+  _ensurePC(peerId) {
+    peerId = String(peerId);
+
+    let pc = this.pcMap.get(peerId);
+    if (pc) return pc;
+
+    pc = this._getPc(peerId);
+    this.pcMap.set(peerId, pc);
+    return pc;
+  }
 
   _getPc(peerId) {
   peerId = String(peerId);
@@ -1011,6 +1024,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
