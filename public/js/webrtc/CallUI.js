@@ -166,6 +166,8 @@ export class CallUI {
     this._bindController();
     this._bindUI();
     this._bindPipDrag();
+    window.callUIInstance = this;
+
   }
 
   // ============================================================
@@ -1450,6 +1452,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
