@@ -765,6 +765,7 @@ _showCalleeVideoUpgrade(peerId) {
   if (!this.iosCalleeUpgradeOverlay) {
     // Fallback to desktop overlay
     this.showVideoUpgradeOverlay(peerId, rtcState.incomingOffer);
+    this._playUpgradeRingtone();
     return;
   }
 
@@ -1449,6 +1450,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
