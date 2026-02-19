@@ -877,20 +877,9 @@ _hideIosUpgradeOverlays() {
    AUDIO — UPGRADE RINGTONES
 ============================================================ */
 _playUpgradeRingtone() {
-  try {
-    this._stopRingtone();
-    this._stopUpgradeAcceptedTone?.(); // optional but recommended
-
-    if (this.upgradeRingtone) {
-      this.upgradeRingtone.pause();
-      this.upgradeRingtone.currentTime = 0;
-
-      setTimeout(() => {
-        this.upgradeRingtone.play().catch(() => {});
-      }, 50);
-    }
-  } catch {}
+  this._playTone("upgradeRingtone");
 }
+
 
 
 
@@ -904,18 +893,7 @@ _stopUpgradeRingtone() {
 }
 
 _playUpgradeAcceptedTone() {
-  try {
-    this._stopUpgradeRingtone(); // stop upgrade ringtone first
-
-    if (this.upgradeAcceptedTone) {
-      this.upgradeAcceptedTone.pause();
-      this.upgradeAcceptedTone.currentTime = 0;
-
-      setTimeout(() => {
-        this.upgradeAcceptedTone.play().catch(() => {});
-      }, 50); // small delay prevents race-condition
-    }
-  } catch {}
+  this._playTone("upgradeAcceptedTone");
 }
 
 
@@ -1286,27 +1264,15 @@ videoEl.addEventListener("loadeddata", () => {
   // ============================================================
   _openWindow() {
     if (!this.root) return;
-        const unlockAudio = () => {
-      const els = [
-        this.ringtone,
-        this.ringback,
-        this.upgradeRingtone,
-        this.upgradeAcceptedTone
-      ];
-      els.forEach(el => {
-        if (!el) return;
-        el.muted = true;
-        el.play().catch(() => {});
-        el.pause();
-        el.muted = false;
-      });
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
-    };
-    
-    window.addEventListener("click", unlockAudio, { once: true });
-    window.addEventListener("touchstart", unlockAudio, { once: true });
-    
+       
+    _playTone(id) {
+  if (!audioCtx || !audioBuffers[id]) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = audioBuffers[id];
+  src.connect(audioCtx.destination);
+  src.start(0);
+}
+
     this.root.classList.remove("hidden");
     this.root.classList.add("is-open", "call-opening");
     this.root.style.opacity = "1";
@@ -1515,6 +1481,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
