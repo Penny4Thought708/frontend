@@ -91,7 +91,7 @@ export function normalizeContact(raw) {
     if (raw.avatar.startsWith("http")) avatar = raw.avatar;
     else if (raw.avatar.startsWith("/uploads")) avatar = BACKEND_BASE + raw.avatar;
     else avatar = `${BACKEND_BASE}/uploads/avatars/${raw.avatar}`;
-  } else avatar = "img/defaultUser.png";
+  } else avatar = "/img/defaultUser.png";
 
   // Banner
   let banner;
@@ -675,6 +675,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
