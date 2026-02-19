@@ -153,18 +153,27 @@ export class WebRTCController {
           this.onPeerUnavailable?.(reason || "User unavailable");
           break;
 
-        case "video-upgrade-accepted":
+              case "video-upgrade-accepted":
           log("[WebRTC] Caller: video-upgrade-accepted");
-          window.callUIInstance?._hideCallerVideoUpgrade?.();
-          window.callUIInstance?._enterActiveVideoMode?.();
+        
+          // Play confirmation tone on caller
+          window.callUIInstance?._playUpgradeAcceptedTone?.();
+        
+          // Let CallUI handle UI flip via onRemoteUpgradedToVideo
           this._handleVideoUpgradeAccepted(from);
           break;
 
-        case "video-upgrade-declined":
-          log("[WebRTC] Caller: video-upgrade-declined");
-          window.callUIInstance?._hideCallerVideoUpgrade?.();
-          this.onCallStatusChange?.("in-call");
-          break;
+
+            case "video-upgrade-declined":
+              log("[WebRTC] Caller: video-upgrade-declined");
+            
+              // Let CallUI hide the overlay
+              this.onVideoUpgradeDeclined?.();
+            
+              // Stay in-call, just audio
+              this.onCallStatusChange?.("in-call");
+              break;
+
 
         default:
           warn("Unknown webrtc:signal type:", type, msg);
@@ -503,6 +512,7 @@ _handleVideoUpgradeAccepted(from) {
     }
 
     rtcState.localStream = stream;
+    rtcState.audioOnly = false;
 
     stream.getTracks().forEach((track) => {
       const sender = pc.getSenders().find(
@@ -969,4 +979,5 @@ _handleVideoUpgradeAccepted(from) {
     }
   }
 }
+
 
