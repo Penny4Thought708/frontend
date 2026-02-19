@@ -299,19 +299,15 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
 
 const isUpgrade = offer?.isUpgrade === true;
 
-
-
-
-  if (isUpgrade) {
-    // 🔥 Mobile → iOS blurred overlay
-    if (this._isMobile()) {
-      this.(peerId);
-    } else {
-      // 🔥 Desktop/web → FaceTime-style blurred preview + message
-      this.showVideoUpgradeOverlay(peerId, offer);
-    }
-    return;
+if (isUpgrade) {
+  if (this._isMobile()) {
+    this._showCalleeVideoUpgrade(peerId);
+  } else {
+    this.showVideoUpgradeOverlay(peerId, offer);
   }
+  return;
+}
+
 
 if (!isUpgrade) {
   if (this._isMobile()) {
@@ -1385,6 +1381,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
