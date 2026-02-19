@@ -157,11 +157,13 @@ export class WebRTCController {
           log("[WebRTC] Caller: video-upgrade-accepted");
           window.callUIInstance?._hideCallerVideoUpgrade?.();
           window.callUIInstance?._enterActiveVideoMode?.();
+          this._handleVideoUpgradeAccepted(from);
           break;
 
         case "video-upgrade-declined":
           log("[WebRTC] Caller: video-upgrade-declined");
           window.callUIInstance?._hideCallerVideoUpgrade?.();
+          this.onCallStatusChange?.("in-call");
           break;
 
         default:
@@ -170,6 +172,11 @@ export class WebRTCController {
       }
     });
   }
+// When remote accepts video upgrade
+_handleVideoUpgradeAccepted(from) {
+  // We’re the caller; remote just accepted
+  this.onRemoteUpgradedToVideo?.();
+}
 
   /* -------------------------------------------------------
      INTERNAL STATE HELPERS
@@ -962,3 +969,4 @@ export class WebRTCController {
     }
   }
 }
+
