@@ -291,35 +291,34 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
       this._onCallEnded(reason);
     };
 
-  c.onIncomingOffer = (peerId, offer) => {
+c.onIncomingOffer = (peerId, offer, isVideoUpgrade) => {
   rtcState.incomingOffer = offer;
 
   rtcState.incomingIsVideo =
     offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
 
-const isUpgrade = offer?.isUpgrade === true;
+  const isUpgrade = !!isVideoUpgrade;   // ← use the controller flag
 
-if (isUpgrade) {
-  if (this._isMobile()) {
-    this._showCalleeVideoUpgrade(peerId);
-  } else {
-    this.showVideoUpgradeOverlay(peerId, offer);
+  if (isUpgrade) {
+    if (this._isMobile()) {
+      this._showCalleeVideoUpgrade(peerId);
+    } else {
+      this.showVideoUpgradeOverlay(peerId, offer);
+    }
+    return;
   }
-  return;
-}
 
-
-if (!isUpgrade) {
-  if (this._isMobile()) {
-    this._showIosInboundControls(peerId);
-  } else {
-    this.showInboundRinging(peerId, {
-      incomingIsVideo: rtcState.incomingIsVideo,
-    });
+  if (!isUpgrade) {
+    if (this._isMobile()) {
+      this._showIosInboundControls(peerId);
+    } else {
+      this.showInboundRinging(peerId, {
+        incomingIsVideo: rtcState.incomingIsVideo,
+      });
+    }
   }
-}
-
 };
+
 
     // RemoteParticipants.js owns remote tiles
     c.onRemoteJoin = () => {};
@@ -1381,6 +1380,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
