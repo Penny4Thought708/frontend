@@ -297,8 +297,12 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
   rtcState.incomingIsVideo =
     offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
 
-  const isUpgrade =
-    rtcState.inCall && rtcState.audioOnly && rtcState.incomingIsVideo;
+const isUpgrade =
+  offer?.isUpgrade === true &&
+  rtcState.inCall &&
+  rtcState.audioOnly;
+
+
 
   if (isUpgrade) {
     // 🔥 Mobile → iOS blurred overlay
@@ -1326,6 +1330,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
