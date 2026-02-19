@@ -229,23 +229,30 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
   const audioOnly = !incomingIsVideo;
   let mode = modeHint || "meet";
 
+  // 🔥 MOBILE LOGIC
   if (this._isMobile()) {
     if (incomingIsVideo) {
-      // 🔥 iOS 17-style: show callee upgrade overlay immediately
+      // 🔥 iOS 17-style inbound VIDEO call:
+      // Show iOS voice shell + callee upgrade overlay immediately
       mode = "ios-voice";
+
       this._setMode(mode, { audioOnly: true });
       this._openWindow();
       this._setInboundActiveState(true);
       this._setStatusText("Incoming call…");
       this._startTimer(null);
 
-      this.;
+      // 🔥 FIXED — this was the broken line
+      this._showCalleeVideoUpgrade(peerId);
+
       return;
-    } else {
-      mode = "ios-voice";
     }
+
+    // 🔥 MOBILE AUDIO inbound → normal iOS voice UI
+    mode = "ios-voice";
   }
 
+  // 🔥 DESKTOP LOGIC
   this._setMode(mode, { audioOnly });
   this._openWindow();
   this._setInboundActiveState(true);
@@ -253,7 +260,6 @@ showInboundRinging(peerId, { incomingIsVideo, modeHint } = {}) {
   this._setStatusText("Incoming call…");
   this._startTimer(null);
 }
-
 
   closeWindow() {
     this._stopTimer();
@@ -1434,6 +1440,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
