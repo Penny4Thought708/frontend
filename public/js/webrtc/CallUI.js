@@ -169,6 +169,8 @@ export class CallUI {
     window.callUIInstance = this;
 
   }
+let audioCtx = null;
+let audioBuffers = {};
 
   // ============================================================
   // REMOTE TILE SYSTEM DISABLED
@@ -378,7 +380,31 @@ c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
   // ============================================================
   _bindUI() {
     const isMobile = this._isMobile();
-  
+  const initAudioEngine = async () => {
+  if (audioCtx) return;
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  const load = async (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const res = await fetch(el.src);
+    const buf = await res.arrayBuffer();
+    audioBuffers[id] = await audioCtx.decodeAudioData(buf);
+  };
+
+  await load("ringtone");
+  await load("ringback");
+  await load("upgradeRingtone");
+  await load("upgradeAcceptedTone");
+
+  window.removeEventListener("click", initAudioEngine);
+  window.removeEventListener("touchstart", initAudioEngine);
+};
+
+window.addEventListener("click", initAudioEngine, { once: true });
+window.addEventListener("touchstart", initAudioEngine, { once: true });
+
     // DESKTOP CONTROLS
     if (!isMobile) {
       if (this.declineBtn) {
@@ -1489,6 +1515,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
