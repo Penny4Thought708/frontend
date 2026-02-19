@@ -153,26 +153,25 @@ export class WebRTCController {
           this.onPeerUnavailable?.(reason || "User unavailable");
           break;
 
-              case "video-upgrade-accepted":
-          log("[WebRTC] Caller: video-upgrade-accepted");
-        
-          // Play confirmation tone on caller
-          window.callUIInstance?._playUpgradeAcceptedTone?.();
-        
-          // Let CallUI handle UI flip via onRemoteUpgradedToVideo
-          this._handleVideoUpgradeAccepted(from);
-          break;
-
-
+             case "video-upgrade-accepted":
+              log("[WebRTC] Caller: video-upgrade-accepted");
+            
+              // 🔥 Play confirmation tone once
+              window.callUIInstance?._playUpgradeAcceptedTone?.();
+            
+              // 🔥 Trigger the normal upgrade flow
+              this._handleVideoUpgradeAccepted(from);
+              break;
+            
             case "video-upgrade-declined":
               log("[WebRTC] Caller: video-upgrade-declined");
             
-              // Let CallUI hide the overlay
+              // 🔥 Let CallUI handle overlay cleanup
               this.onVideoUpgradeDeclined?.();
             
-              // Stay in-call, just audio
               this.onCallStatusChange?.("in-call");
               break;
+
 
 
         default:
@@ -979,5 +978,6 @@ _handleVideoUpgradeAccepted(from) {
     }
   }
 }
+
 
 
