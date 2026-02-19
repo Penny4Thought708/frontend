@@ -291,32 +291,34 @@ openForOutgoing(peerId, { audio = true, video = true, mode = "meet" } = {}) {
       this._onCallEnded(reason);
     };
 
-c.onIncomingOffer = (peerId, offer, isVideoUpgrade) => {
+c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
   rtcState.incomingOffer = offer;
 
   rtcState.incomingIsVideo =
-    offer?.offerToReceiveVideo || offer?.sdp?.includes("m=video");
+    isVideoUpgrade || offer?.sdp?.includes("m=video");
 
-  const isUpgrade = !!isVideoUpgrade;   // ← use the controller flag
+  const isUpgrade =
+    isVideoUpgrade && rtcState.inCall && rtcState.audioOnly;
 
   if (isUpgrade) {
     if (this._isMobile()) {
-      this._showCalleeVideoUpgrade(peerId);
+      this._showCalleeVideoUpgrade(peerId);   // ✅ will now run
     } else {
       this.showVideoUpgradeOverlay(peerId, offer);
     }
     return;
   }
 
-  if (!isUpgrade) {
-    if (this._isMobile()) {
-      this._showIosInboundControls(peerId);
-    } else {
-      this.showInboundRinging(peerId, {
-        incomingIsVideo: rtcState.incomingIsVideo,
-      });
-    }
+  // Normal inbound call
+  if (this._isMobile()) {
+    this._showIosInboundControls(peerId);
+  } else {
+    this.showInboundRinging(peerId, {
+      incomingIsVideo: rtcState.incomingIsVideo,
+    });
   }
+};
+
 };
 
 
@@ -1380,6 +1382,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
