@@ -187,7 +187,7 @@ export function renderContactCard(user) {
       : "";
 
   li.innerHTML = `
-    <div class="avatar-wrapper">
+    <div class="avatar-wrapper1">
       <img class="contact-avatar" src="${user.contact_avatar}">
       <span class="contact-status ${user.online ? "online" : "offline"}"></span>
     </div>
@@ -675,6 +675,7 @@ window.updateLocalContact = function (contactId, updates) {
     }
   }
 };
+
 
 
 
