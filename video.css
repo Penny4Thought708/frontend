@@ -1,12 +1,6 @@
-/* video.css
- * Layout + animations for full-window call UI:
- * - Mobile: FaceTime / iOS Voice
- * - Web: Google Meet + Discord-style grid
- */
-
-/* ===========================
+/* ============================================================
    ROOT + GLOBAL
-=========================== */
+============================================================ */
 
 :root {
   --call-bg: #05060a;
@@ -33,16 +27,13 @@
   --call-quality-poor: #f44336;
 }
 
-/* Utility visibility */
-
 .hidden {
   display: none !important;
 }
 
-
-/* ===========================
+/* ============================================================
    CALL WINDOW SHELL
-=========================== */
+============================================================ */
 
 .call-window {
   position: fixed;
@@ -54,9 +45,7 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med);
+  transition: opacity var(--call-transition-med), transform var(--call-transition-med);
   z-index: 1000;
 }
 
@@ -66,8 +55,6 @@
   transform: translateY(0);
 }
 
-/* Body container */
-
 .call-body {
   position: relative;
   flex: 1;
@@ -75,7 +62,8 @@
   flex-direction: column;
   overflow: hidden;
 }
-/* Visually mark camera-off state */
+
+/* Camera-off state */
 .call-window.camera-off .media-wrapper video,
 .call-window.camera-off .local-pip video {
   opacity: 0.08;
@@ -83,33 +71,9 @@
   transition: opacity 160ms ease, filter 160ms ease;
 }
 
-/* ===========================
-   MODE LAYERS
-   (used as state flags)
-=========================== */
-
-.mode-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-}
-
-/* We’ll use classes on #callWindow like:
-   .mode-meet, .mode-discord, .mode-ios-voice
-   to drive layout differences.
-*/
-
-.call-window.mode-meet .mode-layer.meet-mode,
-.call-window.mode-discord .mode-layer.discord-mode,
-.call-window.mode-ios-voice .mode-layer.ios-voice-mode {
-  opacity: 1;
-}
-
-/* ===========================
+/* ============================================================
    PARTICIPANT GRID
-   (Meet + Discord)
-=========================== */
+============================================================ */
 
 .call-grid {
   position: relative;
@@ -123,14 +87,11 @@
   transition: padding var(--call-transition-med);
 }
 
-/* 1:1 call: center tiles a bit more on large screens */
 @media (min-width: 900px) {
   .call-grid {
     padding: 16px 16px 96px;
   }
 }
-
-/* Participant tile */
 
 .participant {
   position: relative;
@@ -155,8 +116,6 @@
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Media wrapper */
-
 .media-wrapper {
   position: relative;
   flex: 1;
@@ -165,8 +124,6 @@
   justify-content: center;
   background: #000;
 }
-
-/* Video elements */
 
 #localVideo,
 .remoteVideo,
@@ -177,7 +134,8 @@
   object-fit: cover;
   background: #000;
 }
-/* Override global object-fit for orientation-aware remote video */
+
+/* Orientation-aware remote video */
 .participant.remote.portrait .remoteVideo {
   object-fit: contain !important;
 }
@@ -186,112 +144,9 @@
   object-fit: cover !important;
 }
 
-/* Avatar fallback */
-
-.avatar-wrapper {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  pointer-events: none;
-  transition: opacity var(--call-transition-med);
-}
-
-.avatar-wrapper img,
-.avatar-img,
-#localAvatarImg,
-#iosVoiceAvatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-}
-/* Explicit camera-off state */
-.call-window.camera-off video {
-  opacity: 0;
-}
-
-.call-window.camera-off .avatar-wrapper {
-  opacity: 1;
-}
-
-/* Voice pulse ring */
-
-.voice-pulse {
-  position: absolute;
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  border: 2px solid var(--call-voice-pulse);
-  box-shadow: 0 0 0 0 var(--call-voice-pulse);
-  opacity: 0;
-  transform: scale(0.8);
-  transition:
-    opacity var(--call-transition-fast),
-    transform var(--call-transition-fast);
-}
-
-/* Active speaking state (JS toggles .speaking on participant) */
-
-.participant.speaking .voice-pulse {
-  opacity: 1;
-  animation: voice-pulse 1.2s infinite;
-}
-
-/* Presenting badge */
-
-.presenting-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--call-text);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity var(--call-transition-fast),
-    transform var(--call-transition-fast);
-}
-
-/* JS can toggle .is-presenting on participant */
-
-.participant.is-presenting .presenting-badge {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Name tag */
-
-.name-tag {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--call-text);
-  font-size: 12px;
-  max-width: 70%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ===========================
-   PIP (Meet / FaceTime)
-=========================== */
+/* ============================================================
+   PIP WINDOWS
+============================================================ */
 
 .local-pip,
 .remote-pip {
@@ -309,10 +164,7 @@
   opacity: 0;
   pointer-events: auto;
   cursor: pointer;
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med),
-    box-shadow var(--call-transition-fast);
+  transition: opacity var(--call-transition-med), transform var(--call-transition-med);
   z-index: 20;
 }
 
@@ -322,27 +174,9 @@
   transform: translateY(0) scale(1);
 }
 
-.local-pip:hover,
-.remote-pip:hover {
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9);
-}
-
-/* Mobile PiP sizing */
-
-@media (max-width: 600px) {
-  .local-pip,
-  .remote-pip {
-    width: 120px;
-    height: 72px;
-    bottom: 88px;
-    right: 12px;
-    border-radius: 14px;
-  }
-}
-
-/* ===========================
-   iPHONE VOICE UI
-=========================== */
+/* ============================================================
+   iOS VOICE UI
+============================================================ */
 
 .ios-voice-ui {
   position: absolute;
@@ -353,16 +187,11 @@
   justify-content: center;
   background: radial-gradient(circle at top, #151827 0, #05060a 55%, #000 100%);
   padding: 32px 16px 24px;
-  box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med);
+  transition: opacity var(--call-transition-med), transform var(--call-transition-med);
 }
-
-/* When in iOS voice mode, show this and hide grid */
 
 .call-window.mode-ios-voice .ios-voice-ui {
   opacity: 1;
@@ -370,135 +199,9 @@
   transform: translateY(0);
 }
 
-.call-window.mode-ios-voice .call-grid,
-.call-window.mode-ios-voice .local-pip,
-.call-window.mode-ios-voice .remote-pip {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Avatar */
-
-.ios-avatar {
-  margin-bottom: 18px;
-}
-
-.ios-avatar img {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-}
-
-/* Status + timer */
-
-.ios-call-status {
-  font-size: 16px;
-  color: var(--call-text-muted);
-  margin-bottom: 4px;
-}
-
-.ios-call-timer {
-  font-size: 22px;
-  letter-spacing: 0.08em;
-  margin-bottom: 32px;
-}
-
-/* Controls grid */
-
-.ios-controls {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  width: 100%;
-  max-width: 360px;
-  justify-items: center;
-}
-
-.ios-btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: none;
-  outline: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--call-text);
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 6px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  transition:
-    background var(--call-transition-fast),
-    transform var(--call-transition-fast),
-    box-shadow var(--call-transition-fast);
-}
-
-.ios-btn.end {
-  background: var(--call-accent-danger);
-}
-
-.ios-btn:active {
-  transform: scale(0.94);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
-}
-.ios-inbound-controls {
-  display: flex;
-  gap: 18px;
-  margin-bottom: 24px;
-}
-
-.ios-inbound-controls .ios-btn {
-  width: 90px;
-  height: 90px;
-  font-size: 16px;
-}
-
-.ios-inbound-controls .answer {
-  background: var(--call-accent);
-}
-
-.ios-inbound-controls .decline {
-  background: var(--call-accent-danger);
-}
-
-/* ===========================
-   CALL STATUS + TIMER (TOP)
-=========================== */
-
-.call-top-info {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  z-index: 15;
-  pointer-events: none;
-}
-
-.call-status {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
-  font-size: 12px;
-  color: var(--call-text-muted);
-}
-
-.call-timer {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.7);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-}
-
-/* ===========================
-   CALL CONTROLS (BOTTOM)
-=========================== */
+/* ============================================================
+   CALL CONTROLS
+============================================================ */
 
 .call-controls {
   position: absolute;
@@ -506,7 +209,6 @@
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   display: flex;
-  align-items: center;
   gap: 10px;
   padding: 8px 12px;
   border-radius: 999px;
@@ -514,9 +216,7 @@
   box-shadow: var(--call-shadow-soft);
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med);
+  transition: opacity var(--call-transition-med), transform var(--call-transition-med);
   z-index: 30;
 }
 
@@ -526,223 +226,9 @@
   transform: translateX(-50%) translateY(0);
 }
 
-/* Control buttons */
-
-.control-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  outline: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--call-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background var(--call-transition-fast),
-    transform var(--call-transition-fast),
-    box-shadow var(--call-transition-fast);
-}
-
-.control-btn span.material-symbols-outlined {
-  font-size: 22px;
-}
-
-/* Primary actions */
-
-#end-call,
-#decline-call {
-  background: var(--call-accent-danger);
-}
-
-#answer-call {
-  background: var(--call-accent);
-}
-
-/* Hover / active */
-
-.control-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.control-btn:active {
-  transform: scale(0.92);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
-}
-
-/* Inbound vs active states
-   (JS toggles .inbound-only / .active-only visibility)
-*/
-
-.inbound-only {
-  display: none;
-}
-
-.active-only {
-  display: none;
-}
-
-/* Example: when inbound */
-.call-controls.inbound .inbound-only {
-  display: inline-flex;
-}
-
-/* Example: when active */
-.call-controls.active .active-only {
-  display: inline-flex;
-}
-
-/* ===========================
-   MORE CONTROLS MENU
-=========================== */
-
-.more-controls {
-  position: relative;
-}
-
-#more-controls-btn {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Dropdown */
-
-.more-controls-menu {
-  position: absolute;
-  bottom: 52px;
-  right: 0;
-  min-width: 190px;
-  background: rgba(10, 12, 18, 0.98);
-  border-radius: 12px;
-  box-shadow: var(--call-shadow-soft);
-  border: 1px solid var(--call-border-subtle);
-  padding: 6px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition:
-    opacity var(--call-transition-med),
-    transform var(--call-transition-med);
-  z-index: 40;
-}
-
-.more-controls-menu:not(.hidden) {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.more-controls-menu button {
-  width: 100%;
-  padding: 8px 12px;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--call-text);
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: background var(--call-transition-fast);
-}
-
-.more-controls-menu button span.material-symbols-outlined {
-  font-size: 18px;
-}
-
-.more-controls-menu button:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* ===========================
-   REMOTE AUDIO
-=========================== */
-
-#remoteAudio {
-  position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* ===========================
-   CALL INFO BAR
-=========================== */
-
-.call-info-bar {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 25;
-}
-
-.quality-indicator {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--call-quality-excellent);
-}
-
-/* Quality levels via data-level */
-
-.quality-indicator[data-level="excellent"] {
-  color: var(--call-quality-excellent);
-}
-
-.quality-indicator[data-level="good"] {
-  color: var(--call-quality-good);
-}
-
-.quality-indicator[data-level="poor"] {
-  color: var(--call-quality-poor);
-}
-
-/* Debug toggle */
-
-.debug-toggle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  outline: none;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--call-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background var(--call-transition-fast),
-    transform var(--call-transition-fast);
-}
-
-.debug-toggle span.material-symbols-outlined {
-  font-size: 18px;
-}
-
-.debug-toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.debug-toggle:active {
-  transform: scale(0.92);
-}
-
-/* ===========================
-   VIDEO UPGRADE OVERLAY
-=========================== */
+/* ============================================================
+   VIDEO UPGRADE OVERLAY (WEB)
+============================================================ */
 
 .video-upgrade-overlay {
   position: absolute;
@@ -762,113 +248,23 @@
   pointer-events: auto;
 }
 
-/* MOBILE CARD */
-
-.video-upgrade-card {
-  width: 90%;
-  max-width: 360px;
-  border-radius: 22px;
-  background: rgba(10, 12, 18, 0.96);
-  box-shadow: var(--call-shadow-soft);
-  padding: 16px 16px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transform: translateY(20px);
-  opacity: 0;
-  animation: upgrade-card-in var(--call-transition-med) forwards;
-}
-
-.video-upgrade-preview {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: rgba(76, 175, 80, 0.16);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.video-upgrade-preview .video-icon {
-  font-size: 28px;
-  color: var(--call-accent);
-}
-
-.video-upgrade-text .title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.video-upgrade-text .subtitle {
-  font-size: 13px;
-  color: var(--call-text-muted);
-}
-
-.video-upgrade-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.btn-upgrade-decline,
-.btn-upgrade-accept {
-  border-radius: 999px;
-  border: none;
-  outline: none;
-  padding: 6px 12px;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition:
-    background var(--call-transition-fast),
-    transform var(--call-transition-fast);
-}
-
-.btn-upgrade-decline {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--call-text);
-}
-
-.btn-upgrade-accept {
-  background: var(--call-accent);
-  color: #fff;
-}
-
-.btn-upgrade-decline span.material-symbols-outlined,
-.btn-upgrade-accept span.material-symbols-outlined {
-  font-size: 18px;
-}
-
-.btn-upgrade-decline:active,
-.btn-upgrade-accept:active {
-  transform: scale(0.96);
-}
 /* ============================================================
-   iOS Caller Upgrade Overlay
+   WEB CALLEE — BLURRED REMOTE PREVIEW
 ============================================================ */
-.ios-caller-upgrade {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s ease;
+
+.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
+  opacity: 1;
+  filter: blur(18px) brightness(0.6);
+  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
 }
 
-.ios-caller-upgrade.active {
-  opacity: 1;
-  pointer-events: auto;
+/* Hide desktop controls during upgrade */
+.call-window.web-upgrade-pending .call-controls {
+  display: none !important;
 }
 
 /* ============================================================
-   MOBILE CALLER — CLEAN LOCAL PREVIEW (NO BLUR)
+   iOS CALLER UPGRADE — CLEAN LOCAL PREVIEW
 ============================================================ */
 
 .ios-caller-preview {
@@ -877,77 +273,38 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-
-  /* Caller preview must NEVER be blurred */
   filter: none !important;
   opacity: 1 !important;
+  z-index: 61;
 }
 
 .ios-caller-blur-layer {
   opacity: 0;
   backdrop-filter: blur(0px);
   transition: opacity 0.22s ease-out, backdrop-filter 0.22s ease-out;
+  z-index: 62;
 }
 
 .ios-caller-upgrade.active .ios-caller-blur-layer {
   opacity: 1;
   backdrop-filter: blur(20px);
 }
+
 .ios-caller-upgrade-content {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.25s ease-out 0.12s, transform 0.25s ease-out 0.12s;
+  z-index: 63;
 }
 
 .ios-caller-upgrade.active .ios-caller-upgrade-content {
   opacity: 1;
   transform: translateY(0);
 }
-.ios-caller-upgrade {
-  opacity: 1;
-  transition: opacity 0.2s ease-out;
-}
-
-.ios-caller-upgrade-content {
-  position: relative;
-  padding: 32px;
-  text-align: center;
-  color: white;
-  z-index: 2;
-}
-
-.ios-caller-upgrade-label {
-  font-size: 1.4rem;
-  margin-bottom: 20px;
-}
-
-.ios-caller-upgrade-cancel {
-  background: rgba(255,255,255,0.2);
-  border: none;
-  padding: 14px 24px;
-  border-radius: 14px;
-  color: white;
-  font-size: 1.1rem;
-}
 
 /* ============================================================
-   iOS Callee Upgrade Overlay
+   iOS CALLEE UPGRADE — BLURRED REMOTE PREVIEW
 ============================================================ */
-.ios-callee-upgrade {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s ease;
-}
-
-.ios-callee-upgrade.active {
-  opacity: 1;
-  pointer-events: auto;
-}
 
 .ios-callee-preview {
   position: absolute;
@@ -955,12 +312,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(18px) brightness(0.6);
-}
-.ios-callee-preview {
   opacity: 0;
   filter: blur(22px) brightness(0.6);
   transition: opacity 0.22s ease-out, filter 0.22s ease-out;
+  z-index: 61;
 }
 
 .ios-callee-upgrade.active .ios-callee-preview {
@@ -971,12 +326,10 @@
 .ios-callee-blur-layer {
   position: absolute;
   inset: 0;
-  backdrop-filter: blur(20px);
-}
-.ios-callee-blur-layer {
   opacity: 0;
   backdrop-filter: blur(0px);
   transition: opacity 0.22s ease-out, backdrop-filter 0.22s ease-out;
+  z-index: 62;
 }
 
 .ios-callee-upgrade.active .ios-callee-blur-layer {
@@ -990,281 +343,27 @@
   width: 100%;
   text-align: center;
   color: white;
-  z-index: 2;
-}
-.ios-callee-upgrade-content {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.25s ease-out 0.12s, transform 0.25s ease-out 0.12s;
+  z-index: 63;
 }
 
 .ios-callee-upgrade.active .ios-callee-upgrade-content {
   opacity: 1;
   transform: translateY(0);
 }
-.ios-callee-upgrade {
-  opacity: 1;
-  transition: opacity 0.2s ease-out;
-}
 
-.ios-callee-upgrade-label {
-  font-size: 1.4rem;
-  margin-bottom: 24px;
-}
-
-.ios-callee-upgrade-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-}
-
-.ios-callee-upgrade-actions button {
-  padding: 14px 24px;
-  border-radius: 14px;
-  border: none;
-  font-size: 1.1rem;
-}
-
-.ios-callee-upgrade-accept {
-  background: #4cd964;
-  color: black;
-}
-
-.ios-callee-upgrade-decline {
-  background: rgba(255,255,255,0.2);
-  color: white;
-}
-
-/* DESKTOP OVERLAY */
-
-.video-upgrade-desktop-overlay {
-  width: 100%;
-  height: 100%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.video-upgrade-desktop-inner {
-  min-width: 320px;
-  max-width: 420px;
-  border-radius: 18px;
-  background: rgba(10, 12, 18, 0.96);
-  box-shadow: var(--call-shadow-soft);
-  padding: 18px 18px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transform: scale(0.96);
-  opacity: 0;
-  animation: upgrade-desktop-in var(--call-transition-med) forwards;
-}
-
-.video-upgrade-desktop-text .title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.video-upgrade-desktop-text .subtitle {
-  font-size: 13px;
-  color: var(--call-text-muted);
-}
-
-.video-upgrade-desktop-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-/* Responsive: show mobile vs desktop */
-
-.mobile-only {
-  display: none;
-}
-
-.desktop-only {
-  display: flex;
-}
-
-@media (max-width: 768px) {
-  .mobile-only {
-    display: flex;
-  }
-  .desktop-only {
-    display: none;
-  }
-}
-
-/* ===========================
-   MOBILE FULLSCREEN REMOTE
-   (FaceTime-style)
-=========================== */
-
-/* When on mobile, we want remote video to fill the call window.
-   JS can add .mobile-fullscreen-remote to #callWindow when appropriate.
-*/
-
-@media (max-width: 768px) {
-  .call-window.mobile-fullscreen-remote .call-grid {
-    display: block;
-    padding: 0;
-  }
-
-  .call-window.mobile-fullscreen-remote .participant.remote,
-  .call-window.mobile-fullscreen-remote .participant.local {
-    position: absolute;
-    inset: 0;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-    animation: none;
-    transform: none;
-  }
-
-  .call-window.mobile-fullscreen-remote .participant.remote .avatar-wrapper {
-    opacity: 0;
-  }
-
-  .call-window.mobile-fullscreen-remote .participant.local {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-/* ===========================
-   DISCORD-STYLE GROUP FEEL
-=========================== */
-
-/* Slightly tighter grid, more “tile” feel when in Discord mode */
-
-.call-window.mode-discord .call-grid {
-  gap: 8px;
-  padding-bottom: 88px;
-}
-
-.call-window.mode-discord .participant {
-  background: radial-gradient(circle at top, #202331 0, #0b0d14 55%, #05060a 100%);
-  border-radius: 14px;
-}
 /* ============================================================
-   ORIENTATION-AWARE REMOTE VIDEO (FaceTime-style)
-   Applied by RemoteParticipants.setParticipantOrientation()
+   ANIMATIONS
 ============================================================ */
 
-/* Portrait mode: remote video should be narrow, centered,
-   with black bars left/right (like FaceTime portrait video) */
-.participant.remote.portrait video {
-  object-fit: contain !important;
-  width: auto !important;
-  height: 100% !important;
-  max-width: 420px;
-  margin: 0 auto;
-  background: #000;
-}
-
-/* Landscape mode: remote video should fill the tile */
-.participant.remote.landscape video {
-  object-fit: cover !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/* ===========================
-   ANIMATIONS
-=========================== */
-
 @keyframes participant-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes voice-pulse {
-  0% {
-    transform: scale(0.8);
-    box-shadow: 0 0 0 0 var(--call-voice-pulse);
-  }
-  70% {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 14px transparent;
-  }
-  100% {
-    transform: scale(0.8);
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
-@keyframes upgrade-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes upgrade-desktop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-.participant.remote.portrait .remoteVideo {
-  object-fit: contain !important;
-}
-
-.participant.remote.landscape .remoteVideo {
-  object-fit: cover !important;
-}
-
-/* ============================================================
-   WEB CALLEE VIDEO UPGRADE — BLURRED REMOTE PREVIEW
-============================================================ */
-
-/* When web upgrade is pending, blur ONLY the remote participant video */
-.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
-  opacity: 0;
-  filter: blur(22px) brightness(0.6);
-  transition: opacity 0.22s ease-out, filter 0.22s ease-out;
-}
-
-/* Fade-in + reduce blur when overlay becomes visible */
-.call-window.web-upgrade-pending .video-upgrade-overlay:not(.hidden)
-  + .call-body .participant.remote .media-wrapper video,
-.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
-  opacity: 1;
-  filter: blur(18px) brightness(0.6);
-}
-.call-window.web-upgrade-pending .participant.remote .media-wrapper video {
-  opacity: 1;
-  filter: blur(18px) brightness(0.6);
-}
-
-/* Hide desktop controls during upgrade prompt */
-.call-window.web-upgrade-pending .call-controls {
-  display: none !important;
-}
-.ios-callee-preview {
-  z-index: 61 !important;
-}
-
-.ios-callee-blur-layer {
-  z-index: 62 !important;
-}
-
-.ios-callee-upgrade-content {
-  z-index: 63 !important;
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
 }
