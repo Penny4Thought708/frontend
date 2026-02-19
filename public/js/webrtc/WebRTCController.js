@@ -155,198 +155,8 @@ export class WebRTCController {
 
   _getPc(peerId) {
     peerId = String(peerId);
-    return this.pcMap.get(peerId) || null;
-  }
-
-  /* -------------------------------------------------------
-     SOCKET SIGNALING
-  ------------------------------------------------------- */
-  _bindSocket() {
-    if (!this.socket) {
-      err("No socket provided to WebRTCController");
-      return;
-    }
-
-    this.socket.on("webrtc:signal", async (msg) => {
-      if (this._destroyed) return;
-
-      const {
-        type,
-        from,
-        to,
-        callId,
-        offer,
-        answer,
-        candidate,
-        isVideoUpgrade,
-        reason,
-      } = msg || {};
-
-      if (!from && type !== "unavailable") {
-        warn("Received webrtc:signal without 'from':", msg);
-      }
-
-      if (!rtcState.callId && callId) {
-        rtcState.callId = callId;
-      }
-
-      switch (type) {
-        case "offer":
-          await this._handleOffer(from, offer, !!isVideoUpgrade, callId);
-          break;
-        case "answer":
-          await this._handleAnswer(from, answer);
-          break;
-        case "ice":
-          await this._handleIce(from, candidate);
-          break;
-        case "leave":
-          this._handleLeave(from);
-          break;
-        case "unavailable":
-          // If we're already in a call, ignore late "unavailable" noise
-          if (rtcState.inCall) {
-            log("Ignoring 'unavailable' signal during active call");
-            break;
-          }
-          if (this.onPeerUnavailable) {
-            this.onPeerUnavailable(reason || "User unavailable");
-          }
-          break;
-
-          case "video-upgrade-accepted":
-  if (window.callUIInstance?._hideCallerVideoUpgrade) {
-    window.callUIInstance._hideCallerVideoUpgrade();
-  }
-  if (window.callUIInstance?._enterActiveVideoMode) {
-    window.callUIInstance._enterActiveVideoMode();
-  }
-  break;
-
-case "video-upgrade-declined":
-  if (window.callUIInstance?._hideCallerVideoUpgrade) {
-    window.callUIInstance._hideCallerVideoUpgrade();
-  }
-  // Optional: show toast or revert UI
-  break;
-
-        default:
-          warn("Unknown webrtc:signal type:", type, msg);
-          break;
-      }
-    });
-
-    // Dedicated decline/busy/timeout channels from server
-    this.socket.on("call:declined", (msg) => {
-      if (this._destroyed) return;
-      const { from, reason } = msg || {};
-
-      if (rtcState.inCall) {
-        log("Ignoring call:declined during active call from", from, reason);
-        return;
-      }
-
-      log("call:declined from", from, reason);
-      if (this.onPeerUnavailable) {
-        this.onPeerUnavailable(reason || "Call declined");
-      }
-      this._remoteEndWithoutPc(from, reason || "declined");
-    });
-
-    this.socket.on("call:busy", (msg) => {
-      if (this._destroyed) return;
-      const { from, reason } = msg || {};
-
-      if (rtcState.inCall) {
-        log("Ignoring call:busy during active call from", from, reason);
-        return;
-      }
-
-      log("call:busy from", from, reason);
-      if (this.onPeerUnavailable) {
-        this.onPeerUnavailable(reason || "User busy");
-      }
-      this._remoteEndWithoutPc(from, reason || "busy");
-    });
-
-    this.socket.on("call:timeout", (msg) => {
-      if (this._destroyed) return;
-      const { from, reason } = msg || {};
-
-      if (rtcState.inCall) {
-        log("Ignoring call:timeout during active call from", from, reason);
-        return;
-      }
-
-      log("call:timeout from", from, reason);
-      if (this.onPeerUnavailable) {
-        this.onPeerUnavailable(reason || "Call timed out");
-      }
-      this._remoteEndWithoutPc(from, reason || "timeout");
-    });
-  }
-
-  _remoteEndWithoutPc(peerId, reason) {
-    rtcState.inCall = false;
-    rtcState.peerId = null;
-    rtcState.incomingOffer = null;
-    rtcState.incomingIsVideo = false;
-    this._setStatus("idle");
-    this.onCallEnded?.(reason || "remote_end");
-    this._maybeProcessNextQueuedCall();
-  }
-
-  /* -------------------------------------------------------
-     CREATE / GET PEER CONNECTION
-  ------------------------------------------------------- */
-_ensurePC(peerId) {
-  peerId = String(peerId);
-
-  if (this.pcMap.has(peerId)) {
-    return this.pcMap.get(peerId);
-  }
-
-  const pc = new RTCPeerConnection(buildIceConfig());
-  this.pcMap.set(peerId, pc);
-
-  log("Created RTCPeerConnection for peer:", peerId, buildIceConfig());
-
-  // 🔥 Orientation data channel: create it from the MOBILE side, not just the caller
-  const isMobile =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-      navigator.userAgent
-    );
-
-  if (isMobile && !this.orientationChannels.has(peerId)) {
-    const dc = pc.createDataChannel("orientation");
-    this._wireOrientationChannel(peerId, dc);
-  }
-
-  pc.ondatachannel = (evt) => {
-    if (evt.channel?.label === "orientation") {
-      this._wireOrientationChannel(peerId, evt.channel);
-    }
-  };
-    pc.onicecandidate = (evt) => {
-      if (evt.candidate) {
-        try {
-          this.socket.emit("webrtc:signal", {
-            type: "ice",
-            to: peerId,
-            from: rtcState.selfId,
-            callId: rtcState.callId,
-            candidate: evt.candidate,
-          });
-        } catch (e) {
-          err("Error emitting ICE candidate:", e);
-        }
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-      log("ICE connection state:", peerId, state);
-      if (state === "failed") {
+    return thitubi
+      d") {
         warn("ICE failed, attempting restart:", peerId);
         try {
           pc.restartIce();
@@ -914,22 +724,37 @@ this.socket.emit("webrtc:signal", {
 // CALLEE RESPONSES TO VIDEO UPGRADE
 // -------------------------------------------------------
 sendVideoUpgradeAccepted() {
+  console.log("[WebRTC] sendVideoUpgradeAccepted →", {
+    to: rtcState.peerId,
+    callId: rtcState.callId,
+  });
+
+  if (!this.socket || !rtcState.peerId) return;
+
   this.socket.emit("webrtc:signal", {
     type: "video-upgrade-accepted",
     to: rtcState.peerId,
     from: rtcState.selfId,
-    callId: rtcState.callId
+    callId: rtcState.callId,
   });
 }
 
 sendVideoUpgradeDeclined() {
+  console.log("[WebRTC] sendVideoUpgradeDeclined →", {
+    to: rtcState.peerId,
+    callId: rtcState.callId,
+  });
+
+  if (!this.socket || !rtcState.peerId) return;
+
   this.socket.emit("webrtc:signal", {
     type: "video-upgrade-declined",
     to: rtcState.peerId,
     from: rtcState.selfId,
-    callId: rtcState.callId
+    callId: rtcState.callId,
   });
 }
+
 
   /* -------------------------------------------------------
      END CALL (LOCAL HANGUP)
@@ -1071,6 +896,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
