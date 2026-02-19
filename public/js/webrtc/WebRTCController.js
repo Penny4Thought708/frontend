@@ -230,68 +230,107 @@ export class WebRTCController {
   }
 
   _getPc(peerId) {
-    peerId = String(peerId);
-    return thitubi
-      d") {
-        warn("ICE failed, attempting restart:", peerId);
-        try {
-          pc.restartIce();
-        } catch (e) {
-          err("restartIce failed:", e);
-        }
-      }
-    };
+  peerId = String(peerId);
 
-    pc.onconnectionstatechange = () => {
-      const state = pc.connectionState;
-      log("PeerConnection state:", peerId, state);
+  // Return existing PC if present
+  let pc = this.pcMap.get(peerId);
+  if (pc) return pc;
 
-      if (this.onQualityUpdate) {
-        try {
-          this.onQualityUpdate(PC_STATE_MAP[state] || state);
-        } catch (e) {
-          warn("onQualityUpdate handler error:", e);
-        }
-      }
+  // Create new RTCPeerConnection
+  pc = new RTCPeerConnection(buildIceConfig());
+  this.pcMap.set(peerId, pc);
 
-      if (state === "failed") {
-        try {
-          pc.restartIce();
-        } catch (e) {
-          err("restartIce failed on connectionState 'failed':", e);
-        }
-      }
-      if (state === "disconnected" || state === "closed") {
-        this._handleLeave(peerId);
-      }
-    };
+  log("Created RTCPeerConnection for peer:", peerId, buildIceConfig());
 
-    pc.ontrack = (evt) => {
-      log("ontrack from", peerId, evt.track.kind, evt.track.id);
-      attachRemoteTrack(peerId, evt);
-      this._addParticipant(peerId, { state: "connected" });
+  /* -------------------------------------------------------
+     ICE CANDIDATES
+  ------------------------------------------------------- */
+  pc.onicecandidate = (evt) => {
+    if (evt.candidate) {
+      this.socket.emit("webrtc:signal", {
+        type: "ice",
+        to: peerId,
+        from: rtcState.selfId,
+        callId: rtcState.callId,
+        candidate: evt.candidate,
+      });
+    }
+  };
 
-      // Mark this peer as primary remote when first media arrives
+  pc.oniceconnectionstatechange = () => {
+    const state = pc.iceConnectionState;
+    log("ICE connection state:", peerId, state);
+
+    if (state === "failed") {
+      warn("ICE failed, attempting restart:", peerId);
       try {
-        setPrimaryRemote(String(peerId));
+        pc.restartIce();
       } catch (e) {
-        warn("setPrimaryRemote error:", e);
+        err("restartIce failed:", e);
       }
+    }
+  };
 
+  /* -------------------------------------------------------
+     CONNECTION STATE
+  ------------------------------------------------------- */
+  pc.onconnectionstatechange = () => {
+    const state = pc.connectionState;
+    log("PeerConnection state:", peerId, state);
+
+    if (this.onQualityUpdate) {
       try {
-        this.onRemoteJoin?.(peerId);
+        this.onQualityUpdate(PC_STATE_MAP[state] || state);
       } catch (e) {
-        warn("onRemoteJoin handler error:", e);
+        warn("onQualityUpdate handler error:", e);
       }
-    };
+    }
 
-    pc.onnegotiationneeded = async () => {
-      log("onnegotiationneeded for peer:", peerId);
-      // Optional renegotiation hook (SFU / advanced flows)
-    };
+    if (state === "failed") {
+      try {
+        pc.restartIce();
+      } catch (e) {
+        err("restartIce failed on connectionState 'failed':", e);
+      }
+    }
 
-    return pc;
-  }
+    if (state === "disconnected" || state === "closed") {
+      this._handleLeave(peerId);
+    }
+  };
+
+  /* -------------------------------------------------------
+     REMOTE TRACKS
+  ------------------------------------------------------- */
+  pc.ontrack = (evt) => {
+    log("ontrack from", peerId, evt.track.kind, evt.track.id);
+    attachRemoteTrack(peerId, evt);
+    this._addParticipant(peerId, { state: "connected" });
+
+    try {
+      setPrimaryRemote(String(peerId));
+    } catch (e) {
+      warn("setPrimaryRemote error:", e);
+    }
+
+    try {
+      this.onRemoteJoin?.(peerId);
+    } catch (e) {
+      warn("onRemoteJoin handler error:", e);
+    }
+  };
+
+  /* -------------------------------------------------------
+     NEGOTIATION NEEDED
+  ------------------------------------------------------- */
+  pc.onnegotiationneeded = async () => {
+    log("onnegotiationneeded for peer:", peerId);
+    // (You currently don't auto‑renegotiate here — correct for your flow)
+  };
+
+  return pc;
+}
+
 
   /* -------------------------------------------------------
      ORIENTATION DATA CHANNEL
@@ -972,6 +1011,7 @@ sendVideoUpgradeDeclined() {
     }
   }
 }
+
 
 
 
