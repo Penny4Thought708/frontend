@@ -1324,13 +1324,7 @@ videoEl.addEventListener("loadeddata", () => {
   _openWindow() {
     if (!this.root) return;
        
-    _playTone(id) {
-  if (!audioCtx || !audioBuffers[id]) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = audioBuffers[id];
-  src.connect(audioCtx.destination);
-  src.start(0);
-}
+
 
     this.root.classList.remove("hidden");
     this.root.classList.add("is-open", "call-opening");
@@ -1540,6 +1534,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
