@@ -297,8 +297,9 @@ c.onIncomingOffer = (peerId, offer, isVideoUpgrade = false) => {
   rtcState.incomingIsVideo =
     isVideoUpgrade || offer?.sdp?.includes("m=video");
 
-  const isUpgrade =
-    isVideoUpgrade && rtcState.inCall && rtcState.audioOnly;
+const isUpgrade = !!isVideoUpgrade;
+console.log("🔥 onIncomingOffer", { isVideoUpgrade, isUpgrade });
+
 
   if (isUpgrade) {
     if (this._isMobile()) {
@@ -730,6 +731,7 @@ _hideCallerVideoUpgrade() {
 
 _showCalleeVideoUpgrade(peerId) {
   this._pendingUpgradePeerId = peerId;
+console.log("🔥 CALLEE UPGRADE OVERLAY TRIGGERED");
 
   if (!this.iosCalleeUpgradeOverlay) {
     // Mobile fallback: still use generic overlay if iOS markup missing
@@ -1379,6 +1381,7 @@ _declineVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
