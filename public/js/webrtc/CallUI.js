@@ -131,6 +131,34 @@ export class CallUI {
     this.ringback = document.getElementById("ringback");
     this.upgradeRingtone = document.getElementById("upgradeRingtone");
     this.upgradeAcceptedTone = document.getElementById("upgradeAcceptedTone");
+  // ============================================================
+  // GENERIC TONE PLAYER (Web Audio + <audio> fallback)
+  // ============================================================
+  _playTone(id) {
+    try {
+      // Prefer Web Audio if unlocked and buffer is loaded
+      if (audioCtx && audioBuffers[id]) {
+        audioCtx.resume?.();
+
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioBuffers[id];
+        src.connect(audioCtx.destination);
+        src.start(0);
+        return;
+      }
+
+      // Fallback to the <audio> element
+      const el =
+        this[id] || document.getElementById(id); // e.g. this.ringtone, this.ringback, etc.
+      if (el) {
+        el.pause();
+        el.currentTime = 0;
+        el.play().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("[CallUI] _playTone error for", id, e);
+    }
+  }
 
     // ============================================================
     // INTERNAL STATE
@@ -1121,10 +1149,7 @@ _enterActiveVideoMode() {
   _playRingtone() {
     try {
       this._stopRingback();
-      if (this.ringtone) {
-        this.ringtone.currentTime = 0;
-        this.ringtone.play().catch(() => {});
-      }
+      this._playTone("ringtone");
     } catch {}
   }
 
@@ -1140,10 +1165,7 @@ _enterActiveVideoMode() {
   _playRingback() {
     try {
       this._stopRingtone();
-      if (this.ringback) {
-        this.ringback.currentTime = 0;
-        this.ringback.play().catch(() => {});
-      }
+      this._playTone("ringback");
     } catch {}
   }
 
@@ -1155,6 +1177,40 @@ _enterActiveVideoMode() {
       }
     } catch {}
   }
+
+  _playUpgradeRingtone() {
+    try {
+      this._stopRingtone();
+      this._stopUpgradeAcceptedTone?.();
+      this._playTone("upgradeRingtone");
+    } catch {}
+  }
+
+  _stopUpgradeRingtone() {
+    try {
+      if (this.upgradeRingtone) {
+        this.upgradeRingtone.pause();
+        this.upgradeRingtone.currentTime = 0;
+      }
+    } catch {}
+  }
+
+  _playUpgradeAcceptedTone() {
+    try {
+      this._stopUpgradeRingtone();
+      this._playTone("upgradeAcceptedTone");
+    } catch {}
+  }
+
+  _stopUpgradeAcceptedTone() {
+    try {
+      if (this.upgradeAcceptedTone) {
+        this.upgradeAcceptedTone.pause();
+        this.upgradeAcceptedTone.currentTime = 0;
+      }
+    } catch {}
+  }
+
 
   _resetControlsTimer() {
     this._lastControlsMove = Date.now();
@@ -1481,6 +1537,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
