@@ -989,27 +989,39 @@ _playUpgradeAcceptedTone() {
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   };
 
-  const endDrag = () => {
-    if (!this.pipDragState.active || !this.pipDragState.target) return;
-    const el = this.pipDragState.target;
-    this.pipDragState.active = false;
+const endDrag = () => {
+  if (!this.pipDragState.active || !this.pipDragState.target) return;
+  const el = this.pipDragState.target;
+  this.pipDragState.active = false;
 
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const rect = el.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
 
-    const snapLeft = centerX < vw / 2;
-    const snapTop = centerY < vh / 2;
+  // Get element size (not position)
+  const rect = el.getBoundingClientRect();
+  const width = rect.width;
+  const height = rect.height;
 
-    const x = snapLeft ? 20 : vw - rect.width - 20;
-    const y = snapTop ? 20 : vh - rect.height - 20;
+  // Current transform values
+  const match = /translate3d\(([-0-9.]+)px,\s*([-0-9.]+)px/.exec(el.style.transform || "");
+  const currentTx = match ? parseFloat(match[1]) : 0;
+  const currentTy = match ? parseFloat(match[2]) : 0;
 
-    // Snap using transform only
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    el.classList.remove("dragging");
-  };
+  // Compute element center in transform space
+  const centerX = currentTx + width / 2;
+  const centerY = currentTy + height / 2;
+
+  // Snap logic
+  const snapLeft = centerX < vw / 2;
+  const snapTop = centerY < vh / 2;
+
+  const x = snapLeft ? 20 : vw - width - 20;
+  const y = snapTop ? 20 : vh - height - 20;
+
+  // Apply corrected transform
+  el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  el.classList.remove("dragging");
+};
 
   const attachDragHandlers = (el) => {
     if (!el) return;
@@ -1554,6 +1566,7 @@ async _acceptVideoUpgrade() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
 }
+
 
 
 
