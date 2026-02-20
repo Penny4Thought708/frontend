@@ -476,7 +476,7 @@ body.light-mode .ios-voice-ui {
 }
 
 /* Base button */
-.ios-controls.ios-btn {
+.ios-controls .ios-btn {
   width: 72px;
   height: 72px;
   border-radius: 50%;
