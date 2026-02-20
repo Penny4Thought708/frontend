@@ -457,15 +457,18 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
 }
 .ios-inbound-controls {
-  display: flex;
-  gap: 18px;
-  margin-bottom: 24px;
+display: flex;
+    gap: 18px;
+    margin-bottom: 4px;
+    position: relative;
+    top: 20%;
+    gap: 150px;
 }
 
 .ios-inbound-controls .ios-btn {
-  width: 90px;
-  height: 90px;
-  font-size: 16px;
+width: 70px;
+    height: 70px;
+    font-size: 16px;
 }
 
 .ios-inbound-controls .answer {
