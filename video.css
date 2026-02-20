@@ -468,6 +468,7 @@ body.light-mode .ios-voice-ui {
 /* Controls grid */
 .ios-controls {
   display: grid;
+   margin-top: 80%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   width: 100%;
@@ -482,7 +483,7 @@ body.light-mode .ios-voice-ui {
   border-radius: 50%;
   border: none;
   outline: none;
-  background: rgba(255,255,255,0.08);
+    background: rgb(255 255 255 / 51%);
   color: white;
   font-size: 13px;
   display: flex;
@@ -496,6 +497,14 @@ body.light-mode .ios-voice-ui {
     inset 0 0 12px rgba(255,255,255,.06);
   backdrop-filter: blur(12px);
   transition: background .25s, transform .18s, box-shadow .25s, opacity .25s;
+}
+.ios-btn span {
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.ios-btn:hover span {
+  transform: scale(1.25);
+  opacity: 1;
 }
 
 /* Icons */
