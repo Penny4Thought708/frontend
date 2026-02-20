@@ -553,9 +553,12 @@ body.light-mode .ios-voice-ui {
 }
 
 .ios-inbound-controls .ios-btn {
-  width: 78px;
-  height: 78px;
-  font-size: 0;
+    width: 70px;
+    height: 70px;
+    border-radius: 50px;
+    border: solid 2px #7b717182;
+    box-shadow: inset 0 0 5px 2px #e5dddd4f, inset 0 0 5px 2px black, 0 0 5px 2px #fff9f975;
+    font-size: 0;
 }
 
 .ios-inbound-controls .answer {
