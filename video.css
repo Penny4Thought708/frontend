@@ -506,6 +506,15 @@ body.light-mode .ios-voice-ui {
   transform: scale(1.25);
   opacity: 1;
 }
+.ios-btn.end{
+ background:red;
+}
+
+.ios-btn.end:hover {
+  background: #ff4d42;
+  box-shadow: 0 0 14px rgba(255, 59, 48, 0.55);
+  transform: scale(1.05);
+}
 
 /* Icons */
 .icon {
