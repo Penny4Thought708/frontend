@@ -1102,8 +1102,14 @@ body.light-mode .ios-voice-ui {
 }
 
 .ios-callee-upgrade.active .ios-callee-upgrade-content {
-  opacity: 1;
-  transform: translateY(0);
+    opacity: 1;
+    background: #7373737a;
+    transform: translateY(0);
+    width: 240px;
+    border-radius: 20px;
+    height: 140px;
+    position: relative;
+    top: -295px;
 }
 .ios-callee-upgrade {
   opacity: 1;
@@ -1116,16 +1122,18 @@ body.light-mode .ios-voice-ui {
 }
 
 .ios-callee-upgrade-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
+display: flex;
+    justify-content: center;
+    gap: 16px;
+    height: 40px;
+    text-wrap: nowrap;
 }
 
 .ios-callee-upgrade-actions button {
-  padding: 14px 24px;
-  border-radius: 14px;
-  border: none;
-  font-size: 1.1rem;
+ padding: 10px 22px;
+    border-radius: 14px;
+    border: none;
+    font-size: 1.1rem;
 }
 
 .ios-callee-upgrade-accept {
