@@ -1064,6 +1064,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 })();
+function updateQualityIndicator(newText, newLevel) {
+  const el = document.getElementById("call-quality-indicator");
+
+  // Fade out
+  el.classList.add("fading-out");
+
+  setTimeout(() => {
+    // Update text + level
+    el.textContent = newText;
+    el.dataset.level = newLevel;
+
+    // Fade in
+    el.classList.remove("fading-out");
+    el.classList.add("fading-in");
+
+    // Remove fade-in class after animation
+    setTimeout(() => {
+      el.classList.remove("fading-in");
+    }, 350);
+
+  }, 350); // match CSS transition duration
+}
 
 
 </script>
@@ -1771,6 +1793,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
