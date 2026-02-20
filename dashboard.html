@@ -408,21 +408,16 @@ window.currentUserAvatar = user.avatar;
   <div class="ios-call-status">Connected</div>
   <div class="ios-call-timer">09:19</div>
 
-  <div class="ios-inbound-controls">
+  <div class="ios-inbound-controls  hidden">
+    <button class="ios-btn decline">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg);">
+  <path fill-rule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clip-rule="evenodd" />
+</svg>
+    </button>
     <button class="ios-btn answer">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
   <path fillRule="evenodd" d="M1.5 4.5a3 3 0 0 1 3-3h1.372c.86 0 1.61.586 1.819 1.42l1.105 4.423a1.875 1.875 0 0 1-.694 1.955l-1.293.97c-.135.101-.164.249-.126.352a11.285 11.285 0 0 0 6.697 6.697c.103.038.25.009.352-.126l.97-1.293a1.875 1.875 0 0 1 1.955-.694l4.423 1.105c.834.209 1.42.959 1.42 1.82V19.5a3 3 0 0 1-3 3h-2.25C8.552 22.5 1.5 15.448 1.5 6.75V4.5Z" clipRule="evenodd" />
 </svg>
-
-
-    </button>
-
-    <button class="ios-btn decline">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M4.21 15.79c-.88-.88-.88-2.32 0-3.2 4.3-4.3 11.28-4.3 15.58 0 .88.88.88 2.32 0 3.2l-1.14 1.14c-.7.7-1.78.82-2.6.28l-2.02-1.3c-.73-.47-1.03-1.4-.7-2.2l.33-.78c.09-.22.03-.48-.15-.63a8.9 8.9 0 0 0-4.2-1.74c-.23-.02-.45.1-.54.3l-.33.78c-.33.8-.03 1.73.7 2.2l-2.02 1.3c-.82.54-1.9.42-2.6-.28l-1.14-1.14Z"/>
-</svg>
-
-
     </button>
   </div>
 
@@ -1726,6 +1721,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
