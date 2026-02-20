@@ -373,12 +373,12 @@
   transition: opacity .3s ease, transform .3s ease;
 }
 
-/* FIXED: CallUI.js now adds mode class to #callWindow, not .call-window */
-#callWindow.mode-ios-voice .ios-voice-ui {
+#callWindow.mode-ios-voice:not(.inbound) .ios-voice-ui {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
+
 
 /* Dark/Light mode */
 body.light-mode .ios-voice-ui {
