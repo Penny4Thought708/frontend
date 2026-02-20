@@ -372,11 +372,14 @@
   transform: translateY(10px);
   transition: opacity .3s ease, transform .3s ease;
 }
-.call-window.mode-ios-voice .ios-voice-ui {
+
+/* FIXED: CallUI.js now adds mode class to #callWindow, not .call-window */
+#callWindow.mode-ios-voice .ios-voice-ui {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
 }
+
 /* Dark/Light mode */
 body.light-mode .ios-voice-ui {
   background: radial-gradient(circle at top, #f5f5f7 0, #d7d7db 55%, #c9c9ce 100%);
@@ -563,6 +566,7 @@ body.light-mode .ios-voice-ui {
   background: linear-gradient(135deg, #ff3b30, #ff453a);
 }
 
+/*=========================
    CALL STATUS + TIMER (TOP)
 =========================== */
 
