@@ -799,10 +799,13 @@ body.light-mode .ios-voice-ui {
   letter-spacing: 0.08em;
   background: rgba(0, 0, 0, 0.7);
   color: var(--call-quality-excellent);
+
+  /* Smooth fade animation */
+  opacity: 1;
+  transition: opacity 0.35s ease;
 }
 
 /* Quality levels via data-level */
-
 .quality-indicator[data-level="excellent"] {
   color: var(--call-quality-excellent);
 }
@@ -814,6 +817,17 @@ body.light-mode .ios-voice-ui {
 .quality-indicator[data-level="poor"] {
   color: var(--call-quality-poor);
 }
+
+/* Fade-out class */
+.quality-indicator.fading-out {
+  opacity: 0;
+}
+
+/* Fade-in class */
+.quality-indicator.fading-in {
+  opacity: 1;
+}
+
 
 /* Debug toggle */
 
