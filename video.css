@@ -427,13 +427,14 @@
   justify-items: center;
 }
 
+/* Base button */
 .ios-btn {
   width: 72px;
   height: 72px;
   border-radius: 50%;
   border: none;
   outline: none;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--call-text);
   font-size: 13px;
   display: flex;
@@ -441,42 +442,66 @@
   justify-content: center;
   text-align: center;
   padding: 0 6px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+
+  /* smoother, softer depth */
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.06);
+
+  backdrop-filter: blur(12px);
+
   transition:
-    background var(--call-transition-fast),
-    transform var(--call-transition-fast),
-    box-shadow var(--call-transition-fast);
+    background 0.25s ease,
+    transform 0.18s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
 }
 
+/* Danger button */
 .ios-btn.end {
   background: var(--call-accent-danger);
 }
 
+/* Press effect */
 .ios-btn:active {
-  transform: scale(0.94);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.8);
+  transform: scale(0.92);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.65),
+    inset 0 0 10px rgba(255, 255, 255, 0.04);
+  opacity: 0.9;
 }
+
+/* Inbound call layout */
 .ios-inbound-controls {
-display: flex;
-    gap: 18px;
-    margin-bottom: 4px;
-    position: relative;
-    top: 20%;
-    gap: 150px;
+  display: flex;
+  gap: 150px;
+  margin-bottom: 4px;
+  position: relative;
+  top: 20%;
 }
 
+/* Inbound buttons */
 .ios-inbound-controls .ios-btn {
-width: 70px;
-    height: 70px;
-    font-size: 16px;
+  width: 74px;
+  height: 74px;
+  font-size: 16px;
+
+  /* more tactile, more iOS */
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    0 3px 8px rgba(0, 0, 0, 0.35),
+    inset 0 0 14px rgba(255, 255, 255, 0.08);
 }
 
+/* Answer button */
 .ios-inbound-controls .answer {
-  background: var(--call-accent);
+  background: linear-gradient(135deg, var(--call-accent), var(--call-accent-light));
 }
 
+/* Decline button */
 .ios-inbound-controls .decline {
-  background: var(--call-accent-danger);
+  background: linear-gradient(135deg, var(--call-accent-danger), var(--call-accent-danger-light));
 }
 
 /* ===========================
