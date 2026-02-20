@@ -372,7 +372,11 @@
   transform: translateY(10px);
   transition: opacity .3s ease, transform .3s ease;
 }
-
+.call-window.mode-ios-voice .ios-voice-ui {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
 /* Dark/Light mode */
 body.light-mode .ios-voice-ui {
   background: radial-gradient(circle at top, #f5f5f7 0, #d7d7db 55%, #c9c9ce 100%);
