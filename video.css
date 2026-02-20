@@ -476,7 +476,7 @@ body.light-mode .ios-voice-ui {
 }
 
 /* Base button */
-.ios-btn {
+.ios-controls.ios-btn {
   width: 72px;
   height: 72px;
   border-radius: 50%;
@@ -511,25 +511,7 @@ body.light-mode .ios-voice-ui {
   overflow: hidden;
 }
 
-.ripple::after {
-  content: "";
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background: rgba(255,255,255,.35);
-  border-radius: 50%;
-  transform: scale(0);
-  opacity: 0;
-}
 
-.ripple:active::after {
-  animation: ripple-effect .5s ease-out;
-}
-
-@keyframes ripple-effect {
-  0% { transform: scale(0); opacity: .6; }
-  100% { transform: scale(18); opacity: 0; }
-}
 
 /* Decline shake */
 .shake:active {
