@@ -400,21 +400,29 @@ window.currentUserAvatar = user.avatar;
     <!-- ============================================================
          iPHONE VOICE UI (Mobile Audio Calls)
     ============================================================ -->
- <div class="ios-voice-ui hidden">
+<div class="ios-voice-ui">
   <div class="ios-avatar">
-    <img id="iosVoiceAvatar" src="img/defaultUser.png" alt="Avatar" />
+    <img id="iosVoiceAvatar" src="img/defaultUser.png" alt="Avatar">
   </div>
 
-  <div class="ios-call-status">Calling…</div>
-  <div class="ios-call-timer">00:00</div>
+  <div class="ios-call-status">Connected</div>
+  <div class="ios-call-timer">09:19</div>
 
-  <!-- MUST BE INSIDE ios-voice-ui -->
-  <div class="ios-inbound-controls hidden">
-    <button class="ios-btn answer">Answer</button>
-    <button class="ios-btn decline">Decline</button>
+  <div class="ios-inbound-controls">
+    <button class="ios-btn answer ripple">
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M6.62 10.79a15.05 15.05 0 0 1 10.76 0l1.38-1.38a1 1 0 0 1 1.41 1.41l-1.52 1.52c-.39.39-.9.61-1.44.61-.18 0-.36-.02-.54-.07a13.05 13.05 0 0 0-9.1 0c-.18.05-.36.07-.54.07-.54 0-1.05-.22-1.44-.61L3.83 10.82a1 1 0 1 1 1.41-1.41l1.38 1.38z"/>
+      </svg>
+    </button>
+
+    <button class="ios-btn decline ripple">
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M6.62 10.79a15.05 15.05 0 0 1 10.76 0l1.38-1.38a1 1 0 0 1 1.41 1.41l-1.52 1.52c-.39.39-.9.61-1.44.61-.18 0-.36-.02-.54-.07a13.05 13.05 0 0 0-9.1 0c-.18.05-.36.07-.54.07-.54 0-1.05-.22-1.44-.61L3.83 10.82a1 1 0 1 1 1.41-1.41l1.38 1.38z"/>
+      </svg>
+    </button>
   </div>
 
-  <div class="ios-controls">
+  <div class="ios-controls hidden">
     <button class="ios-btn mute">Mute</button>
     <button class="ios-btn speaker">Speaker</button>
     <button class="ios-btn keypad">Keypad</button>
@@ -1714,6 +1722,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
