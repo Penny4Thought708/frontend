@@ -103,6 +103,148 @@ footer {
 /* ================================
    HEADER
 =================================== */
+/* ============================================
+   LOGIN POPUP — MATCH SIGNUP FORM STYLE
+   (Glassmorphism + Modern Layout)
+=============================================== */
+
+.container3 {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.82);
+  z-index: 2000;
+}
+
+.container3.show {
+  display: flex;
+}
+
+/* Remove phone-frame look */
+#left-side-nav {
+  width: min(420px, 100%);
+  padding: 1.7rem 1.4rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: linear-gradient(
+      135deg,
+      rgba(255,255,255,0.08),
+      rgba(255,255,255,0.02)
+  );
+  box-shadow: 0 20px 45px rgba(0,0,0,0.75);
+  backdrop-filter: blur(18px);
+  position: relative;
+}
+
+/* Remove phone UI elements */
+.volume-up,
+.volume-down,
+.left-nav,
+.dock,
+.home_btn {
+  display: none !important;
+}
+
+/* Close button */
+.close-btn1 {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  border: none;
+  background: transparent;
+  color: #9aa3c2;
+  cursor: pointer;
+}
+
+/* Login form container */
+.form_wrap {
+  margin-top: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 1.4rem 1.2rem;
+  background: rgba(5,10,25,0.96);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Title */
+.form_wrap h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.25rem;
+  color: #fff;
+}
+
+/* Logo bar */
+.logo-login {
+  width: 100%;
+  border-radius: 12px;
+  background: radial-gradient(circle at top left, #2f8cff, #0050ff);
+  color: #050814;
+  font-weight: 800;
+  font-size: 1rem;
+  text-align: center;
+  padding: 0.6rem 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+/* Labels */
+.form_wrap label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa3c2;
+}
+
+/* Inputs */
+.form_wrap input {
+  height: 2.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 0 0.7rem;
+  background: rgba(5,10,25,0.98);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.form_wrap input:focus {
+  outline: none;
+  border-color: #2f8cff;
+  box-shadow: 0 0 0 1px rgba(47,140,255,0.35);
+}
+
+/* Submit button */
+#loginSubmit.btn-Form {
+  margin-top: 0.5rem;
+  padding: 0.55rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: radial-gradient(circle at top left, #2f8cff, #0050ff);
+  color: #050814;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* "Sign up" link */
+.form_wrap a {
+  align-self: flex-end;
+  font-size: 0.85rem;
+  color: #5fa4ff;
+}
+
+/* Error box */
+#errorBox {
+  min-height: 1rem;
+  font-size: 0.85rem;
+  color: #ff4b6e;
+}
 
 header {
   position: sticky;
@@ -1007,5 +1149,6 @@ footer {
     justify-content: flex-end;
   }
 }
+
 
 
