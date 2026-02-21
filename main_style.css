@@ -1,8 +1,8 @@
 /* 
-  New full CSS for your DIY site
-  Theme: Dark Futuristic + Glassmorphism
-  Layout: Modern Landing Page with Cinematic Hero
+  DIY Landing — Dark Futuristic + Glassmorphism
+  Layout: Modern Landing Page + Cinematic Hero
   Accent: Electric Blue
+  Includes: Responsive design + animations
 */
 
 /* ================================
@@ -15,7 +15,7 @@
                      radial-gradient(circle at 90% 100%, rgba(120, 0, 255, 0.35), transparent 55%);
   --glass-bg: rgba(10, 18, 40, 0.78);
   --glass-border: rgba(255, 255, 255, 0.16);
-  --accent: #2f8cff;          /* electric blue */
+  --accent: #2f8cff;
   --accent-soft: rgba(47, 140, 255, 0.35);
   --accent-strong: #5fa4ff;
   --text-main: #f5f7ff;
@@ -51,6 +51,8 @@ body {
   flex-direction: column;
   align-items: stretch;
   overflow-x: hidden;
+  animation: bodyFadeIn 0.8s ease-out forwards;
+  opacity: 0;
 }
 
 img {
@@ -81,6 +83,38 @@ button {
 }
 
 /* ================================
+   KEYFRAMES
+=================================== */
+
+@keyframes bodyFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroGlow {
+  0%   { opacity: 0.7; transform: scale(1); }
+  50%  { opacity: 1;   transform: scale(1.02); }
+  100% { opacity: 0.7; transform: scale(1); }
+}
+
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardHoverPulse {
+  0%   { box-shadow: var(--shadow-soft); }
+  50%  { box-shadow: 0 0 22px var(--accent-soft), var(--shadow-soft); }
+  100% { box-shadow: var(--shadow-soft); }
+}
+
+@keyframes glassPulse {
+  0%   { box-shadow: var(--shadow-soft); }
+  50%  { box-shadow: 0 0 18px var(--accent-soft), var(--shadow-soft); }
+  100% { box-shadow: var(--shadow-soft); }
+}
+
+/* ================================
    GLOBAL WRAPPERS
 =================================== */
 
@@ -103,148 +137,6 @@ footer {
 /* ================================
    HEADER
 =================================== */
-/* ============================================
-   LOGIN POPUP — MATCH SIGNUP FORM STYLE
-   (Glassmorphism + Modern Layout)
-=============================================== */
-
-.container3 {
-  position: fixed;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.82);
-  z-index: 2000;
-}
-
-.container3.show {
-  display: flex;
-}
-
-/* Remove phone-frame look */
-#left-side-nav {
-  width: min(420px, 100%);
-  padding: 1.7rem 1.4rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: linear-gradient(
-      135deg,
-      rgba(255,255,255,0.08),
-      rgba(255,255,255,0.02)
-  );
-  box-shadow: 0 20px 45px rgba(0,0,0,0.75);
-  backdrop-filter: blur(18px);
-  position: relative;
-}
-
-/* Remove phone UI elements */
-.volume-up,
-.volume-down,
-.left-nav,
-.dock,
-.home_btn {
-  display: none !important;
-}
-
-/* Close button */
-.close-btn1 {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  border: none;
-  background: transparent;
-  color: #9aa3c2;
-  cursor: pointer;
-}
-
-/* Login form container */
-.form_wrap {
-  margin-top: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.16);
-  padding: 1.4rem 1.2rem;
-  background: rgba(5,10,25,0.96);
-  box-shadow: 0 20px 45px rgba(0,0,0,0.75);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Title */
-.form_wrap h2 {
-  font-size: 1.4rem;
-  margin-bottom: 0.25rem;
-  color: #fff;
-}
-
-/* Logo bar */
-.logo-login {
-  width: 100%;
-  border-radius: 12px;
-  background: radial-gradient(circle at top left, #2f8cff, #0050ff);
-  color: #050814;
-  font-weight: 800;
-  font-size: 1rem;
-  text-align: center;
-  padding: 0.6rem 0.4rem;
-  margin-bottom: 0.6rem;
-}
-
-/* Labels */
-.form_wrap label {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #9aa3c2;
-}
-
-/* Inputs */
-.form_wrap input {
-  height: 2.5rem;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.16);
-  padding: 0 0.7rem;
-  background: rgba(5,10,25,0.98);
-  color: #fff;
-  font-size: 0.9rem;
-}
-
-.form_wrap input:focus {
-  outline: none;
-  border-color: #2f8cff;
-  box-shadow: 0 0 0 1px rgba(47,140,255,0.35);
-}
-
-/* Submit button */
-#loginSubmit.btn-Form {
-  margin-top: 0.5rem;
-  padding: 0.55rem 1.4rem;
-  border-radius: 999px;
-  border: none;
-  background: radial-gradient(circle at top left, #2f8cff, #0050ff);
-  color: #050814;
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-/* "Sign up" link */
-.form_wrap a {
-  align-self: flex-end;
-  font-size: 0.85rem;
-  color: #5fa4ff;
-}
-
-/* Error box */
-#errorBox {
-  min-height: 1rem;
-  font-size: 0.85rem;
-  color: #ff4b6e;
-}
 
 header {
   position: sticky;
@@ -387,6 +279,7 @@ header hr {
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 55%);
   opacity: 0.9;
   pointer-events: none;
+  animation: heroGlow 10s ease-in-out infinite;
 }
 
 /* subtle grain / noise effect */
@@ -414,6 +307,7 @@ header hr {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(var(--blur));
+  animation: floatUp 0.8s ease-out 0.1s both;
 }
 
 .hero-text h1 {
@@ -440,6 +334,8 @@ header hr {
   overflow: hidden;
   background: radial-gradient(circle at top left, var(--accent), #0050ff);
   box-shadow: 0 0 18px var(--accent-soft);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .link_box a {
@@ -466,12 +362,17 @@ header hr {
   transition: opacity var(--transition-med), transform var(--transition-med);
 }
 
+.link_box:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 0 22px var(--accent-soft);
+}
+
 .link_box:hover::before {
   opacity: 1;
   transform: translateX(40%);
 }
 
-/* Hide decorative arrows & dots (you can re-enable if you animate them later) */
+/* Hide old arrows/dots */
 #arrow-left,
 #arrow-right,
 #dot_1,
@@ -521,6 +422,7 @@ header hr {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
   padding: 1.9rem 1.6rem 1.8rem;
+  animation: floatUp 0.8s ease-out 0.2s both;
 }
 
 .top-block {
@@ -555,6 +457,16 @@ header hr {
     rgba(5, 10, 25, 0.96);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
   min-height: 120px;
+  transition: transform var(--transition-med), box-shadow var(--transition-med), border-color var(--transition-med);
+}
+
+.top-left:hover,
+.top-right:hover,
+.bottom-left:hover,
+.bottom-right:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 20px var(--accent-soft), var(--shadow-soft);
 }
 
 /* 2x2 grid on larger screens */
@@ -601,13 +513,14 @@ header hr {
 
 .bot_container {
   position: relative;
-  margin-top: 2rem !important; /* override inline negative margin */
+  margin-top: 2rem !important;
 }
 
 .app-promotion {
   border-radius: var(--radius-lg);
   background: radial-gradient(circle at top, rgba(47, 140, 255, 0.16), rgba(5, 10, 25, 0.98));
   box-shadow: var(--shadow-soft);
+  animation: floatUp 0.8s ease-out 0.3s both;
 }
 
 .project-strip {
@@ -684,6 +597,7 @@ header hr {
   transform: translateY(-4px);
   border-color: var(--accent-soft);
   box-shadow: 0 0 20px var(--accent-soft), var(--shadow-soft);
+  animation: cardHoverPulse 0.7s ease-out;
 }
 
 /* Larger screens: 2–3 columns */
@@ -700,7 +614,7 @@ header hr {
 }
 
 /* ================================
-   LOGIN POPUP (#popup)
+   LOGIN POPUP — GLASS STYLE
 =================================== */
 
 .container3 {
@@ -710,136 +624,106 @@ header hr {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.78);
+  background: rgba(0, 0, 0, 0.82);
   z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 
 .container3.show {
   display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 
-#popup {
-  position: relative;
-}
-
-/* Phone-like container simplified */
 #left-side-nav {
-  width: min(360px, 100%);
-  padding: 1.25rem 1rem 1.5rem;
-  border-radius: 32px;
-  border: 1px solid var(--glass-border);
+  width: min(420px, 100%);
+  padding: 1.7rem 1.4rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.16);
   background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
-    );
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(var(--blur));
-  position: relative;
-}
-
-/* Hide side volume bars on small screens */
-.volume-up,
-.volume-down {
-  display: none;
-}
-
-/* Notification bar */
-.notification_bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  color: var(--text-main);
-  margin-bottom: 0.75rem;
-  position: relative;
-}
-
-/* Simple placeholders for status icons */
-.clock::before {
-  content: attr(data-time);
-}
-
-.camera_lens,
-.cell_service,
-.signal_bars,
-.battery {
-  width: 14px;
-  height: 10px;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-/* Bolt icon inside battery */
-.bolt {
-  position: absolute;
-  left: 50%;
-  top: 55%;
-  width: 10px;
-  height: 8px;
-  transform: translate(-50%, -50%);
-  background: currentColor;
-  color: #fff;
-  clip-path: polygon(
-    40% 0%,
-    60% 0%,
-    40% 35%,
-    65% 35%,
-    20% 100%,
-    40% 55%,
-    20% 55%
+      135deg,
+      rgba(255,255,255,0.08),
+      rgba(255,255,255,0.02)
   );
-  opacity: 0.9;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+  position: relative;
+  animation: floatUp 0.35s ease-out;
 }
 
-/* Login form */
+/* Remove old phone UI */
+.volume-up,
+.volume-down,
+.left-nav,
+.dock,
+.home_btn {
+  display: none !important;
+}
+
+/* Close button */
+.close-btn1 {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  border: none;
+  background: transparent;
+  color: #9aa3c2;
+  cursor: pointer;
+}
+
+/* Login form container */
 .form_wrap {
-  position: static;
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--glass-border);
-  padding: 1rem 0.9rem 1.1rem;
-  background: rgba(5, 10, 25, 0.96);
+  margin-top: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 1.4rem 1.2rem;
+  background: rgba(5,10,25,0.96);
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  color: var(--text-main);
-  margin-top: 0.75rem;
+  gap: 0.75rem;
+  animation: glassPulse 2.5s ease-in-out infinite alternate;
 }
 
+/* Title */
+.form_wrap h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.25rem;
+  color: #fff;
+}
+
+/* Logo bar */
 .logo-login {
   width: 100%;
-  border-radius: var(--radius-md);
-  background: radial-gradient(circle at top left, var(--accent), #003cff);
+  border-radius: 12px;
+  background: radial-gradient(circle at top left, var(--accent), #0050ff);
   color: #050814;
   font-weight: 800;
   font-size: 1rem;
   text-align: center;
   padding: 0.6rem 0.4rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.6rem;
 }
 
-.form_wrap h2 {
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-}
-
+/* Labels */
 .form_wrap label {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
+  color: #9aa3c2;
 }
 
+/* Inputs */
 .form_wrap input {
-  height: 2.3rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  padding: 0 0.6rem;
-  background: rgba(5, 10, 25, 0.98);
-  color: var(--text-main);
-  font-size: 0.85rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  padding: 0 0.7rem;
+  background: rgba(5,10,25,0.98);
+  color: #fff;
+  font-size: 0.9rem;
 }
 
 .form_wrap input:focus {
@@ -848,72 +732,43 @@ header hr {
   box-shadow: 0 0 0 1px var(--accent-soft);
 }
 
+/* Submit button */
 #loginSubmit.btn-Form {
-  margin-top: 0.4rem;
-  align-self: flex-start;
-  padding: 0.45rem 1.2rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1.4rem;
   border-radius: 999px;
   border: none;
   background: radial-gradient(circle at top left, var(--accent), #0050ff);
   color: #050814;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+#loginSubmit.btn-Form:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 0 18px var(--accent-soft);
+}
+
+/* "Sign up" link */
 .form_wrap a {
   align-self: flex-end;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--accent-strong);
 }
 
-/* Login error box */
+/* Error box */
 #errorBox {
-  min-height: 0.9rem;
-  font-size: 0.8rem;
+  min-height: 1rem;
+  font-size: 0.85rem;
   color: var(--danger);
 }
 
-/* Dock icons */
-.dock {
-  margin-top: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.4rem;
-}
-
-.app-icon {
-  flex: 1;
-  height: 32px;
-  border-radius: 10px;
-  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), rgba(5, 10, 25, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-/* Home button */
-.home_btn {
-  width: 80px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.4);
-  margin: 0.9rem auto 0  ;
-}
-
-/* Close button */
-.close-btn1 {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
 /* ================================
-   SIGNUP POPUP (#popup2)
+   SIGNUP POPUP
 =================================== */
 
 #popup2 {
@@ -925,10 +780,15 @@ header hr {
   padding: 1.5rem;
   background: rgba(0, 0, 0, 0.82);
   z-index: 2100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 
 #popup2.show {
   display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 #popup2 .overlay {
@@ -946,6 +806,7 @@ header hr {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: floatUp 0.35s ease-out;
 }
 
 /* Left intro */
@@ -1027,27 +888,17 @@ header hr {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#sign_form_link button.smt-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 0 18px var(--accent-soft);
 }
 
 #sign_form_link p {
   font-size: 0.85rem;
   color: var(--text-muted);
-}
-
-/* Signup error */
-#error_signup {
-  display: none;
-  margin-top: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--danger);
-  color: #fff;
-  background: rgba(255, 75, 110, 0.12);
-  font-size: 0.8rem;
-}
-
-#error_signup.show {
-  display: block;
 }
 
 /* Popup layout on larger screens */
@@ -1084,12 +935,19 @@ header hr {
   box-shadow: var(--shadow-soft);
   padding: 1.25rem 1rem;
   text-align: center;
+  transition: transform var(--transition-med), box-shadow var(--transition-med), border-color var(--transition-med);
 }
 
 .project-card h1 {
   font-size: 1.1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.project-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 18px var(--accent-soft), var(--shadow-soft);
 }
 
 /* Larger screens */
@@ -1149,6 +1007,7 @@ footer {
     justify-content: flex-end;
   }
 }
+
 
 
 
