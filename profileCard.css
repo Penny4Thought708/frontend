@@ -29,7 +29,7 @@
 —————————————————————————————— */
 #fullProfileModal {
   position: relative;
-  width: 100%;
+  width: 27%;
   height: 100%;
   display: block;
   background: transparent;
@@ -107,13 +107,13 @@
    3D PARALLAX BANNER
 —————————————————————————————— */
 .full-profile-banner {
-  width: 100%;
-  height: 150px;
-  border-radius: 16px;
-  overflow: hidden;
-  perspective: 900px;
-  transform-style: preserve-3d;
-  margin-bottom: 60px;
+    width: 100%;
+    height: 90px;
+    border-radius: 16px;
+    overflow: hidden;
+    perspective: 900px;
+    transform-style: preserve-3d;
+    border: solid 2px whitesmoke;
 }
 
 .full-profile-banner img {
@@ -129,16 +129,17 @@
    AVATAR + STATUS GLOW
 —————————————————————————————— */
 .avatar-frame {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.35);
-  position: absolute;
-  top: 110px;
-  left: 50%;
-  transform: translateX(-50%);
-  animation: avatarPop 0.45s ease;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid rgba(255, 255, 255, 0.35);
+    position: relative;
+    top: 30px;
+    left: 50%;
+    margin-bottom: 10%;
+    transform: translateX(-50%);
+    animation: avatarPop 0.45s ease;
 }
 
 @keyframes avatarPop {
