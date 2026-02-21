@@ -23,14 +23,14 @@
     <div class="logo">
       <span>Scrubber's DIY Creation</span>
     </div>
-    <hr>
+
     <nav class="main-nav">
       <a href="#">Home</a>
       <a href="#">Services</a>
       <a href="project.html">Projects</a>
       <a href="#">Contact</a>
     </nav>
-    <hr>
+
     <div class="auth-section">
       <button type="button" id="loginBtn">Login</button>
       <button type="button" id="signupBtn">Sign Up</button>
@@ -39,9 +39,6 @@
 
   <!-- Hero Section -->
   <section class="hero">
-    <button id="arrow-left">
-      <img src="arrow-right.png" alt="ArrowR">
-    </button>
     <div class="hero-text">
       <h1>Your Home, Your Hands, Our Help</h1>
       <div class="for_text">
@@ -52,12 +49,6 @@
         </div>
       </div>
     </div>
-    <button id="arrow-right">
-      <img src="arrow.png" alt="ArrowL">
-    </button>
-    <div id="dot_1"></div>
-    <div id="dot_2"></div>
-    <div id="dot_3"></div>
   </section>
 
   <!-- Main Content Grid -->
@@ -66,6 +57,7 @@
       <h1 class="top-block">
         Why DIY Is the Best Way to Get Things Done
       </h1>
+
       <article class="build-block">
         <div class="build-block-two">
           <div class="top-left"></div>
@@ -76,40 +68,32 @@
       </article>
 
       <div class="bottom-block">
-        <p>
-          <strong>Personal Satisfaction:</strong> There’s pride in saying, “I
-          made this.”
-        </p>
+        <p><strong>Personal Satisfaction:</strong> There’s pride in saying, “I made this.”</p>
         <hr>
-        <p>
-          Explore projects from fellow DIY enthusiasts and connect with them in real time.
+        <p>Explore projects from fellow DIY enthusiasts and connect with them in real time.
           Curious to see how it works? <a href="#" target="_blank">Click here</a>.
         </p>
         <hr>
-        <p>
-          Learn. Build. Fix. Connect. Turn your ideas into reality with
-          step‑by‑step DIY guides for everything from quick fixes to big builds.
-        </p>
+        <p>Learn. Build. Fix. Connect. Turn your ideas into reality with step‑by‑step DIY guides for everything from quick fixes to big builds.</p>
         <hr>
-        <p>
-          Need an extra hand? Instantly connect with trusted local contractors
-          or helpers nearby.
-        </p>
+        <p>Need an extra hand? Instantly connect with trusted local contractors or helpers nearby.</p>
         <hr>
-        <p>
-          Download today and start building smarter. Join us by downloading our
+        <p>Download today and start building smarter. Join us by downloading our
           <a href="https://play.google.com" target="_blank">app</a>.
         </p>
       </div>
     </section>
   </main>
 
-  <div class="bot_container" style="position: relative;margin-top: -10%;">
+  <!-- Project Categories -->
+  <div class="bot_container">
     <div class="app-promotion">
       <section class="project-strip">
         <h2>Start Your DIY Journey</h2>
         <p>Select a category to explore guides, tips, and expert help.</p>
+
         <div class="project-cards">
+
           <div class="card">
             <img src="img/beginner.svg" alt="Beginner Projects">
             <h3>Beginner Builds</h3>
@@ -158,6 +142,7 @@
             <p>Decks, fences, and landscaping to elevate your exterior.</p>
             <a href="/projects/outdoor">Explore</a>
           </div>
+
         </div>
       </section>
     </div>
@@ -168,64 +153,43 @@
     <button type="button" id="closePopup" class="close-btn1" title="Close login form">
       <span class="material-symbols-outlined">close</span>
     </button>
+
     <div id="left-side-nav">
-      <div class="volume-up"></div>
-      <div class="volume-down"></div>
+      <form id="loginForm" method="POST" class="form_wrap">
+        <div class="logo-login">Scrubber's</div>
+        <h2>Please Login</h2>
+        <div id="errorBox"></div>
 
-      <div class="left-nav">
-        <div class="notification_bar">
-          <div class="clock" data-time="12:02"></div>
-          <div class="camera_lens"></div>
-          <div class="cell_service"></div>
-          <div class="signal_bars"></div>
-          <div class="battery"><span class="bolt"></span> </div>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" placeholder="you@example.com" required />
 
-          <form id="loginForm" method="POST" class="form_wrap">
-            <div class="logo-login">Scrubber's</div>
-            <h2>Please Login</h2>
-            <div id="errorBox"></div>
-            <label for="useremail">Email</label>
-            <input type="email" id="login-email" name="email" placeholder="you@example.com" required />
-            <label for="userpassword">Password</label>
-            <input type="password" id="log-password" name="password" placeholder="Password" required />
-            <button type="submit" id="loginSubmit" class="btn-Form">Login</button>
-            <a href="#" id="openSignupFrom">Sign Up</a>
-          </form>
+        <label for="log-password">Password</label>
+        <input type="password" id="log-password" name="password" placeholder="Password" required />
 
-          <div class="dock">
-            <div class="app-icon" id="phone"></div>
-            <div class="app-icon" id="message"></div>
-            <div class="app-icon" id="internet"></div>
-            <div class="app-icon" id="camera"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="home_btn"></div>
+        <button type="submit" id="loginSubmit" class="btn-Form">Login</button>
+        <a href="#" id="openSignupFrom">Sign Up</a>
+      </form>
     </div>
   </div>
 
   <!-- Signup Popup -->
   <div id="popup2" class="popup23" aria-hidden="true">
     <div class="overlay">
+
       <div class="left">
         <section class="signup-intro">
           <div class="intro-content">
             <h1>Join the DIY Network</h1>
-            <p>
-              Ready to bring your ideas to life? The DIY Network is your hub for hands-on projects, 
-              step-by-step guides, and a community of makers just like you. Whether you’re building 
-              your first shelf or tackling a full remodel, you’ll find inspiration, tools, and support here.
-            </p>
+            <p>Ready to bring your ideas to life? The DIY Network is your hub for hands-on projects, step-by-step guides, and a community of makers just like you.</p>
           </div>
         </section>
       </div>
+
       <div class="right">
         <button type="button" id="closePopup2" class="close-btn" title="Close signup form">
           <span class="material-symbols-outlined">close</span>
         </button>
 
-        <!-- form must carry action + method -->
         <form id="sign_form_link" action="signup.php" method="POST">
           <label for="getMyFullname">Full Name</label>
           <input type="text" id="getMyFullname" name="getMyFullname" placeholder="John Doe" required />
@@ -248,37 +212,29 @@
           <p>Already have an account? <a href="#" id="openSignupFromLogin">Log in here</a>.</p>
         </form>
       </div>
+
     </div>
   </div>
 
   <!-- Featured Projects -->
   <section class="featured-projects">
-    <div class="project-card">
-      <h1>Ad PLACEMENT</h1>
-      <article class="project">
-        <div class="image-container">
-          <div class="overlay"></div>
-        </div>
-      </article>
-    </div>
-    <div class="project-card">
-      <h1>Ad PLACEMENT</h1>
-    </div>
-    <div class="project-card">
-      <h1>Ad PLACEMENT</h1>
-    </div>
+    <div class="project-card"><h1>Ad PLACEMENT</h1></div>
+    <div class="project-card"><h1>Ad PLACEMENT</h1></div>
+    <div class="project-card"><h1>Ad PLACEMENT</h1></div>
   </section>
 
   <!-- Footer -->
   <footer>
     <div class="footer-content">
       <p>&copy; 2025 DIY Connect. All rights reserved.</p>
+
       <nav class="footer-nav">
         <a href="/about">About Us</a>
         <a href="/services">Services</a>
         <a href="/contact">Contact</a>
         <a href="/privacy">Privacy Policy</a>
       </nav>
+
       <div class="social-links">
         <a href="https://facebook.com" target="_blank">Facebook</a>
         <a href="https://twitter.com" target="_blank">Twitter</a>
@@ -286,6 +242,7 @@
       </div>
     </div>
   </footer>
+
 </body>
 
   <script type="module">
@@ -325,6 +282,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 });
 </script>
 </html>
+
 
 
 
