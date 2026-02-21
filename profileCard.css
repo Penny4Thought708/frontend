@@ -25,21 +25,42 @@
 }
 
 /* ——————————————————————————————
-   PANEL CONTAINER (NOT A MODAL)
+   PANEL CONTAINER (1 of 3 in a row)
 —————————————————————————————— */
 #fullProfileModal {
   position: relative;
-  width: 27%;
+  width: 100%;
   height: 100%;
   display: block;
   background: transparent;
-  backdrop-filter: none;
   animation: fadeInPanel 0.35s ease;
 }
 
 @keyframes fadeInPanel {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ——————————————————————————————
+   DEFAULT STATE (before data loads)
+—————————————————————————————— */
+#fullProfileModal.not-loaded .full-profile-content {
+  filter: blur(4px) brightness(0.7);
+  pointer-events: none;
+  position: relative;
+}
+
+#fullProfileModal.not-loaded .full-profile-content::after {
+  content: "Loading profile…";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 15px;
+  color: var(--profile-text);
+  background: rgba(0,0,0,0.35);
+  border-radius: 20px;
 }
 
 /* ——————————————————————————————
@@ -81,24 +102,28 @@
 }
 
 /* ——————————————————————————————
-   CLOSE BUTTON (SMALL PANEL STYLE)
+   AUTO-GENERATED CLOSE BUTTON
 —————————————————————————————— */
-.close-full-profile {
+.floating-body.full-profile-content::before {
+  content: "✕";
   position: absolute;
   top: 12px;
   right: 12px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: none;
   background: var(--profile-card);
   color: var(--profile-text);
   font-size: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
   transition: 0.25s ease;
+  z-index: 10;
 }
 
-.close-full-profile:hover {
+.floating-body.full-profile-content::before:hover {
   background: var(--profile-card-hover);
   transform: scale(1.1);
 }
@@ -107,13 +132,13 @@
    3D PARALLAX BANNER
 —————————————————————————————— */
 .full-profile-banner {
-    width: 100%;
-    height: 90px;
-    border-radius: 16px;
-    overflow: hidden;
-    perspective: 900px;
-    transform-style: preserve-3d;
-    border: solid 2px whitesmoke;
+  width: 100%;
+  height: 150px;
+  border-radius: 16px;
+  overflow: hidden;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  margin-bottom: 60px;
 }
 
 .full-profile-banner img {
@@ -129,17 +154,16 @@
    AVATAR + STATUS GLOW
 —————————————————————————————— */
 .avatar-frame {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 4px solid rgba(255, 255, 255, 0.35);
-    position: relative;
-    top: 30px;
-    left: 50%;
-    margin-bottom: 10%;
-    transform: translateX(-50%);
-    animation: avatarPop 0.45s ease;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: avatarPop 0.45s ease;
 }
 
 @keyframes avatarPop {
@@ -147,13 +171,6 @@
   to { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-.full-profile-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ONLINE STATUS GLOW */
 .avatar-frame.online {
   box-shadow: 0 0 18px rgba(0, 255, 120, 0.55);
   animation: onlinePulse 2s infinite ease-in-out;
@@ -165,58 +182,9 @@
   100% { box-shadow: 0 0 10px rgba(0,255,120,0.4); }
 }
 
-/* OFFLINE STATUS GLOW */
-.avatar-frame.offline {
-  box-shadow: 0 0 12px rgba(255, 0, 0, 0.45);
-  animation: offlinePulse 2.2s infinite ease-in-out;
-}
-
-@keyframes offlinePulse {
-  0% { box-shadow: 0 0 8px rgba(255,0,0,0.35); }
-  50% { box-shadow: 0 0 18px rgba(255,0,0,0.65); }
-  100% { box-shadow: 0 0 8px rgba(255,0,0,0.35); }
-}
-
 /* ——————————————————————————————
-   NAME + INFO
+   SOCIAL ICONS (animated)
 —————————————————————————————— */
-#fullProfileName {
-  text-align: center;
-  font-size: 22px;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-#fullProfileEmail,
-#fullProfilePhone {
-  text-align: center;
-  opacity: 0.8;
-  margin: 4px 0;
-  font-size: 14px;
-}
-
-/* ——————————————————————————————
-   BIO
-—————————————————————————————— */
-.full-profile-bio {
-  margin: 14px 0;
-  padding: 12px;
-  background: var(--profile-card);
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-/* ——————————————————————————————
-   SOCIAL LINKS (animated icons)
-—————————————————————————————— */
-.profile-line {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 10px 0;
-}
-
 .profile-line img {
   width: 32px;
   height: 32px;
@@ -236,110 +204,4 @@
 .profile-line img:hover {
   transform: translateY(-4px) scale(1.12);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
-}
-
-.profile-line a {
-  color: var(--profile-accent);
-  text-decoration: none;
-  font-size: 14px;
-  word-break: break-all;
-  transition: 0.25s ease;
-}
-
-.profile-line a:hover {
-  text-decoration: underline;
-  color: var(--profile-accent-hover);
-}
-
-/* ——————————————————————————————
-   PROFILE FIELDS
-—————————————————————————————— */
-.profile-field {
-  margin: 10px 0;
-  font-size: 14px;
-}
-
-.profile-field strong {
-  opacity: 0.75;
-}
-
-/* ——————————————————————————————
-   COPY BUTTONS
-—————————————————————————————— */
-.copy-row {
-  display: flex;
-  gap: 10px;
-  margin: 18px 0;
-}
-
-.copy-row button {
-  flex: 1;
-  padding: 10px;
-  border-radius: 12px;
-  border: none;
-  background: var(--profile-card);
-  color: var(--profile-text);
-  cursor: pointer;
-  transition: 0.25s ease;
-}
-
-.copy-row button:hover {
-  background: var(--profile-card-hover);
-  transform: scale(1.05);
-}
-
-/* ——————————————————————————————
-   ADD TO CONTACTS
-—————————————————————————————— */
-#saveLookupContact {
-  width: 100%;
-  padding: 12px;
-  border-radius: 14px;
-  border: none;
-  background: var(--profile-accent);
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  margin-bottom: 18px;
-  transition: 0.25s ease;
-}
-
-#saveLookupContact:hover {
-  background: var(--profile-accent-hover);
-  transform: scale(1.03);
-}
-
-/* ——————————————————————————————
-   ACTION BUTTONS
-—————————————————————————————— */
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.profile-actions button {
-  flex: 1;
-  padding: 12px;
-  border-radius: 14px;
-  border: none;
-  background: var(--profile-card);
-  color: var(--profile-text);
-  font-size: 15px;
-  cursor: pointer;
-  transition: 0.25s ease;
-}
-
-.profile-actions button:hover {
-  background: var(--profile-card-hover);
-  transform: scale(1.05);
-}
-
-/* Danger button */
-.profile-actions .danger {
-  background: var(--profile-danger);
-}
-
-.profile-actions .danger:hover {
-  background: var(--profile-danger-hover);
 }
