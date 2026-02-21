@@ -27,11 +27,13 @@
    PANEL CONTAINER (1 of 3)
 —————————————————————————————— */
 #fullProfileModal {
-  position: relative;
-  width: 27%;
-  height: 100%;
-  display: block;
-  animation: fadeInPanel 0.35s ease;
+    position: relative;
+    width: 25%;
+    height: 100%;
+    padding: 10px;
+    display: block;
+    /* background-color: aliceblue; */
+    animation: fadeInPanel 0.35s ease;
 }
 
 @keyframes fadeInPanel {
@@ -64,16 +66,16 @@
    PROFILE CARD
 —————————————————————————————— */
 .full-profile-content {
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  background: var(--profile-bg);
-  backdrop-filter: blur(20px) saturate(160%);
-  border-radius: 20px;
-  padding: 20px;
-  color: var(--profile-text);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
-  position: relative;
+width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--profile-bg);
+    /* backdrop-filter: blur(20px) saturate(160%); */
+    border-radius: 20px;
+    /* padding: 20px; */
+    color: var(--profile-text);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    position: relative;
 }
 
 /* Scroll fade edges */
