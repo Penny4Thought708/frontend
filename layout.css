@@ -583,17 +583,6 @@ position: fixed;
   display: none;
 }
 
-.floating-body {
-  background: var(--bg-panel);
-  border-radius: 18px;
-  border: 1px solid var(--border-soft);
-  box-shadow: 0 18px 50px var(--shadow);
-  padding: 16px 18px;
-  max-width: 520px;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
 
 
 /* ============================================================
