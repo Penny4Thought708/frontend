@@ -595,41 +595,6 @@ position: fixed;
   overflow-y: auto;
 }
 
-/* Profile window specifics */
-
-.full-profile-content {
-  position: relative;
-}
-
-.full-profile-banner .banner-wrapper img {
-  width: 100%;
-  border-radius: 14px;
-  object-fit: cover;
-}
-
-.avatar-frame {
-  margin-top: -40px;
-  display: flex;
-  justify-content: center;
-}
-
-.full-profile-avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 999px;
-  border: 3px solid var(--accent);
-  box-shadow: var(--glow-soft);
-}
-
-.close-full-profile {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-panel);
-  cursor: pointer;
-}
 
 /* ============================================================
    MODALS
