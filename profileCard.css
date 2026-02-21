@@ -109,7 +109,6 @@
    AUTO-GENERATED CLOSE BUTTON
 —————————————————————————————— */
 .floating-body.full-profile-content::before {
-  content: "✕";
   position: absolute;
   top: 12px;
   right: 12px;
