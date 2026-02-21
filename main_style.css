@@ -1,29 +1,35 @@
+/* 
+  New full CSS for your DIY site
+  Theme: Dark Futuristic + Glassmorphism
+  Layout: Modern Landing Page with Cinematic Hero
+  Accent: Electric Blue
+*/
+
 /* ================================
-   DARK FUTURISTIC + GLASSMORPHISM
-   FULL TRANSFORMATION (MOBILE-FIRST)
+   ROOT VARIABLES & BASE RESET
 =================================== */
 
-/* ---------- CSS VARIABLES ---------- */
 :root {
-  --bg-main: radial-gradient(circle at top, #1b2a4a 0, #050814 55%, #02030a 100%);
-  --glass-bg: rgba(15, 25, 50, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --accent: #00e5ff;
-  --accent-soft: rgba(0, 229, 255, 0.25);
-  --accent-strong: #4df3ff;
+  --bg-main: radial-gradient(circle at top, #1b2a4a 0, #050816 55%, #02030a 100%);
+  --bg-hero-overlay: radial-gradient(circle at 10% 0%, rgba(0, 140, 255, 0.35), transparent 55%),
+                     radial-gradient(circle at 90% 100%, rgba(120, 0, 255, 0.35), transparent 55%);
+  --glass-bg: rgba(10, 18, 40, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --accent: #2f8cff;          /* electric blue */
+  --accent-soft: rgba(47, 140, 255, 0.35);
+  --accent-strong: #5fa4ff;
   --text-main: #f5f7ff;
   --text-muted: #9aa3c2;
   --danger: #ff4b6e;
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.65);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 9px;
+  --shadow-soft: 0 20px 45px rgba(0, 0, 0, 0.75);
   --blur: 18px;
-  --transition-fast: 0.2s ease;
-  --transition-med: 0.3s ease;
+  --transition-fast: 0.18s ease;
+  --transition-med: 0.28s ease;
 }
 
-/* ---------- RESET & BASE ---------- */
 *,
 *::before,
 *::after {
@@ -61,7 +67,7 @@ a {
 
 a:hover {
   color: #ffffff;
-  text-shadow: 0 0 10px var(--accent-soft);
+  text-shadow: 0 0 12px var(--accent-soft);
 }
 
 button {
@@ -74,7 +80,10 @@ button {
   left: -9999px;
 }
 
-/* ---------- GLOBAL LAYOUT WRAPPER ---------- */
+/* ================================
+   GLOBAL WRAPPERS
+=================================== */
+
 main,
 .bot_container,
 .featured-projects,
@@ -102,11 +111,11 @@ header {
   backdrop-filter: blur(var(--blur));
   background: linear-gradient(
     120deg,
-    rgba(5, 10, 25, 0.92),
+    rgba(5, 10, 25, 0.96),
     rgba(10, 25, 55, 0.9)
   );
   border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
   padding: 0.75rem 1.25rem;
   display: flex;
   align-items: center;
@@ -114,16 +123,19 @@ header {
   gap: 1rem;
 }
 
-.logo span {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #ffffff;
-  text-shadow: 0 0 12px rgba(0, 0, 0, 0.9), 0 0 18px var(--accent-soft);
+header hr {
+  display: none;
 }
 
-/* Nav */
+.logo span {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.9), 0 0 18px var(--accent-soft);
+}
+
 .main-nav {
   display: flex;
   align-items: center;
@@ -132,11 +144,11 @@ header {
 
 .main-nav a {
   position: relative;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .main-nav a::after {
@@ -159,7 +171,6 @@ header {
   width: 100%;
 }
 
-/* Auth buttons */
 .auth-section {
   display: flex;
   align-items: center;
@@ -170,28 +181,30 @@ header {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   border: 1px solid var(--glass-border);
-  background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), rgba(5, 10, 25, 0.95));
+  background: radial-gradient(circle at top left, rgba(47, 140, 255, 0.2), rgba(5, 10, 25, 0.98));
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), var(--shadow-soft);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), var(--shadow-soft);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
 }
 
 .auth-section button:hover {
   transform: translateY(-1px) scale(1.02);
-  background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.3), rgba(5, 10, 25, 0.98));
+  background: radial-gradient(circle at top left, rgba(47, 140, 255, 0.35), rgba(5, 10, 25, 1));
   box-shadow: 0 0 18px var(--accent-soft), var(--shadow-soft);
 }
 
-/* Mobile header layout */
+/* Header responsive */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
     justify-content: center;
     text-align: center;
+    gap: 0.75rem;
   }
 
   .main-nav {
@@ -205,20 +218,22 @@ header {
 }
 
 /* ================================
-   HERO SECTION
+   CINEMATIC HERO SECTION
 =================================== */
 
 .hero {
   position: relative;
   width: 100%;
-  padding: 3.5rem 1.25rem 3rem;
+  min-height: 70vh;
+  padding: 3.5rem 1.5rem 3rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.75rem;
-  text-align: center;
+  text-align: left;
   overflow: hidden;
+  background:
+    var(--bg-main),
+    radial-gradient(circle at top, rgba(0, 0, 0, 0.4), transparent 60%);
 }
 
 .hero::before {
@@ -226,21 +241,33 @@ header {
   position: absolute;
   inset: -40%;
   background:
-    radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(120, 0, 255, 0.18), transparent 55%);
+    var(--bg-hero-overlay),
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.04), transparent 55%);
   opacity: 0.9;
+  pointer-events: none;
+}
+
+/* subtle grain / noise effect */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+  background-size: 2px 2px;
+  opacity: 0.08;
+  mix-blend-mode: soft-light;
   pointer-events: none;
 }
 
 .hero-text {
   position: relative;
   max-width: 640px;
-  padding: 1.75rem 1.5rem;
+  padding: 1.9rem 1.7rem;
   border-radius: var(--radius-lg);
   background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.08),
-      rgba(255, 255, 255, 0.02)
+      rgba(255, 255, 255, 0.12),
+      rgba(255, 255, 255, 0.03)
     );
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
@@ -248,28 +275,28 @@ header {
 }
 
 .hero-text h1 {
-  font-size: 2rem;
+  font-size: 2.1rem;
   line-height: 1.2;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
   text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
 }
 
 .for_text p {
   font-size: 0.98rem;
   color: var(--text-muted);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.4rem;
 }
 
-/* CTA */
+/* CTA button */
 .link_box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.7rem 1.6rem;
+  padding: 0.75rem 1.8rem;
   border-radius: 999px;
   position: relative;
   overflow: hidden;
-  background: radial-gradient(circle at top left, var(--accent), #0070ff);
+  background: radial-gradient(circle at top left, var(--accent), #0050ff);
   box-shadow: 0 0 18px var(--accent-soft);
 }
 
@@ -278,7 +305,7 @@ header {
   font-weight: 800;
   font-size: 0.9rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
 }
 
 .link_box::before {
@@ -287,10 +314,10 @@ header {
   inset: 0;
   background: linear-gradient(
     120deg,
-    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.5),
     transparent 40%,
     transparent 60%,
-    rgba(255, 255, 255, 0.4)
+    rgba(255, 255, 255, 0.5)
   );
   opacity: 0;
   transform: translateX(-40%);
@@ -302,7 +329,7 @@ header {
   transform: translateX(40%);
 }
 
-/* Hide arrows & dots on mobile; they’re decorative */
+/* Hide decorative arrows & dots (you can re-enable if you animate them later) */
 #arrow-left,
 #arrow-right,
 #dot_1,
@@ -311,25 +338,38 @@ header {
   display: none;
 }
 
-/* Hero on larger screens */
-@media (min-width: 768px) {
+/* Hero responsive */
+@media (max-width: 768px) {
   .hero {
-    flex-direction: row;
-    justify-content: center;
-    text-align: left;
+    padding: 3rem 1.25rem 2.5rem;
+    text-align: center;
   }
 
   .hero-text {
-    margin-right: 1.5rem;
+    padding: 1.6rem 1.4rem;
+  }
+
+  .hero-text h1 {
+    font-size: 1.8rem;
+  }
+
+  .for_text p {
+    font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero-text h1 {
+    font-size: 2.4rem;
   }
 }
 
 /* ================================
-   MAIN CONTENT / CENTER COLUMN
+   MAIN CONTENT GRID
 =================================== */
 
 .grid-container {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
 .center-column {
@@ -338,60 +378,65 @@ header {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
-  padding: 1.75rem 1.5rem;
+  padding: 1.9rem 1.6rem 1.8rem;
 }
 
-/* Section title */
 .top-block {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.6rem;
   color: #ffffff;
   text-shadow: 0 0 16px rgba(0, 0, 0, 0.9);
 }
 
-/* Build block (image grid) */
+/* Build block (image grid placeholders) */
 .build-block {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.6rem;
 }
 
 .build-block-two {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
-/* Image tiles */
 .top-left,
 .top-right,
 .bottom-left,
 .bottom-right {
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
-  background-color: rgba(5, 10, 25, 0.9);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(47, 140, 255, 0.25), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(120, 0, 255, 0.25), transparent 55%),
+    rgba(5, 10, 25, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8);
+  min-height: 120px;
 }
 
-/* On larger screens, 2x2 grid */
+/* 2x2 grid on larger screens */
 @media (min-width: 768px) {
   .build-block-two {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .top-left,
+  .top-right,
+  .bottom-left,
+  .bottom-right {
+    min-height: 150px;
   }
 }
 
 /* Bottom text block */
 .bottom-block {
-  margin-top: 1rem;
-  padding: 1.25rem 1rem;
+  margin-top: 0.5rem;
+  padding: 1.25rem 1.1rem;
   border-radius: var(--radius-md);
   background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.08),
       rgba(255, 255, 255, 0.02)
     );
   border: 1px solid var(--glass-border);
@@ -413,12 +458,13 @@ header {
 =================================== */
 
 .bot_container {
-  margin-top: 2rem;
+  position: relative;
+  margin-top: 2rem !important; /* override inline negative margin */
 }
 
 .app-promotion {
   border-radius: var(--radius-lg);
-  background: radial-gradient(circle at top, rgba(0, 229, 255, 0.12), rgba(5, 10, 25, 0.98));
+  background: radial-gradient(circle at top, rgba(47, 140, 255, 0.16), rgba(5, 10, 25, 0.98));
   box-shadow: var(--shadow-soft);
 }
 
@@ -461,7 +507,7 @@ header {
 
 .card img {
   width: 100%;
-  height: 140px;
+  height: 150px;
   object-fit: cover;
   border-radius: var(--radius-sm);
   margin-bottom: 0.75rem;
@@ -482,9 +528,9 @@ header {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 1rem;
+  padding: 0.45rem 1.1rem;
   border-radius: 999px;
-  background: radial-gradient(circle at top left, var(--accent), #0070ff);
+  background: radial-gradient(circle at top left, var(--accent), #0050ff);
   color: #050814;
   font-size: 0.8rem;
   font-weight: 700;
@@ -522,7 +568,7 @@ header {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.78);
   z-index: 2000;
 }
 
@@ -532,15 +578,11 @@ header {
 
 #popup {
   position: relative;
-  opacity: 1;
-  transform: translate(0, 0);
-  background: transparent;
 }
 
 /* Phone-like container simplified */
 #left-side-nav {
   width: min(360px, 100%);
-  height: auto;
   padding: 1.25rem 1rem 1.5rem;
   border-radius: 32px;
   border: 1px solid var(--glass-border);
@@ -552,10 +594,15 @@ header {
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(var(--blur));
   position: relative;
-  transform: none;
 }
 
-/* Notification bar simplified */
+/* Hide side volume bars on small screens */
+.volume-up,
+.volume-down {
+  display: none;
+}
+
+/* Notification bar */
 .notification_bar {
   display: flex;
   align-items: center;
@@ -563,6 +610,44 @@ header {
   font-size: 0.7rem;
   color: var(--text-main);
   margin-bottom: 0.75rem;
+  position: relative;
+}
+
+/* Simple placeholders for status icons */
+.clock::before {
+  content: attr(data-time);
+}
+
+.camera_lens,
+.cell_service,
+.signal_bars,
+.battery {
+  width: 14px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Bolt icon inside battery */
+.bolt {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 10px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+  color: #fff;
+  clip-path: polygon(
+    40% 0%,
+    60% 0%,
+    40% 35%,
+    65% 35%,
+    20% 100%,
+    40% 55%,
+    20% 55%
+  );
+  opacity: 0.9;
 }
 
 /* Login form */
@@ -578,6 +663,7 @@ header {
   flex-direction: column;
   gap: 0.6rem;
   color: var(--text-main);
+  margin-top: 0.75rem;
 }
 
 .logo-login {
@@ -592,6 +678,11 @@ header {
   margin-bottom: 0.4rem;
 }
 
+.form_wrap h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
 .form_wrap label {
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -602,9 +693,9 @@ header {
 .form_wrap input {
   height: 2.3rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   padding: 0 0.6rem;
-  background: rgba(5, 10, 25, 0.95);
+  background: rgba(5, 10, 25, 0.98);
   color: var(--text-main);
   font-size: 0.85rem;
 }
@@ -615,13 +706,13 @@ header {
   box-shadow: 0 0 0 1px var(--accent-soft);
 }
 
-.form_wrap button.btn-Form {
+#loginSubmit.btn-Form {
   margin-top: 0.4rem;
   align-self: flex-start;
   padding: 0.45rem 1.2rem;
   border-radius: 999px;
   border: none;
-  background: radial-gradient(circle at top left, var(--accent), #0070ff);
+  background: radial-gradient(circle at top left, var(--accent), #0050ff);
   color: #050814;
   font-weight: 700;
   font-size: 0.85rem;
@@ -634,6 +725,38 @@ header {
   align-self: flex-end;
   font-size: 0.8rem;
   color: var(--accent-strong);
+}
+
+/* Login error box */
+#errorBox {
+  min-height: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+
+/* Dock icons */
+.dock {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.app-icon {
+  flex: 1;
+  height: 32px;
+  border-radius: 10px;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), rgba(5, 10, 25, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Home button */
+.home_btn {
+  width: 80px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  margin: 0.9rem auto 0  ;
 }
 
 /* Close button */
@@ -658,7 +781,7 @@ header {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.82);
   z-index: 2100;
 }
 
@@ -666,7 +789,7 @@ header {
   display: flex;
 }
 
-.overlay {
+#popup2 .overlay {
   width: 100%;
   max-width: 960px;
   border-radius: var(--radius-lg);
@@ -685,8 +808,8 @@ header {
 
 /* Left intro */
 .left {
-  padding: 1.5rem 1.25rem;
-  background: radial-gradient(circle at top left, rgba(0, 229, 255, 0.18), rgba(5, 10, 25, 0.98));
+  padding: 1.7rem 1.4rem;
+  background: radial-gradient(circle at top left, rgba(47, 140, 255, 0.22), rgba(5, 10, 25, 0.98));
   color: #ffffff;
   text-align: center;
 }
@@ -703,7 +826,7 @@ header {
 
 /* Right form */
 .right {
-  padding: 1.5rem 1.25rem;
+  padding: 1.7rem 1.4rem;
   background: rgba(5, 10, 25, 0.98);
   color: var(--text-main);
   position: relative;
@@ -738,8 +861,8 @@ header {
 #sign_form_link input[type="password"] {
   padding: 0.6rem 0.7rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(5, 10, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(5, 10, 25, 0.98);
   color: var(--text-main);
   font-size: 0.9rem;
 }
@@ -755,7 +878,7 @@ header {
   padding: 0.55rem 1.4rem;
   border-radius: 999px;
   border: none;
-  background: radial-gradient(circle at top left, var(--accent), #0070ff);
+  background: radial-gradient(circle at top left, var(--accent), #0050ff);
   color: #050814;
   font-weight: 700;
   font-size: 0.9rem;
@@ -787,13 +910,14 @@ header {
 
 /* Popup layout on larger screens */
 @media (min-width: 768px) {
-  .overlay {
+  #popup2 .overlay {
     flex-direction: row;
   }
 
   .left,
   .right {
     flex: 1;
+    text-align: left;
   }
 }
 
@@ -805,7 +929,10 @@ header {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
-  margin-top: 2rem;
+  margin-top: 2.5rem;
+  max-width: 1120px;
+  padding: 1.5rem 1.25rem 2rem;
+  margin-inline: auto;
 }
 
 .project-card {
@@ -843,6 +970,8 @@ footer {
 }
 
 .footer-content {
+  max-width: 1120px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -879,17 +1008,4 @@ footer {
   }
 }
 
-/* ================================
-   TYPOGRAPHY TWEAKS ON SMALL SCREENS
-=================================== */
-
-@media (max-width: 900px) {
-  .hero-text h1 {
-    font-size: 1.7rem;
-  }
-
-  .for_text p {
-    font-size: 0.95rem;
-  }
-}
 
