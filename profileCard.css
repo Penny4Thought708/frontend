@@ -1,0 +1,217 @@
+/* Floating full-profile container */
+.floating-body.full-profile-content {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: 92%;
+  max-width: 420px;
+  height: auto;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(20, 20, 20, 0.92);
+  backdrop-filter: blur(18px);
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  z-index: 9999;
+  animation: fadeInProfile 0.35s ease;
+}
+
+/* Fade-in animation */
+@keyframes fadeInProfile {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Close button */
+.close-full-profile {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.close-full-profile:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.1);
+}
+
+/* Banner */
+.full-profile-banner {
+  width: 100%;
+  height: 150px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.banner-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Avatar */
+.avatar-frame {
+  width: 110px;
+  height: 110px;
+  margin: -60px auto 10px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  position: relative;
+  animation: avatarPop 0.4s ease;
+}
+
+@keyframes avatarPop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.full-profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Name + info */
+#fullProfileName {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+#fullProfileEmail,
+#fullProfilePhone {
+  text-align: center;
+  opacity: 0.8;
+  margin: 4px 0;
+}
+
+.full-profile-bio {
+  margin: 12px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Profile lines (website, twitter, instagram) */
+.profile-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.profile-line img {
+  width: 26px;
+  height: 26px;
+}
+
+.profile-line a {
+  color: #4da3ff;
+  text-decoration: none;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.profile-line a:hover {
+  text-decoration: underline;
+}
+
+/* Profile fields */
+.profile-field {
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.profile-field strong {
+  opacity: 0.8;
+}
+
+/* Copy buttons */
+.copy-row {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.copy-row button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.copy-row button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.05);
+}
+
+/* Add to contacts */
+#saveLookupContact {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #4da3ff;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 18px;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+#saveLookupContact:hover {
+  background: #6bb7ff;
+  transform: scale(1.03);
+}
+
+/* Action buttons */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.profile-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.profile-actions button:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.05);
+}
+
+/* Danger button */
+.profile-actions .danger {
+  background: rgba(255, 0, 0, 0.25);
+}
+
+.profile-actions .danger:hover {
+  background: rgba(255, 0, 0, 0.35);
+}
