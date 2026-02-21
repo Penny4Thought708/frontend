@@ -6,6 +6,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+       border: solid 2px #5d5c7985;
   padding: 12px 14px;
   border-radius: 12px;
   cursor: pointer;
