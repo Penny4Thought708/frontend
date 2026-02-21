@@ -189,15 +189,15 @@
    AVATAR + STATUS GLOW
 —————————————————————————————— */
 .avatar-frame {
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.35);
-  position: absolute;
-  top: 110px;
-  left: 50%;
-  transform: translateX(-50%);
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid rgba(255, 255, 255, 0.35);
+    position: relative;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
   animation: avatarPop 0.45s ease;
 }
 
