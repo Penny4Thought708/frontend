@@ -620,7 +620,8 @@
 
 .msg-input {
   flex: 1;
-  min-height: 40px;
+  min-height: 10px;
+   height:20px;
   max-height: 140px;
   padding: 10px 14px;
   border-radius: 16px;
