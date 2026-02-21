@@ -40,7 +40,7 @@
 }
 
 /* ——————————————————————————————
-   DEFAULT STATE (NO BLUR)
+   DEFAULT STATE (NO BLUR, BUTTONS ACTIVE)
 —————————————————————————————— */
 #fullProfileModal.not-loaded .full-profile-content {
   opacity: 0.55;
@@ -48,15 +48,14 @@
   position: relative;
 }
 
+#fullProfileModal.not-loaded button {
+  pointer-events: auto;
+}
+
 #fullProfileModal.not-loaded .full-profile-content::after {
-  content: "Loading profile…";
+  content: "";
   position: absolute;
   inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 15px;
-  color: var(--profile-text);
   background: rgba(0,0,0,0.25);
   border-radius: 20px;
 }
@@ -97,33 +96,6 @@
 .full-profile-content::after {
   bottom: 0;
   background: linear-gradient(to top, var(--profile-bg), transparent);
-}
-
-/* ——————————————————————————————
-   CLOSE BUTTON (OUTSIDE CARD)
-—————————————————————————————— */
-#fullProfileModal::after {
-  content: "✕";
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--profile-card);
-  color: var(--profile-text);
-  font-size: 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: 0.25s ease;
-  z-index: 50;
-}
-
-#fullProfileModal::after:hover {
-  background: var(--profile-card-hover);
-  transform: scale(1.1);
 }
 
 /* ——————————————————————————————
@@ -176,6 +148,17 @@
 }
 
 /* ——————————————————————————————
+   LEFT MARGIN IMPROVEMENT
+—————————————————————————————— */
+.full-profile-content h2,
+.full-profile-content p,
+.full-profile-content .profile-line,
+.full-profile-content .profile-field,
+.full-profile-content .full-profile-bio {
+  margin-left: 14px;
+}
+
+/* ——————————————————————————————
    SOCIAL ICONS
 —————————————————————————————— */
 .profile-line {
@@ -200,12 +183,60 @@
 }
 
 /* ——————————————————————————————
+   COPY BUTTONS
+—————————————————————————————— */
+.copy-row {
+  display: flex;
+  gap: 10px;
+  margin: 18px 14px;
+}
+
+.copy-row button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  background: var(--profile-card);
+  color: var(--profile-text);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.copy-row button:hover {
+  background: var(--profile-card-hover);
+  transform: translateY(-2px);
+}
+
+/* ——————————————————————————————
+   ADD TO CONTACTS
+—————————————————————————————— */
+#saveLookupContact {
+  width: calc(100% - 28px);
+  margin: 0 14px 18px 14px;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: var(--profile-accent);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+#saveLookupContact:hover {
+  background: var(--profile-accent-hover);
+  transform: translateY(-2px);
+}
+
+/* ——————————————————————————————
    ACTION BUTTONS
 —————————————————————————————— */
 .profile-actions {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  margin: 20px 14px 0 14px;
 }
 
 .profile-actions button {
@@ -218,6 +249,7 @@
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
+  pointer-events: auto;
   transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -245,10 +277,6 @@
     display: none;
   }
 }
-
-
-
-
 
 
 
