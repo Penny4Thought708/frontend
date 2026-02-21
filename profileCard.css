@@ -12,7 +12,6 @@
   --profile-danger-hover: rgba(255, 0, 0, 0.35);
 }
 
-/* Light mode */
 .light-mode {
   --profile-bg: rgba(255, 255, 255, 0.75);
   --profile-text: #111;
@@ -25,16 +24,14 @@
 }
 
 /* ——————————————————————————————
-   PANEL CONTAINER (1 of 3 in a row)
+   PANEL CONTAINER (1 of 3)
 —————————————————————————————— */
 #fullProfileModal {
-position: relative;
-    width: 27%;
-    height: 100%;
-    display: block;
-    z-index: 999999;
-    background: transparent;
-    animation: fadeInPanel 0.35s ease;
+  position: relative;
+  width: 27%;
+  height: 100%;
+  display: block;
+  animation: fadeInPanel 0.35s ease;
 }
 
 @keyframes fadeInPanel {
@@ -43,14 +40,10 @@ position: relative;
 }
 
 /* ——————————————————————————————
-   DEFAULT STATE (before data loads)
-—————————————————————————————— */
-/* ——————————————————————————————
-   DEFAULT STATE (before data loads)
+   DEFAULT STATE (NO BLUR)
 —————————————————————————————— */
 #fullProfileModal.not-loaded .full-profile-content {
   opacity: 0.55;
-  filter: none; /* no blur */
   pointer-events: none;
   position: relative;
 }
@@ -71,7 +64,7 @@ position: relative;
 /* ——————————————————————————————
    PROFILE CARD
 —————————————————————————————— */
-.floating-body.full-profile-content {
+.full-profile-content {
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -85,8 +78,8 @@ position: relative;
 }
 
 /* Scroll fade edges */
-.floating-body.full-profile-content::before,
-.floating-body.full-profile-content::after {
+.full-profile-content::before,
+.full-profile-content::after {
   content: "";
   position: sticky;
   left: 0;
@@ -96,23 +89,24 @@ position: relative;
   z-index: 5;
 }
 
-.floating-body.full-profile-content::before {
+.full-profile-content::before {
   top: 0;
   background: linear-gradient(to bottom, var(--profile-bg), transparent);
 }
 
-.floating-body.full-profile-content::after {
+.full-profile-content::after {
   bottom: 0;
   background: linear-gradient(to top, var(--profile-bg), transparent);
 }
 
 /* ——————————————————————————————
-   AUTO-GENERATED CLOSE BUTTON
+   CLOSE BUTTON (OUTSIDE CARD)
 —————————————————————————————— */
-.floating-body.full-profile-content::before {
+#fullProfileModal::after {
+  content: "✕";
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -124,153 +118,73 @@ position: relative;
   align-items: center;
   cursor: pointer;
   transition: 0.25s ease;
-  z-index: 10;
+  z-index: 50;
 }
 
-.floating-body.full-profile-content::before:hover {
+#fullProfileModal::after:hover {
   background: var(--profile-card-hover);
   transform: scale(1.1);
 }
 
 /* ——————————————————————————————
-   3D PARALLAX BANNER
+   BANNER
 —————————————————————————————— */
-/* Banner container (if you want to wrap it) */
 .full-profile-banner {
   width: 100%;
   height: 150px;
   border-radius: 16px;
   overflow: hidden;
   position: relative;
-  background: #000; /* fallback while loading */
+  margin-bottom: 50px;
 }
 
 .banner-wrapper {
   width: 100%;
-  max-height: 200px; /* or whatever height you want */
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden; /* keeps layout clean but doesn't crop the image */
-  background: #000; /* fallback while loading */
+  overflow: hidden;
 }
 
 #fullProfileBanner {
   width: 100%;
   height: auto;
-  object-fit: contain; /* ensures the full image is always visible */
-  object-position: center;
+  object-fit: contain;
   display: block;
 }
 
-
-/* When the image finishes loading */
-#fullProfileBanner.loaded {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* Optional: subtle dark overlay for readability */
-.full-profile-banner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0,0,0,0.15),
-    rgba(0,0,0,0.35)
-  );
-  pointer-events: none;
-}
-
-
-/* Action button row */
-.profile-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-/* Base button style */
-.profile-actions button {
-flex: 1;
-    padding: 12px 0;
-    border-radius: 14px;
-    border: none;
-    background: var(--profile-card);
-    color: var(--profile-text);
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: auto;
-    gap: 6px;
-}
-
-/* Hover effect */
-.profile-actions button:hover {
-  background: var(--profile-card-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-
-/* Pressed effect */
-.profile-actions button:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-/* Danger button */
-.profile-actions .danger {
-  background: var(--profile-danger);
-  color: #fff;
-}
-
-.profile-actions .danger:hover {
-  background: var(--profile-danger-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255,0,0,0.25);
-}
-
-
 /* ——————————————————————————————
-   AVATAR + STATUS GLOW
+   AVATAR
 —————————————————————————————— */
 .avatar-frame {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 4px solid rgba(255, 255, 255, 0.35);
-    position: relative;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-  animation: avatarPop 0.45s ease;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid rgba(255, 255, 255, 0.35);
+  position: absolute;
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-@keyframes avatarPop {
-  from { transform: translateX(-50%) scale(0.85); opacity: 0; }
-  to { transform: translateX(-50%) scale(1); opacity: 1; }
-}
-
-.avatar-frame.online {
-  box-shadow: 0 0 18px rgba(0, 255, 120, 0.55);
-  animation: onlinePulse 2s infinite ease-in-out;
-}
-
-@keyframes onlinePulse {
-  0% { box-shadow: 0 0 10px rgba(0,255,120,0.4); }
-  50% { box-shadow: 0 0 22px rgba(0,255,120,0.75); }
-  100% { box-shadow: 0 0 10px rgba(0,255,120,0.4); }
+.full-profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ——————————————————————————————
-   SOCIAL ICONS (animated)
+   SOCIAL ICONS
 —————————————————————————————— */
+.profile-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
 .profile-line img {
   width: 32px;
   height: 32px;
@@ -278,13 +192,6 @@ flex: 1;
   padding: 6px;
   background: var(--profile-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
-  animation: socialPulse 3s infinite ease-in-out;
-}
-
-@keyframes socialPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.06); }
-  100% { transform: scale(1); }
 }
 
 .profile-line img:hover {
@@ -292,22 +199,52 @@ flex: 1;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
 }
 
-
-@media (max-width: 900px){
-
-#fullProfileModal {
-  position: relative;
-  width: 0%;
-  height: 0%;
-  display: none;
- 
+/* ——————————————————————————————
+   ACTION BUTTONS
+—————————————————————————————— */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
 }
 
-
+.profile-actions button {
+  flex: 1;
+  padding: 12px 0;
+  border-radius: 14px;
+  border: none;
+  background: var(--profile-card);
+  color: var(--profile-text);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
 }
 
+.profile-actions button:hover {
+  background: var(--profile-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
 
+.profile-actions .danger {
+  background: var(--profile-danger);
+  color: #fff;
+}
 
+.profile-actions .danger:hover {
+  background: var(--profile-danger-hover);
+  box-shadow: 0 4px 12px rgba(255,0,0,0.25);
+}
+
+/* ——————————————————————————————
+   RESPONSIVE
+—————————————————————————————— */
+@media (max-width: 900px) {
+  #fullProfileModal {
+    display: none;
+  }
+}
 
 
 
