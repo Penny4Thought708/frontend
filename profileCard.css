@@ -242,3 +242,40 @@
   transform: translateY(-4px) scale(1.12);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
 }
+
+
+@media (max-width: 900px){
+
+#fullProfileModal {
+  position: relative;
+  width: 0%;
+  height: 0%;
+  display: none;
+ 
+}
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
