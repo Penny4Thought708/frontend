@@ -44,8 +44,12 @@
 /* ——————————————————————————————
    DEFAULT STATE (before data loads)
 —————————————————————————————— */
+/* ——————————————————————————————
+   DEFAULT STATE (before data loads)
+—————————————————————————————— */
 #fullProfileModal.not-loaded .full-profile-content {
-  filter: blur(4px) brightness(0.7);
+  opacity: 0.55;
+  filter: none; /* no blur */
   pointer-events: none;
   position: relative;
 }
@@ -59,7 +63,7 @@
   align-items: center;
   font-size: 15px;
   color: var(--profile-text);
-  background: rgba(0,0,0,0.35);
+  background: rgba(0,0,0,0.25);
   border-radius: 20px;
 }
 
