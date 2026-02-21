@@ -28,12 +28,13 @@
    PANEL CONTAINER (1 of 3 in a row)
 —————————————————————————————— */
 #fullProfileModal {
-  position: relative;
-  width: 27%;
-  height: 100%;
-  display: block;
-  background: transparent;
-  animation: fadeInPanel 0.35s ease;
+position: relative;
+    width: 27%;
+    height: 100%;
+    display: block;
+    z-index: 999999;
+    background: transparent;
+    animation: fadeInPanel 0.35s ease;
 }
 
 @keyframes fadeInPanel {
@@ -192,20 +193,21 @@
 
 /* Base button style */
 .profile-actions button {
-  flex: 1;
-  padding: 12px 0;
-  border-radius: 14px;
-  border: none;
-  background: var(--profile-card);
-  color: var(--profile-text);
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
+flex: 1;
+    padding: 12px 0;
+    border-radius: 14px;
+    border: none;
+    background: var(--profile-card);
+    color: var(--profile-text);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+    gap: 6px;
 }
 
 /* Hover effect */
