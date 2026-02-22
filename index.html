@@ -373,50 +373,70 @@
   </div>  
 <div id="privacyCenter" class="modal-backdrop">
   <div class="modal privacy-modal">
-    <button id="closePrivacy" class="modal-close">×</button>
 
-    <header class="modal-header">
-      <h2 class="modal-title">Privacy Center</h2>
-      <p class="modal-subtitle">
-        Manage how your data is used. You can adjust cookie preferences, analytics, personalization, and more.
+    <!-- HEADER -->
+    <header class="privacy-header">
+      <h2 class="privacy-title">Privacy Center</h2>
+      <p class="privacy-subtitle">
+        Control how your data is used across this site. Adjust analytics, personalization, and essential settings.
       </p>
+      <button id="closePrivacy" class="modal-close">×</button>
     </header>
 
-    <div class="privacy-section">
-      <h3 class="privacy-label">Essential Cookies</h3>
-      <p class="privacy-desc">
-        Required for the website to function. These cannot be disabled.
-      </p>
-      <div class="privacy-toggle disabled">Always On</div>
+    <!-- TABS -->
+    <nav class="privacy-tabs">
+      <button class="privacy-tab active" data-tab="essential">Essential</button>
+      <button class="privacy-tab" data-tab="analytics">Analytics</button>
+      <button class="privacy-tab" data-tab="personalization">Personalization</button>
+    </nav>
+
+    <!-- CONTENT AREA -->
+    <div class="privacy-content">
+
+      <!-- ESSENTIAL -->
+      <div class="privacy-panel active" id="tab-essential">
+        <h3 class="privacy-label">Essential Cookies</h3>
+        <p class="privacy-desc">
+          These cookies are required for the website to function. They include security, accessibility, and basic session features.
+        </p>
+        <div class="privacy-toggle disabled">Always On</div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="privacy-panel" id="tab-analytics">
+        <h3 class="privacy-label">Analytics</h3>
+        <p class="privacy-desc">
+          Analytics help us understand how visitors use the site so we can improve performance and user experience.
+        </p>
+        <label class="privacy-switch">
+          <input type="checkbox" id="toggleAnalytics">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- PERSONALIZATION -->
+      <div class="privacy-panel" id="tab-personalization">
+        <h3 class="privacy-label">Personalization</h3>
+        <p class="privacy-desc">
+          Personalization allows us to tailor content and recommendations based on your activity.
+        </p>
+        <label class="privacy-switch">
+          <input type="checkbox" id="togglePersonalization">
+          <span class="slider"></span>
+        </label>
+      </div>
+
     </div>
 
-    <div class="privacy-section">
-      <h3 class="privacy-label">Analytics</h3>
-      <p class="privacy-desc">
-        Helps us understand how the site is used so we can improve it.
-      </p>
-      <label class="privacy-switch">
-        <input type="checkbox" id="toggleAnalytics">
-        <span class="slider"></span>
-      </label>
-    </div>
+    <!-- FOOTER -->
+    <footer class="privacy-footer">
+      <button id="resetPrivacy" class="btn-ghost">Reset All</button>
+      <button id="savePrivacy" class="btn-primary">Save Preferences</button>
+    </footer>
 
-    <div class="privacy-section">
-      <h3 class="privacy-label">Personalization</h3>
-      <p class="privacy-desc">
-        Allows us to personalize content and recommendations.
-      </p>
-      <label class="privacy-switch">
-        <input type="checkbox" id="togglePersonalization">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <button id="savePrivacy" class="btn-primary" style="margin-top:1.4rem;width:100%;">
-      Save Preferences
-    </button>
   </div>
 </div>
+
 <div id="cookieConsent" class="cookie-bar">
   <div class="cookie-bar-inner">
     <p class="cookie-bar-text">
@@ -437,6 +457,7 @@
 
 
 </html>
+
 
 
 
