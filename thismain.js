@@ -1,4 +1,4 @@
-
+/*
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM ready");
 
@@ -127,3 +127,4 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "/dashboard.php";
   }
 });
+*/
