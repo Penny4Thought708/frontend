@@ -1036,22 +1036,18 @@ button {
 ================================ */
 
 .cookie-consent {
-  position: fixed;
-  bottom: -260px; /* hidden state */
-  left: 0;
-  width: 100%;
-  z-index: 9999;
-
-  display: flex;
-  justify-content: center;
-  padding: var(--space-md);
-
-  opacity: 0;
-  pointer-events: none;
-
-  transition:
-    bottom 0.65s var(--ease-smooth),
-    opacity 0.65s var(--ease-smooth);
+position: fixed;
+    bottom: -260px;
+    left: 0;
+    width: 100%;
+    background: ghostwhite;
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    padding: var(--space-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: bottom 0.65s var(--ease-smooth), opacity 0.65s var(--ease-smooth);
 }
 
 /* When JS adds .is-open */
@@ -1063,20 +1059,14 @@ button {
 
 /* Inner glass card */
 .cookie-inner {
-  width: min(620px, 94%);
-  border-radius: var(--radius-2xl);
-
-  background:
-    linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88)),
-    radial-gradient(circle at top left, rgba(148, 163, 184, 0.25), transparent 60%);
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  backdrop-filter: blur(var(--blur-glass));
-  box-shadow: var(--shadow-strong);
-
-  padding: var(--space-xl);
-  color: var(--text-primary);
-  position: relative;
-  overflow: hidden;
+    width: 100%;
+    border-radius: var(--radius-2xl);
+    background: linear-gradient(145deg, rgb(14 85 255 / 96%), rgb(41 42 45 / 88%)), radial-gradient(circle at top left, rgba(148, 163, 184, 0.25), transparent 60%);
+    box-shadow: var(--shadow-strong);
+    padding: var(--space-xl);
+    color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
 }
 
 /* Rim light */
@@ -1286,5 +1276,6 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
