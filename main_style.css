@@ -1,47 +1,34 @@
 /* ============================================================
-   SCRUBBER'S DIY — ULTRA‑GLASS LUXURY EDITION
-   Theme: Neutral Glass + Cinematic Depth
-   Accent: Soft Blue-Gray
-   Motion: Elegant, Slow, Premium
+   SCRUBBER'S DIY — LAUNCH CSS (Neutral Ultra‑Glass + Animations)
 =============================================================== */
 
-/* ------------------------------------------------------------
-   1. DESIGN TOKENS (Neutral Ultra‑Glass)
------------------------------------------------------------- */
+/* 1. TOKENS */
 
 :root {
-  /* Neutral Glass Colors */
   --bg-1: #0d0f12;
   --bg-2: #111317;
   --bg-hero: radial-gradient(circle at 50% 0%, #1a1d22 0%, #0d0f12 70%);
 
-  /* Glass Panels */
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-strong: rgba(255, 255, 255, 0.12);
   --glass-border: rgba(255, 255, 255, 0.18);
   --glass-highlight: rgba(255, 255, 255, 0.35);
 
-  /* Text */
   --text-main: #f5f6f7;
   --text-muted: #b8bcc4;
-
-  /* Accent */
   --accent: #9bb4ff;
   --accent-soft: rgba(155, 180, 255, 0.35);
+  --danger: #ff5c7a;
 
-  /* Shadows */
   --shadow-1: 0 12px 32px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 18px 55px rgba(0, 0, 0, 0.65);
 
-  /* Blur */
   --blur: 22px;
 
-  /* Radii */
   --r-lg: 26px;
   --r-md: 16px;
   --r-sm: 10px;
 
-  /* Spacing */
   --s-1: 0.5rem;
   --s-2: 0.9rem;
   --s-3: 1.4rem;
@@ -49,15 +36,12 @@
   --s-5: 3rem;
   --s-6: 4.5rem;
 
-  /* Motion */
   --fast: 0.18s ease;
   --med: 0.35s ease;
   --slow: 0.65s ease;
 }
 
-/* ------------------------------------------------------------
-   2. RESET
------------------------------------------------------------- */
+/* 2. RESET */
 
 *,
 *::before,
@@ -75,12 +59,35 @@ body {
   color: var(--text-main);
   overflow-x: hidden;
   opacity: 0;
-  animation: fadeInBody 1.2s var(--slow) forwards;
+  animation: fadeInBody 1s var(--slow) forwards;
 }
 
-/* ------------------------------------------------------------
-   3. KEYFRAMES (Premium Motion)
------------------------------------------------------------- */
+img { max-width: 100%; display: block; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--fast), text-shadow var(--fast);
+}
+
+a:hover {
+  color: #ffffff;
+  text-shadow: 0 0 10px var(--accent-soft);
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 3. KEYFRAMES */
 
 @keyframes fadeInBody {
   from { opacity: 0; transform: translateY(12px); }
@@ -98,15 +105,13 @@ body {
   100% { opacity: 0.7; }
 }
 
-@keyframes glassPulse {
+@keyframes cardPulse {
   0%   { box-shadow: var(--shadow-1); }
   50%  { box-shadow: 0 0 22px var(--accent-soft), var(--shadow-2); }
   100% { box-shadow: var(--shadow-1); }
 }
 
-/* ------------------------------------------------------------
-   4. HEADER (Ultra‑Glass)
------------------------------------------------------------- */
+/* 4. HEADER */
 
 header {
   position: sticky;
@@ -114,38 +119,36 @@ header {
   z-index: 1000;
   padding: var(--s-2) var(--s-4);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--s-3);
   backdrop-filter: blur(var(--blur));
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(13, 15, 18, 0.9);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--shadow-1);
 }
 
+header hr { display: none; }
+
 .logo span {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-main);
 }
 
 .main-nav {
   display: flex;
   gap: var(--s-3);
+  flex: 1;
+  justify-content: center;
 }
 
 .main-nav a {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   position: relative;
-  transition: var(--fast);
-}
-
-.main-nav a:hover {
-  color: var(--text-main);
 }
 
 .main-nav a::after {
@@ -159,6 +162,10 @@ header {
   transition: width var(--med);
 }
 
+.main-nav a:hover {
+  color: var(--text-main);
+}
+
 .main-nav a:hover::after { width: 100%; }
 
 .auth-section {
@@ -169,7 +176,7 @@ header {
 .auth-section button {
   padding: var(--s-1) var(--s-3);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--glass-border);
   color: var(--text-main);
   font-size: 0.8rem;
@@ -179,21 +186,20 @@ header {
 }
 
 .auth-section button:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateY(-1px);
 }
 
-/* ------------------------------------------------------------
-   5. HERO (Cinematic Ultra‑Glass)
------------------------------------------------------------- */
+/* 5. HERO */
 
 .hero {
-  min-height: 75vh;
+  min-height: 70vh;
   padding: var(--s-6) var(--s-4);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   position: relative;
+  gap: var(--s-3);
 }
 
 .hero::before {
@@ -202,27 +208,28 @@ header {
   inset: -30%;
   background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08), transparent 70%);
   animation: softGlow 12s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .hero-text {
-  max-width: 700px;
+  position: relative;
+  max-width: 720px;
   padding: var(--s-5);
   border-radius: var(--r-lg);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--blur));
   box-shadow: var(--shadow-2);
-  animation: floatUp 1s var(--slow) forwards;
+  animation: floatUp 0.9s var(--slow) forwards;
 }
 
 .hero-text h1 {
-  font-size: 2.6rem;
+  font-size: 2.5rem;
   margin-bottom: var(--s-3);
-  color: var(--text-main);
 }
 
 .for_text p {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   color: var(--text-muted);
   margin-bottom: var(--s-4);
 }
@@ -231,28 +238,73 @@ header {
   display: inline-flex;
   padding: var(--s-2) var(--s-4);
   border-radius: 999px;
-  background: linear-gradient(135deg, #ffffff, #dfe4ff);
-  color: #0d0f12;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  background: linear-gradient(135deg, #ffffff, #e4e7f5);
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);
   transition: var(--med);
 }
 
-.link_box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 28px rgba(255, 255, 255, 0.35);
+.link_box a {
+  color: #0d0f12;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
 }
 
-/* ------------------------------------------------------------
-   6. WHY DIY SECTION
------------------------------------------------------------- */
+.link_box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 26px rgba(255, 255, 255, 0.35);
+}
+
+/* hero arrows/dots – keep but minimal */
+
+#arrow-left,
+#arrow-right {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  transition: var(--fast);
+}
+
+#arrow-left img,
+#arrow-right img {
+  width: 18px;
+  height: 18px;
+}
+
+#arrow-left:hover,
+#arrow-right:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+#dot_1,
+#dot_2,
+#dot_3 {
+  position: absolute;
+  bottom: 1.5rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+#dot_1 { left: 50%; transform: translateX(-18px); }
+#dot_2 { left: 50%; transform: translateX(-4px); }
+#dot_3 { left: 50%; transform: translateX(10px); }
+
+/* 6. WHY DIY SECTION */
 
 .grid-container {
   max-width: 1120px;
   margin: var(--s-6) auto;
-  padding: var(--s-4);
+  padding: 0 var(--s-4);
 }
 
 .center-column {
@@ -262,7 +314,7 @@ header {
   padding: var(--s-5);
   box-shadow: var(--shadow-2);
   backdrop-filter: blur(var(--blur));
-  animation: floatUp 1.2s var(--slow) forwards;
+  animation: floatUp 1s var(--slow) forwards;
 }
 
 .top-block {
@@ -271,47 +323,103 @@ header {
   margin-bottom: var(--s-4);
 }
 
+.build-block {
+  margin-bottom: var(--s-4);
+}
+
 .build-block-two {
   display: grid;
+  grid-template-columns: 1fr;
   gap: var(--s-3);
 }
 
-.build-block-two > div {
-  min-height: 160px;
+.top-left,
+.top-right,
+.bottom-left,
+.bottom-right {
+  min-height: 150px;
   border-radius: var(--r-md);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(calc(var(--blur) * 0.6));
   transition: var(--med);
 }
 
-.build-block-two > div:hover {
+.top-left:hover,
+.top-right:hover,
+.bottom-left:hover,
+.bottom-right:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-2);
 }
 
-/* ------------------------------------------------------------
-   7. CATEGORY CARDS (Ultra‑Glass)
------------------------------------------------------------- */
+.bottom-block {
+  margin-top: var(--s-2);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  font-size: 0.95rem;
+}
+
+.bottom-block p { color: var(--text-muted); }
+
+/* 7. CATEGORY / APP PROMOTION */
+
+.bot_container {
+  position: relative;
+  margin-top: var(--s-6);
+}
+
+.app-promotion {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(var(--blur));
+  animation: floatUp 1s var(--slow) forwards;
+}
+
+.project-strip {
+  text-align: center;
+}
+
+.project-strip h2 {
+  font-size: 1.6rem;
+  margin-bottom: var(--s-2);
+}
+
+.project-strip p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: var(--s-4);
+}
 
 .project-cards {
   display: grid;
+  grid-template-columns: 1fr;
   gap: var(--s-4);
 }
 
 .card {
   padding: var(--s-4);
   border-radius: var(--r-md);
-  background: var(--glass-bg);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--blur));
+  backdrop-filter: blur(calc(var(--blur) * 0.7));
   box-shadow: var(--shadow-1);
   transition: var(--med);
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-2);
+  animation: cardPulse 0.7s ease-out;
 }
 
 .card img {
@@ -321,9 +429,62 @@ header {
   margin-bottom: var(--s-3);
 }
 
-/* ------------------------------------------------------------
-   8. LOGIN POPUP (Ultra‑Glass)
------------------------------------------------------------- */
+.card h3 {
+  font-size: 1rem;
+  margin-bottom: var(--s-1);
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: var(--s-3);
+}
+
+.card a {
+  display: inline-flex;
+  padding: var(--s-1) var(--s-3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffffff, #e4e7f5);
+  color: #0d0f12;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* 8. FEATURED PROJECTS / ADS */
+
+.featured-projects {
+  max-width: 1120px;
+  margin: var(--s-6) auto var(--s-5);
+  padding: 0 var(--s-4);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-4);
+}
+
+.project-card {
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--glass-border);
+  box-shadow: var(--shadow-1);
+  text-align: center;
+  transition: var(--med);
+}
+
+.project-card h1 {
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.project-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-2);
+}
+
+/* 9. LOGIN POPUP (MATCH SIGNUP STYLE) */
 
 .container3 {
   position: fixed;
@@ -333,9 +494,10 @@ header {
   justify-content: center;
   padding: var(--s-4);
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
+  z-index: 2000;
   transition: opacity var(--slow);
 }
 
@@ -353,7 +515,35 @@ header {
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--blur));
   box-shadow: var(--shadow-2);
+  position: relative;
   animation: floatUp 0.8s var(--slow) forwards;
+}
+
+/* hide old phone chrome but keep classes safe */
+.volume-up,
+.volume-down,
+.left-nav,
+.notification_bar,
+.dock,
+.app-icon,
+#phone,
+#message,
+#internet,
+#camera,
+.home_btn {
+  display: none !important;
+}
+
+.close-btn1 {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.material-symbols-outlined {
+  font-size: 20px;
 }
 
 .form_wrap {
@@ -364,7 +554,29 @@ header {
   padding: var(--s-4);
   border-radius: var(--r-md);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(calc(var(--blur) * 0.6));
+  backdrop-filter: blur(calc(var(--blur) * 0.7));
+}
+
+.logo-login {
+  width: 100%;
+  padding: var(--s-2);
+  border-radius: var(--r-sm);
+  background: linear-gradient(135deg, #ffffff, #e4e7f5);
+  color: #0d0f12;
+  font-weight: 800;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.form_wrap h2 {
+  font-size: 1.4rem;
+}
+
+.form_wrap label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
 
 .form_wrap input {
@@ -374,35 +586,49 @@ header {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-main);
   padding: 0 var(--s-3);
+  font-size: 0.9rem;
   transition: var(--fast);
 }
 
 .form_wrap input:focus {
+  outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
-.btn-Form {
+#loginSubmit.btn-Form {
+  margin-top: var(--s-2);
   padding: var(--s-2) var(--s-4);
   border-radius: 999px;
-  background: linear-gradient(135deg, #ffffff, #e8ebf7);
+  background: linear-gradient(135deg, #ffffff, #e4e7f5);
   color: #0d0f12;
   font-weight: 700;
+  font-size: 0.9rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   transition: var(--med);
 }
 
-.btn-Form:hover {
+#loginSubmit.btn-Form:hover {
   transform: translateY(-2px);
   box-shadow: 0 0 22px rgba(255, 255, 255, 0.35);
 }
 
-/* ------------------------------------------------------------
-   9. SIGNUP POPUP (Ultra‑Glass)
------------------------------------------------------------- */
+.form_wrap a {
+  align-self: flex-end;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
 
-#popup2 {
+#errorBox {
+  min-height: 1rem;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+/* 10. SIGNUP POPUP */
+
+#popup2.popup23 {
   position: fixed;
   inset: 0;
   display: none;
@@ -410,13 +636,14 @@ header {
   justify-content: center;
   padding: var(--s-4);
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   opacity: 0;
   pointer-events: none;
+  z-index: 2100;
   transition: opacity var(--slow);
 }
 
-#popup2.show {
+#popup2.popup23.show {
   display: flex;
   opacity: 1;
   pointer-events: auto;
@@ -425,13 +652,14 @@ header {
 #popup2 .overlay {
   max-width: 960px;
   width: 100%;
-  display: flex;
-  flex-direction: column;
   border-radius: var(--r-lg);
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--blur));
   box-shadow: var(--shadow-2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: floatUp 0.8s var(--slow) forwards;
 }
 
@@ -441,14 +669,96 @@ header {
   border-right: 1px solid var(--glass-border);
 }
 
+.signup-intro .intro-content {
+  max-width: 420px;
+}
+
+.signup-intro h1 {
+  font-size: 1.7rem;
+  margin-bottom: var(--s-2);
+}
+
+.signup-intro p {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
 .right {
   padding: var(--s-5);
   background: rgba(255, 255, 255, 0.03);
+  position: relative;
 }
 
-/* ------------------------------------------------------------
-   10. FOOTER
------------------------------------------------------------- */
+.close-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+#sign_form_link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+#sign_form_link label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+#sign_form_link input[type="text"],
+#sign_form_link input[type="email"],
+#sign_form_link input[type="password"] {
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  font-size: 0.9rem;
+  transition: var(--fast);
+}
+
+#sign_form_link input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+#sign_form_link label input[type="checkbox"] {
+  margin-right: var(--s-1);
+}
+
+#sign_form_link button.smt-btn {
+  margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #ffffff, #e4e7f5);
+  color: #0d0f12;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--med);
+}
+
+#sign_form_link button.smt-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.35);
+}
+
+#sign_form_link p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* 11. FOOTER */
 
 footer {
   margin-top: var(--s-6);
@@ -460,28 +770,91 @@ footer {
 
 .footer-content {
   max-width: 1120px;
-  margin: auto;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--s-3);
   text-align: center;
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-/* ------------------------------------------------------------
-   11. RESPONSIVE
------------------------------------------------------------- */
+.footer-nav,
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s-2);
+}
+
+.footer-nav a,
+.social-links a {
+  font-size: 0.85rem;
+}
+
+/* 12. RESPONSIVE */
 
 @media (min-width: 640px) {
   .project-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (min-width: 960px) {
-  .project-cards { grid-template-columns: repeat(3, 1fr); }
-}
-
 @media (min-width: 768px) {
-  #popup2 .overlay { flex-direction: row; }
+  header {
+    justify-content: space-between;
+  }
+
+  .build-block-two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  #popup2 .overlay {
+    flex-direction: row;
+  }
+
+  .left,
+  .right {
+    flex: 1;
+  }
+
+  .featured-projects {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .footer-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .footer-nav,
+  .social-links {
+    justify-content: flex-end;
+  }
 }
 
+@media (max-width: 768px) {
+  header {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .hero {
+    flex-direction: column;
+    padding: var(--s-5) var(--s-3);
+  }
+
+  .hero-text {
+    padding: var(--s-4);
+  }
+
+  .grid-container {
+    padding: 0 var(--s-3);
+  }
+
+  .app-promotion {
+    padding: var(--s-4) var(--s-3);
+  }
+}
 
