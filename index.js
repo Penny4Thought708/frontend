@@ -106,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+
 /* ============================
    COOKIE CONSENT SYSTEM
 ============================ */
