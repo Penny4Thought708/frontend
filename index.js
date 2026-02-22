@@ -6,6 +6,8 @@ import { API_BASE } from "./public/js/config.js";
 const loginForm = document.getElementById("loginForm");
 
 if (loginForm) {
+  const loginButton = loginForm.querySelector(".btn-submit");
+
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -14,6 +16,7 @@ if (loginForm) {
     const errorBox = document.getElementById("errorBox");
 
     errorBox.innerHTML = "";
+    loginButton.classList.add("loading");
 
     try {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
@@ -36,6 +39,8 @@ if (loginForm) {
     } catch (err) {
       errorBox.innerHTML = `<p class="error">Network error</p>`;
     }
+
+    loginButton.classList.remove("loading");
   });
 }
 
@@ -58,28 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const openSignupFromLogin = document.getElementById("openSignupFromLogin");
   const openLoginFromSignup = document.getElementById("openLoginFromSignup");
-
-  /* ============================
-     COOKIE CONSENT SYSTEM
-  ============================ */
-  const cookieBox = document.getElementById("cookieConsent");
-  const cookieAccept = document.getElementById("cookieAccept");
-  const cookieDecline = document.getElementById("cookieDecline");
-
-  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
-    setTimeout(() => {
-      cookieBox.classList.add("is-open");
-    }, 600);
-  }
-
-  cookieAccept?.addEventListener("click", () => {
-    localStorage.setItem("cookiesAccepted", "true");
-    cookieBox.classList.remove("is-open");
-  });
-
-  cookieDecline?.addEventListener("click", () => {
-    cookieBox.classList.remove("is-open");
-  });
 
   /* ============================
      OPEN / CLOSE HELPERS
@@ -121,6 +104,28 @@ document.addEventListener("DOMContentLoaded", () => {
     modal?.addEventListener("click", (e) => {
       if (e.target === modal) closeModal(modal);
     });
+  });
+
+  /* ============================
+     COOKIE CONSENT SYSTEM
+  ============================ */
+  const cookieBox = document.getElementById("cookieConsent");
+  const cookieAccept = document.getElementById("cookieAccept");
+  const cookieDecline = document.getElementById("cookieDecline");
+
+  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
+    setTimeout(() => {
+      cookieBox.classList.add("is-open");
+    }, 600);
+  }
+
+  cookieAccept?.addEventListener("click", () => {
+    localStorage.setItem("cookiesAccepted", "true");
+    cookieBox.classList.remove("is-open");
+  });
+
+  cookieDecline?.addEventListener("click", () => {
+    cookieBox.classList.remove("is-open");
   });
 
   /* ============================
