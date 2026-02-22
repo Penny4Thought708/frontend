@@ -186,12 +186,10 @@
       </section>
     </main>
 
-    <!-- LOGIN POPUP (PHONE UI REMOVED) -->
+    <!-- LOGIN POPUP -->
     <div class="modal-backdrop" id="popup" aria-hidden="true">
       <div class="modal">
-        <button type="button" id="closePopup" class="modal-close">
-          ✕
-        </button>
+        <button type="button" id="closePopup" class="modal-close">✕</button>
 
         <form id="loginForm" method="POST" class="form">
           <h2 class="modal-title">Please Login</h2>
@@ -270,8 +268,6 @@
 </body>
 
 
-
-
   <script type="module">
 import { API_BASE } from "./public/js/config.js";
 
@@ -309,6 +305,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 });
 </script>
 </html>
+
 
 
 
