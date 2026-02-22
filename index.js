@@ -128,6 +128,10 @@ cookieAccept?.addEventListener("click", () => {
 cookieDecline?.addEventListener("click", () => {
   cookieBox.classList.remove("is-open");
 });
+cookieDecline?.addEventListener("click", () => {
+  cookieBox.classList.remove("is-open");
+  privacyCenter.classList.add("is-open");
+});
 
 
   /* ============================
