@@ -1031,6 +1031,125 @@ button {
 .cards-grid .card {
   transition-delay: calc(var(--card-index, 0) * 0.12s);
 }
+/* ================================
+   COOKIE CONSENT — CINEMATIC SLIDE UP
+================================ */
+
+.cookie-consent {
+  position: fixed;
+  bottom: -260px; /* hidden state */
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+
+  display: flex;
+  justify-content: center;
+  padding: var(--space-md);
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition:
+    bottom 0.65s var(--ease-smooth),
+    opacity 0.65s var(--ease-smooth);
+}
+
+/* When JS adds .is-open */
+.cookie-consent.is-open {
+  bottom: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Inner glass card */
+.cookie-inner {
+  width: min(620px, 94%);
+  border-radius: var(--radius-2xl);
+
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.88)),
+    radial-gradient(circle at top left, rgba(148, 163, 184, 0.25), transparent 60%);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  backdrop-filter: blur(var(--blur-glass));
+  box-shadow: var(--shadow-strong);
+
+  padding: var(--space-xl);
+  color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Rim light */
+.cookie-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at top, rgba(248, 250, 252, 0.12), transparent 60%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* Title */
+.cookie-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+  color: var(--text-accent);
+}
+
+/* Text */
+.cookie-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: var(--space-md);
+}
+
+/* Learn more link */
+.cookie-link {
+  color: var(--text-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--duration-fast) var(--ease-soft);
+}
+
+.cookie-link:hover {
+  color: var(--accent-strong);
+}
+
+/* Buttons */
+.cookie-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .cookie-inner {
+    padding: var(--space-lg);
+    border-radius: var(--radius-xl);
+  }
+
+  .cookie-title {
+    font-size: var(--text-lg);
+  }
+
+  .cookie-text {
+    font-size: var(--text-sm);
+  }
+
+  .cookie-actions {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .cookie-actions button {
+    width: 100%;
+  }
+}
 
 
 /* ================================
@@ -1167,4 +1286,5 @@ button {
     padding: var(--space-md);
   }
 }
+
 
