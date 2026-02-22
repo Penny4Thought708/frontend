@@ -60,6 +60,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const openLoginFromSignup = document.getElementById("openLoginFromSignup");
 
   /* ============================
+     COOKIE CONSENT SYSTEM
+  ============================ */
+  const cookieBox = document.getElementById("cookieConsent");
+  const cookieAccept = document.getElementById("cookieAccept");
+  const cookieDecline = document.getElementById("cookieDecline");
+
+  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
+    setTimeout(() => {
+      cookieBox.classList.add("is-open");
+    }, 600);
+  }
+
+  cookieAccept?.addEventListener("click", () => {
+    localStorage.setItem("cookiesAccepted", "true");
+    cookieBox.classList.remove("is-open");
+  });
+
+  cookieDecline?.addEventListener("click", () => {
+    cookieBox.classList.remove("is-open");
+  });
+
+  /* ============================
      OPEN / CLOSE HELPERS
   ============================ */
   const openModal = (modal) => modal?.classList.add("is-open");
@@ -99,28 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
     modal?.addEventListener("click", (e) => {
       if (e.target === modal) closeModal(modal);
     });
-  });
-
-  /* ============================
-     COOKIE CONSENT SYSTEM
-  ============================ */
-  const cookieBox = document.getElementById("cookieConsent");
-  const cookieAccept = document.getElementById("cookieAccept");
-  const cookieDecline = document.getElementById("cookieDecline");
-
-  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
-    setTimeout(() => {
-      cookieBox.classList.add("is-open");
-    }, 600);
-  }
-
-  cookieAccept?.addEventListener("click", () => {
-    localStorage.setItem("cookiesAccepted", "true");
-    cookieBox.classList.remove("is-open");
-  });
-
-  cookieDecline?.addEventListener("click", () => {
-    cookieBox.classList.remove("is-open");
   });
 
   /* ============================
