@@ -403,7 +403,7 @@ button {
 
 /* Title always on top */
 .hero-title {
-  top: 0;
+ bottom:40px;
   z-index: 2;
 
   font-family: var(--font-heading);
@@ -437,6 +437,7 @@ button {
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: var(--space-2xl);
   align-items: center;
+   height:250px;
 }
 
 .hero-left {
@@ -1337,6 +1338,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
