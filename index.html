@@ -19,7 +19,7 @@
 <body>
   <div class="page-shell">
 
-    <!-- Header -->
+    <!-- HEADER -->
     <header class="site-header">
       <div class="site-header-inner">
 
@@ -45,41 +45,42 @@
       </div>
     </header>
 
-    <!-- Hero -->
-    <main class="page-main">
-      <section class="hero">
-        <div class="hero-inner">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
 
-          <!-- Left side -->
-          <div class="hero-left">
-            <h1 class="hero-title">Your Home, Your Hands, Our Help</h1>
-            <p class="hero-subtitle">
-              Scrubber’s gives you the confidence to tackle any project, big or small.
-              With expert advice, visual guides, and instant support.
-            </p>
+        <!-- LEFT ARROW -->
+        <button id="arrow-left" class="btn-ghost">
+          <img src="arrow-right.png" alt="Arrow Left">
+        </button>
 
-            <div class="hero-actions">
-              <a href="#" class="btn-primary">Join Us Today</a>
-            </div>
+        <!-- HERO TEXT -->
+        <div class="hero-left">
+          <h1 class="hero-title">Your Home, Your Hands, Our Help</h1>
+          <p class="hero-subtitle">
+            Scrubber’s gives you the confidence to tackle any project, big or small.
+            With expert advice, visual guides, and instant support.
+          </p>
+          <div class="hero-actions">
+            <a href="#" class="btn-primary">Join Us Today</a>
           </div>
-
-          <!-- Right side (floating glass card) -->
-          <div class="hero-right">
-            <div class="hero-card-parallax">
-              <div class="hero-card">
-                <div class="hero-card-inner">
-                  <div class="hero-card-image-wrap">
-                    <img src="img/beginner.svg" alt="DIY Visual">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
-      </section>
 
-      <!-- Why DIY Section -->
+        <!-- RIGHT ARROW -->
+        <button id="arrow-right" class="btn-ghost">
+          <img src="arrow.png" alt="Arrow Right">
+        </button>
+
+        <!-- DOTS -->
+        <div id="dot_1" class="hero-orbit-dot dot-1"></div>
+        <div id="dot_2" class="hero-orbit-dot dot-2"></div>
+        <div id="dot_3" class="hero-orbit-dot dot-3"></div>
+
+      </div>
+    </section>
+
+    <!-- WHY DIY SECTION -->
+    <main class="page-main">
       <section class="section">
         <div class="container section-header">
           <h2 class="section-title">Why DIY Is the Best Way to Get Things Done</h2>
@@ -97,7 +98,7 @@
             <hr>
             <p>
               Explore projects from fellow DIY enthusiasts and connect with them in real time.
-              Curious to see how it works? <a href="#">Click here</a>.
+              Curious to see how it works? <a href="#" target="_blank">Click here</a>.
             </p>
             <hr>
             <p>
@@ -110,13 +111,13 @@
             <hr>
             <p>
               Download today and start building smarter. Join us by downloading our
-              <a href="https://play.google.com">app</a>.
+              <a href="https://play.google.com" target="_blank">app</a>.
             </p>
           </div>
         </div>
       </section>
 
-      <!-- Categories -->
+      <!-- CATEGORY CARDS -->
       <section class="section">
         <div class="container section-header">
           <h2 class="section-title">Start Your DIY Journey</h2>
@@ -124,31 +125,58 @@
         </div>
 
         <div class="container cards-grid">
-          <!-- Repeat for each card -->
           <div class="card">
-            <img src="img/beginner.svg" alt="">
+            <img src="img/beginner.svg" alt="Beginner Projects">
             <h3 class="card-title">Beginner Builds</h3>
             <p class="card-body">Simple, confidence-boosting projects to get started.</p>
             <a href="/projects/beginner">Explore</a>
           </div>
 
           <div class="card">
-            <img src="img/bathroom.jpg" alt="">
+            <img src="img/bathroom.jpg" alt="Bathroom Upgrades">
             <h3 class="card-title">Bathroom Upgrades</h3>
             <p class="card-body">From faucets to full remodels, we've got you covered.</p>
             <a href="/projects/bathroom">Explore</a>
           </div>
 
           <div class="card">
-            <img src="img/shelving.jpg" alt="">
+            <img src="img/shelving.jpg" alt="Shelving & Storage">
             <h3 class="card-title">Shelving & Storage</h3>
             <p class="card-body">Maximize space with smart, stylish solutions.</p>
             <a href="/projects/storage">Explore</a>
           </div>
+
+          <div class="card">
+            <img src="img/lighting.jpg" alt="Lighting & Electrical">
+            <h3 class="card-title">Lighting & Electrical</h3>
+            <p class="card-body">Brighten your home with safe, guided installs.</p>
+            <a href="/projects/lighting">Explore</a>
+          </div>
+
+          <div class="card">
+            <img src="img/flooring.jpg" alt="Flooring & Tiling">
+            <h3 class="card-title">Flooring & Tiling</h3>
+            <p class="card-body">Lay down style with expert flooring and tile tutorials.</p>
+            <a href="/projects/flooring">Explore</a>
+          </div>
+
+          <div class="card">
+            <img src="img/painting.jpg" alt="Painting & Finishing">
+            <h3 class="card-title">Painting & Finishing</h3>
+            <p class="card-body">Transform your space with pro painting techniques.</p>
+            <a href="/projects/painting">Explore</a>
+          </div>
+
+          <div class="card">
+            <img src="img/outdoor.svg" alt="Outdoor Projects">
+            <h3 class="card-title">Outdoor Projects</h3>
+            <p class="card-body">Decks, fences, and landscaping to elevate your exterior.</p>
+            <a href="/projects/outdoor">Explore</a>
+          </div>
         </div>
       </section>
 
-      <!-- Featured Ads -->
+      <!-- FEATURED ADS -->
       <section class="section">
         <div class="container cards-grid">
           <div class="card"><h1>Ad PLACEMENT</h1></div>
@@ -156,10 +184,63 @@
           <div class="card"><h1>Ad PLACEMENT</h1></div>
         </div>
       </section>
-
     </main>
 
-    <!-- Footer -->
+    <!-- LOGIN POPUP (PHONE UI REMOVED) -->
+    <div class="modal-backdrop" id="popup" aria-hidden="true">
+      <div class="modal">
+        <button type="button" id="closePopup" class="modal-close">
+          ✕
+        </button>
+
+        <form id="loginForm" method="POST" class="form">
+          <h2 class="modal-title">Please Login</h2>
+          <div id="errorBox"></div>
+
+          <label class="form-label" for="login-email">Email</label>
+          <input type="email" id="login-email" name="email" class="form-input" placeholder="you@example.com" required />
+
+          <label class="form-label" for="log-password">Password</label>
+          <input type="password" id="log-password" name="password" class="form-input" placeholder="Password" required />
+
+          <button type="submit" id="loginSubmit" class="btn-submit">Login</button>
+          <a href="#" id="openSignupFrom" class="form-link">Sign Up</a>
+        </form>
+      </div>
+    </div>
+
+    <!-- SIGNUP POPUP -->
+    <div class="modal-backdrop" id="popup2" aria-hidden="true">
+      <div class="modal">
+        <button type="button" id="closePopup2" class="modal-close">✕</button>
+
+        <form id="sign_form_link" action="signup.php" method="POST" class="form">
+          <h2 class="modal-title">Join the DIY Network</h2>
+
+          <label class="form-label" for="getMyFullname">Full Name</label>
+          <input type="text" id="getMyFullname" name="getMyFullname" class="form-input" placeholder="John Doe" required />
+
+          <label class="form-label" for="signup-email">Email Address</label>
+          <input type="email" id="signup-email" name="email" class="form-input" placeholder="you@example.com" required />
+
+          <label class="form-label" for="signup_password">Password</label>
+          <input type="password" id="signup_password" name="password" class="form-input" placeholder="Create a strong password" required />
+
+          <label class="form-label" for="confirm-password">Confirm Password</label>
+          <input type="password" id="confirm-password" name="confirm-password" class="form-input" placeholder="Re-enter your password" required />
+
+          <label class="form-label">
+            <input type="checkbox" name="terms" required />
+            I agree to the <a href="#">Terms and Conditions</a>
+          </label>
+
+          <button type="submit" class="btn-submit">Sign Up</button>
+          <p class="form-footer">Already have an account? <a href="#" id="openSignupFromLogin" class="form-link">Log in here</a>.</p>
+        </form>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
     <footer class="site-footer">
       <div class="site-footer-inner">
         <div class="footer-brand">
@@ -187,6 +268,7 @@
 
   </div>
 </body>
+
 
 
 
@@ -227,6 +309,7 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
 });
 </script>
 </html>
+
 
 
 
