@@ -143,6 +143,28 @@ cookieDecline?.addEventListener("click", () => {
 
   const toggleAnalytics = document.getElementById("toggleAnalytics");
   const togglePersonalization = document.getElementById("togglePersonalization");
+// PRIVACY CENTER TABS
+const tabs = document.querySelectorAll(".privacy-tab");
+const panels = document.querySelectorAll(".privacy-panel");
+
+tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    // Remove active from all
+    tabs.forEach(t => t.classList.remove("active"));
+    panels.forEach(p => p.classList.remove("active"));
+
+    // Activate selected
+    tab.classList.add("active");
+    const target = tab.dataset.tab;
+    document.getElementById(`tab-${target}`).classList.add("active");
+  });
+});
+
+// RESET ALL
+document.getElementById("resetPrivacy")?.addEventListener("click", () => {
+  toggleAnalytics.checked = false;
+  togglePersonalization.checked = false;
+});
 
   function openPrivacyCenter() {
     privacyCenter?.classList.add("is-open");
