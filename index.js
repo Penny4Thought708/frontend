@@ -1,4 +1,3 @@
-
 import { API_BASE } from "./public/js/config.js";
 
 /* ============================================================
@@ -41,7 +40,7 @@ if (loginForm) {
 }
 
 /* ============================================================
-   DOM READY — MODALS + COOKIE CONSENT
+   DOM READY — MODALS + COOKIE CONSENT + PRIVACY CENTER
 ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -124,4 +123,35 @@ document.addEventListener("DOMContentLoaded", () => {
     cookieBox.classList.remove("is-open");
   });
 
+  /* ============================
+     PRIVACY CENTER MODAL
+  ============================ */
+  const privacyCenter = document.getElementById("privacyCenter");
+  const closePrivacy = document.getElementById("closePrivacy");
+  const savePrivacy = document.getElementById("savePrivacy");
+
+  const toggleAnalytics = document.getElementById("toggleAnalytics");
+  const togglePersonalization = document.getElementById("togglePersonalization");
+
+  function openPrivacyCenter() {
+    privacyCenter?.classList.add("is-open");
+  }
+
+  function closePrivacyCenter() {
+    privacyCenter?.classList.remove("is-open");
+  }
+
+  closePrivacy?.addEventListener("click", closePrivacyCenter);
+
+  savePrivacy?.addEventListener("click", () => {
+    const prefs = {
+      analytics: toggleAnalytics?.checked || false,
+      personalization: togglePersonalization?.checked || false
+    };
+
+    localStorage.setItem("privacyPreferences", JSON.stringify(prefs));
+    closePrivacyCenter();
+  });
+
 });
+
