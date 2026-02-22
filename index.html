@@ -367,25 +367,59 @@
       </form>
     </div>
   </div>
-<div id="cookieConsent" class="cookie-consent">
-  <div class="cookie-inner">
-    <h3 class="cookie-title">We Use Cookies</h3>
-    <p class="cookie-text">
-      We use cookies to personalize content, improve your experience, and analyze traffic.
-      You can accept or decline. <a href="#" class="cookie-link">Learn more</a>.
-    </p>
+<div id="privacyCenter" class="modal-backdrop">
+  <div class="modal privacy-modal">
+    <button id="closePrivacy" class="modal-close">×</button>
 
-    <div class="cookie-actions">
-      <button id="cookieAccept" class="btn-primary">Accept</button>
-      <button id="cookieDecline" class="btn-ghost">Decline</button>
+    <header class="modal-header">
+      <h2 class="modal-title">Privacy Center</h2>
+      <p class="modal-subtitle">
+        Manage how your data is used. You can adjust cookie preferences, analytics, personalization, and more.
+      </p>
+    </header>
+
+    <div class="privacy-section">
+      <h3 class="privacy-label">Essential Cookies</h3>
+      <p class="privacy-desc">
+        Required for the website to function. These cannot be disabled.
+      </p>
+      <div class="privacy-toggle disabled">Always On</div>
     </div>
+
+    <div class="privacy-section">
+      <h3 class="privacy-label">Analytics</h3>
+      <p class="privacy-desc">
+        Helps us understand how the site is used so we can improve it.
+      </p>
+      <label class="privacy-switch">
+        <input type="checkbox" id="toggleAnalytics">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="privacy-section">
+      <h3 class="privacy-label">Personalization</h3>
+      <p class="privacy-desc">
+        Allows us to personalize content and recommendations.
+      </p>
+      <label class="privacy-switch">
+        <input type="checkbox" id="togglePersonalization">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <button id="savePrivacy" class="btn-primary" style="margin-top:1.4rem;width:100%;">
+      Save Preferences
+    </button>
   </div>
 </div>
+
 
 </body>
 
 
 </html>
+
 
 
 
