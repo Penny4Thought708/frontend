@@ -106,27 +106,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ============================
-     COOKIE CONSENT SYSTEM
-  ============================ */
-  const cookieBox = document.getElementById("cookieConsent");
-  const cookieAccept = document.getElementById("cookieAccept");
-  const cookieDecline = document.getElementById("cookieDecline");
+/* ============================
+   COOKIE CONSENT SYSTEM
+============================ */
+const cookieBox = document.getElementById("cookieConsent");
+const cookieAccept = document.getElementById("cookieAccept");
+const cookieDecline = document.getElementById("cookieDecline");
 
-  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
-    setTimeout(() => {
-      cookieBox.classList.add("is-open");
-    }, 600);
-  }
+if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
+  setTimeout(() => {
+    cookieBox.classList.add("is-open");
+  }, 400);
+}
 
-  cookieAccept?.addEventListener("click", () => {
-    localStorage.setItem("cookiesAccepted", "true");
-    cookieBox.classList.remove("is-open");
-  });
+cookieAccept?.addEventListener("click", () => {
+  localStorage.setItem("cookiesAccepted", "true");
+  cookieBox.classList.remove("is-open");
+});
 
-  cookieDecline?.addEventListener("click", () => {
-    cookieBox.classList.remove("is-open");
-  });
+cookieDecline?.addEventListener("click", () => {
+  cookieBox.classList.remove("is-open");
+});
+
 
   /* ============================
      PRIVACY CENTER MODAL
