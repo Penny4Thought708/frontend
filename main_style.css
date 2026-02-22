@@ -461,10 +461,6 @@ button {
     gap: var(--space-2xl);
   }
 
-  .hero-right {
-    order: -1;
-  }
-
   .hero {
     padding-top: var(--space-2xl);
   }
@@ -577,6 +573,7 @@ button {
   padding: var(--space-lg);
   overflow: hidden;
 
+  /* Multi‑layer glass */
   background:
     linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.78)),
     radial-gradient(circle at 20% 0%, rgba(148, 163, 184, 0.18), transparent 60%),
@@ -595,6 +592,7 @@ button {
     background var(--duration-med) var(--ease-soft);
 }
 
+/* Holographic mesh overlay */
 .card::before {
   content: "";
   position: absolute;
@@ -616,6 +614,7 @@ button {
   pointer-events: none;
 }
 
+/* Rim light */
 .card::after {
   content: "";
   position: absolute;
@@ -627,6 +626,7 @@ button {
   pointer-events: none;
 }
 
+/* Hover motion */
 .card:hover {
   transform: translateY(-6px);
   box-shadow:
@@ -635,6 +635,7 @@ button {
   border-color: rgba(209, 213, 219, 0.9);
 }
 
+/* Card title */
 .card-title {
   font-family: var(--font-heading);
   font-weight: 600;
@@ -643,6 +644,7 @@ button {
   margin-bottom: 0.4rem;
 }
 
+/* Card body */
 .card-body {
   font-size: var(--text-sm);
   color: var(--text-secondary);
@@ -653,24 +655,27 @@ button {
    5. Auth Modals (Login / Signup)
 ================================== */
 
-/* HIDE BOTH MODALS BY DEFAULT */
-#popup,
-#popup2 {
-  display: none;
-  opacity: 0;
-  pointer-events: none;
-}
-
+/* Hidden by default */
 .modal-backdrop {
   position: fixed;
   inset: 0;
   background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(3, 7, 18, 0.98));
   backdrop-filter: blur(18px);
-  display: flex;
+  display: none;              /* hidden by default */
   align-items: center;
   justify-content: center;
   padding: var(--space-md);
   z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-med) var(--ease-soft);
+}
+
+/* When you add .is-open via JS, it becomes visible */
+.modal-backdrop.is-open {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .modal {
@@ -860,6 +865,8 @@ button {
     0 0 0 1px rgba(165, 180, 252, 0.9);
 }
 
+/* Loading state */
+
 .btn-submit.loading {
   opacity: 0.7;
 }
@@ -925,6 +932,8 @@ button {
   color: var(--text-muted);
 }
 
+/* Footer columns */
+
 .footer-column-title {
   font-size: var(--text-xs);
   letter-spacing: 0.16em;
@@ -949,6 +958,8 @@ button {
   color: var(--text-accent);
 }
 
+/* Footer bottom */
+
 .site-footer-bottom {
   max-width: var(--max-width-wide);
   margin: var(--space-lg) auto 0;
@@ -966,6 +977,8 @@ button {
   display: flex;
   gap: 0.9rem;
 }
+
+/* Responsive footer */
 
 @media (max-width: 960px) {
   .site-footer-inner {
