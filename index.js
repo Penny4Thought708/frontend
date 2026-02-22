@@ -45,12 +45,13 @@ if (loginForm) {
 }
 
 /* ============================================================
-   DOM READY — MODALS + COOKIE CONSENT + PRIVACY CENTER
+   DOM READY — ALL UI SYSTEMS MERGED
 ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM ready");
 
   /* ============================
-     MODAL ELEMENTS
+     MODALS (NEW SYSTEM)
   ============================ */
   const loginModal = document.getElementById("loginModal");
   const signupModal = document.getElementById("signupModal");
@@ -64,27 +65,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const openSignupFromLogin = document.getElementById("openSignupFromLogin");
   const openLoginFromSignup = document.getElementById("openLoginFromSignup");
 
-  /* ============================
-     OPEN / CLOSE HELPERS
-  ============================ */
   const openModal = (modal) => modal?.classList.add("is-open");
   const closeModal = (modal) => modal?.classList.remove("is-open");
 
-  /* ============================
-     LOGIN OPEN / CLOSE
-  ============================ */
   loginBtn?.addEventListener("click", () => openModal(loginModal));
   closeLogin?.addEventListener("click", () => closeModal(loginModal));
 
-  /* ============================
-     SIGNUP OPEN / CLOSE
-  ============================ */
   signupBtn?.addEventListener("click", () => openModal(signupModal));
   closeSignup?.addEventListener("click", () => closeModal(signupModal));
 
-  /* ============================
-     SWITCH LOGIN ↔ SIGNUP
-  ============================ */
   openSignupFromLogin?.addEventListener("click", (e) => {
     e.preventDefault();
     closeModal(loginModal);
@@ -97,45 +86,94 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => openModal(loginModal), 150);
   });
 
-  /* ============================
-     CLOSE ON BACKDROP CLICK
-  ============================ */
   [loginModal, signupModal].forEach((modal) => {
     modal?.addEventListener("click", (e) => {
       if (e.target === modal) closeModal(modal);
     });
   });
 
+  /* ============================
+     OLD POPUP SYSTEM (popup / popup2)
+  ============================ */
+  const popup = document.getElementById("popup");
+  const popup2 = document.getElementById("popup2");
+  const closePopup = document.getElementById("closePopup");
+  const closePopup2 = document.getElementById("closePopup2");
+  const openSignupFrom = document.getElementById("openSignupFrom");
 
-/* ============================
-   COOKIE CONSENT SYSTEM
-============================ */
-const cookieBox = document.getElementById("cookieConsent");
-const cookieAccept = document.getElementById("cookieAccept");
-const cookieDecline = document.getElementById("cookieDecline");
+  loginBtn?.addEventListener("click", (e) => {
+    if (loginBtn.type === "submit") return;
+    e.preventDefault();
+    popup?.classList.add("show");
+    popup2?.classList.remove("show");
+  });
 
-if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
-  setTimeout(() => {
-    cookieBox.classList.add("is-open");
-  }, 400);
-}
+  closePopup?.addEventListener("click", () => popup?.classList.remove("show"));
+  closePopup2?.addEventListener("click", () => popup2?.classList.remove("show"));
 
-cookieAccept?.addEventListener("click", () => {
-  localStorage.setItem("cookiesAccepted", "true");
-  cookieBox.classList.remove("is-open");
-});
+  openSignupFrom?.addEventListener("click", (e) => {
+    e.preventDefault();
+    popup?.classList.remove("show");
+    popup2?.classList.add("show");
+  });
 
-cookieDecline?.addEventListener("click", () => {
-  cookieBox.classList.remove("is-open");
-});
-cookieDecline?.addEventListener("click", () => {
-  cookieBox.classList.remove("is-open");
-  privacyCenter.classList.add("is-open");
-});
-
+  openSignupFromLogin?.addEventListener("click", (e) => {
+    e.preventDefault();
+    popup2?.classList.remove("show");
+    popup?.classList.add("show");
+  });
 
   /* ============================
-     PRIVACY CENTER MODAL
+     SIGNUP VALIDATION
+  ============================ */
+  const signupForm = document.getElementById("sign_form_link");
+
+  signupBtn?.addEventListener("click", (e) => {
+    if (signupBtn.type === "submit") return;
+    e.preventDefault();
+    popup2?.classList.add("show");
+    popup?.classList.remove("show");
+  });
+
+  if (signupForm) {
+    signupForm.addEventListener("submit", (e) => {
+      const pass = document.getElementById("signup_password").value;
+      const confirm = document.getElementById("confirm-password").value;
+      const errorMessage = document.getElementById("error_signup");
+
+      if (pass !== confirm) {
+        e.preventDefault();
+        errorMessage.textContent = "Passwords do not match.";
+        errorMessage.style.display = "block";
+      } else {
+        errorMessage.style.display = "none";
+      }
+    });
+  }
+
+  /* ============================
+     COOKIE CONSENT
+  ============================ */
+  const cookieBox = document.getElementById("cookieConsent");
+  const cookieAccept = document.getElementById("cookieAccept");
+  const cookieDecline = document.getElementById("cookieDecline");
+
+  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
+    setTimeout(() => cookieBox.classList.add("is-open"), 400);
+  }
+
+  cookieAccept?.addEventListener("click", () => {
+    localStorage.setItem("cookiesAccepted", "true");
+    cookieBox.classList.remove("is-open");
+  });
+
+  cookieDecline?.addEventListener("click", () => {
+    cookieBox.classList.remove("is-open");
+    privacyCenter?.classList.add("is-open");
+  });
+
+  /* ============================
+     PRIVACY CENTER
   ============================ */
   const privacyCenter = document.getElementById("privacyCenter");
   const closePrivacy = document.getElementById("closePrivacy");
@@ -143,48 +181,77 @@ cookieDecline?.addEventListener("click", () => {
 
   const toggleAnalytics = document.getElementById("toggleAnalytics");
   const togglePersonalization = document.getElementById("togglePersonalization");
-// PRIVACY CENTER TABS
-const tabs = document.querySelectorAll(".privacy-tab");
-const panels = document.querySelectorAll(".privacy-panel");
 
-tabs.forEach(tab => {
-  tab.addEventListener("click", () => {
-    // Remove active from all
-    tabs.forEach(t => t.classList.remove("active"));
-    panels.forEach(p => p.classList.remove("active"));
+  const tabs = document.querySelectorAll(".privacy-tab");
+  const panels = document.querySelectorAll(".privacy-panel");
 
-    // Activate selected
-    tab.classList.add("active");
-    const target = tab.dataset.tab;
-    document.getElementById(`tab-${target}`).classList.add("active");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      panels.forEach((p) => p.classList.remove("active"));
+
+      tab.classList.add("active");
+      const target = tab.dataset.tab;
+      document.getElementById(`tab-${target}`).classList.add("active");
+    });
   });
-});
 
-// RESET ALL
-document.getElementById("resetPrivacy")?.addEventListener("click", () => {
-  toggleAnalytics.checked = false;
-  togglePersonalization.checked = false;
-});
+  document.getElementById("resetPrivacy")?.addEventListener("click", () => {
+    toggleAnalytics.checked = false;
+    togglePersonalization.checked = false;
+  });
 
-  function openPrivacyCenter() {
-    privacyCenter?.classList.add("is-open");
-  }
-
-  function closePrivacyCenter() {
+  closePrivacy?.addEventListener("click", () => {
     privacyCenter?.classList.remove("is-open");
-  }
-
-  closePrivacy?.addEventListener("click", closePrivacyCenter);
+  });
 
   savePrivacy?.addEventListener("click", () => {
     const prefs = {
       analytics: toggleAnalytics?.checked || false,
       personalization: togglePersonalization?.checked || false
     };
-
     localStorage.setItem("privacyPreferences", JSON.stringify(prefs));
-    closePrivacyCenter();
+    privacyCenter?.classList.remove("is-open");
+  });
+
+  /* ============================
+     HERO SLIDER
+  ============================ */
+  const slides = [
+    { title: "Your Home, Your Hands, Our Help", text: "Scrubber’s gives you the confidence to tackle any project, big or small." },
+    { title: "Build It. Fix It. Scrub It.", text: "From shelving to shower installs, Scrubber’s connects DIYers with the tools, tips, and pros." },
+    { title: "Smarter DIY Starts Here", text: "Scrubber’s blends expert insight with instant messaging and walkthroughs." }
+  ];
+
+  let currentIndex = 0;
+  const heroTitle = document.querySelector(".hero-text h1");
+  const heroText = document.querySelector(".for_text p");
+  const dots = [
+    document.getElementById("dot_1"),
+    document.getElementById("dot_2"),
+    document.getElementById("dot_3")
+  ];
+
+  function updateSlide(index) {
+    if (heroTitle && heroText) {
+      heroTitle.textContent = slides[index].title;
+      heroText.textContent = slides[index].text;
+    }
+    dots.forEach((dot, i) => {
+      if (dot) dot.style.backgroundColor = i === index ? "cyan" : "gray";
+    });
+  }
+
+  updateSlide(currentIndex);
+
+  document.getElementById("arrow-right")?.addEventListener("click", () => {
+    currentIndex = (currentIndex + 1) % slides.length;
+    updateSlide(currentIndex);
+  });
+
+  document.getElementById("arrow-left")?.addEventListener("click", () => {
+    currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+    updateSlide(currentIndex);
   });
 
 });
-
