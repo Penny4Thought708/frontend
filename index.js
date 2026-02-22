@@ -214,8 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
     privacyCenter?.classList.remove("is-open");
   });
 
- /* ============================
-   HERO SLIDER (FIXED)
+/* ============================
+   HERO SLIDER — FADE + SLIDE + AUTOPLAY
 ============================ */
 const slides = [
   { 
@@ -234,11 +234,15 @@ const slides = [
 
 let currentIndex = 0;
 
-// Correct selectors for your new HTML
+// Correct selectors
 const heroTitle = document.querySelector(".hero-title");
 const heroText = document.querySelector(".hero-subtitle");
 
-// Correct dot selectors
+// Add fade class
+heroTitle.classList.add("hero-fade");
+heroText.classList.add("hero-fade");
+
+// Dots
 const dots = [
   document.querySelector(".dot-1"),
   document.querySelector(".dot-2"),
@@ -246,21 +250,33 @@ const dots = [
 ];
 
 function updateSlide(index) {
-  if (heroTitle && heroText) {
+  // Fade out
+  heroTitle.classList.remove("show");
+  heroText.classList.remove("show");
+
+  setTimeout(() => {
+    // Update content
     heroTitle.textContent = slides[index].title;
     heroText.textContent = slides[index].text;
-  }
 
+    // Fade in
+    heroTitle.classList.add("show");
+    heroText.classList.add("show");
+  }, 200);
+
+  // Update dots
   dots.forEach((dot, i) => {
     if (dot) {
-      dot.style.backgroundColor = i === index ? "cyan" : "gray";
+      dot.classList.toggle("active", i === index);
     }
   });
 }
 
 updateSlide(currentIndex);
 
-// Arrows
+/* ============================
+   ARROWS
+============================ */
 document.getElementById("arrow-right")?.addEventListener("click", () => {
   currentIndex = (currentIndex + 1) % slides.length;
   updateSlide(currentIndex);
@@ -270,3 +286,11 @@ document.getElementById("arrow-left")?.addEventListener("click", () => {
   currentIndex = (currentIndex - 1 + slides.length) % slides.length;
   updateSlide(currentIndex);
 });
+
+/* ============================
+   AUTOPLAY
+============================ */
+setInterval(() => {
+  currentIndex = (currentIndex + 1) % slides.length;
+  updateSlide(currentIndex);
+}, 5000); // 5 seconds
