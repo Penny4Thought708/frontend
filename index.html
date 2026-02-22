@@ -367,16 +367,17 @@
       </form>
     </div>
   </div>
-<div id="cookieConsent" class="modal-backdrop">
-  <div class="modal">
-    <h2 class="modal-title">We Use Cookies</h2>
-    <p class="modal-subtitle">
-      We use cookies to improve your experience, personalize content, and analyze traffic.
+<div id="cookieConsent" class="cookie-consent">
+  <div class="cookie-inner">
+    <h3 class="cookie-title">We Use Cookies</h3>
+    <p class="cookie-text">
+      We use cookies to personalize content, improve your experience, and analyze traffic.
+      You can accept or decline. <a href="#" class="cookie-link">Learn more</a>.
     </p>
 
-    <div style="display:flex;gap:1rem;margin-top:1.4rem;">
-      <button id="cookieAccept" class="btn-primary" style="flex:1;">Accept</button>
-      <button id="cookieDecline" class="btn-ghost" style="flex:1;">Decline</button>
+    <div class="cookie-actions">
+      <button id="cookieAccept" class="btn-primary">Accept</button>
+      <button id="cookieDecline" class="btn-ghost">Decline</button>
     </div>
   </div>
 </div>
@@ -422,7 +423,40 @@ document.getElementById("loginForm").addEventListener("submit", async e => {
   }
 });
 </script>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  /* ============================
+     COOKIE CONSENT SYSTEM
+  ============================ */
+
+  const cookieBox = document.getElementById("cookieConsent");
+  const cookieAccept = document.getElementById("cookieAccept");
+  const cookieDecline = document.getElementById("cookieDecline");
+
+  // Show cookie box only if not accepted before
+  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
+    setTimeout(() => {
+      cookieBox.classList.add("is-open");
+    }, 600);
+  }
+
+  // Accept cookies
+  cookieAccept?.addEventListener("click", () => {
+    localStorage.setItem("cookiesAccepted", "true");
+    cookieBox.classList.remove("is-open");
+  });
+
+  // Decline cookies
+  cookieDecline?.addEventListener("click", () => {
+    cookieBox.classList.remove("is-open");
+  });
+
+});
+</script>
+
 </html>
+
 
 
 
