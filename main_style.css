@@ -1120,6 +1120,67 @@ button {
     width: 100%;
   }
 }
+/* HEADER */
+.privacy-header {
+  position: relative;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.privacy-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.privacy-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 0.3rem;
+}
+
+/* TABS */
+.privacy-tabs {
+  display: flex;
+  gap: 1rem;
+  margin: 1.2rem 0;
+}
+
+.privacy-tab {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  transition: 0.2s;
+}
+
+.privacy-tab.active {
+  background: var(--accent-soft);
+  color: var(--text-accent);
+}
+
+/* CONTENT */
+.privacy-content {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 0.4rem;
+}
+
+.privacy-panel {
+  display: none;
+}
+
+.privacy-panel.active {
+  display: block;
+}
+
+/* FOOTER */
+.privacy-footer {
+  margin-top: 1.4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
 /* ================================
    MOBILE‑FRIENDLY RESPONSIVE FIXES
@@ -1255,6 +1316,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
