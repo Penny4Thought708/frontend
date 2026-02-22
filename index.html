@@ -385,77 +385,8 @@
 </body>
 
 
-
-
-  <script type="module">
-import { API_BASE } from "./public/js/config.js";
-
-document.getElementById("loginForm").addEventListener("submit", async e => {
-  e.preventDefault();
-
-  const email = document.getElementById("login-email").value.trim();
-  const password = document.getElementById("log-password").value.trim();
-
-  const errorBox = document.getElementById("errorBox");
-  errorBox.innerHTML = "";
-
-  try {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      credentials: "include"
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      if (data.token) {
-        localStorage.setItem("auth_token", data.token);
-      }
-
-      window.location.href = "dashboard.html";
-    } else {
-      errorBox.innerHTML = `<p class="error">${data.error}</p>`;
-    }
-  } catch (err) {
-    errorBox.innerHTML = `<p class="error">Network error</p>`;
-  }
-});
-</script>
-  <script>
-document.addEventListener("DOMContentLoaded", () => {
-
-  /* ============================
-     COOKIE CONSENT SYSTEM
-  ============================ */
-
-  const cookieBox = document.getElementById("cookieConsent");
-  const cookieAccept = document.getElementById("cookieAccept");
-  const cookieDecline = document.getElementById("cookieDecline");
-
-  // Show cookie box only if not accepted before
-  if (cookieBox && !localStorage.getItem("cookiesAccepted")) {
-    setTimeout(() => {
-      cookieBox.classList.add("is-open");
-    }, 600);
-  }
-
-  // Accept cookies
-  cookieAccept?.addEventListener("click", () => {
-    localStorage.setItem("cookiesAccepted", "true");
-    cookieBox.classList.remove("is-open");
-  });
-
-  // Decline cookies
-  cookieDecline?.addEventListener("click", () => {
-    cookieBox.classList.remove("is-open");
-  });
-
-});
-</script>
-
 </html>
+
 
 
 
