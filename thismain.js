@@ -1,4 +1,4 @@
-/*
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM ready");
 
@@ -115,16 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Login success handler
-  function handleLoginSuccess() {
-    localStorage.setItem("loggedIn", "true");
-    window.location.href = "/dashboard.php";
-  }
 
-  const loggedIn = localStorage.getItem("loggedIn");
-  if (loggedIn === "true" &&
-      (window.location.pathname.includes("login") || window.location.pathname.includes("signup"))) {
-    window.location.href = "/dashboard.php";
-  }
 });
-*/
+
+
