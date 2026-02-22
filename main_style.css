@@ -53,7 +53,6 @@
 
   /* Typography */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  /* If you load Geist via @font-face or external, replace with "Geist" */
   --font-heading: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-body: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
@@ -77,6 +76,37 @@
   /* Layout */
   --max-width: 1120px;
   --max-width-wide: 1240px;
+
+  /* Pattern shift */
+  --pattern-shift: 0px;
+}
+
+/* ================================
+   GLOBAL PATTERN BACKGROUND
+================================== */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -5;
+
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(79,70,229,0.12), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(56,189,248,0.10), transparent 60%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.015) 0px,
+      rgba(255,255,255,0.015) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+
+  background-size: cover;
+  opacity: 0.55;
+  transform: translateX(var(--pattern-shift));
+  transition: transform 0.4s ease-out;
 }
 
 /* Reset-ish */
@@ -316,35 +346,6 @@ button {
     0 0 0 1px rgba(165, 180, 252, 0.8);
 }
 
-/* Mobile header */
-
-.site-header-menu-toggle {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .site-nav-links {
-    display: none;
-  }
-
-  .site-header-menu-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), transparent 55%);
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-  }
-
-  .site-header-inner {
-    padding-inline: var(--space-md);
-  }
-}
-
 /* ================================
    3. Hero (Split, Cinematic, Glass)
 ================================== */
@@ -355,14 +356,21 @@ button {
   overflow: hidden;
 }
 
+/* Cinematic grid pattern behind hero */
 .hero::before {
   content: "";
   position: absolute;
   inset: -40%;
   background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 55%),
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 55%),
-    radial-gradient(circle at bottom, rgba(15, 23, 42, 0.9), #020617 70%);
+    radial-gradient(circle at top left, rgba(79,70,229,0.22), transparent 60%),
+    radial-gradient(circle at top right, rgba(56,189,248,0.18), transparent 60%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 2px,
+      transparent 2px,
+      transparent 12px
+    );
   opacity: 0.9;
   z-index: -2;
 }
@@ -395,28 +403,6 @@ button {
   gap: var(--space-lg);
 }
 
-.hero-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.18rem 0.6rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.25), transparent 60%);
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.hero-kicker-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: radial-gradient(circle at center, #22c55e 0, #16a34a 40%, #052e16 100%);
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
-}
-
 .hero-title {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -424,12 +410,6 @@ button {
   font-size: clamp(2.4rem, 3.1vw + 1.4rem, 3.6rem);
   line-height: 1.05;
   color: var(--text-primary);
-}
-
-.hero-title span {
-  background: linear-gradient(to right, #e5e7eb, #a5b4fc);
-  -webkit-background-clip: text;
-  color: transparent;
 }
 
 .hero-subtitle {
@@ -446,178 +426,7 @@ button {
   align-items: center;
 }
 
-.hero-secondary-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  padding: 0.3rem 0.1rem;
-  transition: color var(--duration-fast) var(--ease-soft);
-}
-
-.hero-secondary-link-icon {
-  font-size: 1rem;
-  transition: transform var(--duration-fast) var(--ease-soft);
-}
-
-.hero-secondary-link:hover {
-  color: var(--text-accent);
-}
-
-.hero-secondary-link:hover .hero-secondary-link-icon {
-  transform: translateX(3px);
-}
-
-.hero-meta {
-  margin-top: var(--space-sm);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  align-items: center;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.hero-meta-pill {
-  padding: 0.2rem 0.6rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.2), transparent 60%);
-}
-
-/* Hero right: floating glass card with framed image */
-
-.hero-right {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 260px;
-}
-
-/* Parallax wrapper (for scroll-based transforms via JS if desired) */
-.hero-card-parallax {
-  position: relative;
-  transform-style: preserve-3d;
-  will-change: transform;
-}
-
-/* Outer glass card */
-
-.hero-card {
-  position: relative;
-  width: min(460px, 100%);
-  border-radius: var(--radius-2xl);
-  background:
-    linear-gradient(135deg, rgba(148, 163, 184, 0.12), rgba(15, 23, 42, 0.96)),
-    radial-gradient(circle at top left, rgba(129, 140, 248, 0.35), transparent 60%);
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  box-shadow: var(--shadow-strong);
-  backdrop-filter: blur(var(--blur-glass));
-  padding: 1.1rem;
-  overflow: hidden;
-  transform: translate3d(0, 0, 0);
-  transition:
-    transform var(--duration-slow) var(--ease-smooth),
-    box-shadow var(--duration-slow) var(--ease-smooth),
-    border-color var(--duration-slow) var(--ease-smooth),
-    background var(--duration-slow) var(--ease-smooth);
-}
-
-/* Outer rim light */
-
-.hero-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at top, rgba(248, 250, 252, 0.18), transparent 60%),
-    radial-gradient(circle at bottom, rgba(15, 23, 42, 0.9), transparent 70%);
-  mix-blend-mode: screen;
-  opacity: 0.9;
-  pointer-events: none;
-}
-
-/* Inner glow */
-
-.hero-card::after {
-  content: "";
-  position: absolute;
-  inset: 12%;
-  border-radius: inherit;
-  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.7), transparent 70%);
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* Inner frame */
-
-.hero-card-inner {
-  position: relative;
-  border-radius: 16px; /* soft rounded inner frame */
-  background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.7));
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  box-shadow: var(--shadow-subtle);
-  padding: 0.6rem;
-  overflow: hidden;
-}
-
-/* Inner frame rim light */
-
-.hero-card-inner::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(circle at top, rgba(248, 250, 252, 0.16), transparent 60%);
-  opacity: 0.9;
-  pointer-events: none;
-}
-
-/* Image inside inner frame */
-
-.hero-card-image-wrap {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.9);
-}
-
-.hero-card-image-wrap img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-/* Optional subtle overlay on image */
-
-.hero-card-image-wrap::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.2), transparent 55%);
-  mix-blend-mode: soft-light;
-}
-
-/* Hover lift (hybrid motion) */
-
-.hero-card:hover {
-  transform: translate3d(0, -8px, 0);
-  box-shadow:
-    0 26px 80px rgba(15, 23, 42, 0.95),
-    0 0 0 1px rgba(165, 180, 252, 0.7);
-  border-color: rgba(209, 213, 219, 0.9);
-}
-
-/* Parallax: you can add JS to adjust transform on scroll.
-   Example (pseudo):
-   .hero-card-parallax[data-offset="..."] { transform: translate3d(0, calc(var(--offset) * 1px), 0); }
-*/
-
-/* Hero floating accents (optional) */
+/* Hero dots */
 
 .hero-orbit-dot {
   position: absolute;
@@ -637,6 +446,11 @@ button {
 .hero-orbit-dot.dot-2 {
   bottom: 16%;
   left: 6%;
+}
+
+.hero-orbit-dot.dot-3 {
+  top: 50%;
+  left: 50%;
 }
 
 /* Responsive hero */
@@ -676,11 +490,40 @@ button {
 
 .section {
   padding: var(--space-2xl) 0;
+  position: relative;
 }
 
-.section + .section {
-  border-top: 1px solid rgba(15, 23, 42, 0.9);
-  box-shadow: 0 -1px 0 rgba(148, 163, 184, 0.12);
+/* Cinematic scene divider */
+.section::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0,0,0,0.4)
+  );
+  pointer-events: none;
+}
+
+/* Alternating left/right background split */
+.section:nth-of-type(odd) {
+  background: linear-gradient(
+    to right,
+    rgba(15,23,42,0.45),
+    rgba(15,23,42,0.1)
+  );
+}
+
+.section:nth-of-type(even) {
+  background: linear-gradient(
+    to left,
+    rgba(15,23,42,0.45),
+    rgba(15,23,42,0.1)
+  );
 }
 
 .section-header {
@@ -688,13 +531,6 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-}
-
-.section-kicker {
-  font-size: var(--text-xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-muted);
 }
 
 .section-title {
@@ -999,7 +835,7 @@ button {
     0 0 0 1px rgba(165, 180, 252, 0.9);
 }
 
-/* Loading state (keep clickable if you want, just visually dim) */
+/* Loading state */
 
 .btn-submit.loading {
   opacity: 0.7;
@@ -1130,5 +966,3 @@ button {
     align-items: flex-start;
   }
 }
-
-
