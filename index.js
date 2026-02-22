@@ -294,3 +294,4 @@ setInterval(() => {
   currentIndex = (currentIndex + 1) % slides.length;
   updateSlide(currentIndex);
 }, 5000); // 5 seconds
+});
