@@ -439,6 +439,11 @@ button {
 }
 
 
+.hero-text-wrap {
+  position: relative;
+  min-height: 140px; /* adjust if needed */
+}
+
 .hero-text-wrap > * {
   position: absolute;
   left: 0;
@@ -1330,6 +1335,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
