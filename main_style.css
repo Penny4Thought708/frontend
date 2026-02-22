@@ -236,7 +236,7 @@ button {
 .site-logo-text {
  
   letter-spacing: 0.04em;
- font-family: 'Geist', sans-serif; font-weight: 700; letter-spacing: -0.02em; font-size: clamp(1.8rem, 4vw, 3rem); 
+ font-family: 'Geist', sans-serif; font-weight: 700; letter-spacing: -0.02em; 
   
   color: var(--text-accent);
 }
@@ -1337,6 +1337,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
