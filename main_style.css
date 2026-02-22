@@ -977,8 +977,61 @@ button {
   display: flex;
   gap: 0.9rem;
 }
+/* ================================
+   CINEMATIC SLIDE‑IN ANIMATIONS
+================================ */
 
-/* Responsive footer */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 0.9s var(--ease-smooth),
+    transform 0.9s var(--ease-smooth),
+    filter 0.9s var(--ease-smooth);
+  filter: blur(6px);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* Slide from left */
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.reveal-left.visible {
+  transform: translateX(0);
+}
+
+/* Slide from right */
+.reveal-right {
+  opacity: 0;
+  transform: translateX(60px);
+}
+
+.reveal-right.visible {
+  transform: translateX(0);
+}
+
+/* Slide up (cards, sections) */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+.reveal-up.visible {
+  transform: translateY(0);
+}
+
+/* Staggered cards */
+.cards-grid .card {
+  transition-delay: calc(var(--card-index, 0) * 0.12s);
+}
+
 
 /* ================================
    MOBILE‑FRIENDLY RESPONSIVE FIXES
@@ -1114,3 +1167,4 @@ button {
     padding: var(--space-md);
   }
 }
+
