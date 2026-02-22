@@ -438,19 +438,12 @@ button {
   opacity: 0.9;
 }
 
-.hero-orbit-dot.dot-1 {
-  top: 12%;
-  right: 12%;
-}
 
-.hero-orbit-dot.dot-2 {
-  bottom: 16%;
-  left: 6%;
-}
-
-.hero-orbit-dot.dot-3 {
-  top: 50%;
-  left: 50%;
+.hero-text-wrap > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
 }
 
 /* Responsive hero */
@@ -1337,6 +1330,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
