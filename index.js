@@ -214,44 +214,59 @@ document.addEventListener("DOMContentLoaded", () => {
     privacyCenter?.classList.remove("is-open");
   });
 
-  /* ============================
-     HERO SLIDER
-  ============================ */
-  const slides = [
-    { title: "Your Home, Your Hands, Our Help", text: "Scrubber’s gives you the confidence to tackle any project, big or small." },
-    { title: "Build It. Fix It. Scrub It.", text: "From shelving to shower installs, Scrubber’s connects DIYers with the tools, tips, and pros." },
-    { title: "Smarter DIY Starts Here", text: "Scrubber’s blends expert insight with instant messaging and walkthroughs." }
-  ];
+ /* ============================
+   HERO SLIDER (FIXED)
+============================ */
+const slides = [
+  { 
+    title: "Your Home, Your Hands, Our Help", 
+    text: "Scrubber’s gives you the confidence to tackle any project, big or small." 
+  },
+  { 
+    title: "Build It. Fix It. Scrub It.", 
+    text: "From shelving to shower installs, Scrubber’s connects DIYers with the tools, tips, and pros." 
+  },
+  { 
+    title: "Smarter DIY Starts Here", 
+    text: "Scrubber’s blends expert insight with instant messaging and walkthroughs." 
+  }
+];
 
-  let currentIndex = 0;
-  const heroTitle = document.querySelector(".hero-text h1");
-  const heroText = document.querySelector(".for_text p");
-  const dots = [
-    document.getElementById("dot_1"),
-    document.getElementById("dot_2"),
-    document.getElementById("dot_3")
-  ];
+let currentIndex = 0;
 
-  function updateSlide(index) {
-    if (heroTitle && heroText) {
-      heroTitle.textContent = slides[index].title;
-      heroText.textContent = slides[index].text;
-    }
-    dots.forEach((dot, i) => {
-      if (dot) dot.style.backgroundColor = i === index ? "cyan" : "gray";
-    });
+// Correct selectors for your new HTML
+const heroTitle = document.querySelector(".hero-title");
+const heroText = document.querySelector(".hero-subtitle");
+
+// Correct dot selectors
+const dots = [
+  document.querySelector(".dot-1"),
+  document.querySelector(".dot-2"),
+  document.querySelector(".dot-3")
+];
+
+function updateSlide(index) {
+  if (heroTitle && heroText) {
+    heroTitle.textContent = slides[index].title;
+    heroText.textContent = slides[index].text;
   }
 
+  dots.forEach((dot, i) => {
+    if (dot) {
+      dot.style.backgroundColor = i === index ? "cyan" : "gray";
+    }
+  });
+}
+
+updateSlide(currentIndex);
+
+// Arrows
+document.getElementById("arrow-right")?.addEventListener("click", () => {
+  currentIndex = (currentIndex + 1) % slides.length;
   updateSlide(currentIndex);
+});
 
-  document.getElementById("arrow-right")?.addEventListener("click", () => {
-    currentIndex = (currentIndex + 1) % slides.length;
-    updateSlide(currentIndex);
-  });
-
-  document.getElementById("arrow-left")?.addEventListener("click", () => {
-    currentIndex = (currentIndex - 1 + slides.length) % slides.length;
-    updateSlide(currentIndex);
-  });
-
+document.getElementById("arrow-left")?.addEventListener("click", () => {
+  currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+  updateSlide(currentIndex);
 });
