@@ -137,6 +137,7 @@ width: 100%;
   height: 110px;
   border-radius: 50%;
   overflow: hidden;
+   margin-top: 15%;
   border: 4px solid rgba(255, 255, 255, 0.35);
   position: absolute;
   top: 110px;
