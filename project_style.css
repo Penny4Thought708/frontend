@@ -70,12 +70,12 @@ body::before {
 }
 
 /* ================================
-   CINEMATIC GLASS HEADER
+   FIXED + CINEMATIC HEADER
 ================================== */
 
 header {
   width: 100%;
-  padding: 1rem 2rem;
+  padding: 1.1rem 2.2rem;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -89,13 +89,13 @@ header {
 
   background: linear-gradient(
       to bottom,
-      rgba(3, 7, 18, 0.92),
-      rgba(3, 7, 18, 0.86),
+      rgba(3, 7, 18, 0.94),
+      rgba(3, 7, 18, 0.88),
       rgba(3, 7, 18, 0.78)
     ),
     radial-gradient(
       circle at top left,
-      rgba(79, 70, 229, 0.18),
+      rgba(79, 70, 229, 0.22),
       transparent 60%
     );
 
@@ -105,12 +105,14 @@ header {
 
 /* Title */
 header h1 {
-  font-size: 1.45rem;
+  font-size: 1.55rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink);
-  text-shadow: 0 0 12px rgba(129, 140, 248, 0.35);
+  text-shadow: 0 0 14px rgba(129, 140, 248, 0.35);
+  margin-right: 1rem;
+  white-space: nowrap;
   transition: opacity var(--transition-fast);
 }
 
@@ -122,7 +124,7 @@ header h1:hover {
 .main-nav {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 2.2rem;
 }
 
 .main-nav a {
@@ -167,16 +169,17 @@ header h1:hover {
   display: none;
   background: none;
   border: none;
-  font-size: 1.9rem;
+  font-size: 2rem;
   color: var(--ink);
   cursor: pointer;
+  margin-left: 1rem;
   transition:
     transform var(--transition-fast),
     color var(--transition-fast);
 }
 
 .menu-toggle:hover {
-  transform: scale(1.1);
+  transform: scale(1.12);
   color: var(--accent-emerald);
 }
 
@@ -192,6 +195,10 @@ header h1:hover {
 
   header {
     padding: 1rem 1.4rem;
+  }
+
+  header h1 {
+    font-size: 1.35rem;
   }
 }
 
@@ -406,5 +413,6 @@ footer {
 .footer-nav a:hover {
   color: var(--ink);
 }
+
 
 
