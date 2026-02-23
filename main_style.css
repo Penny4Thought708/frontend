@@ -400,30 +400,56 @@ button {
 ================================ */
 /* ================================
    CINEMATIC SCROLL ANIMATION — IMAGE
+   Enhanced for homepage theme
 ================================ */
 
 .reveal-img {
   opacity: 0;
-  transform: translateY(60px) scale(0.96) rotateX(6deg);
-  filter: blur(8px);
+  transform:
+    translateY(70px)
+    translateZ(0)
+    scale(0.92)
+    rotateX(8deg)
+    rotateY(-4deg);
+  filter: blur(10px) brightness(0.7);
   transition:
-    opacity 1s var(--ease-smooth),
-    transform 1.1s var(--ease-smooth),
-    filter 1s var(--ease-smooth);
+    opacity 1.1s var(--ease-smooth),
+    transform 1.25s var(--ease-smooth),
+    filter 1.1s var(--ease-smooth);
   transform-origin: center;
+  will-change: transform, opacity, filter;
 }
 
 .reveal-img.visible {
   opacity: 1;
-  transform: translateY(0) scale(1) rotateX(0deg);
-  filter: blur(0);
+  transform:
+    translateY(0)
+    translateZ(0)
+    scale(1)
+    rotateX(0deg)
+    rotateY(0deg);
+  filter: blur(0) brightness(1);
+}
+/* Parallax drift */
+.reveal-img.visible {
+  animation: commParallax 6s ease-in-out infinite alternate;
 }
 
-/* Optional: subtle hover lift */
-.feature-comm-img:hover {
-  transform: translateY(-6px);
-  transition: transform 0.4s var(--ease-soft);
+@keyframes commParallax {
+  0% {
+    transform: translateY(0) scale(1) rotateX(0deg) rotateY(0deg);
+  }
+  100% {
+    transform: translateY(-12px) scale(1.015) rotateX(1deg) rotateY(-1deg);
+  }
 }
+
+/* Hover bloom */
+.feature-comm-img:hover {
+  transform: translateY(-8px) scale(1.02);
+  transition: transform 0.45s var(--ease-soft);
+}
+
 
 .feature-communication {
   padding: var(--space-3xl) 0;
@@ -1526,6 +1552,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
