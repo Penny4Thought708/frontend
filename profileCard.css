@@ -1,52 +1,20 @@
 /* ——————————————————————————————
-   DARK / LIGHT MODE SUPPORT
-—————————————————————————————— */
-:root {
-  --profile-bg: rgba(20, 22, 30, 0.65);
-  --profile-text: #fff;
-  --profile-card: rgba(255, 255, 255, 0.06);
-  --profile-card-hover: rgba(255, 255, 255, 0.14);
-  --profile-accent: #4da3ff;
-  --profile-accent-hover: #6bb7ff;
-  --profile-danger: rgba(255, 0, 0, 0.22);
-  --profile-danger-hover: rgba(255, 0, 0, 0.32);
-
-  --profile-border: rgba(255, 255, 255, 0.12);
-  --profile-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-}
-
-.light-mode {
-  --profile-bg: rgba(255, 255, 255, 0.65);
-  --profile-text: #111;
-  --profile-card: rgba(0, 0, 0, 0.06);
-  --profile-card-hover: rgba(0, 0, 0, 0.12);
-  --profile-accent: #007aff;
-  --profile-accent-hover: #3b9aff;
-  --profile-danger: rgba(255, 0, 0, 0.15);
-  --profile-danger-hover: rgba(255, 0, 0, 0.25);
-
-  --profile-border: rgba(0, 0, 0, 0.12);
-  --profile-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-}
-
-/* ——————————————————————————————
    PANEL CONTAINER
 —————————————————————————————— */
 #fullProfileModal {
   width: 28%;
   height: 100%;
-  padding: 14px;
-  display: block;
+  padding: 16px;
 
   background: linear-gradient(
     180deg,
     rgba(10, 12, 20, 0.92),
     rgba(8, 10, 16, 0.92)
   );
-  border: 1px solid var(--profile-border);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 22px;
 
-  box-shadow: var(--profile-shadow);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
   backdrop-filter: blur(22px) saturate(160%);
   animation: fadeInPanel 0.35s ease;
 }
@@ -57,36 +25,19 @@
 }
 
 /* ——————————————————————————————
-   LOADING STATE
-—————————————————————————————— */
-#fullProfileModal.not-loaded .full-profile-content {
-  opacity: 0.45;
-  filter: blur(2px);
-  pointer-events: none;
-}
-
-#fullProfileModal.not-loaded .full-profile-content::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.25);
-  border-radius: 20px;
-}
-
-/* ——————————————————————————————
-   PROFILE CONTENT
+   CONTENT WRAPPER
 —————————————————————————————— */
 .full-profile-content {
   width: 100%;
   height: 100%;
   overflow-y: auto;
 
-  background: var(--profile-bg);
+  background: rgba(20, 22, 30, 0.65);
   border-radius: 20px;
   padding-bottom: 40px;
 
   backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid var(--profile-border);
+  border: 1px solid rgba(255,255,255,0.12);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
   position: relative;
 }
@@ -105,12 +56,12 @@
 
 .full-profile-content::before {
   top: 0;
-  background: linear-gradient(to bottom, var(--profile-bg), transparent);
+  background: linear-gradient(to bottom, rgba(20,22,30,0.65), transparent);
 }
 
 .full-profile-content::after {
   bottom: 0;
-  background: linear-gradient(to top, var(--profile-bg), transparent);
+  background: linear-gradient(to top, rgba(20,22,30,0.65), transparent);
 }
 
 /* ——————————————————————————————
@@ -121,7 +72,7 @@
   height: 160px;
   border-radius: 18px;
   overflow: hidden;
-  margin-bottom: 60px;
+  margin-bottom: 70px;
   position: relative;
   box-shadow: 0 6px 20px rgba(0,0,0,0.35);
 }
@@ -145,26 +96,45 @@
 }
 
 /* ——————————————————————————————
-   TEXT + FIELDS
+   SECTION SYSTEM
 —————————————————————————————— */
-.full-profile-content h2,
-.full-profile-content p,
-.full-profile-content .profile-line,
-.full-profile-content .profile-field,
-.full-profile-content .full-profile-bio {
-  margin-left: 18px;
+.profile-section {
+  padding: 0 18px;
+  margin-bottom: 28px;
+}
+
+.profile-section.identity {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.profile-section.identity h2 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.profile-sub {
+  opacity: 0.85;
+  margin-bottom: 4px;
 }
 
 /* ——————————————————————————————
-   SOCIAL ICONS
+   SOCIAL LINKS
 —————————————————————————————— */
+.profile-section.socials .profile-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
 .profile-line img {
   width: 34px;
   height: 34px;
   border-radius: 12px;
   padding: 6px;
 
-  background: var(--profile-card);
+  background: rgba(255,255,255,0.06);
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
@@ -174,23 +144,36 @@
 }
 
 /* ——————————————————————————————
+   STATUS BLOCK
+—————————————————————————————— */
+.profile-section.status .profile-field {
+  margin: 6px 0;
+  font-size: 15px;
+}
+
+/* ——————————————————————————————
    COPY BUTTONS
 —————————————————————————————— */
+.copy-row {
+  display: flex;
+  gap: 10px;
+}
+
 .copy-row button {
   flex: 1;
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid var(--profile-border);
+  border: 1px solid rgba(255,255,255,0.12);
 
-  background: var(--profile-card);
-  color: var(--profile-text);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
   cursor: pointer;
 
   transition: background 0.25s ease, transform 0.25s ease;
 }
 
 .copy-row button:hover {
-  background: var(--profile-card-hover);
+  background: rgba(255,255,255,0.14);
   transform: translateY(-2px);
 }
 
@@ -198,14 +181,13 @@
    ADD TO CONTACTS
 —————————————————————————————— */
 #saveLookupContact {
-  width: calc(100% - 28px);
-  margin: 0 14px 20px 14px;
+  width: 100%;
   padding: 14px;
 
   border-radius: 16px;
   border: none;
 
-  background: var(--profile-accent);
+  background: #4da3ff;
   color: #fff;
   font-size: 15px;
 
@@ -214,21 +196,26 @@
 }
 
 #saveLookupContact:hover {
-  background: var(--profile-accent-hover);
+  background: #6bb7ff;
   transform: translateY(-2px);
 }
 
 /* ——————————————————————————————
    ACTION BUTTONS
 —————————————————————————————— */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .profile-actions button {
   flex: 1;
   padding: 12px 0;
   border-radius: 14px;
 
-  border: 1px solid var(--profile-border);
-  background: var(--profile-card);
-  color: var(--profile-text);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
 
   font-size: 15px;
   font-weight: 500;
@@ -238,18 +225,17 @@
 }
 
 .profile-actions button:hover {
-  background: var(--profile-card-hover);
+  background: rgba(255,255,255,0.14);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
 .profile-actions .danger {
-  background: var(--profile-danger);
-  color: #fff;
+  background: rgba(255, 0, 0, 0.22);
 }
 
 .profile-actions .danger:hover {
-  background: var(--profile-danger-hover);
+  background: rgba(255, 0, 0, 0.32);
   box-shadow: 0 4px 12px rgba(255,0,0,0.25);
 }
 
@@ -261,8 +247,6 @@
     display: none;
   }
 }
-
-
 
 
 
