@@ -699,63 +699,63 @@ button {
    4. Sections & Cards
 ================================== */
 
+/* ================================
+   SEAMLESS CINEMATIC SECTION BLEND
+================================ */
+
 .section {
-  padding: var(--space-2xl) 0;
   position: relative;
+  padding: var(--space-3xl) 0;
+  z-index: 1;
+
+  /* Transparent base so global background shows through */
+  background: transparent;
 }
 
-/* Cinematic scene divider */
+/* TOP atmospheric fade (blends into previous section) */
+.section::before {
+  content: "";
+  position: absolute;
+  top: -120px;
+  left: 0;
+  width: 100%;
+  height: 200px;
+
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(79,70,229,0.18),
+    rgba(0,0,0,0.0) 70%
+  );
+
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* BOTTOM atmospheric fade (blends into next section) */
 .section::after {
   content: "";
   position: absolute;
-  bottom: -1px;
+  bottom: -120px;
   left: 0;
   width: 100%;
-  height: 80px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(0,0,0,0.4)
+  height: 200px;
+
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgba(56,189,248,0.14),
+    rgba(0,0,0,0.0) 70%
   );
+
+  opacity: 0.35;
   pointer-events: none;
+  z-index: -1;
 }
 
-/* Alternating left/right background split */
-.section:nth-of-type(odd) {
-  background: linear-gradient(
-    to right,
-    rgba(15,23,42,0.45),
-    rgba(15,23,42,0.1)
-  );
-}
-
+/* Remove the old harsh alternating gradients */
+.section:nth-of-type(odd),
 .section:nth-of-type(even) {
-  background: linear-gradient(
-    to left,
-    rgba(15,23,42,0.45),
-    rgba(15,23,42,0.1)
-  );
-}
-
-.section-header {
-  margin-bottom: var(--space-xl);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.section-title {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
-}
-
-.section-subtitle {
-  max-width: 32rem;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  background: transparent !important;
 }
 
 /* Cards grid */
@@ -1552,6 +1552,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
