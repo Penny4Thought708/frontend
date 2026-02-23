@@ -69,7 +69,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle global grid / glow (matches home vibe) */
+/* Subtle global grid / glow */
+
 body::before {
   content: "";
   position: fixed;
@@ -248,8 +249,7 @@ header h1 {
   min-height: calc(100vh - 70px);
   background-color: transparent;
   display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: var(--space-xl);
   max-width: var(--max-width);
   margin: 0 auto;
@@ -257,7 +257,50 @@ header h1 {
   position: relative;
 }
 
-/* Stack on mobile */
+/* Layout ordering */
+
+.search-container {
+  flex: 1 1 100%;
+  order: 0;
+}
+
+#left-side-nav {
+  order: 1;
+}
+
+#social-accounts {
+  order: 2;
+}
+
+#dis-ser {
+  order: 3;
+}
+
+#product_tools_adver {
+  order: 4;
+}
+
+/* Desktop widths */
+
+@media (min-width: 961px) {
+  #left-side-nav {
+    flex: 0 0 280px;
+  }
+
+  #social-accounts {
+    flex: 0 0 260px;
+  }
+
+  #dis-ser {
+    flex: 1 1 auto;
+  }
+
+  #product_tools_adver {
+    flex: 0 0 320px;
+  }
+}
+
+/* Stack on tablet/mobile */
 
 @media (max-width: 960px) {
   #mainbend {
@@ -265,10 +308,33 @@ header h1 {
     align-items: stretch;
     padding-top: var(--space-lg);
   }
+
+  #left-side-nav,
+  #social-accounts,
+  #dis-ser,
+  #product_tools_adver {
+    flex: 1 1 100%;
+  }
+
+  #left-side-nav {
+    order: 1;
+  }
+
+  #social-accounts {
+    order: 2;
+  }
+
+  #dis-ser {
+    order: 3;
+  }
+
+  #product_tools_adver {
+    order: 4;
+  }
 }
 
 /* ================================
-   4. Search Bar (Glass, Hero‑like)
+   4. Search Bar
 ================================== */
 
 .search-container {
@@ -698,19 +764,9 @@ header h1 {
 
 @media (max-width: 768px) {
   #left-side-nav {
-    position: fixed;
-    top: 70px;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    transform: translateY(-120%);
-    opacity: 0;
-    z-index: 45;
-  }
-
-  #left-side-nav.open {
-    transform: translateY(0);
-    opacity: 1;
+    position: relative;
+    top: 0;
+    height: auto;
   }
 }
 
@@ -1207,7 +1263,7 @@ header h1 {
 }
 
 /* ================================
-   11. Footer (Match Home Feel)
+   11. Footer
 ================================== */
 
 footer {
@@ -1268,3 +1324,5 @@ footer {
     align-items: flex-start;
   }
 }
+
+
