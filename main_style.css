@@ -344,17 +344,29 @@ button {
     0 18px 50px rgba(55, 48, 163, 1),
     0 0 0 1px rgba(165, 180, 252, 0.8);
 }
+/* Base button */
 .btn-submit {
     position: relative;
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.25s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
 }
 
-.btn-submit .spinner {
-    width: 18px;
-    height: 18px;
+/* Spinner below the button */
+.spinner {
+    display: block;
+    margin: 12px auto 0;
+    width: 22px;
+    height: 22px;
     border: 3px solid rgba(255,255,255,0.3);
     border-top-color: #fff;
     border-radius: 50%;
@@ -364,14 +376,18 @@ button {
     transition: opacity 0.2s ease;
 }
 
-.btn-submit.loading .btn-text {
-    opacity: 0;
-}
-
-.btn-submit.loading .spinner {
+/* Show spinner when loading */
+.btn-submit.loading + .spinner {
     opacity: 1;
 }
 
+/* Fade button text when loading */
+.btn-submit.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Spinner animation */
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -1368,6 +1384,7 @@ button {
     padding: var(--space-md);
   }
 }
+
 
 
 
