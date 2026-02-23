@@ -14,6 +14,8 @@
 </head>
 
 <body>
+
+  <!-- HEADER -->
   <header>
     <h1>How To Guides</h1>
     <nav class="main-nav">
@@ -25,55 +27,59 @@
     <button class="menu-toggle">☰</button>
   </header>
 
-  <main id="mainbend">
-    <!-- Top search hero -->
-    <section class="search-container">
-      <div class="search-bar">
-        <input type="text" id="search-engine" placeholder="Search project ideas...">
-        <select id="category-filter" title="cell_service">
-          <option value="">All Categories</option>
-          <option value="Beginner">Beginner Builds</option>
-          <option value="Bathroom">Bathroom Upgrades</option>
-          <option value="Storage">Shelving &amp; Storage</option>
-          <option value="Lighting">Lighting &amp; Electrical</option>
-          <option value="Flooring">Flooring &amp; Tiling</option>
-          <option value="Painting">Painting &amp; Finishing</option>
-          <option value="Outdoor">Outdoor Projects</option>
-        </select>
-        <button id="search-btn">Search</button>
-      </div>
-      <!-- Suggestions dropdown -->
-      <div id="suggestions"></div>
-    </section>
+  <!-- SEARCH HERO -->
+  <section class="search-area">
+    <div class="search-bar">
+      <input type="text" id="search-engine" placeholder="Search project ideas...">
+      <select id="category-filter">
+        <option value="">All Categories</option>
+        <option value="Beginner">Beginner Builds</option>
+        <option value="Bathroom">Bathroom Upgrades</option>
+        <option value="Storage">Shelving & Storage</option>
+        <option value="Lighting">Lighting & Electrical</option>
+        <option value="Flooring">Flooring & Tiling</option>
+        <option value="Painting">Painting & Finishing</option>
+        <option value="Outdoor">Outdoor Projects</option>
+      </select>
+      <button id="search-btn">Search</button>
+    </div>
+    <div id="suggestions"></div>
+  </section>
 
-    <!-- Three‑column app layout -->
-    <section class="guides-layout">
-      <!-- Left: phone-style nav -->
-      <aside id="left-side-nav">
+  <!-- MAIN 3‑COLUMN GRID -->
+  <div class="page-grid">
+
+    <!-- LEFT COLUMN — PHONE NAV -->
+    <aside class="left-column">
+      <div id="left-side-nav">
+
         <div class="volume-up"></div>
         <div class="volume-down"></div>
 
-        <ul>
-          <div class="notification_bar">
-            <div class="clock" data-time="12:02"></div>
-            <div class="camera_lens"></div>
-            <div class="cell_service"></div>
-            <div class="signal_bars"></div>
-            <div class="battery"><span class="bolt"></span></div>
-          </div>
+        <div class="notification_bar">
+          <div class="clock" data-time="12:02"></div>
+          <div class="cell_service"></div>
+          <div class="signal_bars"></div>
+          <div class="battery"><span class="bolt"></span></div>
+        </div>
+
+        <ul class="phone-links">
           <li><a href="#">Beginner Builds</a></li>
           <li><a href="#">Bathroom Upgrades</a></li>
-          <li><a href="#">Shelving &amp; Storage</a></li>
-          <li><a href="#">Lighting &amp; Electrical</a></li>
-          <li><a href="#">Flooring &amp; Tiling</a></li>
-          <li><a href="#">Painting &amp; Finishing</a></li>
+          <li><a href="#">Shelving & Storage</a></li>
+          <li><a href="#">Lighting & Electrical</a></li>
+          <li><a href="#">Flooring & Tiling</a></li>
+          <li><a href="#">Painting & Finishing</a></li>
           <li><a href="#">Outdoor Projects</a></li>
         </ul>
 
         <div class="home_btn"></div>
-      </aside>
+      </div>
+    </aside>
 
-      <!-- Center: main content / search engine description -->
+    <!-- CENTER COLUMN — MAIN CONTENT -->
+    <main class="center-column">
+
       <section id="dis-ser">
         <div id="loading">
           <h2>Searching<span class="dots"></span></h2>
@@ -86,80 +92,78 @@
               Welcome to your DIY Project Search Engine; a smart, interactive tool designed to help homeowners,
               makers, and beginners find the right project for their needs.
             </p>
+
             <ul>
-              <li>Intuitive Navigation: With a simple toggle menu, users can open and close the side navigation to explore categories without clutter.</li>
-              <li>Rich Project Library: From Beginner Builds to Bathroom Upgrades, Flooring &amp; Tiling, and Outdoor Projects, each entry includes a description, image, and direct link to detailed guides.</li>
-              <li>Smart Categorization: Projects are grouped into categories like Flooring, Painting, and Storage. Each category comes with tailored forms, allowing users to filter by difficulty, materials, or room size.</li>
-              <li>Responsive Design: Whether on desktop or mobile, the layout adapts seamlessly, ensuring a smooth browsing experience.</li>
+              <li>Intuitive Navigation with a clean toggle menu.</li>
+              <li>Rich Project Library with detailed guides.</li>
+              <li>Smart Categorization for faster filtering.</li>
+              <li>Responsive Design for all devices.</li>
             </ul>
+
             <p>
               This search engine isn’t just about finding projects — it’s about matching your vision with the right tools,
-              tutorials, and confidence to build. By combining structured data with a clean interface, it empowers users
-              to explore, learn, and create at their own pace.
+              tutorials, and confidence to build.
             </p>
           </article>
         </div>
       </section>
 
-      <!-- Right: social + product ads column -->
-      <aside class="right-column">
-        <div id="social-accounts">
-          <div id="twitter-box">
-            <img src="img/twitter.png" alt="Twitter Icon">
-            <a href="https://x.com/">Twitter</a>
-          </div>
-          <div id="linkedIn-box">
-            <img src="img/link.png" alt="LinkedIn Icon">
-            <a href="https://www.linkedin.com/">LinkedIn</a>
-          </div>
-          <div id="outlook-box">
-            <img src="img/outlook.png" alt="Outlook Icon">
-            <a href="mailto:scrubbersDiY@outlook.com" target="_blank" rel="noopener noreferrer">Email</a>
-          </div>
+    </main>
+
+    <!-- RIGHT COLUMN — SOCIAL + ADS -->
+    <aside class="right-column">
+
+      <div id="social-accounts">
+        <div id="twitter-box">
+          <img src="img/twitter.png" alt="Twitter Icon">
+          <a href="https://x.com/">Twitter</a>
         </div>
 
-        <div id="product_tools_adver">
-          <div id="product_one">
-            <h2>Advertise Your DIY Products Here!</h2>
-            <p>
-              Reach thousands of DIY enthusiasts by showcasing your tools, materials, and home improvement products on our platform.
-              Contact us to learn more about advertising opportunities and rates.
-            </p>
-            <a href="mailto:scrubbersDiY@outlook.com" target="_blank" class="advertise-btn">Get in Touch</a>
-          </div>
-
-          <div id="product_two">
-            <h2>Featured Tool: Multi-Tool Kit</h2>
-            <img src="img/multitool.jpg" alt="Multi-Tool Kit" class="product-img">
-            <p>
-              Upgrade your DIY arsenal with our versatile Multi-Tool Kit. Perfect for a variety of home improvement projects,
-              this kit includes a drill, saw, sander, and more. Durable, easy to use, and designed for both beginners and pros.
-            </p>
-            <a href="https://example.com/multitool" class="buy-btn" target="_blank">Buy Now</a>
-          </div>
-
-          <div id="product_three">
-            <h2>Special Offer: 20% Off All Power Tools!</h2>
-            <p>
-              For a limited time, enjoy a 20% discount on our entire range of power tools. From drills to saws,
-              equip yourself with high-quality tools at unbeatable prices. Use code DIY20 at checkout.
-            </p>
-            <a href="https://example.com/powertools" class="shop-btn" target="_blank">Shop Power Tools</a>
-          </div>
-
-          <div id="product_four">
-            <h2>Advertise Your DIY Services Here!</h2>
-            <p>
-              Are you a contractor, handyman, or home improvement service provider? Advertise your services to our engaged DIY community.
-              Contact us to explore advertising options and grow your business.
-            </p>
-            <a href="contact.html" class="service-advertise-btn">Get in Touch</a>
-          </div>
+        <div id="linkedIn-box">
+          <img src="img/link.png" alt="LinkedIn Icon">
+          <a href="https://www.linkedin.com/">LinkedIn</a>
         </div>
-      </aside>
-    </section>
-  </main>
 
+        <div id="outlook-box">
+          <img src="img/outlook.png" alt="Outlook Icon">
+          <a href="mailto:scrubbersDiY@outlook.com">Email</a>
+        </div>
+      </div>
+
+      <div id="product_tools_adver">
+
+        <div class="ad-card">
+          <h2>Advertise Your DIY Products Here!</h2>
+          <p>Showcase your tools and materials to thousands of DIYers.</p>
+          <a href="mailto:scrubbersDiY@outlook.com" class="advertise-btn">Get in Touch</a>
+        </div>
+
+        <div class="ad-card">
+          <h2>Featured Tool: Multi-Tool Kit</h2>
+          <img src="img/multitool.jpg" class="product-img">
+          <p>A versatile kit for drilling, sanding, cutting, and more.</p>
+          <a href="#" class="buy-btn">Buy Now</a>
+        </div>
+
+        <div class="ad-card">
+          <h2>20% Off Power Tools!</h2>
+          <p>Limited-time discount on premium power tools.</p>
+          <a href="#" class="shop-btn">Shop Power Tools</a>
+        </div>
+
+        <div class="ad-card">
+          <h2>Advertise Your Services</h2>
+          <p>Grow your business by reaching DIY homeowners.</p>
+          <a href="contact.html" class="service-advertise-btn">Get in Touch</a>
+        </div>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- FOOTER -->
   <footer>
     <div class="footer-content">
       <p>&copy; 2025 DIY Connect. All rights reserved.</p>
@@ -170,12 +174,13 @@
         <a href="/privacy">Privacy Policy</a>
       </nav>
       <div class="social-links">
-        <a href="https://facebook.com" target="_blank">Facebook</a>
-        <a href="https://twitter.com" target="_blank">Twitter</a>
-        <a href="https://instagram.com" target="_blank">Instagram</a>
+        <a href="https://facebook.com">Facebook</a>
+        <a href="https://twitter.com">Twitter</a>
+        <a href="https://instagram.com">Instagram</a>
       </div>
     </div>
   </footer>
+
 </body>
 
 <script>
@@ -662,3 +667,4 @@ function runSearch() {
 
 
 </html>
+
