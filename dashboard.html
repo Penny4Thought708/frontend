@@ -280,60 +280,76 @@ function _0x4ab1(){const _0x1e7998=['#profilePreview','3560382tPxdyI','toLowerCa
 
 <div id="fullProfileModal" class="floating-window1 panel not-loaded">
 
-        <div class="floating-body full-profile-content">
-          <div class="full-profile-banner">
-            <div id="fullProfileBannerWrapper" class="banner-wrapper">
-              <img id="fullProfileBanner" src="" alt="Banner" loading="lazy" />
-            </div>
-          </div>
+  <div class="floating-body full-profile-content">
 
-          <div class="avatar-frame avatar-glow avatar-pulse online">
-            <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar" loading="lazy" />
-          </div>
-
-          <h2 id="fullProfileName"></h2>
-          <p id="fullProfileEmail"></p>
-          <p id="fullProfilePhone"></p>
-          <div id="fullProfileBio" class="full-profile-bio"></div>
-
-          <div class="profile-line">
-            <img src="https://img.icons8.com/color/48/domain--v1.png" alt="" loading="lazy" />
-            <a id="fullProfileWebsite" href="#" target="_blank" rel="noopener noreferrer"></a>
-          </div>
-
-          <div class="profile-line">
-            <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="" loading="lazy" />
-            <a id="fullProfileTwitter" href="#" target="_blank" rel="noopener noreferrer"></a>
-          </div>
-
-          <div class="profile-line">
-            <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="" loading="lazy" />
-            <a id="fullProfileInstagram" href="#" target="_blank" rel="noopener noreferrer"></a>
-          </div>
-
-                 <p class="profile-field"><strong>Status:</strong> 
-            <span id="fullProfileShowOnline"></span>
-          </p>
-
-          <p class="profile-field"><strong>Messages:</strong> 
-            <span id="fullProfileAllowMessages"></span>
-          </p>
-
-          <div class="copy-row">
-            <button id="copyEmailBtn" type="button">Copy Email</button>
-            <button id="copyPhoneBtn" type="button">Copy Phone</button>
-          </div>
-
-          <button id="saveLookupContact" type="button">➕ Add To Contacts</button>
-
-          <div class="profile-actions">
-            <button id="profileCallBtn" type="button">📞 Call</button>
-            <button id="profileVideoBtn" type="button">🎥 Video</button>
-            <button id="profileBlockBtn" class="danger" type="button">🚫 Block</button>
-          </div>
-
-        </div>
+    <!-- Banner -->
+    <div class="full-profile-banner">
+      <div id="fullProfileBannerWrapper" class="banner-wrapper">
+        <img id="fullProfileBanner" src="" alt="Banner" loading="lazy" />
       </div>
+    </div>
+
+    <!-- Avatar -->
+    <div class="avatar-frame avatar-glow avatar-pulse online">
+      <img id="fullProfileAvatar" class="full-profile-avatar" src="" alt="Avatar" loading="lazy" />
+    </div>
+
+    <!-- Identity Block -->
+    <section class="profile-section identity">
+      <h2 id="fullProfileName"></h2>
+      <p id="fullProfileEmail" class="profile-sub"></p>
+      <p id="fullProfilePhone" class="profile-sub"></p>
+      <div id="fullProfileBio" class="full-profile-bio"></div>
+    </section>
+
+    <!-- Social Links -->
+    <section class="profile-section socials">
+      <div class="profile-line">
+        <img src="https://img.icons8.com/color/48/domain--v1.png" alt="" loading="lazy" />
+        <a id="fullProfileWebsite" href="#" target="_blank" rel="noopener noreferrer"></a>
+      </div>
+
+      <div class="profile-line">
+        <img src="https://img.icons8.com/ios-filled/50/twitterx--v1.png" alt="" loading="lazy" />
+        <a id="fullProfileTwitter" href="#" target="_blank" rel="noopener noreferrer"></a>
+      </div>
+
+      <div class="profile-line">
+        <img src="https://img.icons8.com/fluency/48/instagram-new.png" alt="" loading="lazy" />
+        <a id="fullProfileInstagram" href="#" target="_blank" rel="noopener noreferrer"></a>
+      </div>
+    </section>
+
+    <!-- Status -->
+    <section class="profile-section status">
+      <p class="profile-field"><strong>Status:</strong> <span id="fullProfileShowOnline"></span></p>
+      <p class="profile-field"><strong>Messages:</strong> <span id="fullProfileAllowMessages"></span></p>
+    </section>
+
+    <!-- Copy Buttons -->
+    <section class="profile-section">
+      <div class="copy-row">
+        <button id="copyEmailBtn" type="button">Copy Email</button>
+        <button id="copyPhoneBtn" type="button">Copy Phone</button>
+      </div>
+    </section>
+
+    <!-- Add to Contacts -->
+    <section class="profile-section">
+      <button id="saveLookupContact" type="button">➕ Add To Contacts</button>
+    </section>
+
+    <!-- Actions -->
+    <section class="profile-section">
+      <div class="profile-actions">
+        <button id="profileCallBtn" type="button">📞 Call</button>
+        <button id="profileVideoBtn" type="button">🎥 Video</button>
+        <button id="profileBlockBtn" class="danger" type="button">🚫 Block</button>
+      </div>
+    </section>
+
+  </div>
+</div>
 
        <!-- ============================================================
      FULL-WINDOW CALL MODE (Meet / Discord / iPhone Voice)
@@ -1728,6 +1744,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
