@@ -155,13 +155,11 @@ if (sectionName === "voicemail") {
   /* -----------------------------------------------------------
      THEME TOGGLE
   ----------------------------------------------------------- */
-  toggleBtn?.addEventListener("click", () => {
-    const body = document.body;
-    const isDark = body.classList.contains("dark-mode");
-    body.classList.toggle("dark-mode", !isDark);
-    body.classList.toggle("light-mode", isDark);
-    toggleBtn.setAttribute("aria-pressed", String(!isDark));
-  });
+toggleBtn?.addEventListener("click", () => {
+  const root = document.documentElement;
+  const isDark = root.getAttribute("data-theme") === "dark";
+  root.setAttribute("data-theme", isDark ? "light" : "dark");
+});
 
   /* -----------------------------------------------------------
      RAIL BUTTON ROUTER
@@ -329,6 +327,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
