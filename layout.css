@@ -30,8 +30,7 @@
   --danger-soft: rgba(255, 59, 48, 0.18);
 }
 
-:root[data-theme="dark"],
-body.dark-mode {
+:root[data-theme="dark"] {
   --bg: #05070b;
   --bg-panel: rgba(12, 14, 20, 0.9);
   --bg-glass: rgba(255, 255, 255, 0.06);
@@ -53,7 +52,6 @@ body.dark-mode {
 /* Smooth theme transitions */
 html,
 body,
-
 .messaging-panel,
 .directory-panel,
 .call-window,
@@ -71,7 +69,12 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
     "Segoe UI", sans-serif;
-  background: radial-gradient(   circle at top left,   var(--bg-panel) 0%,   var(--bg) 45%,   var(--bg-elevated) 100% );
+  background: radial-gradient(
+    circle at top left,
+    var(--bg-panel) 0%,
+    var(--bg) 45%,
+    var(--bg-elevated) 100%
+  );
   color: var(--text);
 }
 
@@ -92,11 +95,11 @@ app-header.app-header {
   padding: 10px 18px;
   background: linear-gradient(
     120deg,
-    rgba(10, 12, 20, 0.96),
-    rgba(18, 22, 36, 0.96)
+    var(--bg-panel),
+    var(--bg-elevated)
   );
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 30px var(--shadow);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -203,8 +206,8 @@ app-main {
   max-width: 64px;
   background: linear-gradient(
     180deg,
-    rgba(10, 12, 20, 0.98),
-    rgba(8, 10, 16, 0.98)
+    var(--bg-panel),
+    var(--bg-elevated)
   );
   border-right: 1px solid var(--border);
   display: flex;
@@ -212,7 +215,7 @@ app-main {
   align-items: center;
   padding: 10px 6px;
   gap: 6px;
-  box-shadow: 8px 0 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 8px 0 30px var(--shadow);
   position: relative;
   z-index: 20;
 }
@@ -285,16 +288,16 @@ app-main {
    ============================================================ */
 
 .directory-panel {
-width: 520px;
-    min-width: 320px;
-    max-width: 520px;
-    background: var(--bg-panel);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.4);
-    position: relative;
-    z-index: 10;
+  width: 520px;
+  min-width: 320px;
+  max-width: 520px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 8px 0 30px var(--shadow);
+  position: relative;
+  z-index: 10;
 }
 
 .directory-nav {
@@ -304,8 +307,8 @@ width: 520px;
   border-bottom: 1px solid var(--border-soft);
   background: linear-gradient(
     120deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(255, 255, 255, 0.02)
+    var(--bg-glass),
+    var(--bg-panel)
   );
 }
 
@@ -351,32 +354,30 @@ width: 520px;
   padding: 0;
 }
 
-
-
 /* ============================================================
    UNAVAILABLE TOAST — NEON VAPOR
    ============================================================ */
 
 .unavailable-toast {
-position: fixed;
-    left: 50%;
-    bottom: 50%;
-    text-align: center;
-    transform: translateX(-50%) translateY(20px);
-    width: min(360px, calc(100vw - 40px));
-    height: 90px;
-    background: var(--bg-panel-strong);
-    border: 1px solid var(--border-soft);
-    border-radius: 18px;
-    padding: 14px 18px 16px;
-    box-shadow: var(--glow-soft);
-    backdrop-filter: blur(18px) saturate(1.4);
-    -webkit-backdrop-filter: blur(18px) saturate(1.4);
-    color: var(--fg);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-    z-index: 9999;
+  position: fixed;
+  left: 50%;
+  bottom: 50%;
+  text-align: center;
+  transform: translateX(-50%) translateY(20px);
+  width: min(360px, calc(100vw - 40px));
+  height: 90px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 14px 18px 16px;
+  box-shadow: var(--glow-soft);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  color: var(--fg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 9999;
 }
 
 .unavailable-toast:not(.hidden) {
@@ -433,7 +434,6 @@ position: fixed;
   transform: scale(0.96);
 }
 
-
 /* Image viewer */
 
 .img-viewer {
@@ -450,7 +450,7 @@ position: fixed;
   max-width: 90vw;
   max-height: 90vh;
   border-radius: 12px;
-  box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 30px var(--shadow);
 }
 
 /* Attachment preview */
@@ -514,9 +514,6 @@ position: fixed;
   backdrop-filter: blur(18px);
 }
 
-
-
-
 /* Undo toast */
 
 .undo-toast {
@@ -563,8 +560,6 @@ position: fixed;
   opacity: 0.7;
 }
 
-
-
 /* ============================================================
    FLOATING WINDOWS
    ============================================================ */
@@ -582,8 +577,6 @@ position: fixed;
 .floating-window.hidden {
   display: none;
 }
-
-
 
 /* ============================================================
    MODALS
@@ -652,10 +645,9 @@ position: fixed;
   box-shadow: var(--glow-soft);
 }
 
-
 /* ============================================================
    VOICEMAIL MODAL — PREMIUM GLASS CARD
-============================================================ */
+   ============================================================ */
 
 .voicemail-modal {
   position: fixed;
@@ -672,7 +664,7 @@ position: fixed;
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
 
   border: 1px solid var(--border-soft);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  box-shadow: 0 12px 40px var(--shadow);
 
   display: flex;
   flex-direction: column;
@@ -789,24 +781,23 @@ position: fixed;
    ============================================================ */
 
 .toast {
-position: fixed;
-    right: 0%;
-    top: 90px;
-    height: 50px;
-    transform: translateX(100%) translateY(20px);
-    background: var(--bg-elevated);
-    color: var(--fg);
-    border-radius: 999px;
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: var(--glow-soft);
-    /* opacity: 0; */
-    pointer-events: none;
-    transition: opacity .22s ease, transform .22s ease;
-    z-index: 140;
-    border: 1px solid var(--border-soft);
+  position: fixed;
+  right: 0%;
+  top: 90px;
+  height: 50px;
+  transform: translateX(100%) translateY(20px);
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--glow-soft);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+  z-index: 140;
+  border: 1px solid var(--border-soft);
 }
 
 .toast:not(.hidden) {
@@ -860,7 +851,7 @@ position: fixed;
 
 .site-footer {
   border-top: 1px solid var(--border);
-  background: rgba(5, 7, 11, 0.96);
+  background: var(--bg-panel);
   color: var(--text-soft);
   font-size: 12px;
 }
@@ -961,9 +952,10 @@ button:hover .material-symbols-outlined {
   0%, 100% { height: 6px; opacity: 0.6; }
   50% { height: 18px; opacity: 1; }
 }
+
 /* ============================================================
    MOBILE LAYOUT — CLEAN, CORRECT, PRODUCTION READY
-============================================================ */
+   ============================================================ */
 
 @media (max-width: 900px) {
 
@@ -975,13 +967,15 @@ button:hover .material-symbols-outlined {
     gap: 12px;
     text-align: center;
   }
-/* Prevent rail from covering the message input */
-messaging-panel.messaging-panel {
-  padding-bottom: 60px; /* same height as rail */
-}
-.composer {
-  margin-bottom: 6px;
-}
+
+  /* Prevent rail from covering the message input */
+  messaging-panel.messaging-panel {
+    padding-bottom: 60px;
+  }
+
+  .composer {
+    margin-bottom: 6px;
+  }
 
   .header-left {
     width: 100%;
@@ -1060,17 +1054,14 @@ messaging-panel.messaging-panel {
     overflow: visible;
   }
 
-  /* ============================================================
-     DIRECTORY PANEL → BOTTOM SHEET (70vh, GLASS BLUR)
-  ============================================================ */
+  /* DIRECTORY PANEL → BOTTOM SHEET (70vh, GLASS BLUR) */
 
- directory-panel.directory-panel {
+  directory-panel.directory-panel {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 60px; /* stops above rail */
+    bottom: 60px;
 
-    /* ⭐ FIX: Make it fit the screen */
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -1084,15 +1075,14 @@ messaging-panel.messaging-panel {
 
     border-radius: 18px 18px 0 0;
     border: 1px solid var(--border-soft);
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.45);
+    box-shadow: 0 -10px 40px var(--shadow);
 
     transform: translateY(100%);
     transition: transform .28s cubic-bezier(.17,.89,.32,1.49);
 
     z-index: 999;
     overflow: hidden;
-}
-
+  }
 
   /* DRAG HANDLE INDICATOR */
   directory-panel.directory-panel::before {
