@@ -201,20 +201,28 @@
 </body>
 
 <script>
-/* -----------------------------
-   Navigation Toggle
------------------------------ */
-const menuToggle = document.querySelector('.menu-toggle');
-const sideNav = document.querySelector('#left-side-nav');
+/* ============================================================
+   1. MOBILE NAV TOGGLE
+============================================================ */
+const menuToggle = document.querySelector(".menu-toggle");
+const sideNav = document.querySelector("#left-side-nav");
+
 if (menuToggle && sideNav) {
-  menuToggle.addEventListener('click', () => {
-    sideNav.classList.toggle('open');
+  menuToggle.addEventListener("click", () => {
+    sideNav.classList.toggle("open");
+  });
+
+  // Close nav when clicking outside (mobile)
+  document.addEventListener("click", (e) => {
+    if (!sideNav.contains(e.target) && !menuToggle.contains(e.target)) {
+      sideNav.classList.remove("open");
+    }
   });
 }
 
-/* -----------------------------
-   Project Data
------------------------------ */
+/* ============================================================
+   2. PROJECT DATA
+============================================================ */
 const projects = [
   { name: "Beginner Builds", category: "Beginner", url: "/projects/beginner", desc: "Simple, confidence-boosting projects to get started.", img: "img/beginner.svg" },
   { name: "Bathroom Upgrades", category: "Bathroom", url: "/projects/bathroom", desc: "From faucets to full remodels, we've got you covered.", img: "img/bathroom.jpg" },
@@ -229,9 +237,9 @@ const projects = [
   { name: "Outdoor Projects", category: "Outdoor", url: "/projects/outdoor", desc: "Decks, fences, and landscaping to elevate your exterior.", img: "img/outdoor.svg" }
 ];
 
-/* -----------------------------
-   Category Form Definitions
------------------------------ */
+/* ============================================================
+   3. CATEGORY FORM DEFINITIONS
+============================================================ */
 const categories = [
   {
     name: "Beginner Builds",
@@ -262,9 +270,9 @@ const categories = [
   }
 ];
 
-/* -----------------------------
-   Fuse.js Search Setup
------------------------------ */
+/* ============================================================
+   4. FUSE.JS SEARCH SETUP
+============================================================ */
 const fuse = new Fuse(projects, {
   keys: ["name", "desc"],
   threshold: 0.4
@@ -275,34 +283,14 @@ const button = document.getElementById("search-btn");
 const resultsContainer = document.querySelector("#dis-ser .display-card");
 const loading = document.getElementById("loading");
 const categoryFilter = document.getElementById("category-filter");
+const suggestions = document.getElementById("suggestions");
 
-/* -----------------------------
-   Search Function
------------------------------ */
-function runSearch() {
-  const query = input.value.trim();
-
-  const category = categoryFilter.value;
-  let results = fuse.search(query);
-  
-  if (category) {
-    const introGreeting = document.querySelector('#introduction');
-introGreeting.classList.add("show");
-    results = results.filter(r => r.item.category === category);
-  }
-
-  resultsContainer.innerHTML = "";
-
-  if (results.length > 0) {
-    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
-  } else {
-    resultsContainer.innerHTML = "<p>No results found.</p>";
-  }
-}
-
+/* ============================================================
+   5. CREATE CARD
+============================================================ */
 function createCard(item) {
   const card = document.createElement("div");
-  card.classList.add("card");
+  card.classList.add("card", "reveal-up");
   card.innerHTML = `
     <img src="${item.img}" alt="${item.name}">
     <h3>${item.name}</h3>
@@ -312,16 +300,59 @@ function createCard(item) {
   return card;
 }
 
-/* -----------------------------
-   Event Listeners
------------------------------ */
+/* ============================================================
+   6. VINYL FLOORING SPECIAL CASE
+============================================================ */
+function renderVinylGuide() {
+  const disSer = document.getElementById("dis-ser");
+  if (!disSer) return;
+
+  disSer.innerHTML = `YOUR FULL VINYL GUIDE HTML HERE`; // (Use your existing markup)
+}
+
+/* ============================================================
+   7. MAIN SEARCH FUNCTION
+============================================================ */
+function runSearch() {
+  const query = input.value.trim().toLowerCase();
+  const category = categoryFilter.value;
+
+  // Reset container
+  resultsContainer.innerHTML = "";
+  resultsContainer.classList.remove("show");
+
+  // Special case: vinyl flooring
+  if (query.includes("vinyl flooring") || query.includes("vinyl")) {
+    renderVinylGuide();
+    return;
+  }
+
+  let results = fuse.search(query);
+
+  // Category filter
+  if (category) {
+    results = results.filter(r => r.item.category === category);
+  }
+
+  if (results.length > 0) {
+    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
+  } else {
+    resultsContainer.innerHTML = "<p>No results found.</p>";
+  }
+
+  resultsContainer.classList.add("show");
+}
+
+/* ============================================================
+   8. SEARCH EVENTS
+============================================================ */
 if (button) button.addEventListener("click", runSearch);
 if (input) input.addEventListener("keypress", e => { if (e.key === "Enter") runSearch(); });
 if (categoryFilter) categoryFilter.addEventListener("change", runSearch);
 
-/* -----------------------------
-   Loading Animation (dots)
------------------------------ */
+/* ============================================================
+   9. LOADING DOTS
+============================================================ */
 if (loading) {
   const dotsEl = loading.querySelector(".dots");
   let dotCount = 0;
@@ -333,9 +364,56 @@ if (loading) {
   }, 500);
 }
 
-/* -----------------------------
-   Dynamic Form Renderer
------------------------------ */
+/* ============================================================
+   10. SUGGESTIONS DROPDOWN
+============================================================ */
+function showSuggestions(query) {
+  suggestions.innerHTML = "";
+
+  if (!query) {
+    suggestions.style.display = "none";
+    return;
+  }
+
+  let results = fuse.search(query);
+  const category = categoryFilter.value;
+
+  if (category) {
+    results = results.filter(r => r.item.category === category);
+  }
+
+  if (results.length === 0) {
+    suggestions.style.display = "none";
+    return;
+  }
+
+  results.forEach(r => {
+    const item = document.createElement("div");
+    item.textContent = r.item.name;
+    item.addEventListener("click", () => {
+      input.value = r.item.name;
+      suggestions.style.display = "none";
+      runSearch();
+    });
+    suggestions.appendChild(item);
+  });
+
+  suggestions.style.display = "block";
+}
+
+input.addEventListener("input", () => {
+  showSuggestions(input.value.trim());
+});
+
+document.addEventListener("click", e => {
+  if (!suggestions.contains(e.target) && e.target !== input) {
+    suggestions.style.display = "none";
+  }
+});
+
+/* ============================================================
+   11. DYNAMIC FORM RENDERER
+============================================================ */
 const categorySelect = document.getElementById("category-select");
 const formContainer = document.getElementById("dynamic-form");
 
@@ -371,7 +449,6 @@ function createFormField(field) {
   let input;
   if (field.type === "select") {
     input = document.createElement("select");
-    input.id = field.field;
     field.options.forEach(opt => {
       const option = document.createElement("option");
       option.value = opt;
@@ -380,13 +457,12 @@ function createFormField(field) {
     });
   } else if (field.type === "textarea") {
     input = document.createElement("textarea");
-    input.id = field.field;
   } else {
     input = document.createElement("input");
     input.type = field.type;
-    input.id = field.field;
   }
 
+  input.id = field.field;
   if (field.required) input.required = true;
 
   wrapper.appendChild(label);
@@ -411,278 +487,19 @@ function displaySubmission(data, categoryName) {
   card.classList.add("submission-card");
   card.innerHTML = `
     <h3>${categoryName} Submission</h3>
-    
+    <ul>
       ${Object.entries(data).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join("")}
     </ul>
   `;
 
   outputContainer.appendChild(card);
 }
-
-/* -----------------------------
-   Flooring Filter Example
------------------------------ */
-const flooringCards = document.querySelectorAll(".flooring-card");
-
-function filterFlooring(query) {
-  flooringCards.forEach(card => {
-    const category = card.dataset.category.toLowerCase();
-    card.style.display = category.includes(query.toLowerCase()) ? "block" : "none";
-  });
-}
-const suggestions = document.getElementById("suggestions");
-
-function showSuggestions(query) {
-  suggestions.innerHTML = "";
-  if (!query) {
-    suggestions.style.display = "none";
-    return;
-  }
-
-  let results = fuse.search(query);
-  const category = categoryFilter.value;
-  if (category) {
-    results = results.filter(r => r.item.category === category);
-  }
-
-  if (results.length > 0) {
-    results.forEach(r => {
-      const item = document.createElement("div");
-      item.textContent = r.item.name;
-      item.addEventListener("click", () => {
-        input.value = r.item.name;
-        suggestions.style.display = "none";
-        runSearch();
-      });
-      suggestions.appendChild(item);
-    });
-    suggestions.style.display = "block";
-  } else {
-    suggestions.style.display = "none";
-  }
-}
-
-// Listen for typing
-input.addEventListener("input", () => {
-  showSuggestions(input.value.trim());
-});
-
-// Hide suggestions when clicking outside
-document.addEventListener("click", e => {
-  if (!suggestions.contains(e.target) && e.target !== input) {
-    suggestions.style.display = "none";
-  }
-});
-const vinylGuide = {
-  name: "DIY Vinyl Flooring Installation",
-  category: "Flooring",
-  id: "vinyl-flooring",   // ✅ unique id
-  url: "/projects/flooring/vinyl",
-  desc: "Step-by-step guide to installing vinyl plank flooring.",
-  img: "img/vinyl.jpg"
-};
-
-function runSearch() {
-  const query = input.value.trim().toLowerCase();
-  const category = categoryFilter.value;
-  let results = fuse.search(query);
-
-  if (category) {
-    results = results.filter(r => r.item.category === category);
-  }
-
-  resultsContainer.innerHTML = "";
-
-  // Special case: vinyl flooring
-  if (query.includes("vinyl flooring")) {
-    // Replace the entire #dis-ser content with your full guide markup
-    const disSer = document.getElementById("dis-ser");
-    disSer.innerHTML = `
- <div class="display-card">
-<div class="page-header">
-    <h1>DIY Vinyl Flooring Installation</h1>
-    <p>Beginner-friendly, step-by-step guide with tools, materials, and visuals.</p>
-  </div>
-
-  <div class="content">
-    <!-- Hero -->
-    <section class="hero">
-      <img src="img/vinyl-hero.jpg" alt="Finished room with installed vinyl flooring" class="hero-img" />
-      <div class="hero-text">
-        <h2>Overview</h2>
-        <p>Learn how to prep, plan, and install vinyl plank flooring for a durable, stylish finish. Follow the steps and reference images along the way.</p>
-      </div>
-    </section>
-
-    <!-- Tools and materials -->
-    <section class="materials">
-      <h2>Tools and materials</h2>
-      <div class="grid two">
-        <div class="card">
-          <h3>Tools</h3>
-          <ul class="checklist">
-            <li><strong>Tape measure:</strong> Room and plank measurements</li>
-            <li><strong>Utility knife:</strong> Score and snap planks</li>
-            <li><strong>Straight edge/square:</strong> Clean, straight cuts</li>
-            <li><strong>Rubber mallet:</strong> Seat click-lock joints</li>
-            <li><strong>Pry bar:</strong> Remove baseboards and transitions</li>
-            <li><strong>Level:</strong> Check subfloor flatness</li>
-            <li><strong>Jigsaw:</strong> Complex cuts around vents/trim</li>
-            <li><strong>Knee pads:</strong> Comfort while working</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Materials</h3>
-          <ul class="checklist">
-            <li><strong>Vinyl plank flooring:</strong> Click-lock or glue-down</li>
-            <li><strong>Spacers:</strong> Maintain expansion gap</li>
-            <li><strong>Underlayment:</strong> If required by manufacturer</li>
-            <li><strong>Adhesive:</strong> For glue-down vinyl types</li>
-            <li><strong>Transition strips:</strong> Doorways and edges</li>
-            <li><strong>Finishing nails/caulk:</strong> Reinstall baseboards</li>
-            <li><strong>Cleaning supplies:</strong> Mop and cloths</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- Steps -->
-    <section class="steps">
-      <h2>Step-by-step instructions</h2>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-prep.jpg" alt="Removing baseboards and cleaning the subfloor" />
-        </div>
-        <div class="step-body">
-          <h3>1. Prepare the room</h3>
-          <ul>
-            <li><strong>Clear the space:</strong> Remove furniture, rugs, and baseboards.</li>
-            <li><strong>Clean the subfloor:</strong> Vacuum and mop; ensure dry and dust-free.</li>
-            <li><strong>Level and repair:</strong> Fill low spots and sand high spots; confirm flatness with a level.</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-acclimate.jpg" alt="Boxes of vinyl planks acclimating in the room" />
-        </div>
-        <div class="step-body">
-          <h3>2. Acclimate the flooring</h3>
-          <ul>
-            <li><strong>Acclimate:</strong> Store planks flat in the install room for 48 hours.</li>
-            <li><strong>Environment:</strong> Keep temperature and humidity stable per manufacturer guidance.</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-layout.jpg" alt="Planning layout with spacers and direction" />
-        </div>
-        <div class="step-body">
-          <h3>3. Plan your layout</h3>
-          <ul>
-            <li><strong>Direction:</strong> Run planks parallel to the longest wall or main light source.</li>
-            <li><strong>Expansion gap:</strong> Place spacers for a 1/4 inch gap around all walls and fixed objects.</li>
-            <li><strong>Stagger:</strong> Aim for at least 6 inch stagger between end joints.</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-install.jpg" alt="Click-lock planks being installed in the first row" />
-        </div>
-        <div class="step-body">
-          <h3>4. Start laying planks</h3>
-          <ul>
-            <li><strong>First row:</strong> Begin in a corner, tongue side to the wall, using spacers.</li>
-            <li><strong>Click-lock:</strong> Angle and press to lock; use a mallet and block to seat joints.</li>
-            <li><strong>Glue-down:</strong> Spread adhesive per instructions and roll to set (if applicable).</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-cutting.jpg" alt="Scoring and snapping a plank with a utility knife and straight edge" />
-        </div>
-        <div class="step-body">
-          <h3>5. Cut planks cleanly</h3>
-          <ul>
-            <li><strong>Measure and mark:</strong> Use a square for straight lines.</li>
-            <li><strong>Score and snap:</strong> Deep score with utility knife, then bend to snap.</li>
-            <li><strong>Complex cuts:</strong> Use a jigsaw for vents, door casings, or irregular shapes.</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-continue.jpg" alt="Continuing across the room, checking seams and alignment" />
-        </div>
-        <div class="step-body">
-          <h3>6. Continue across the room</h3>
-          <ul>
-            <li><strong>Check alignment:</strong> Keep seams tight; adjust with mallet as needed.</li>
-            <li><strong>Stagger joints:</strong> Maintain the stagger pattern for stability and aesthetics.</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="step">
-        <div class="step-media">
-          <img src="img/vinyl-finish.jpg" alt="Installing transition strips and reinstalling baseboards" />
-        </div>
-        <div class="step-body">
-          <h3>7. Finish edges and clean</h3>
-          <ul>
-            <li><strong>Remove spacers:</strong> After the field is complete.</li>
-            <li><strong>Transitions:</strong> Install T-molds/reducers at doorways.</li>
-            <li><strong>Baseboards:</strong> Reinstall; caulk and touch-up paint as needed.</li>
-            <li><strong>Clean:</strong> Damp mop; avoid soaking seams.</li>
-          </ul>
-        </div>
-      </article>
-    </section>
-
-    <!-- Safety & tips -->
-    <section class="tips">
-      <h2>Helpful tips</h2>
-      <ul class="tips-list">
-        <li><strong>Manufacturer first:</strong> Always follow the product's official install guide.</li>
-        <li><strong>Underlayment:</strong> Use only if recommended; some vinyl has attached padding.</li>
-        <li><strong>Door clearance:</strong> Check that doors swing freely after install.</li>
-        <li><strong>Moisture:</strong> Avoid pooling water; wipe spills promptly.</li>
-      </ul>
-    </section>
-
-  </div>
-
-
-  </div>
-    `;
-    return; // stop here so Fuse results don’t overwrite
-  }
-
-  // Normal Fuse search fallback
-  if (results.length > 0) {
-    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
-    resultsContainer.classList.add("show");
-  } else {
-    resultsContainer.innerHTML = "<p>No results found.</p>";
-    resultsContainer.classList.add("show");
-  }
-}
-
-
-
 </script>
 
 
 
+
 </html>
+
 
 
