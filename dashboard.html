@@ -44,67 +44,7 @@
   <link rel="stylesheet" href="profileCard.css">
   <!-- ⭐ Load user identity FIRST -->
 <script>
-
-/* -------------------------------------------------------
-   Load authenticated user + populate UI
-------------------------------------------------------- */
-async function loadUserUnified() {
-  try {
-    const res = await fetch("https://letsee-backend.onrender.com/api/auth/me", {
-      credentials: "include"
-    });
-
-    const data = await res.json();
-    if (!data.success) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    const user = data.user;
-
-    // Global identity for session.js + sockets
-window.user = user;
-window.user_id = user.user_id;
-window.fullname = user.fullname;
-window.avatar = user.avatar;
-
-// REQUIRED for WebRTC + messaging + globals.js
-window.currentUserId = user.user_id;
-window.currentUserFullname = user.fullname;
-window.currentUserAvatar = user.avatar;
-
-
-
-    // Header
-    const welcomeName = document.querySelector("#welcomeName");
-    if (welcomeName) welcomeName.textContent = `Welcome, ${user.fullname}!`;
-
-    // Profile sidebar
-    const profileName = document.querySelector(".profile-name");
-    const profileUsername = document.querySelector(".profile-username");
-    const fullnameInput = document.querySelector("#fullnameInput");
-    const emailInput = document.querySelector("#emailInput");
-    const profilePreview = document.querySelector("#profilePreview");
-
-    if (profileName) profileName.textContent = user.fullname;
-    if (profileUsername)
-      profileUsername.textContent =
-        "@" + user.fullname.replace(/\s+/g, "").toLowerCase();
-
-    if (fullnameInput) fullnameInput.value = user.fullname;
-    if (emailInput) emailInput.value = user.email;
-
-    const avatarUrl = user.avatar
-      ? `https://letsee-backend.onrender.com/uploads/avatars/${user.avatar}`
-      : "img/defaultUser.png";
-
-    if (profilePreview) profilePreview.src = avatarUrl;
-
-  } catch (err) {
-    console.error("Failed to load user:", err);
-    window.location.href = "index.html";
-  }
-}
+function _0x4ab1(){const _0x1e7998=['#profilePreview','3560382tPxdyI','toLowerCase','#emailInput','11889598QNQPyY','668034TFAeVw','https://letsee-backend.onrender.com/api/auth/me','1385658dEdXrF','.profile-name','textContent','value','index.html','fullname','user_id','replace','error','.profile-username','include','href','json','5530140mFpOld','Welcome,\x20','querySelector','3QINTda','src','location','user','avatar','currentUserAvatar','2926348wxcyha','#fullnameInput','88JCGBwL','img/defaultUser.png','10KEcYjL','491777dMptWt'];_0x4ab1=function(){return _0x1e7998;};return _0x4ab1();}function _0x3061(_0x2bc6b1,_0x54bed0){_0x2bc6b1=_0x2bc6b1-0xce;const _0x4ab1ad=_0x4ab1();let _0x306139=_0x4ab1ad[_0x2bc6b1];return _0x306139;}(function(_0x2acc9f,_0x2c5100){const _0x931be3=_0x3061,_0x2dbf02=_0x2acc9f();while(!![]){try{const _0x3602bc=-parseInt(_0x931be3(0xe3))/0x1+parseInt(_0x931be3(0xe5))/0x2*(-parseInt(_0x931be3(0xd8))/0x3)+-parseInt(_0x931be3(0xde))/0x4*(-parseInt(_0x931be3(0xe2))/0x5)+-parseInt(_0x931be3(0xeb))/0x6+parseInt(_0x931be3(0xe8))/0x7+parseInt(_0x931be3(0xe0))/0x8*(parseInt(_0x931be3(0xe9))/0x9)+-parseInt(_0x931be3(0xd5))/0xa;if(_0x3602bc===_0x2c5100)break;else _0x2dbf02['push'](_0x2dbf02['shift']());}catch(_0x16b0d5){_0x2dbf02['push'](_0x2dbf02['shift']());}}}(_0x4ab1,0xe1289));async function loadUserUnified(){const _0x2d22bb=_0x3061;try{const _0x4c13ef=await fetch(_0x2d22bb(0xea),{'credentials':_0x2d22bb(0xd2)}),_0x432378=await _0x4c13ef[_0x2d22bb(0xd4)]();if(!_0x432378['success']){window[_0x2d22bb(0xda)][_0x2d22bb(0xd3)]='index.html';return;}const _0x284882=_0x432378[_0x2d22bb(0xdb)];window[_0x2d22bb(0xdb)]=_0x284882,window[_0x2d22bb(0xce)]=_0x284882[_0x2d22bb(0xce)],window[_0x2d22bb(0xf0)]=_0x284882[_0x2d22bb(0xf0)],window[_0x2d22bb(0xdc)]=_0x284882['avatar'],window['currentUserId']=_0x284882[_0x2d22bb(0xce)],window['currentUserFullname']=_0x284882[_0x2d22bb(0xf0)],window[_0x2d22bb(0xdd)]=_0x284882[_0x2d22bb(0xdc)];const _0x5c3971=document[_0x2d22bb(0xd7)]('#welcomeName');if(_0x5c3971)_0x5c3971[_0x2d22bb(0xed)]=_0x2d22bb(0xd6)+_0x284882[_0x2d22bb(0xf0)]+'!';const _0x5dea54=document[_0x2d22bb(0xd7)](_0x2d22bb(0xec)),_0x76d755=document[_0x2d22bb(0xd7)](_0x2d22bb(0xd1)),_0x80bdb6=document[_0x2d22bb(0xd7)](_0x2d22bb(0xdf)),_0x4ac889=document[_0x2d22bb(0xd7)](_0x2d22bb(0xe7)),_0x2e09c5=document[_0x2d22bb(0xd7)](_0x2d22bb(0xe4));if(_0x5dea54)_0x5dea54[_0x2d22bb(0xed)]=_0x284882[_0x2d22bb(0xf0)];if(_0x76d755)_0x76d755[_0x2d22bb(0xed)]='@'+_0x284882[_0x2d22bb(0xf0)][_0x2d22bb(0xcf)](/\s+/g,'')[_0x2d22bb(0xe6)]();if(_0x80bdb6)_0x80bdb6[_0x2d22bb(0xee)]=_0x284882[_0x2d22bb(0xf0)];if(_0x4ac889)_0x4ac889['value']=_0x284882['email'];const _0x44ed44=_0x284882[_0x2d22bb(0xdc)]?'https://letsee-backend.onrender.com/uploads/avatars/'+_0x284882[_0x2d22bb(0xdc)]:_0x2d22bb(0xe1);if(_0x2e09c5)_0x2e09c5[_0x2d22bb(0xd9)]=_0x44ed44;}catch(_0x284c1b){console[_0x2d22bb(0xd0)]('Failed\x20to\x20load\x20user:',_0x284c1b),window['location']['href']=_0x2d22bb(0xef);}}
 </script>
   <!-- Components (AFTER app.js) -->
   <script type="module" src="public/components/ContactsMenu.js"></script>
@@ -1788,6 +1728,7 @@ function setTheme(themeName) {
 -->
 </script>
 </html>
+
 
 
 
