@@ -156,6 +156,7 @@ if (sectionName === "voicemail") {
      THEME TOGGLE
   ----------------------------------------------------------- */
 toggleBtn?.addEventListener("click", () => {
+   console.log("clicked");
   const root = document.documentElement;
   const isDark = root.getAttribute("data-theme") === "dark";
   root.setAttribute("data-theme", isDark ? "light" : "dark");
@@ -327,6 +328,7 @@ const FloatingWindows = {
     });
   }
 };
+
 
 
 
