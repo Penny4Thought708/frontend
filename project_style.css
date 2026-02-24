@@ -627,13 +627,25 @@ footer {
   z-index: 200;
   background: radial-gradient(circle at 50% 40%, #8ea2ff 0%, #4f46e5 45%, #1a1b2e 100%);
   box-shadow:
-    0 0 20px rgba(129,140,248,0.55),
-    0 0 40px rgba(99,102,241,0.35),
-    inset 0 0 12px rgba(255,255,255,0.25);
+    0 0 20px rgba(129, 140, 248, 0.55),
+    0 0 40px rgba(99, 102, 241, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.25);
   animation: holoFloat 3.5s ease-in-out infinite;
   transition: transform .25s ease, box-shadow .25s ease;
-  color: #fff;
-  font-size: 1.6rem;
+
+  /* NEW */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* ensures image stays inside circle */
+  padding: 0;
+}
+
+.assistant-open-btn img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  pointer-events: none; /* prevents accidental clicks on the image */
 }
 
 .assistant-open-btn:hover {
@@ -737,6 +749,7 @@ footer {
     right: 1.4rem;
   }
 }
+
 
 
 
