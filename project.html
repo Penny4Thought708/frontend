@@ -13,63 +13,68 @@
 
 </head>
 
+
 <body>
 
   <!-- ===========================
        HEADER
   =========================== -->
-  <header class="site-header">
-    <div class="site-header-inner">
+ <header class="site-header">
+  <div class="site-header-inner">
 
-      <!-- Logo -->
-      <a href="index.html" class="site-logo interactive">
-        <div class="site-logo-mark"></div>
-        <span class="site-logo-text">How To Guides</span>
-      </a>
+    <!-- Logo -->
+    <a href="/" class="site-logo interactive">
+      <div class="site-logo-mark"></div>
+      <span class="site-logo-text">DIY Hub</span>
+    </a>
 
-      <!-- Primary Navigation -->
-      <nav class="site-nav" aria-label="Primary Navigation">
-        <ul class="site-nav-links">
-          <li><a class="site-nav-link" href="index.html">Home</a></li>
-          <li><a class="site-nav-link" href="services.html">Services</a></li>
-          <li><a class="site-nav-link" href="aboutUs.html">About Us</a></li>
-          <li><a class="site-nav-link" href="contact.html">Contact Us</a></li>
-        </ul>
-      </nav>
+    <!-- Minimal Navigation -->
+    <nav class="site-nav">
+      <ul class="site-nav-links">
+        <li><a class="site-nav-link" href="/">Home</a></li>
+      </ul>
+    </nav>
 
-      <!-- Header Actions -->
-      <div class="site-header-actions">
-        <button class="btn-ghost interactive">Login</button>
-        <button class="btn-primary interactive">Get Started</button>
-        <button class="menu-toggle interactive" aria-label="Toggle Navigation">☰</button>
-      </div>
-
+    <!-- Auth Actions -->
+    <div class="site-header-actions">
+      <button class="btn-ghost interactive">Login</button>
+      <button class="btn-primary interactive">Sign Up</button>
+      <button class="menu-toggle interactive" aria-label="Toggle Menu">☰</button>
     </div>
-  </header>
+
+  </div>
+</header>
+
 
   <!-- ===========================
        SEARCH HERO
   =========================== -->
   <section class="search-area reveal-up">
+    <h1 class="hero-title">Find How‑To Guides for Any DIY Project</h1>
+    <p class="hero-subtitle">
+      Search thousands of step‑by‑step tutorials, from flooring and painting to storage, lighting, and outdoor builds.
+    </p>
+
     <div class="search-bar interactive">
       <input
         type="text"
-        id="search-engine"
-        placeholder="Search project ideas..."
-        aria-label="Search Projects"
+        id="search-input"
+        placeholder="Try: install vinyl flooring, build a shelf, paint a room..."
+        aria-label="Search DIY Guides"
       >
       <select id="category-filter" aria-label="Filter by Category">
         <option value="">All Categories</option>
-        <option value="Beginner">Beginner Builds</option>
-        <option value="Bathroom">Bathroom Upgrades</option>
-        <option value="Storage">Shelving & Storage</option>
-        <option value="Lighting">Lighting & Electrical</option>
-        <option value="Flooring">Flooring & Tiling</option>
-        <option value="Painting">Painting & Finishing</option>
-        <option value="Outdoor">Outdoor Projects</option>
+        <option value="Flooring">Flooring</option>
+        <option value="Painting">Painting</option>
+        <option value="Storage">Storage</option>
+        <option value="Lighting">Lighting</option>
+        <option value="Bathroom">Bathroom</option>
+        <option value="Outdoor">Outdoor</option>
+        <option value="Beginner">Beginner Friendly</option>
       </select>
       <button id="search-btn" class="interactive">Search</button>
     </div>
+
     <div id="suggestions"></div>
   </section>
 
@@ -77,68 +82,55 @@
        MAIN GRID
   =========================== -->
   <main class="page-grid">
-    <!-- CENTER COLUMN — MAIN CONTENT -->
+
+    <!-- CENTER COLUMN -->
     <section class="center-column">
 
-      <section id="dis-ser" class="reveal-up">
-        <div id="loading">
-          <h2>Searching<span class="dots"></span></h2>
+      <!-- Intro / Results Container -->
+      <section id="results-container" class="panel reveal-up">
+
+        <!-- Intro State -->
+        <div id="intro-state">
+          <h2>Welcome to Your DIY Search Engine</h2>
+          <p>
+            Type what you want to build, fix, or upgrade. We’ll show you the best guides, tools, and step‑by‑step instructions.
+          </p>
+
+          <ul class="intro-list">
+            <li>Search by project, room, tool, or material.</li>
+            <li>Filter by category for faster results.</li>
+            <li>Every guide includes tools, materials, and steps.</li>
+            <li>Perfect for beginners and experienced DIYers.</li>
+          </ul>
         </div>
 
-        <div class="display-card panel interactive reveal-up">
-          <article id="introduction">
-            <h2>DIY Project Search Engine</h2>
-            <p>
-              Welcome to your DIY Project Search Engine; a smart, interactive tool designed to help homeowners,
-              makers, and beginners find the right project for their needs.
-            </p>
+        <!-- Search Results -->
+        <div id="search-results"></div>
 
-            <ul>
-              <li>Intuitive navigation with a clean toggle menu.</li>
-              <li>Rich project library with detailed guides.</li>
-              <li>Smart categorization for faster filtering.</li>
-              <li>Responsive design for all devices.</li>
-            </ul>
-
-            <p>
-              This search engine isn’t just about finding projects — it’s about matching your vision with the right tools,
-              tutorials, and confidence to build.
-            </p>
-          </article>
-        </div>
       </section>
 
     </section>
 
-    <!-- RIGHT COLUMN — SOCIAL + ADS -->
+    <!-- RIGHT COLUMN -->
     <aside class="right-column reveal-right">
-      <section id="product_tools_adver">
 
-        <div class="ad-card panel interactive reveal-up">
-          <h2>Advertise Your DIY Products Here!</h2>
-          <p>Showcase your tools and materials to thousands of DIYers.</p>
-          <a href="mailto:scrubbersDiY@outlook.com" class="btn-link interactive">Get in Touch</a>
-        </div>
+      <section class="panel interactive">
+        <h3>Featured Tool</h3>
+        <img src="img/multitool.jpg" alt="Multi‑Tool Kit" class="product-img">
+        <p>A versatile multi‑tool kit perfect for drilling, sanding, cutting, and more.</p>
+        <a href="#" class="btn-link">Buy Now</a>
+      </section>
 
-        <div class="ad-card panel interactive reveal-up">
-          <h2>Featured Tool: Multi-Tool Kit</h2>
-          <img src="img/multitool.jpg" class="product-img" alt="Multi-Tool Kit">
-          <p>A versatile kit for drilling, sanding, cutting, and more.</p>
-          <a href="#" class="btn-link interactive">Buy Now</a>
-        </div>
+      <section class="panel interactive">
+        <h3>Need Professional Help?</h3>
+        <p>Connect with trusted pros who can help finish your DIY project.</p>
+        <a href="/contact.html" class="btn-link">Contact Services</a>
+      </section>
 
-        <div class="ad-card panel interactive reveal-up">
-          <h2>20% Off Power Tools!</h2>
-          <p>Limited-time discount on premium power tools.</p>
-          <a href="#" class="btn-link interactive">Shop Power Tools</a>
-        </div>
-
-        <div class="ad-card panel interactive reveal-up">
-          <h2>Advertise Your Services</h2>
-          <p>Grow your business by reaching DIY homeowners.</p>
-          <a href="contact.html" class="btn-link interactive">Get in Touch</a>
-        </div>
-
+      <section class="panel interactive">
+        <h3>Advertise With Us</h3>
+        <p>Showcase your tools, materials, or services to thousands of DIYers.</p>
+        <a href="mailto:ads@diyhowto.com" class="btn-link">Get in Touch</a>
       </section>
 
     </aside>
@@ -150,18 +142,13 @@
   =========================== -->
   <footer>
     <div class="footer-content">
-      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
-      <nav class="footer-nav" aria-label="Footer Navigation">
-        <a href="/about">About Us</a>
-        <a href="/services">Services</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy Policy</a>
+      <p>© 2025 DIY How‑To. All rights reserved.</p>
+      <nav class="footer-nav">
+        <a href="/about.html">About</a>
+        <a href="/categories.html">Categories</a>
+        <a href="/contact.html">Contact</a>
+        <a href="/privacy.html">Privacy</a>
       </nav>
-      <div class="social-links">
-        <a href="https://facebook.com">Facebook</a>
-        <a href="https://twitter.com">Twitter</a>
-        <a href="https://instagram.com">Instagram</a>
-      </div>
     </div>
   </footer>
 
@@ -170,13 +157,13 @@
   =========================== -->
   <div id="ai-assistant" class="assistant-panel">
     <div class="assistant-header">
-      <h3>How‑To AI Assistant</h3>
+      <h3>DIY AI Assistant</h3>
       <button id="assistant-close" class="assistant-close">×</button>
     </div>
 
     <div id="assistant-messages" class="assistant-messages">
       <div class="assistant-message assistant-bot">
-        Hi! What project are you working on today?
+        Hi! What DIY project can I help you with today?
       </div>
     </div>
 
@@ -184,19 +171,20 @@
       <input
         id="assistant-input"
         type="text"
-        placeholder="Ask about flooring, painting, tools, or any DIY project..."
+        placeholder="Ask me anything about DIY..."
+        aria-label="Ask the AI Assistant"
       >
       <button id="assistant-send" class="assistant-send">Send</button>
     </div>
   </div>
 
-  <!-- Floating hologram button -->
+  <!-- Floating Hologram Button -->
   <button id="assistant-open" class="assistant-open-btn">
-<img width="94" height="94" src="https://img.icons8.com/3d-fluency/94/3d-blue-ai-chatbot-assistant-icon.png" alt="3d-blue-ai-chatbot-assistant-icon"/>
+    <img src="https://img.icons8.com/3d-fluency/94/3d-blue-ai-chatbot-assistant-icon.png" alt="AI Assistant">
   </button>
 
-
 </body>
+
 
 
 <script>
@@ -571,6 +559,7 @@ function displaySubmission(data, categoryName) {
 
 
 </html>
+
 
 
 
