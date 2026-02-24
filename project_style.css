@@ -1,5 +1,5 @@
 /* ================================
-   RESET & ROOT TOKENS
+   RESET & TOKENS
 ================================== */
 *,
 *::before,
@@ -12,8 +12,8 @@
 :root {
   --bg: #05060a;
   --bg-alt: #020308;
-  --bg-glass: rgba(15, 23, 42, 0.82);
-  --bg-glass-soft: rgba(15, 23, 42, 0.7);
+  --bg-glass: rgba(15, 23, 42, 0.9);
+  --bg-glass-soft: rgba(15, 23, 42, 0.78);
   --ink: #f9fafb;
   --muted: #9ca3af;
   --muted-soft: #6b7280;
@@ -41,10 +41,10 @@
 }
 
 /* ================================
-   GLOBAL BACKGROUND
+   GLOBAL
 ================================== */
 body {
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background: radial-gradient(circle at top, #0b1020 0, #020308 52%, #000 100%);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -69,38 +69,32 @@ body::before {
   opacity: 0.6;
 }
 
-/* ================================
-   SITE HEADER (Matches Your HTML)
-================================== */
+a {
+  color: inherit;
+  text-decoration: none;
+}
 
+/* ================================
+   HEADER
+================================== */
 .site-header {
   width: 100%;
   position: sticky;
   top: 0;
   z-index: 100;
   padding: 1rem 2rem;
-
-  /* Cinematic glass shell */
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-
   background: linear-gradient(
       to bottom,
-      rgba(3, 7, 18, 0.94),
-      rgba(3, 7, 18, 0.88),
-      rgba(3, 7, 18, 0.78)
-    ),
-    radial-gradient(
-      circle at top left,
-      rgba(79, 70, 229, 0.22),
-      transparent 60%
+      rgba(3, 7, 18, 0.96),
+      rgba(3, 7, 18, 0.9),
+      rgba(3, 7, 18, 0.82)
     );
-
   border-bottom: 1px solid rgba(148, 163, 184, 0.22);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
 }
 
-/* Inner layout */
 .site-header-inner {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -110,10 +104,7 @@ body::before {
   gap: var(--space-lg);
 }
 
-/* ================================
-   LOGO / TITLE
-================================== */
-
+/* Logo */
 .site-logo {
   display: flex;
   align-items: center;
@@ -124,21 +115,18 @@ body::before {
   width: 32px;
   height: 32px;
   border-radius: 10px;
-
   background: radial-gradient(
     circle at 20% 0%,
     #6366f1 0,
     #4f46e5 40%,
     #111827 100%
   );
-
   box-shadow:
     0 0 0 1px rgba(129, 140, 248, 0.4),
     0 12px 30px rgba(15, 23, 42, 0.9);
 }
 
 .site-logo-text {
-  font-family: var(--font-heading, system-ui);
   font-weight: 700;
   font-size: 1.25rem;
   letter-spacing: 0.02em;
@@ -146,10 +134,7 @@ body::before {
   text-shadow: 0 0 12px rgba(129, 140, 248, 0.35);
 }
 
-/* ================================
-   NAVIGATION
-================================== */
-
+/* Nav */
 .site-nav-links {
   display: flex;
   align-items: center;
@@ -159,7 +144,7 @@ body::before {
 
 .site-nav-link {
   position: relative;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -170,14 +155,12 @@ body::before {
     opacity var(--transition-fast);
 }
 
-/* Hover glow */
 .site-nav-link:hover {
   color: var(--ink);
   transform: translateY(-1px);
   opacity: 1;
 }
 
-/* Underline animation */
 .site-nav-link::after {
   content: "";
   position: absolute;
@@ -194,24 +177,20 @@ body::before {
   width: 100%;
 }
 
-/* ================================
-   HEADER ACTIONS
-================================== */
-
+/* Header actions */
 .site-header-actions {
   display: flex;
   align-items: center;
   gap: 0.8rem;
 }
 
-/* Ghost button */
 .btn-ghost {
   padding: 0.45rem 1rem;
   border-radius: var(--radius-pill);
   font-size: 0.9rem;
   color: var(--muted);
   border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
   transition:
     color var(--transition-fast),
     border-color var(--transition-fast),
@@ -226,25 +205,22 @@ body::before {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.8);
 }
 
-/* Primary button */
 .btn-primary {
   padding: 0.55rem 1.3rem;
   border-radius: var(--radius-pill);
   font-size: 0.9rem;
   font-weight: 600;
   color: #f9fafb;
-
   background: radial-gradient(
     circle at 0 0,
     #818cf8 0,
     #4f46e5 40%,
     #312e81 100%
   );
-
   box-shadow:
     0 14px 40px rgba(55, 48, 163, 0.9),
     0 0 0 1px rgba(129, 140, 248, 0.5);
-
+  border: none;
   transition:
     transform var(--transition-fast),
     box-shadow var(--transition-fast);
@@ -257,10 +233,7 @@ body::before {
     0 0 0 1px rgba(165, 180, 252, 0.8);
 }
 
-/* ================================
-   MOBILE MENU TOGGLE
-================================== */
-
+/* Mobile toggle */
 .menu-toggle {
   display: none;
   background: none;
@@ -277,32 +250,288 @@ body::before {
   transform: scale(1.12);
   color: var(--accent-emerald);
 }
-/* ===========================
-   AI ASSISTANT PANEL
-=========================== */
 
-.assistant-open-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  background: radial-gradient(circle at 0 0, #818cf8, #4f46e5);
-  color: #fff;
+/* ================================
+   SEARCH AREA
+================================== */
+.search-area {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 2.2rem auto;
+  padding: 0 var(--space-md);
+}
+
+.search-bar {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-pill);
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border-soft);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-subtle);
+}
+
+.search-bar input,
+.search-bar select {
+  flex: 1;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-pill);
   border: none;
-  border-radius: 50%;
-  width: 62px;
-  height: 62px;
-  font-size: 1.8rem;
+  background: rgba(15, 23, 42, 0.96);
+  color: var(--ink);
+}
+
+.search-bar button {
+  padding: 0.55rem 1.3rem;
+  border-radius: var(--radius-pill);
+  background: radial-gradient(circle at 0 0, #818cf8 0, #4f46e5 40%, #312e81 100%);
+  border: 1px solid rgba(129, 140, 248, 0.7);
+  color: #fff;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 18px 45px rgba(0,0,0,0.6);
-  transition: transform .25s, box-shadow .25s;
-  z-index: 200;
+  transition: var(--transition-fast);
 }
 
-.assistant-open-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 22px 55px rgba(0,0,0,0.75);
+.search-bar button:hover {
+  transform: translateY(-1px);
 }
 
+/* Suggestions */
+#suggestions {
+  margin-top: 0.5rem;
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+  display: none;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* ================================
+   GRID LAYOUT
+================================== */
+.page-grid {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md) var(--space-xl);
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: var(--space-xl);
+}
+
+@media (max-width: 960px) {
+  .page-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================================
+   LEFT COLUMN — PHONE NAV
+================================== */
+.left-column {
+  position: relative;
+}
+
+.phone-shell {
+  background: var(--bg-glass);
+  border-radius: 28px;
+  padding: 1.4rem;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.phone-links {
+  list-style: none;
+  margin-top: 1rem;
+}
+
+.phone-links li {
+  background: rgba(31, 41, 55, 0.9);
+  padding: 0.7rem;
+  border-radius: 14px;
+  margin-bottom: 0.6rem;
+  text-align: center;
+  transition: var(--transition-fast);
+  cursor: pointer;
+}
+
+.phone-links li:hover {
+  background: rgba(79, 70, 229, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ================================
+   CENTER COLUMN
+================================== */
+.center-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+#dis-ser {
+  background: var(--bg-glass-soft);
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
+}
+
+.display-card {
+  margin-top: var(--space-md);
+}
+
+#introduction {
+  background: rgba(15, 23, 42, 0.9);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-subtle);
+}
+
+#introduction h2 {
+  margin-bottom: 1rem;
+}
+
+#introduction ul {
+  margin: 1rem 0;
+  padding-left: 1.2rem;
+}
+
+#introduction li {
+  margin-bottom: 0.5rem;
+}
+
+/* ================================
+   RIGHT COLUMN
+================================== */
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.social-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-glass);
+  padding: 0.8rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  transition: var(--transition-fast);
+}
+
+.social-card:hover {
+  background: rgba(79, 70, 229, 0.35);
+}
+
+#product_tools_adver .ad-card {
+  margin-top: var(--space-sm);
+}
+
+/* Generic panel/card */
+.panel {
+  background: var(--bg-glass);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-fast);
+}
+
+.panel:hover {
+  transform: translateY(-3px);
+}
+
+/* Buttons in ads */
+.btn-link {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+  text-decoration: underline;
+}
+
+/* ================================
+   FOOTER
+================================== */
+footer {
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), #020617 70%);
+  padding: 1.6rem 0;
+  margin-top: var(--space-xl);
+}
+
+.footer-content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  color: var(--muted-soft);
+  gap: var(--space-sm);
+}
+
+.footer-nav a {
+  color: var(--muted);
+  margin-right: 1rem;
+  font-size: 0.9rem;
+}
+
+.footer-nav a:hover {
+  color: var(--ink);
+}
+
+/* ================================
+   MICRO‑INTERACTIONS
+================================== */
+.interactive {
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    opacity var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.interactive:hover {
+  transform: translateY(-2px);
+}
+
+/* ================================
+   SCROLL REVEAL
+================================== */
+.reveal-up,
+.reveal-left,
+.reveal-right {
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(8px);
+  transition: opacity .9s var(--transition-med),
+              transform 1s var(--transition-med),
+              filter .9s var(--transition-med);
+}
+
+.reveal-left {
+  transform: translateX(-60px);
+}
+
+.reveal-right {
+  transform: translateX(60px);
+}
+
+.visible {
+  opacity: 1;
+  transform: translate(0,0);
+  filter: blur(0);
+}
+
+/* ================================
+   AI ASSISTANT PANEL
+================================== */
 .assistant-panel {
   position: fixed;
   bottom: 0;
@@ -355,6 +584,7 @@ body::before {
   border-radius: 14px;
   max-width: 85%;
   line-height: 1.4;
+  font-size: 0.9rem;
 }
 
 .assistant-bot {
@@ -394,9 +624,82 @@ body::before {
 }
 
 /* ================================
-   MOBILE BEHAVIOR
+   HOLOGRAM AI BUTTON
 ================================== */
+.assistant-open-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  z-index: 200;
+  background: radial-gradient(circle at 50% 40%, #8ea2ff 0%, #4f46e5 45%, #1a1b2e 100%);
+  box-shadow:
+    0 0 20px rgba(129,140,248,0.55),
+    0 0 40px rgba(99,102,241,0.35),
+    inset 0 0 12px rgba(255,255,255,0.25);
+  animation: holoFloat 3.5s ease-in-out infinite;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
 
+.assistant-open-btn:hover {
+  transform: translateY(-6px) scale(1.08);
+  box-shadow:
+    0 0 30px rgba(129,140,248,0.75),
+    0 0 60px rgba(99,102,241,0.55),
+    inset 0 0 18px rgba(255,255,255,0.35);
+}
+
+.assistant-open-btn::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(129,140,248,0.18), transparent 70%);
+  animation: holoPulse 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.assistant-open-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255,255,255,0.25) 40%,
+    transparent 80%
+  );
+  opacity: 0;
+  transform: rotate(0deg);
+  animation: holoSweep 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes holoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes holoPulse {
+  0%, 100% { opacity: 0.25; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(1.15); }
+}
+
+@keyframes holoSweep {
+  0% { opacity: 0; transform: rotate(0deg); }
+  20% { opacity: 0.35; }
+  50% { opacity: 0; }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   RESPONSIVE HEADER
+================================== */
 @media (max-width: 820px) {
   .site-nav {
     display: none;
@@ -413,218 +716,10 @@ body::before {
   .site-logo-text {
     font-size: 1.1rem;
   }
-}
 
-/* ================================
-   SEARCH AREA
-================================== */
-.search-area {
-  width: 100%;
-  max-width: var(--max-width);
-  margin: 2rem auto;
-  padding: 0 var(--space-md);
-}
-
-.search-bar {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.6rem;
-  border-radius: var(--radius-pill);
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid var(--border-soft);
-  backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-subtle);
-}
-
-.search-bar input,
-.search-bar select {
-  flex: 1;
-  padding: 0.55rem 0.9rem;
-  border-radius: var(--radius-pill);
-  border: none;
-  background: rgba(15, 23, 42, 0.96);
-  color: var(--ink);
-}
-
-.search-bar button {
-  padding: 0.55rem 1.3rem;
-  border-radius: var(--radius-pill);
-  background: radial-gradient(circle at 0 0, #818cf8 0, #4f46e5 40%, #312e81 100%);
-  border: 1px solid rgba(129, 140, 248, 0.7);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.search-bar button:hover {
-  transform: translateY(-1px);
-}
-
-/* Suggestions */
-#suggestions {
-  margin-top: 0.5rem;
-  background: #fff;
-  color: #000;
-  border-radius: 12px;
-  display: none;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-/* ================================
-   PAGE GRID (Option B)
-================================== */
-.page-grid {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 var(--space-md) var(--space-xl);
-  display: grid;
-  grid-template-columns: 240px 1fr 300px;
-  gap: var(--space-xl);
-}
-
-/* MOBILE GRID */
-@media (max-width: 960px) {
-  .page-grid {
-    grid-template-columns: 1fr;
+  .search-bar {
+    flex-direction: column;
   }
-}
-
-/* ================================
-   LEFT COLUMN — PHONE NAV
-================================== */
-.left-column {
-  position: relative;
-}
-
-#left-side-nav {
-  background: var(--bg-glass);
-  border-radius: 28px;
-  padding: 1.4rem;
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-soft);
-}
-
-#left-side-nav ul {
-  list-style: none;
-  margin-top: 1rem;
-}
-
-#left-side-nav li {
-  background: rgba(31, 41, 55, 0.9);
-  padding: 0.7rem;
-  border-radius: 14px;
-  margin-bottom: 0.6rem;
-  text-align: center;
-  transition: var(--transition-fast);
-}
-
-#left-side-nav li:hover {
-  background: rgba(79, 70, 229, 0.35);
-  transform: translateY(-2px);
-}
-
-/* ================================
-   CENTER COLUMN — MAIN CONTENT
-================================== */
-.center-column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-#dis-ser {
-  background: var(--bg-glass-soft);
-  padding: var(--space-lg);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-soft);
-}
-
-#introduction {
-  background: rgba(15, 23, 42, 0.9);
-  padding: var(--space-lg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-subtle);
-}
-
-#introduction h2 {
-  margin-bottom: 1rem;
-}
-
-#introduction ul {
-  margin: 1rem 0;
-  padding-left: 1.2rem;
-}
-
-#introduction li {
-  margin-bottom: 0.5rem;
-}
-
-/* ================================
-   RIGHT COLUMN — SOCIAL + ADS
-================================== */
-.right-column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-}
-
-#social-accounts div {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--bg-glass);
-  padding: 0.8rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-soft);
-  transition: var(--transition-fast);
-}
-
-#social-accounts div:hover {
-  background: rgba(79, 70, 229, 0.35);
-}
-
-#product_tools_adver .ad-card {
-  background: var(--bg-glass);
-  padding: var(--space-md);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(34, 197, 94, 0.5);
-  box-shadow: var(--shadow-subtle);
-  transition: var(--transition-fast);
-}
-
-#product_tools_adver .ad-card:hover {
-  transform: translateY(-3px);
-}
-
-/* ================================
-   FOOTER
-================================== */
-footer {
-  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), #020617 70%);
-  padding: 1.6rem 0;
-  margin-top: var(--space-xl);
-}
-
-.footer-content {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 0 var(--space-md);
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  color: var(--muted-soft);
-}
-
-.footer-nav a {
-  color: var(--muted);
-}
-
-.footer-nav a:hover {
-  color: var(--ink);
 }
 
 
