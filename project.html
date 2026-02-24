@@ -309,6 +309,7 @@ const button = document.getElementById("search-btn");
 const resultsContainer = document.getElementById("search-results");
 const categoryFilter = document.getElementById("category-filter");
 const suggestions = document.getElementById("suggestions");
+const introState = document.getElementById("intro-state");
 
 /* ============================================================
    CARD GENERATOR
@@ -331,6 +332,8 @@ function createCard(item) {
    VINYL FLOORING SPECIAL CASE
 ============================================================ */
 function renderVinylGuide() {
+  fadeOutIntro();
+
   resultsContainer.innerHTML = `
     <div class="panel reveal-up">
       <h2>Vinyl Flooring Installation Guide</h2>
@@ -340,12 +343,25 @@ function renderVinylGuide() {
 }
 
 /* ============================================================
+   INTRO FADE‑OUT (CINEMATIC)
+============================================================ */
+function fadeOutIntro() {
+  if (!introState) return;
+  introState.style.opacity = "0";
+  introState.style.transform = "translateY(-10px)";
+  setTimeout(() => {
+    introState.style.display = "none";
+  }, 300);
+}
+
+/* ============================================================
    MAIN SEARCH FUNCTION
 ============================================================ */
 function runSearch() {
   const query = input.value.trim().toLowerCase();
   const category = categoryFilter.value;
 
+  fadeOutIntro();
   resultsContainer.innerHTML = "";
 
   if (query.includes("vinyl")) {
@@ -425,7 +441,6 @@ document.addEventListener("click", e => {
   }
 });
 
-
      
 </script>
 
@@ -433,6 +448,7 @@ document.addEventListener("click", e => {
 
 
 </html>
+
 
 
 
