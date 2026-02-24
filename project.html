@@ -210,11 +210,9 @@
 
 
 <script>
-
-     /* ============================================================
-   AI ASSISTANT PANEL LOGIC
+/* ============================================================
+   AI ASSISTANT PANEL
 ============================================================ */
-
 const assistantPanel = document.getElementById("ai-assistant");
 const assistantOpen = document.getElementById("assistant-open");
 const assistantClose = document.getElementById("assistant-close");
@@ -242,19 +240,14 @@ function sendAssistantMessage() {
   addMessage(text, "assistant-user");
   assistantInput.value = "";
 
-  // Call backend AI endpoint
   fetch("/api/assistant", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: text })
   })
     .then(res => res.json())
-    .then(data => {
-      addMessage(data.reply, "assistant-bot");
-    })
-    .catch(() => {
-      addMessage("Sorry, I couldn’t process that. Try again.", "assistant-bot");
-    });
+    .then(data => addMessage(data.reply, "assistant-bot"))
+    .catch(() => addMessage("Sorry, I couldn’t process that.", "assistant-bot"));
 }
 
 function addMessage(text, type) {
@@ -264,41 +257,27 @@ function addMessage(text, type) {
   assistantMessages.appendChild(msg);
   assistantMessages.scrollTop = assistantMessages.scrollHeight;
 }
+
+/* ============================================================
+   REVEAL ANIMATIONS
+============================================================ */
 const revealEls = document.querySelectorAll(
   ".reveal-up, .reveal-left, .reveal-right"
 );
 
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add("visible");
-    }
-  });
-}, { threshold: 0.15 });
+const revealObserver = new IntersectionObserver(
+  entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add("visible");
+    });
+  },
+  { threshold: 0.15 }
+);
 
 revealEls.forEach(el => revealObserver.observe(el));
 
 /* ============================================================
-   1. MOBILE NAV TOGGLE
-============================================================ */
-const menuToggle = document.querySelector(".menu-toggle");
-const sideNav = document.querySelector("#left-side-nav");
-
-if (menuToggle && sideNav) {
-  menuToggle.addEventListener("click", () => {
-    sideNav.classList.toggle("open");
-  });
-
-  // Close nav when clicking outside (mobile)
-  document.addEventListener("click", (e) => {
-    if (!sideNav.contains(e.target) && !menuToggle.contains(e.target)) {
-      sideNav.classList.remove("open");
-    }
-  });
-}
-
-/* ============================================================
-   2. PROJECT DATA
+   PROJECT DATA (SEARCH INDEX)
 ============================================================ */
 const projects = [
   { name: "Beginner Builds", category: "Beginner", url: "/projects/beginner", desc: "Simple, confidence-boosting projects to get started.", img: "img/beginner.svg" },
@@ -315,98 +294,67 @@ const projects = [
 ];
 
 /* ============================================================
-   3. CATEGORY FORM DEFINITIONS
-============================================================ */
-const categories = [
-  {
-    name: "Beginner Builds",
-    slug: "beginner",
-    form: [
-      { field: "project_title", type: "text", label: "Project Title", required: true },
-      { field: "difficulty", type: "select", label: "Difficulty", options: ["Easy", "Medium", "Hard"], required: true },
-      { field: "tools_needed", type: "textarea", label: "Tools Needed" }
-    ]
-  },
-  {
-    name: "Flooring & Tiling",
-    slug: "flooring",
-    form: [
-      { field: "flooring_type", type: "select", label: "Flooring Type", options: ["Hardwood", "Laminate", "Tile", "Carpet"], required: true },
-      { field: "room_size", type: "number", label: "Room Size (sq ft)" },
-      { field: "finish", type: "text", label: "Finish/Style" }
-    ]
-  },
-  {
-    name: "Painting & Finishing",
-    slug: "painting",
-    form: [
-      { field: "paint_color", type: "text", label: "Paint Color", required: true },
-      { field: "paint_type", type: "select", label: "Paint Type", options: ["Matte", "Gloss", "Satin"] },
-      { field: "coats", type: "number", label: "Number of Coats" }
-    ]
-  }
-];
-
-/* ============================================================
-   4. FUSE.JS SEARCH SETUP
+   FUSE.JS SEARCH ENGINE
 ============================================================ */
 const fuse = new Fuse(projects, {
   keys: ["name", "desc"],
-  threshold: 0.4
+  threshold: 0.35
 });
 
-const input = document.getElementById("search-engine");
+/* ============================================================
+   NEW HTML ELEMENTS
+============================================================ */
+const input = document.getElementById("search-input");
 const button = document.getElementById("search-btn");
-const resultsContainer = document.querySelector("#dis-ser .display-card");
-const loading = document.getElementById("loading");
+const resultsContainer = document.getElementById("search-results");
 const categoryFilter = document.getElementById("category-filter");
 const suggestions = document.getElementById("suggestions");
 
 /* ============================================================
-   5. CREATE CARD
+   CARD GENERATOR
 ============================================================ */
 function createCard(item) {
   const card = document.createElement("div");
-  card.classList.add("card", "reveal-up");
+  card.classList.add("result-card", "reveal-up");
+
   card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}">
+    <img src="${item.img}" alt="${item.name}" class="product-img">
     <h3>${item.name}</h3>
     <p>${item.desc}</p>
-    <a href="${item.url}">Explore</a>
+    <a href="${item.url}" class="btn-link">Explore</a>
   `;
+
   return card;
 }
 
 /* ============================================================
-   6. VINYL FLOORING SPECIAL CASE
+   VINYL FLOORING SPECIAL CASE
 ============================================================ */
 function renderVinylGuide() {
-  const disSer = document.getElementById("dis-ser");
-  if (!disSer) return;
-
-  disSer.innerHTML = `YOUR FULL VINYL GUIDE HTML HERE`; // (Use your existing markup)
+  resultsContainer.innerHTML = `
+    <div class="panel reveal-up">
+      <h2>Vinyl Flooring Installation Guide</h2>
+      <p>This is where your full vinyl flooring guide will go.</p>
+    </div>
+  `;
 }
 
 /* ============================================================
-   7. MAIN SEARCH FUNCTION
+   MAIN SEARCH FUNCTION
 ============================================================ */
 function runSearch() {
   const query = input.value.trim().toLowerCase();
   const category = categoryFilter.value;
 
-  // Reset container
   resultsContainer.innerHTML = "";
-  resultsContainer.classList.remove("show");
 
-  // Special case: vinyl flooring
-  if (query.includes("vinyl flooring") || query.includes("vinyl")) {
+  if (query.includes("vinyl")) {
     renderVinylGuide();
     return;
   }
 
   let results = fuse.search(query);
 
-  // Category filter
   if (category) {
     results = results.filter(r => r.item.category === category);
   }
@@ -414,35 +362,21 @@ function runSearch() {
   if (results.length > 0) {
     results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
   } else {
-    resultsContainer.innerHTML = "<p>No results found.</p>";
+    resultsContainer.innerHTML = `<p class="muted">No results found.</p>`;
   }
-
-  resultsContainer.classList.add("show");
 }
 
 /* ============================================================
-   8. SEARCH EVENTS
+   SEARCH EVENTS
 ============================================================ */
-if (button) button.addEventListener("click", runSearch);
-if (input) input.addEventListener("keypress", e => { if (e.key === "Enter") runSearch(); });
-if (categoryFilter) categoryFilter.addEventListener("change", runSearch);
+button.addEventListener("click", runSearch);
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") runSearch();
+});
+categoryFilter.addEventListener("change", runSearch);
 
 /* ============================================================
-   9. LOADING DOTS
-============================================================ */
-if (loading) {
-  const dotsEl = loading.querySelector(".dots");
-  let dotCount = 0;
-  setInterval(() => {
-    if (dotsEl) {
-      dotCount = (dotCount + 1) % 4;
-      dotsEl.textContent = ".".repeat(dotCount);
-    }
-  }, 500);
-}
-
-/* ============================================================
-   10. SUGGESTIONS DROPDOWN
+   SUGGESTIONS DROPDOWN
 ============================================================ */
 function showSuggestions(query) {
   suggestions.innerHTML = "";
@@ -453,8 +387,8 @@ function showSuggestions(query) {
   }
 
   let results = fuse.search(query);
-  const category = categoryFilter.value;
 
+  const category = categoryFilter.value;
   if (category) {
     results = results.filter(r => r.item.category === category);
   }
@@ -464,14 +398,17 @@ function showSuggestions(query) {
     return;
   }
 
-  results.forEach(r => {
+  results.slice(0, 6).forEach(r => {
     const item = document.createElement("div");
+    item.classList.add("suggestion-item");
     item.textContent = r.item.name;
+
     item.addEventListener("click", () => {
       input.value = r.item.name;
       suggestions.style.display = "none";
       runSearch();
     });
+
     suggestions.appendChild(item);
   });
 
@@ -488,91 +425,6 @@ document.addEventListener("click", e => {
   }
 });
 
-/* ============================================================
-   11. DYNAMIC FORM RENDERER
-============================================================ */
-const categorySelect = document.getElementById("category-select");
-const formContainer = document.getElementById("dynamic-form");
-
-function renderForm(categorySlug) {
-  if (!formContainer) return;
-  formContainer.innerHTML = "";
-
-  const category = categories.find(c => c.slug === categorySlug);
-  if (!category) return;
-
-  category.form.forEach(field => formContainer.appendChild(createFormField(field)));
-
-  const submitBtn = document.createElement("button");
-  submitBtn.type = "submit";
-  submitBtn.textContent = "Submit";
-  formContainer.appendChild(submitBtn);
-
-  formContainer.onsubmit = e => {
-    e.preventDefault();
-    const formData = collectFormData(category.form);
-    displaySubmission(formData, category.name);
-  };
-}
-
-function createFormField(field) {
-  const wrapper = document.createElement("div");
-  wrapper.classList.add("form-field");
-
-  const label = document.createElement("label");
-  label.textContent = field.label;
-  label.setAttribute("for", field.field);
-
-  let input;
-  if (field.type === "select") {
-    input = document.createElement("select");
-    field.options.forEach(opt => {
-      const option = document.createElement("option");
-      option.value = opt;
-      option.textContent = opt;
-      input.appendChild(option);
-    });
-  } else if (field.type === "textarea") {
-    input = document.createElement("textarea");
-  } else {
-    input = document.createElement("input");
-    input.type = field.type;
-  }
-
-  input.id = field.field;
-  if (field.required) input.required = true;
-
-  wrapper.appendChild(label);
-  wrapper.appendChild(input);
-  return wrapper;
-}
-
-function collectFormData(fields) {
-  const data = {};
-  fields.forEach(field => {
-    const el = document.getElementById(field.field);
-    if (el) data[field.field] = el.value;
-  });
-  return data;
-}
-
-function displaySubmission(data, categoryName) {
-  const outputContainer = document.getElementById("form-output");
-  if (!outputContainer) return;
-
-  const card = document.createElement("div");
-  card.classList.add("submission-card");
-  card.innerHTML = `
-    <h3>${categoryName} Submission</h3>
-    <ul>
-      ${Object.entries(data).map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`).join("")}
-    </ul>
-  `;
-
-  outputContainer.appendChild(card);
-}
-
-
 
      
 </script>
@@ -581,6 +433,7 @@ function displaySubmission(data, categoryName) {
 
 
 </html>
+
 
 
 
