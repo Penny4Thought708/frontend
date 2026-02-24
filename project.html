@@ -205,6 +205,33 @@
     </div>
   </div>
 </footer>
+<!-- ===========================
+     AI ASSISTANT PANEL
+=========================== -->
+<div id="ai-assistant" class="assistant-panel">
+  <div class="assistant-header">
+    <h3>How‑To AI Assistant</h3>
+    <button id="assistant-close" class="assistant-close">×</button>
+  </div>
+
+  <div id="assistant-messages" class="assistant-messages">
+    <div class="assistant-message assistant-bot">
+      Hi Jenny! What project are you working on today?
+    </div>
+  </div>
+
+  <div class="assistant-input-area">
+    <input 
+      id="assistant-input" 
+      type="text" 
+      placeholder="Ask me anything about DIY, tools, flooring, painting..."
+    >
+    <button id="assistant-send" class="assistant-send">Send</button>
+  </div>
+</div>
+
+<!-- Floating button to open assistant -->
+<button id="assistant-open" class="assistant-open-btn">💬</button>
 
 </body>
 
@@ -508,6 +535,7 @@ function displaySubmission(data, categoryName) {
 
 
 </html>
+
 
 
 
