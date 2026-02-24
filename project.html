@@ -12,228 +12,237 @@
      <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 
 </head>
+
 <body>
 
-<!-- ===========================
-     HEADER
-=========================== -->
-<header class="site-header">
-  <div class="site-header-inner">
+  <!-- ===========================
+       HEADER
+  =========================== -->
+  <header class="site-header">
+    <div class="site-header-inner">
 
-    <!-- Logo -->
-    <a href="index.html" class="site-logo interactive">
-      <div class="site-logo-mark"></div>
-      <span class="site-logo-text">How To Guides</span>
-    </a>
+      <!-- Logo -->
+      <a href="index.html" class="site-logo interactive">
+        <div class="site-logo-mark"></div>
+        <span class="site-logo-text">How To Guides</span>
+      </a>
 
-    <!-- Primary Navigation -->
-    <nav class="site-nav" aria-label="Primary Navigation">
-      <ul class="site-nav-links">
-        <li><a class="site-nav-link" href="index.html">Home</a></li>
-        <li><a class="site-nav-link" href="services.html">Services</a></li>
-        <li><a class="site-nav-link" href="aboutUs.html">About Us</a></li>
-        <li><a class="site-nav-link" href="contact.html">Contact Us</a></li>
-      </ul>
-    </nav>
+      <!-- Primary Navigation -->
+      <nav class="site-nav" aria-label="Primary Navigation">
+        <ul class="site-nav-links">
+          <li><a class="site-nav-link" href="index.html">Home</a></li>
+          <li><a class="site-nav-link" href="services.html">Services</a></li>
+          <li><a class="site-nav-link" href="aboutUs.html">About Us</a></li>
+          <li><a class="site-nav-link" href="contact.html">Contact Us</a></li>
+        </ul>
+      </nav>
 
-    <!-- Header Actions -->
-    <div class="site-header-actions">
-      <button class="btn-ghost interactive">Login</button>
-      <button class="btn-primary interactive">Get Started</button>
-      <button class="menu-toggle interactive" aria-label="Toggle Navigation">☰</button>
+      <!-- Header Actions -->
+      <div class="site-header-actions">
+        <button class="btn-ghost interactive">Login</button>
+        <button class="btn-primary interactive">Get Started</button>
+        <button class="menu-toggle interactive" aria-label="Toggle Navigation">☰</button>
+      </div>
+
     </div>
+  </header>
 
-  </div>
-</header>
-
-<!-- ===========================
-     SEARCH HERO
-=========================== -->
-<section class="search-area reveal-up">
-  <div class="search-bar interactive">
-    <input type="text" id="search-engine" placeholder="Search project ideas..." aria-label="Search Projects">
-    <select id="category-filter" aria-label="Filter by Category">
-      <option value="">All Categories</option>
-      <option value="Beginner">Beginner Builds</option>
-      <option value="Bathroom">Bathroom Upgrades</option>
-      <option value="Storage">Shelving & Storage</option>
-      <option value="Lighting">Lighting & Electrical</option>
-      <option value="Flooring">Flooring & Tiling</option>
-      <option value="Painting">Painting & Finishing</option>
-      <option value="Outdoor">Outdoor Projects</option>
-    </select>
-    <button id="search-btn" class="interactive">Search</button>
-  </div>
-  <div id="suggestions"></div>
-</section>
-
-<!-- ===========================
-     MAIN GRID
-=========================== -->
-<main class="page-grid">
-
-  <!-- LEFT NAV -->
-  <nav class="left-column reveal-left" aria-label="Category Navigation">
-    <div id="left-side-nav" class="interactive">
-
-      <div class="volume-up"></div>
-      <div class="volume-down"></div>
-
-      <div class="notification_bar">
-        <div class="clock" data-time="12:02"></div>
-        <div class="cell_service"></div>
-        <div class="signal_bars"></div>
-        <div class="battery"><span class="bolt"></span></div>
-      </div>
-
-      <ul class="phone-links">
-        <li><a href="#">Beginner Builds</a></li>
-        <li><a href="#">Bathroom Upgrades</a></li>
-        <li><a href="#">Shelving & Storage</a></li>
-        <li><a href="#">Lighting & Electrical</a></li>
-        <li><a href="#">Flooring & Tiling</a></li>
-        <li><a href="#">Painting & Finishing</a></li>
-        <li><a href="#">Outdoor Projects</a></li>
-      </ul>
-
-      <div class="home_btn interactive"></div>
+  <!-- ===========================
+       SEARCH HERO
+  =========================== -->
+  <section class="search-area reveal-up">
+    <div class="search-bar interactive">
+      <input
+        type="text"
+        id="search-engine"
+        placeholder="Search project ideas..."
+        aria-label="Search Projects"
+      >
+      <select id="category-filter" aria-label="Filter by Category">
+        <option value="">All Categories</option>
+        <option value="Beginner">Beginner Builds</option>
+        <option value="Bathroom">Bathroom Upgrades</option>
+        <option value="Storage">Shelving & Storage</option>
+        <option value="Lighting">Lighting & Electrical</option>
+        <option value="Flooring">Flooring & Tiling</option>
+        <option value="Painting">Painting & Finishing</option>
+        <option value="Outdoor">Outdoor Projects</option>
+      </select>
+      <button id="search-btn" class="interactive">Search</button>
     </div>
-  </nav>
-
-  <!-- CENTER CONTENT -->
-  <section class="center-column">
-
-    <section id="dis-ser" class="reveal-up">
-      <div id="loading">
-        <h2>Searching<span class="dots"></span></h2>
-      </div>
-
-      <div class="display-card interactive reveal-up">
-        <article id="introduction">
-          <h2>DIY Project Search Engine</h2>
-          <p>
-            Welcome to your DIY Project Search Engine; a smart, interactive tool designed to help homeowners,
-            makers, and beginners find the right project for their needs.
-          </p>
-
-          <ul>
-            <li>Intuitive Navigation with a clean toggle menu.</li>
-            <li>Rich Project Library with detailed guides.</li>
-            <li>Smart Categorization for faster filtering.</li>
-            <li>Responsive Design for all devices.</li>
-          </ul>
-
-          <p>
-            This search engine isn’t just about finding projects — it’s about matching your vision with the right tools,
-            tutorials, and confidence to build.
-          </p>
-        </article>
-      </div>
-    </section>
-
+    <div id="suggestions"></div>
   </section>
 
-  <!-- RIGHT COLUMN -->
-  <aside class="right-column reveal-right">
+  <!-- ===========================
+       MAIN GRID
+  =========================== -->
+  <main class="page-grid">
 
-    <section id="social-accounts" aria-label="Social Links">
-      <div id="twitter-box" class="interactive">
-        <img src="img/twitter.png" alt="Twitter Icon">
-        <a href="https://x.com/">Twitter</a>
+    <!-- LEFT COLUMN — PHONE NAV -->
+    <nav class="left-column reveal-left" aria-label="Category Navigation">
+      <div id="left-side-nav" class="phone-shell interactive">
+
+        <div class="volume-up"></div>
+        <div class="volume-down"></div>
+
+        <div class="notification_bar">
+          <div class="clock" data-time="12:02"></div>
+          <div class="cell_service"></div>
+          <div class="signal_bars"></div>
+          <div class="battery"><span class="bolt"></span></div>
+        </div>
+
+        <ul class="phone-links">
+          <li><a href="#">Beginner Builds</a></li>
+          <li><a href="#">Bathroom Upgrades</a></li>
+          <li><a href="#">Shelving & Storage</a></li>
+          <li><a href="#">Lighting & Electrical</a></li>
+          <li><a href="#">Flooring & Tiling</a></li>
+          <li><a href="#">Painting & Finishing</a></li>
+          <li><a href="#">Outdoor Projects</a></li>
+        </ul>
+
+        <div class="home_btn interactive"></div>
       </div>
-
-      <div id="linkedIn-box" class="interactive">
-        <img src="img/link.png" alt="LinkedIn Icon">
-        <a href="https://www.linkedin.com/">LinkedIn</a>
-      </div>
-
-      <div id="outlook-box" class="interactive">
-        <img src="img/outlook.png" alt="Outlook Icon">
-        <a href="mailto:scrubbersDiY@outlook.com">Email</a>
-      </div>
-    </section>
-
-    <section id="product_tools_adver">
-
-      <div class="ad-card interactive reveal-up">
-        <h2>Advertise Your DIY Products Here!</h2>
-        <p>Showcase your tools and materials to thousands of DIYers.</p>
-        <a href="mailto:scrubbersDiY@outlook.com" class="advertise-btn interactive">Get in Touch</a>
-      </div>
-
-      <div class="ad-card interactive reveal-up">
-        <h2>Featured Tool: Multi-Tool Kit</h2>
-        <img src="img/multitool.jpg" class="product-img">
-        <p>A versatile kit for drilling, sanding, cutting, and more.</p>
-        <a href="#" class="buy-btn interactive">Buy Now</a>
-      </div>
-
-      <div class="ad-card interactive reveal-up">
-        <h2>20% Off Power Tools!</h2>
-        <p>Limited-time discount on premium power tools.</p>
-        <a href="#" class="shop-btn interactive">Shop Power Tools</a>
-      </div>
-
-      <div class="ad-card interactive reveal-up">
-        <h2>Advertise Your Services</h2>
-        <p>Grow your business by reaching DIY homeowners.</p>
-        <a href="contact.html" class="service-advertise-btn interactive">Get in Touch</a>
-      </div>
-
-    </section>
-
-  </aside>
-
-</main>
-
-<!-- ===========================
-     FOOTER
-=========================== -->
-<footer>
-  <div class="footer-content">
-    <p>&copy; 2025 DIY Connect. All rights reserved.</p>
-    <nav class="footer-nav" aria-label="Footer Navigation">
-      <a href="/about">About Us</a>
-      <a href="/services">Services</a>
-      <a href="/contact">Contact</a>
-      <a href="/privacy">Privacy Policy</a>
     </nav>
-    <div class="social-links">
-      <a href="https://facebook.com">Facebook</a>
-      <a href="https://twitter.com">Twitter</a>
-      <a href="https://instagram.com">Instagram</a>
+
+    <!-- CENTER COLUMN — MAIN CONTENT -->
+    <section class="center-column">
+
+      <section id="dis-ser" class="reveal-up">
+        <div id="loading">
+          <h2>Searching<span class="dots"></span></h2>
+        </div>
+
+        <div class="display-card panel interactive reveal-up">
+          <article id="introduction">
+            <h2>DIY Project Search Engine</h2>
+            <p>
+              Welcome to your DIY Project Search Engine; a smart, interactive tool designed to help homeowners,
+              makers, and beginners find the right project for their needs.
+            </p>
+
+            <ul>
+              <li>Intuitive navigation with a clean toggle menu.</li>
+              <li>Rich project library with detailed guides.</li>
+              <li>Smart categorization for faster filtering.</li>
+              <li>Responsive design for all devices.</li>
+            </ul>
+
+            <p>
+              This search engine isn’t just about finding projects — it’s about matching your vision with the right tools,
+              tutorials, and confidence to build.
+            </p>
+          </article>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- RIGHT COLUMN — SOCIAL + ADS -->
+    <aside class="right-column reveal-right">
+
+      <section id="social-accounts" aria-label="Social Links">
+        <div id="twitter-box" class="social-card interactive">
+          <img src="img/twitter.png" alt="Twitter Icon">
+          <a href="https://x.com/">Twitter</a>
+        </div>
+
+        <div id="linkedIn-box" class="social-card interactive">
+          <img src="img/link.png" alt="LinkedIn Icon">
+          <a href="https://www.linkedin.com/">LinkedIn</a>
+        </div>
+
+        <div id="outlook-box" class="social-card interactive">
+          <img src="img/outlook.png" alt="Outlook Icon">
+          <a href="mailto:scrubbersDiY@outlook.com">Email</a>
+        </div>
+      </section>
+
+      <section id="product_tools_adver">
+
+        <div class="ad-card panel interactive reveal-up">
+          <h2>Advertise Your DIY Products Here!</h2>
+          <p>Showcase your tools and materials to thousands of DIYers.</p>
+          <a href="mailto:scrubbersDiY@outlook.com" class="btn-link interactive">Get in Touch</a>
+        </div>
+
+        <div class="ad-card panel interactive reveal-up">
+          <h2>Featured Tool: Multi-Tool Kit</h2>
+          <img src="img/multitool.jpg" class="product-img" alt="Multi-Tool Kit">
+          <p>A versatile kit for drilling, sanding, cutting, and more.</p>
+          <a href="#" class="btn-link interactive">Buy Now</a>
+        </div>
+
+        <div class="ad-card panel interactive reveal-up">
+          <h2>20% Off Power Tools!</h2>
+          <p>Limited-time discount on premium power tools.</p>
+          <a href="#" class="btn-link interactive">Shop Power Tools</a>
+        </div>
+
+        <div class="ad-card panel interactive reveal-up">
+          <h2>Advertise Your Services</h2>
+          <p>Grow your business by reaching DIY homeowners.</p>
+          <a href="contact.html" class="btn-link interactive">Get in Touch</a>
+        </div>
+
+      </section>
+
+    </aside>
+
+  </main>
+
+  <!-- ===========================
+       FOOTER
+  =========================== -->
+  <footer>
+    <div class="footer-content">
+      <p>&copy; 2025 DIY Connect. All rights reserved.</p>
+      <nav class="footer-nav" aria-label="Footer Navigation">
+        <a href="/about">About Us</a>
+        <a href="/services">Services</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy Policy</a>
+      </nav>
+      <div class="social-links">
+        <a href="https://facebook.com">Facebook</a>
+        <a href="https://twitter.com">Twitter</a>
+        <a href="https://instagram.com">Instagram</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===========================
+       AI ASSISTANT PANEL
+  =========================== -->
+  <div id="ai-assistant" class="assistant-panel">
+    <div class="assistant-header">
+      <h3>How‑To AI Assistant</h3>
+      <button id="assistant-close" class="assistant-close">×</button>
+    </div>
+
+    <div id="assistant-messages" class="assistant-messages">
+      <div class="assistant-message assistant-bot">
+        Hi! What project are you working on today?
+      </div>
+    </div>
+
+    <div class="assistant-input-area">
+      <input
+        id="assistant-input"
+        type="text"
+        placeholder="Ask about flooring, painting, tools, or any DIY project..."
+      >
+      <button id="assistant-send" class="assistant-send">Send</button>
     </div>
   </div>
-</footer>
-<!-- ===========================
-     AI ASSISTANT PANEL
-=========================== -->
-<div id="ai-assistant" class="assistant-panel">
-  <div class="assistant-header">
-    <h3>How‑To AI Assistant</h3>
-    <button id="assistant-close" class="assistant-close">×</button>
-  </div>
 
-  <div id="assistant-messages" class="assistant-messages">
-    <div class="assistant-message assistant-bot">
-      Hi Jenny! What project are you working on today?
-    </div>
-  </div>
+  <!-- Floating hologram button -->
+  <button id="assistant-open" class="assistant-open-btn">💬</button>
 
-  <div class="assistant-input-area">
-    <input 
-      id="assistant-input" 
-      type="text" 
-      placeholder="Ask me anything about DIY, tools, flooring, painting..."
-    >
-    <button id="assistant-send" class="assistant-send">Send</button>
-  </div>
-</div>
-
-<!-- Floating button to open assistant -->
-<button id="assistant-open" class="assistant-open-btn">💬</button>
 
 </body>
+
 
 <script>
 
@@ -290,6 +299,19 @@ function addMessage(text, type) {
   assistantMessages.appendChild(msg);
   assistantMessages.scrollTop = assistantMessages.scrollHeight;
 }
+const revealEls = document.querySelectorAll(
+  ".reveal-up, .reveal-left, .reveal-right"
+);
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add("visible");
+    }
+  });
+}, { threshold: 0.15 });
+
+revealEls.forEach(el => revealObserver.observe(el));
 
 /* ============================================================
    1. MOBILE NAV TOGGLE
@@ -594,6 +616,7 @@ function displaySubmission(data, categoryName) {
 
 
 </html>
+
 
 
 
