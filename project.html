@@ -262,6 +262,44 @@ function addMessage(text, type) {
   assistantMessages.appendChild(msg);
   assistantMessages.scrollTop = assistantMessages.scrollHeight;
 }
+async function runSearch() {
+  const query = input.value.trim().toLowerCase();
+  const category = categoryFilter.value;
+
+  fadeOutIntro();
+  resultsContainer.innerHTML = "";
+
+  // 1. Local search
+  let results = fuse.search(query);
+
+  // 2. Category filter
+  if (category) {
+    results = results.filter(r => r.item.category === category);
+  }
+
+  // 3. If local results exist → show them
+  if (results.length > 0) {
+    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
+    return;
+  }
+
+  // 4. Otherwise → ask backend to generate a guide
+  const res = await fetch(`/api/generate-guide?q=${encodeURIComponent(query)}`);
+  const data = await res.json();
+
+  // 5. Reload search index
+  await reloadSearchIndex();
+
+  // 6. Run search again with new data
+  const newResults = fuse.search(query);
+  newResults.forEach(r => resultsContainer.appendChild(createCard(r.item)));
+}
+
+async function reloadSearchIndex() {
+  const res = await fetch("/api/search");
+  const data = await res.json();
+  fuse.setCollection(data);
+}
 
 /* ============================================================
    REVEAL ANIMATIONS
@@ -453,6 +491,7 @@ document.addEventListener("click", e => {
 
 
 </html>
+
 
 
 
