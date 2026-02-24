@@ -616,36 +616,31 @@ footer {
    HOLOGRAM AI BUTTON
 ================================== */
 .assistant-open-btn {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: none;
-  cursor: pointer;
-  z-index: 200;
-  background: radial-gradient(circle at 50% 40%, #8ea2ff 0%, #4f46e5 45%, #1a1b2e 100%);
-  box-shadow:
-    0 0 20px rgba(129, 140, 248, 0.55),
-    0 0 40px rgba(99, 102, 241, 0.35),
-    inset 0 0 12px rgba(255, 255, 255, 0.25);
-  animation: holoFloat 3.5s ease-in-out infinite;
-  transition: transform .25s ease, box-shadow .25s ease;
-
-  /* NEW */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden; /* ensures image stays inside circle */
-  padding: 0;
+position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    z-index: 200;
+    background: radial-gradient(circle at 50% 40%, #8ea2ff 0%, #4f46e5 45%, #1a1b2e 100%);
+    box-shadow: inset -20px -15px 19px 17px black, 0 0 20px rgba(129, 140, 248, 0.55), 0 0 40px rgba(99, 102, 241, 0.35), inset 0 0 12px rgba(255, 255, 255, 0.25);
+    animation: holoFloat 3.5s ease-in-out infinite;
+    transition: transform .25s ease, box-shadow .25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
 }
 
 .assistant-open-btn img {
-  width: 70%;
-  height: 70%;
-  object-fit: contain;
-  pointer-events: none; /* prevents accidental clicks on the image */
+    border-radius: 50%;
+    object-fit: contain;
+    pointer-events: none;
+    box-shadow: inset -10px -11px 19px 8px black;
 }
 
 .assistant-open-btn:hover {
@@ -749,6 +744,7 @@ footer {
     right: 1.4rem;
   }
 }
+
 
 
 
