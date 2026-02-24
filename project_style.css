@@ -1,6 +1,6 @@
-/* =========================================
-   RESET & TOKENS
-========================================= */
+/* ============================================================
+   RESET & GLOBAL TOKENS
+============================================================ */
 *,
 *::before,
 *::after {
@@ -10,6 +10,7 @@
 }
 
 :root {
+  /* Colors */
   --bg: #05060a;
   --bg-alt: #0b0e17;
   --glass: rgba(255, 255, 255, 0.06);
@@ -17,26 +18,32 @@
   --border: rgba(255, 255, 255, 0.15);
   --ink: #f8fafc;
   --muted: #94a3b8;
-  --accent: #4f46e5;
-  --accent-soft: rgba(79, 70, 229, 0.25);
+  --accent: #6366f1;
+  --accent-dark: #4338ca;
 
-  --radius: 16px;
+  /* Radii */
+  --radius: 14px;
   --radius-lg: 22px;
 
+  /* Shadows */
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
   --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.35);
 
-  --space-sm: 0.7rem;
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 0.8rem;
   --space-md: 1.2rem;
   --space-lg: 2rem;
   --space-xl: 3rem;
 
+  /* Layout */
   --max-width: 1400px;
 }
 
-/* =========================================
-   GLOBAL
-========================================= */
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: "Oswald", sans-serif;
   background: radial-gradient(circle at top, #0d1220, #05060a 60%);
@@ -49,15 +56,30 @@ a {
   text-decoration: none;
 }
 
-/* =========================================
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Generic interactive hover */
+.interactive {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+/* ============================================================
    HEADER — CINEMATIC STICKY
-========================================= */
+============================================================ */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 200;
   backdrop-filter: blur(20px);
-  background: rgba(10, 12, 20, 0.75);
+  background: rgba(10, 12, 20, 0.85);
   border-bottom: 1px solid var(--border);
   box-shadow: var(--shadow);
 }
@@ -75,14 +97,14 @@ a {
 .site-logo {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-xs);
 }
 
 .site-logo-mark {
   width: 34px;
   height: 34px;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #6366f1, #4338ca);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
 }
 
@@ -93,16 +115,22 @@ a {
 }
 
 /* Navigation */
+.site-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .site-nav-links {
   display: flex;
-  gap: 1.8rem;
+  gap: var(--space-lg);
   list-style: none;
 }
 
 .site-nav-link {
   font-size: 1rem;
   color: var(--muted);
-  transition: 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .site-nav-link:hover {
@@ -112,7 +140,8 @@ a {
 /* Auth Buttons */
 .site-header-actions {
   display: flex;
-  gap: 0.8rem;
+  gap: var(--space-sm);
+  align-items: center;
 }
 
 .btn-ghost {
@@ -121,7 +150,7 @@ a {
   border: 1px solid var(--border);
   background: var(--glass);
   color: var(--muted);
-  transition: 0.2s ease;
+  font-size: 0.95rem;
 }
 
 .btn-ghost:hover {
@@ -132,20 +161,29 @@ a {
 .btn-primary {
   padding: 0.5rem 1.2rem;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #6366f1, #4338ca);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: #fff;
   border: none;
   box-shadow: var(--shadow-soft);
-  transition: 0.2s ease;
+  font-size: 0.95rem;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
 }
 
-/* =========================================
+/* Menu toggle (hidden on desktop) */
+.menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 1.4rem;
+}
+
+/* ============================================================
    SEARCH HERO
-========================================= */
+============================================================ */
 .search-area {
   max-width: var(--max-width);
   margin: var(--space-xl) auto var(--space-lg);
@@ -166,12 +204,13 @@ a {
 /* Search Bar */
 .search-bar {
   display: flex;
-  gap: 0.8rem;
+  gap: var(--space-sm);
   background: var(--glass-strong);
   padding: var(--space-sm);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   backdrop-filter: blur(18px);
+  align-items: center;
 }
 
 .search-bar input,
@@ -182,20 +221,34 @@ a {
   border: none;
   background: rgba(255, 255, 255, 0.05);
   color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.search-bar input::placeholder {
+  color: var(--muted);
 }
 
 .search-bar button {
   padding: 0.7rem 1.4rem;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, #6366f1, #4338ca);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   border: none;
   color: #fff;
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
-/* =========================================
+/* Suggestions container */
+#suggestions {
+  margin-top: var(--space-sm);
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ============================================================
    MAIN GRID — 3 COLUMNS
-========================================= */
+============================================================ */
 .page-grid {
   max-width: var(--max-width);
   margin: 0 auto;
@@ -213,23 +266,77 @@ a {
   gap: var(--space-lg);
 }
 
-/* Panels */
+/* Center Column */
+.center-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Panels / Cards */
 .panel {
   background: var(--glass);
   padding: var(--space-md);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-soft);
-  transition: 0.25s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .panel:hover {
   transform: translateY(-4px);
+  box-shadow: var(--shadow);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
-/* =========================================
-   SEARCH RESULTS
-========================================= */
+/* Panel content basics */
+.panel h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-xs);
+}
+
+.panel p {
+  font-size: 0.95rem;
+  color: var(--muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* Buttons inside panels */
+.btn-link {
+  font-size: 0.9rem;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Product image */
+.product-img {
+  border-radius: var(--radius);
+  margin: var(--space-sm) 0;
+}
+
+/* Intro state */
+#intro-state h2 {
+  font-size: 1.6rem;
+  margin-bottom: var(--space-sm);
+}
+
+#intro-state p {
+  color: var(--muted);
+  margin-bottom: var(--space-sm);
+}
+
+.intro-list {
+  list-style: disc;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.intro-list li + li {
+  margin-top: 0.3rem;
+}
+
+/* Search results container */
 #results-container {
   display: flex;
   flex-direction: column;
@@ -242,6 +349,7 @@ a {
   gap: var(--space-md);
 }
 
+/* Example result card (if you use it later) */
 .result-card {
   background: var(--glass);
   padding: var(--space-md);
@@ -254,9 +362,9 @@ a {
   transform: translateY(-4px);
 }
 
-/* =========================================
+/* ============================================================
    FOOTER
-========================================= */
+============================================================ */
 footer {
   margin-top: var(--space-xl);
   padding: var(--space-lg) 0;
@@ -270,12 +378,28 @@ footer {
   padding: 0 var(--space-md);
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  gap: var(--space-md);
+}
+
+.footer-nav {
+  display: flex;
+  gap: var(--space-sm);
+  font-size: 0.9rem;
+}
+
+.footer-nav a {
   color: var(--muted);
 }
 
-/* =========================================
+.footer-nav a:hover {
+  color: var(--ink);
+}
+
+/* ============================================================
    AI ASSISTANT PANEL
-========================================= */
+============================================================ */
 .assistant-panel {
   position: fixed;
   bottom: 0;
@@ -288,14 +412,97 @@ footer {
   backdrop-filter: blur(22px);
   box-shadow: var(--shadow);
   transform: translateY(100%);
-  transition: 0.4s ease;
+  transition: transform 0.4s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .assistant-panel.open {
   transform: translateY(0);
 }
 
-/* Floating Button */
+.assistant-header {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.assistant-header h3 {
+  font-size: 1rem;
+}
+
+.assistant-close {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.assistant-messages {
+  flex: 1;
+  padding: var(--space-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.assistant-message {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius);
+  max-width: 85%;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.assistant-bot {
+  background: rgba(129, 140, 248, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.3);
+}
+
+.assistant-user {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  align-self: flex-end;
+}
+
+.assistant-input-area {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.assistant-input-area input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.assistant-input-area input::placeholder {
+  color: var(--muted);
+}
+
+.assistant-send {
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* ============================================================
+   HOLOGRAM BUTTON
+============================================================ */
 .assistant-open-btn {
   position: fixed;
   bottom: 2rem;
@@ -303,9 +510,11 @@ footer {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #4338ca);
+  background: radial-gradient(circle at 50% 40%, #8ea2ff 0%, #4f46e5 45%, #1a1b2e 100%);
   border: none;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 20px rgba(129, 140, 248, 0.55),
+              0 0 40px rgba(99, 102, 241, 0.35),
+              inset 0 0 12px rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -318,6 +527,85 @@ footer {
   object-fit: contain;
 }
 
+/* ============================================================
+   REVEAL ANIMATIONS (OPTIONAL)
+============================================================ */
+.reveal-up,
+.reveal-left,
+.reveal-right {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal-left {
+  transform: translateX(-12px);
+}
+
+.reveal-right {
+  transform: translateX(12px);
+}
+
+/* Add .visible via JS if you want scroll reveal */
+.reveal-up.visible,
+.reveal-left.visible,
+.reveal-right.visible {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 1024px) {
+  .page-grid {
+    grid-template-columns: 1.2fr 1fr;
+  }
+
+  .left-column {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .site-header-inner {
+    gap: var(--space-sm);
+  }
+
+  .site-nav {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .right-column {
+    order: 3;
+  }
+
+  .center-column {
+    order: 2;
+  }
+
+  .assistant-panel {
+    width: 100%;
+    right: 0;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
 
 
 
