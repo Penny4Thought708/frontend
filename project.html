@@ -236,6 +236,61 @@
 </body>
 
 <script>
+
+     /* ============================================================
+   AI ASSISTANT PANEL LOGIC
+============================================================ */
+
+const assistantPanel = document.getElementById("ai-assistant");
+const assistantOpen = document.getElementById("assistant-open");
+const assistantClose = document.getElementById("assistant-close");
+const assistantMessages = document.getElementById("assistant-messages");
+const assistantInput = document.getElementById("assistant-input");
+const assistantSend = document.getElementById("assistant-send");
+
+assistantOpen.addEventListener("click", () => {
+  assistantPanel.classList.add("open");
+});
+
+assistantClose.addEventListener("click", () => {
+  assistantPanel.classList.remove("open");
+});
+
+assistantSend.addEventListener("click", sendAssistantMessage);
+assistantInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendAssistantMessage();
+});
+
+function sendAssistantMessage() {
+  const text = assistantInput.value.trim();
+  if (!text) return;
+
+  addMessage(text, "assistant-user");
+  assistantInput.value = "";
+
+  // Call backend AI endpoint
+  fetch("/api/assistant", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text })
+  })
+    .then(res => res.json())
+    .then(data => {
+      addMessage(data.reply, "assistant-bot");
+    })
+    .catch(() => {
+      addMessage("Sorry, I couldn’t process that. Try again.", "assistant-bot");
+    });
+}
+
+function addMessage(text, type) {
+  const msg = document.createElement("div");
+  msg.classList.add("assistant-message", type);
+  msg.textContent = text;
+  assistantMessages.appendChild(msg);
+  assistantMessages.scrollTop = assistantMessages.scrollHeight;
+}
+
 /* ============================================================
    1. MOBILE NAV TOGGLE
 ============================================================ */
@@ -529,12 +584,17 @@ function displaySubmission(data, categoryName) {
 
   outputContainer.appendChild(card);
 }
+
+
+
+     
 </script>
 
 
 
 
 </html>
+
 
 
 
