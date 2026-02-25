@@ -216,6 +216,11 @@
 
 <script>
 /* ============================================================
+   GLOBAL API BASE (REQUIRED FOR RENDER)
+============================================================ */
+const API_BASE = "https://letsee-1.onrender.com";
+
+/* ============================================================
    REVEAL ANIMATIONS
 ============================================================ */
 const revealEls = document.querySelectorAll(
@@ -282,7 +287,6 @@ async function runSearch(page = 1) {
   fadeOutIntro();
   resultsContainer.innerHTML = "";
 
-  // Build backend URL
   const params = new URLSearchParams({
     q: query,
     page,
@@ -291,11 +295,9 @@ async function runSearch(page = 1) {
 
   if (category) params.append("category", category);
 
-  // Fetch results
-  const res = await fetch(`/api/search?${params.toString()}`);
+  const res = await fetch(`${API_BASE}/api/search?${params.toString()}`);
   const data = await res.json();
 
-  // If no results → offer AI generation
   if (data.results.length === 0) {
     resultsContainer.innerHTML = `
       <div class="panel reveal-up">
@@ -311,19 +313,17 @@ async function runSearch(page = 1) {
     return;
   }
 
-  // Render results
   data.results.forEach(item => {
     resultsContainer.appendChild(createCard(item));
   });
 
-  // Render pagination
   renderPagination(data.page, data.totalPages, query);
 }
 
 /* ============================================================
    PAGINATION UI
 ============================================================ */
-function renderPagination(page, totalPages, query) {
+function renderPagination(page, totalPages) {
   if (totalPages <= 1) return;
 
   const pagination = document.createElement("div");
@@ -354,10 +354,11 @@ function renderPagination(page, totalPages, query) {
    AI GUIDE GENERATION FALLBACK
 ============================================================ */
 async function generateGuide(query) {
-  const res = await fetch(`/api/generate-guide?q=${encodeURIComponent(query)}`);
+  const res = await fetch(
+    `${API_BASE}/api/generate-guide?q=${encodeURIComponent(query)}`
+  );
   const data = await res.json();
 
-  // Reload search index and run search again
   await runSearch();
 }
 
@@ -378,7 +379,9 @@ async function showSuggestions() {
     return;
   }
 
-  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
+  const res = await fetch(
+    `${API_BASE}/api/search?q=${encodeURIComponent(query)}&limit=5`
+  );
   const data = await res.json();
 
   if (data.results.length === 0) {
@@ -418,13 +421,14 @@ input.addEventListener("keypress", e => {
   if (e.key === "Enter") runSearch();
 });
 categoryFilter.addEventListener("change", () => runSearch());
-
 </script>
 
 
 
 
+
 </html>
+
 
 
 
