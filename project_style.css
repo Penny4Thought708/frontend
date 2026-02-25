@@ -181,6 +181,45 @@ img {
   font-size: 1.4rem;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.pagination button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.pagination button:hover {
+  background: var(--glass-strong);
+  border-color: var(--ink);
+}
+
+.pagination span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 /* ============================================================
    SEARCH HERO
 ============================================================ */
@@ -240,11 +279,28 @@ img {
 
 /* Suggestions container */
 #suggestions {
-  margin-top: var(--space-sm);
-  text-align: left;
-  color: var(--muted);
-  font-size: 0.9rem;
+  position: absolute;
+  width: 100%;
+  background: var(--glass-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 0.4rem;
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-soft);
+  z-index: 50;
 }
+
+.suggestion-item {
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.2s ease;
+}
+
+.suggestion-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 
 /* ============================================================
    MAIN GRID — 3 COLUMNS
@@ -627,6 +683,7 @@ footer {
     align-items: flex-start;
   }
 }
+
 
 
 
