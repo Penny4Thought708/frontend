@@ -265,12 +265,21 @@ function createCard(item) {
     <img src="${imgSrc}" alt="${item.name}" class="product-img">
     <h3>${item.name}</h3>
     <p>${item.desc}</p>
-    <a href="${item.url}" class="btn-link">Open Guide</a>
+    <button class="btn-link open-guide-btn" data-name="${item.name}">
+      Open Guide
+    </button>
   `;
 
   observeReveal(card);
   return card;
 }
+
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("open-guide-btn")) {
+    const name = e.target.dataset.name;
+    await generateGuide(name);
+  }
+});
 
 /* ============================================================
    RENDER FULL GUIDE INLINE
@@ -516,6 +525,7 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 </html>
+
 
 
 
