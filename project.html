@@ -220,9 +220,6 @@
 </body>
 
 <script>
-/* ============================================================
-   GLOBAL API BASE (REQUIRED FOR RENDER)
-============================================================ */
 const API_BASE = "https://letsee-1.onrender.com";
 
 /* ============================================================
@@ -238,7 +235,7 @@ const revealObserver = new IntersectionObserver(
 );
 
 function observeReveal(el) {
-  revealObserver.observe(el);
+  if (el) revealObserver.observe(el);
 }
 
 /* ============================================================
@@ -258,8 +255,10 @@ function createCard(item) {
   const card = document.createElement("div");
   card.classList.add("result-card", "reveal-up");
 
+  const imgSrc = item.img || "/img/default-guide.jpg";
+
   card.innerHTML = `
-    <img src="${item.img}" alt="${item.name}" class="product-img">
+    <img src="${imgSrc}" alt="${item.name}" class="product-img">
     <h3>${item.name}</h3>
     <p>${item.desc}</p>
     <a href="${item.url}" class="btn-link">Open Guide</a>
@@ -365,9 +364,26 @@ async function generateGuide(query) {
   const res = await fetch(
     `${API_BASE}/api/generate-guide?q=${encodeURIComponent(query)}`
   );
-  await res.json();
+  const data = await res.json();
 
-  await runSearch();
+  resultsContainer.innerHTML = "";
+
+  // Prefer card from backend if provided
+  if (data.card) {
+    const card = createCard(data.card);
+    resultsContainer.appendChild(card);
+    return;
+  }
+
+  // Fallback: build a simple card from the URL + query
+  const fallbackCard = createCard({
+    name: query,
+    desc: `A complete step-by-step guide for ${query}.`,
+    url: data.url,
+    img: "/img/default-guide.jpg"
+  });
+
+  resultsContainer.appendChild(fallbackCard);
 }
 
 /* ============================================================
@@ -433,8 +449,8 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 
-
 </html>
+
 
 
 
