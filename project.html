@@ -220,10 +220,13 @@
 </body>
 
 <script>
+/* ============================================================
+   GLOBAL API BASE
+============================================================ */
 const API_BASE = "https://letsee-1.onrender.com";
 
 /* ============================================================
-   REVEAL ANIMATIONS (DYNAMIC‑SAFE)
+   REVEAL ANIMATIONS (DYNAMIC SAFE)
 ============================================================ */
 const revealObserver = new IntersectionObserver(
   entries => {
@@ -266,6 +269,39 @@ function createCard(item) {
 
   observeReveal(card);
   return card;
+}
+
+/* ============================================================
+   RENDER FULL GUIDE INLINE
+============================================================ */
+function renderGuide(guide) {
+  resultsContainer.innerHTML = `
+    <div class="guide-full reveal-up">
+
+      <h1>${guide.title}</h1>
+      <p class="guide-subtitle">
+        Difficulty: ${guide.difficulty} • Time: ${guide.time}
+      </p>
+
+      <h2>Tools & Materials</h2>
+      <ul class="guide-list">
+        ${guide.tools.map(t => `<li>${t}</li>`).join("")}
+      </ul>
+
+      <h2>Steps</h2>
+      <ol class="guide-steps">
+        ${guide.steps.map(s => `<li>${s}</li>`).join("")}
+      </ol>
+
+      <h2>Safety Notes</h2>
+      <ul class="guide-list">
+        ${guide.safety.map(s => `<li>${s}</li>`).join("")}
+      </ul>
+
+    </div>
+  `;
+
+  observeReveal(resultsContainer.firstElementChild);
 }
 
 /* ============================================================
@@ -358,7 +394,7 @@ function renderPagination(page, totalPages) {
 }
 
 /* ============================================================
-   AI GUIDE GENERATION FALLBACK
+   AI GUIDE GENERATION (INLINE RENDER)
 ============================================================ */
 async function generateGuide(query) {
   const res = await fetch(
@@ -366,24 +402,18 @@ async function generateGuide(query) {
   );
   const data = await res.json();
 
-  resultsContainer.innerHTML = "";
-
-  // Prefer card from backend if provided
-  if (data.card) {
-    const card = createCard(data.card);
-    resultsContainer.appendChild(card);
+  // If backend returns full guide JSON → render inline
+  if (data.guide) {
+    renderGuide(data.guide);
     return;
   }
 
-  // Fallback: build a simple card from the URL + query
-  const fallbackCard = createCard({
-    name: query,
-    desc: `A complete step-by-step guide for ${query}.`,
-    url: data.url,
-    img: "/img/default-guide.jpg"
-  });
-
-  resultsContainer.appendChild(fallbackCard);
+  // Fallback: show card only
+  if (data.card) {
+    resultsContainer.innerHTML = "";
+    const card = createCard(data.card);
+    resultsContainer.appendChild(card);
+  }
 }
 
 /* ============================================================
@@ -450,6 +480,7 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 </html>
+
 
 
 
