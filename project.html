@@ -216,92 +216,6 @@
 
 <script>
 /* ============================================================
-   AI ASSISTANT PANEL
-============================================================ */
-const assistantPanel = document.getElementById("ai-assistant");
-const assistantOpen = document.getElementById("assistant-open");
-const assistantClose = document.getElementById("assistant-close");
-const assistantMessages = document.getElementById("assistant-messages");
-const assistantInput = document.getElementById("assistant-input");
-const assistantSend = document.getElementById("assistant-send");
-
-assistantOpen.addEventListener("click", () => {
-  assistantPanel.classList.add("open");
-});
-
-assistantClose.addEventListener("click", () => {
-  assistantPanel.classList.remove("open");
-});
-
-assistantSend.addEventListener("click", sendAssistantMessage);
-assistantInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") sendAssistantMessage();
-});
-
-function sendAssistantMessage() {
-  const text = assistantInput.value.trim();
-  if (!text) return;
-
-  addMessage(text, "assistant-user");
-  assistantInput.value = "";
-
-  fetch("/api/assistant", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: text })
-  })
-    .then(res => res.json())
-    .then(data => addMessage(data.reply, "assistant-bot"))
-    .catch(() => addMessage("Sorry, I couldn’t process that.", "assistant-bot"));
-}
-
-function addMessage(text, type) {
-  const msg = document.createElement("div");
-  msg.classList.add("assistant-message", type);
-  msg.textContent = text;
-  assistantMessages.appendChild(msg);
-  assistantMessages.scrollTop = assistantMessages.scrollHeight;
-}
-async function runSearch() {
-  const query = input.value.trim().toLowerCase();
-  const category = categoryFilter.value;
-
-  fadeOutIntro();
-  resultsContainer.innerHTML = "";
-
-  // 1. Local search
-  let results = fuse.search(query);
-
-  // 2. Category filter
-  if (category) {
-    results = results.filter(r => r.item.category === category);
-  }
-
-  // 3. If local results exist → show them
-  if (results.length > 0) {
-    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
-    return;
-  }
-
-  // 4. Otherwise → ask backend to generate a guide
-  const res = await fetch(`/api/generate-guide?q=${encodeURIComponent(query)}`);
-  const data = await res.json();
-
-  // 5. Reload search index
-  await reloadSearchIndex();
-
-  // 6. Run search again with new data
-  const newResults = fuse.search(query);
-  newResults.forEach(r => resultsContainer.appendChild(createCard(r.item)));
-}
-
-async function reloadSearchIndex() {
-  const res = await fetch("/api/search");
-  const data = await res.json();
-  fuse.setCollection(data);
-}
-
-/* ============================================================
    REVEAL ANIMATIONS
 ============================================================ */
 const revealEls = document.querySelectorAll(
@@ -320,32 +234,7 @@ const revealObserver = new IntersectionObserver(
 revealEls.forEach(el => revealObserver.observe(el));
 
 /* ============================================================
-   PROJECT DATA (SEARCH INDEX)
-============================================================ */
-const projects = [
-  { name: "Beginner Builds", category: "Beginner", url: "/projects/beginner", desc: "Simple, confidence-boosting projects to get started.", img: "img/beginner.svg" },
-  { name: "Bathroom Upgrades", category: "Bathroom", url: "/projects/bathroom", desc: "From faucets to full remodels, we've got you covered.", img: "img/bathroom.jpg" },
-  { name: "Shelving & Storage", category: "Storage", url: "/projects/storage", desc: "Maximize space with smart, stylish solutions.", img: "img/shelving.jpg" },
-  { name: "Lighting & Electrical", category: "Lighting", url: "/projects/lighting", desc: "Brighten your home with safe, guided installs.", img: "img/lighting.jpg" },
-  { name: "Flooring & Tiling", category: "Flooring", url: "/projects/flooring", desc: "Lay down style with expert flooring and tile tutorials.", img: "img/flooring.jpg" },
-  { name: "Hardwood Flooring", category: "Flooring", url: "/projects/flooring/hardwood", desc: "Classic, durable, and timeless wood flooring projects.", img: "img/hardwood.jpg" },
-  { name: "Laminate Flooring", category: "Flooring", url: "/projects/flooring/laminate", desc: "Affordable, easy-to-install flooring solutions.", img: "img/laminate.jpg" },
-  { name: "Tile Flooring", category: "Flooring", url: "/projects/flooring/tile", desc: "Stylish ceramic, porcelain, and stone tiling guides.", img: "img/tile.jpg" },
-  { name: "Carpet Flooring", category: "Flooring", url: "/projects/flooring/carpet", desc: "Soft, cozy carpeting projects for every room.", img: "img/carpet.jpg" },
-  { name: "Painting & Finishing", category: "Painting", url: "/projects/painting", desc: "Transform your space with pro painting techniques.", img: "img/painting.jpg" },
-  { name: "Outdoor Projects", category: "Outdoor", url: "/projects/outdoor", desc: "Decks, fences, and landscaping to elevate your exterior.", img: "img/outdoor.svg" }
-];
-
-/* ============================================================
-   FUSE.JS SEARCH ENGINE
-============================================================ */
-const fuse = new Fuse(projects, {
-  keys: ["name", "desc"],
-  threshold: 0.35
-});
-
-/* ============================================================
-   NEW HTML ELEMENTS
+   ELEMENTS
 ============================================================ */
 const input = document.getElementById("search-input");
 const button = document.getElementById("search-btn");
@@ -365,28 +254,14 @@ function createCard(item) {
     <img src="${item.img}" alt="${item.name}" class="product-img">
     <h3>${item.name}</h3>
     <p>${item.desc}</p>
-    <a href="${item.url}" class="btn-link">Explore</a>
+    <a href="${item.url}" class="btn-link">Open Guide</a>
   `;
 
   return card;
 }
 
 /* ============================================================
-   VINYL FLOORING SPECIAL CASE
-============================================================ */
-function renderVinylGuide() {
-  fadeOutIntro();
-
-  resultsContainer.innerHTML = `
-    <div class="panel reveal-up">
-      <h2>Vinyl Flooring Installation Guide</h2>
-      <p>This is where your full vinyl flooring guide will go.</p>
-    </div>
-  `;
-}
-
-/* ============================================================
-   INTRO FADE‑OUT (CINEMATIC)
+   INTRO FADE‑OUT
 ============================================================ */
 function fadeOutIntro() {
   if (!introState) return;
@@ -398,85 +273,136 @@ function fadeOutIntro() {
 }
 
 /* ============================================================
-   MAIN SEARCH FUNCTION
+   MAIN SEARCH FUNCTION (BACKEND POWERED)
 ============================================================ */
-function runSearch() {
-  const query = input.value.trim().toLowerCase();
+async function runSearch(page = 1) {
+  const query = input.value.trim();
   const category = categoryFilter.value;
 
   fadeOutIntro();
   resultsContainer.innerHTML = "";
 
-  if (query.includes("vinyl")) {
-    renderVinylGuide();
+  // Build backend URL
+  const params = new URLSearchParams({
+    q: query,
+    page,
+    limit: 10
+  });
+
+  if (category) params.append("category", category);
+
+  // Fetch results
+  const res = await fetch(`/api/search?${params.toString()}`);
+  const data = await res.json();
+
+  // If no results → offer AI generation
+  if (data.results.length === 0) {
+    resultsContainer.innerHTML = `
+      <div class="panel reveal-up">
+        <h3>No results found</h3>
+        <p>Would you like to generate a new guide for "${query}"?</p>
+        <button id="generate-btn" class="btn-primary">Generate Guide</button>
+      </div>
+    `;
+
+    document.getElementById("generate-btn").onclick = () =>
+      generateGuide(query);
+
     return;
   }
 
-  let results = fuse.search(query);
+  // Render results
+  data.results.forEach(item => {
+    resultsContainer.appendChild(createCard(item));
+  });
 
-  if (category) {
-    results = results.filter(r => r.item.category === category);
-  }
-
-  if (results.length > 0) {
-    results.forEach(r => resultsContainer.appendChild(createCard(r.item)));
-  } else {
-    resultsContainer.innerHTML = `<p class="muted">No results found.</p>`;
-  }
+  // Render pagination
+  renderPagination(data.page, data.totalPages, query);
 }
 
 /* ============================================================
-   SEARCH EVENTS
+   PAGINATION UI
 ============================================================ */
-button.addEventListener("click", runSearch);
-input.addEventListener("keypress", e => {
-  if (e.key === "Enter") runSearch();
-});
-categoryFilter.addEventListener("change", runSearch);
+function renderPagination(page, totalPages, query) {
+  if (totalPages <= 1) return;
+
+  const pagination = document.createElement("div");
+  pagination.classList.add("pagination");
+
+  if (page > 1) {
+    const prev = document.createElement("button");
+    prev.textContent = "Previous";
+    prev.onclick = () => runSearch(page - 1);
+    pagination.appendChild(prev);
+  }
+
+  const pageInfo = document.createElement("span");
+  pageInfo.textContent = `Page ${page} of ${totalPages}`;
+  pagination.appendChild(pageInfo);
+
+  if (page < totalPages) {
+    const next = document.createElement("button");
+    next.textContent = "Next";
+    next.onclick = () => runSearch(page + 1);
+    pagination.appendChild(next);
+  }
+
+  resultsContainer.appendChild(pagination);
+}
 
 /* ============================================================
-   SUGGESTIONS DROPDOWN
+   AI GUIDE GENERATION FALLBACK
 ============================================================ */
-function showSuggestions(query) {
-  suggestions.innerHTML = "";
+async function generateGuide(query) {
+  const res = await fetch(`/api/generate-guide?q=${encodeURIComponent(query)}`);
+  const data = await res.json();
 
+  // Reload search index and run search again
+  await runSearch();
+}
+
+/* ============================================================
+   SUGGESTIONS (BACKEND POWERED)
+============================================================ */
+let suggestionTimeout;
+
+input.addEventListener("input", () => {
+  clearTimeout(suggestionTimeout);
+  suggestionTimeout = setTimeout(showSuggestions, 150);
+});
+
+async function showSuggestions() {
+  const query = input.value.trim();
   if (!query) {
     suggestions.style.display = "none";
     return;
   }
 
-  let results = fuse.search(query);
+  const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
+  const data = await res.json();
 
-  const category = categoryFilter.value;
-  if (category) {
-    results = results.filter(r => r.item.category === category);
-  }
-
-  if (results.length === 0) {
+  if (data.results.length === 0) {
     suggestions.style.display = "none";
     return;
   }
 
-  results.slice(0, 6).forEach(r => {
-    const item = document.createElement("div");
-    item.classList.add("suggestion-item");
-    item.textContent = r.item.name;
+  suggestions.innerHTML = "";
+  data.results.forEach(item => {
+    const div = document.createElement("div");
+    div.classList.add("suggestion-item");
+    div.textContent = item.name;
 
-    item.addEventListener("click", () => {
-      input.value = r.item.name;
+    div.onclick = () => {
+      input.value = item.name;
       suggestions.style.display = "none";
       runSearch();
-    });
+    };
 
-    suggestions.appendChild(item);
+    suggestions.appendChild(div);
   });
 
   suggestions.style.display = "block";
 }
-
-input.addEventListener("input", () => {
-  showSuggestions(input.value.trim());
-});
 
 document.addEventListener("click", e => {
   if (!suggestions.contains(e.target) && e.target !== input) {
@@ -484,13 +410,22 @@ document.addEventListener("click", e => {
   }
 });
 
-     
+/* ============================================================
+   SEARCH EVENTS
+============================================================ */
+button.addEventListener("click", () => runSearch());
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") runSearch();
+});
+categoryFilter.addEventListener("change", () => runSearch());
+
 </script>
 
 
 
 
 </html>
+
 
 
 
