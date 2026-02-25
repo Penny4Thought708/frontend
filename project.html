@@ -219,7 +219,6 @@
 
 </body>
 
-
 <script>
 /* ============================================================
    GLOBAL API BASE (REQUIRED FOR RENDER)
@@ -227,12 +226,8 @@
 const API_BASE = "https://letsee-1.onrender.com";
 
 /* ============================================================
-   REVEAL ANIMATIONS
+   REVEAL ANIMATIONS (DYNAMIC‑SAFE)
 ============================================================ */
-const revealEls = document.querySelectorAll(
-  ".reveal-up, .reveal-left, .reveal-right"
-);
-
 const revealObserver = new IntersectionObserver(
   entries => {
     entries.forEach(entry => {
@@ -242,7 +237,9 @@ const revealObserver = new IntersectionObserver(
   { threshold: 0.15 }
 );
 
-revealEls.forEach(el => revealObserver.observe(el));
+function observeReveal(el) {
+  revealObserver.observe(el);
+}
 
 /* ============================================================
    ELEMENTS
@@ -268,6 +265,7 @@ function createCard(item) {
     <a href="${item.url}" class="btn-link">Open Guide</a>
   `;
 
+  observeReveal(card);
   return card;
 }
 
@@ -284,7 +282,7 @@ function fadeOutIntro() {
 }
 
 /* ============================================================
-   MAIN SEARCH FUNCTION (BACKEND POWERED)
+   MAIN SEARCH FUNCTION
 ============================================================ */
 async function runSearch(page = 1) {
   const query = input.value.trim();
@@ -313,6 +311,8 @@ async function runSearch(page = 1) {
       </div>
     `;
 
+    observeReveal(resultsContainer.firstElementChild);
+
     document.getElementById("generate-btn").onclick = () =>
       generateGuide(query);
 
@@ -320,7 +320,8 @@ async function runSearch(page = 1) {
   }
 
   data.results.forEach(item => {
-    resultsContainer.appendChild(createCard(item));
+    const card = createCard(item);
+    resultsContainer.appendChild(card);
   });
 
   renderPagination(data.page, data.totalPages, query);
@@ -333,7 +334,7 @@ function renderPagination(page, totalPages) {
   if (totalPages <= 1) return;
 
   const pagination = document.createElement("div");
-  pagination.classList.add("pagination");
+  pagination.classList.add("pagination", "reveal-up");
 
   if (page > 1) {
     const prev = document.createElement("button");
@@ -353,6 +354,7 @@ function renderPagination(page, totalPages) {
     pagination.appendChild(next);
   }
 
+  observeReveal(pagination);
   resultsContainer.appendChild(pagination);
 }
 
@@ -363,13 +365,13 @@ async function generateGuide(query) {
   const res = await fetch(
     `${API_BASE}/api/generate-guide?q=${encodeURIComponent(query)}`
   );
-  const data = await res.json();
+  await res.json();
 
   await runSearch();
 }
 
 /* ============================================================
-   SUGGESTIONS (BACKEND POWERED)
+   SUGGESTIONS
 ============================================================ */
 let suggestionTimeout;
 
@@ -432,8 +434,8 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 
-
 </html>
+
 
 
 
