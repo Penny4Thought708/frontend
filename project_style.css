@@ -714,32 +714,9 @@ footer {
   display: none;
 }
 
-/* ============================================================
-   REVEAL ANIMATIONS (OPTIONAL)
-============================================================ */
-.reveal-up,
-.reveal-left,
-.reveal-right {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
 
-.reveal-left {
-  transform: translateX(-12px);
-}
 
-.reveal-right {
-  transform: translateX(12px);
-}
 
-/* Add .visible via JS if you want scroll reveal */
-.reveal-up.visible,
-.reveal-left.visible,
-.reveal-right.visible {
-  opacity: 1;
-  transform: translate(0, 0);
-}
 
 /* ============================================================
    RESPONSIVE
@@ -793,6 +770,7 @@ footer {
     align-items: flex-start;
   }
 }
+
 
 
 
