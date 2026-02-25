@@ -276,6 +276,34 @@ function createCard(item) {
    RENDER FULL GUIDE INLINE
 ============================================================ */
 function renderGuide(guide) {
+  // Show back button
+  document.getElementById("back-btn").classList.remove("hidden");
+
+  // Build TOC
+  const toc = `
+    <div class="guide-toc">
+      <h3>Contents</h3>
+      <ul>
+        <li><a href="#tools">Tools & Materials</a></li>
+        <li><a href="#steps">Steps</a></li>
+        <li><a href="#safety">Safety Notes</a></li>
+      </ul>
+    </div>
+  `;
+
+  // Build steps with optional images
+  const stepsHTML = guide.steps
+    .map((s, i) => {
+      const img = guide.stepImages?.[i] || "/img/default-guide.jpg";
+      return `
+        <li id="step-${i}">
+          ${s}
+          <img src="${img}" class="guide-step-img" alt="Step ${i + 1}">
+        </li>
+      `;
+    })
+    .join("");
+
   resultsContainer.innerHTML = `
     <div class="guide-full reveal-up">
 
@@ -284,17 +312,19 @@ function renderGuide(guide) {
         Difficulty: ${guide.difficulty} • Time: ${guide.time}
       </p>
 
-      <h2>Tools & Materials</h2>
+      ${toc}
+
+      <h2 id="tools">Tools & Materials</h2>
       <ul class="guide-list">
         ${guide.tools.map(t => `<li>${t}</li>`).join("")}
       </ul>
 
-      <h2>Steps</h2>
+      <h2 id="steps">Steps</h2>
       <ol class="guide-steps">
-        ${guide.steps.map(s => `<li>${s}</li>`).join("")}
+        ${stepsHTML}
       </ol>
 
-      <h2>Safety Notes</h2>
+      <h2 id="safety">Safety Notes</h2>
       <ul class="guide-list">
         ${guide.safety.map(s => `<li>${s}</li>`).join("")}
       </ul>
@@ -304,6 +334,11 @@ function renderGuide(guide) {
 
   observeReveal(resultsContainer.firstElementChild);
 }
+document.getElementById("back-btn").onclick = () => {
+  document.getElementById("back-btn").classList.add("hidden");
+  runSearch();
+};
+
 
 /* ============================================================
    INTRO FADE‑OUT
@@ -481,6 +516,7 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 </html>
+
 
 
 
