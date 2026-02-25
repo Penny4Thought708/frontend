@@ -603,6 +603,116 @@ footer {
   height: 70%;
   object-fit: contain;
 }
+/* ============================================================
+   INLINE GUIDE — CINEMATIC STYLING
+============================================================ */
+.guide-full {
+  background: var(--glass);
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.guide-full h1 {
+  font-size: 2.2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.guide-full h2 {
+  font-size: 1.4rem;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-xs);
+  color: var(--accent);
+}
+
+.guide-full ul,
+.guide-full ol {
+  padding-left: 1.4rem;
+  color: var(--muted);
+}
+
+.guide-full li {
+  margin-bottom: 0.4rem;
+}
+
+/* Step images */
+.guide-step-img {
+  width: 100%;
+  border-radius: var(--radius);
+  margin: var(--space-sm) 0;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+}
+
+/* ============================================================
+   TABLE OF CONTENTS
+============================================================ */
+.guide-toc {
+  background: var(--glass-strong);
+  padding: var(--space-md);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+}
+
+.guide-toc h3 {
+  margin-bottom: var(--space-sm);
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.guide-toc ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.guide-toc li {
+  margin-bottom: 0.4rem;
+}
+
+.guide-toc a {
+  color: var(--muted);
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.guide-toc a:hover {
+  color: var(--ink);
+}
+
+/* ============================================================
+   FLOATING BACK BUTTON
+============================================================ */
+.back-to-results {
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  padding: 0.8rem 1.4rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  color: #fff;
+  border-radius: var(--radius);
+  border: none;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  z-index: 300;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.back-to-results:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+}
+
+/* Hide button until guide is shown */
+.back-to-results.hidden {
+  display: none;
+}
 
 /* ============================================================
    REVEAL ANIMATIONS (OPTIONAL)
@@ -683,6 +793,7 @@ footer {
     align-items: flex-start;
   }
 }
+
 
 
 
