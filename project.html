@@ -330,7 +330,7 @@ function renderGuide(guide) {
         <li><a href="#safety" class="toc-link">Safety Notes</a></li>
       </ul>
     </div>
-  ];
+  `;
 
   const stepsHTML = (guide.steps || [])
     .map((s, i) => {
@@ -515,9 +515,7 @@ async function generateGuide(query) {
 
     const data = await res.json();
 
-    // If backend returns full guide JSON → render inline
     if (data.guide) {
-      // Attach card image to guide and use as first step image
       if (data.card && data.card.img) {
         data.guide.img = data.card.img;
         data.guide.stepImages = data.guide.stepImages || [];
@@ -528,7 +526,6 @@ async function generateGuide(query) {
       return;
     }
 
-    // Fallback: show card only
     if (data.card) {
       resultsContainer.innerHTML = "";
       const card = createCard(data.card);
@@ -629,7 +626,9 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 
+
 </html>
+
 
 
 
