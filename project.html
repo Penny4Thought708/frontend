@@ -227,7 +227,7 @@
 const API_BASE = "https://letsee-1.onrender.com";
 
 /* ============================================================
-   REVEAL ANIMATIONS (DYNAMIC SAFE)
+   REVEAL ANIMATIONS
 ============================================================ */
 const revealObserver = new IntersectionObserver(
   entries => {
@@ -251,6 +251,45 @@ const resultsContainer = document.getElementById("search-results");
 const categoryFilter = document.getElementById("category-filter");
 const suggestions = document.getElementById("suggestions");
 const introState = document.getElementById("intro-state");
+const backBtn = document.getElementById("back-btn");
+
+/* ============================================================
+   STATE
+============================================================ */
+let currentQuery = "";
+let currentPage = 1;
+
+/* ============================================================
+   UTILS
+============================================================ */
+function showLoading(message = "Loading...") {
+  resultsContainer.innerHTML = `
+    <div class="panel reveal-up loading-panel">
+      <div class="spinner"></div>
+      <p>${message}</p>
+    </div>
+  `;
+  observeReveal(resultsContainer.firstElementChild);
+}
+
+function showError(message = "Something went wrong. Please try again.") {
+  resultsContainer.innerHTML = `
+    <div class="panel reveal-up error-panel">
+      <h3>Error</h3>
+      <p>${message}</p>
+    </div>
+  `;
+  observeReveal(resultsContainer.firstElementChild);
+}
+
+function fadeOutIntro() {
+  if (!introState) return;
+  introState.style.opacity = "0";
+  introState.style.transform = "translateY(-10px)";
+  setTimeout(() => {
+    introState.style.display = "none";
+  }, 300);
+}
 
 /* ============================================================
    CARD GENERATOR
@@ -274,39 +313,31 @@ function createCard(item) {
   return card;
 }
 
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("open-guide-btn")) {
-    const name = e.target.dataset.name;
-    await generateGuide(name);
-  }
-});
-
 /* ============================================================
-   RENDER FULL GUIDE INLINE
+   INLINE GUIDE RENDER
 ============================================================ */
 function renderGuide(guide) {
-  // Show back button
-  document.getElementById("back-btn").classList.remove("hidden");
+  backBtn.classList.remove("hidden");
 
-  // Build TOC
+  const heroImg = guide.img || "./img/default-guide.jpg";
+
   const toc = `
     <div class="guide-toc">
       <h3>Contents</h3>
       <ul>
-        <li><a href="#tools">Tools & Materials</a></li>
-        <li><a href="#steps">Steps</a></li>
-        <li><a href="#safety">Safety Notes</a></li>
+        <li><a href="#tools" class="toc-link">Tools & Materials</a></li>
+        <li><a href="#steps" class="toc-link">Steps</a></li>
+        <li><a href="#safety" class="toc-link">Safety Notes</a></li>
       </ul>
     </div>
-  `;
+  ];
 
-  // Build steps with optional images
-  const stepsHTML = guide.steps
+  const stepsHTML = (guide.steps || [])
     .map((s, i) => {
-      const img = guide.stepImages?.[i] || "./img/default-guide.jpg";
+      const img = (guide.stepImages && guide.stepImages[i]) || heroImg;
       return `
         <li id="step-${i}">
-          ${s}
+          <div class="step-text">${s}</div>
           <img src="${img}" class="guide-step-img" alt="Step ${i + 1}">
         </li>
       `;
@@ -315,17 +346,17 @@ function renderGuide(guide) {
 
   resultsContainer.innerHTML = `
     <div class="guide-full reveal-up">
-
+      <img src="${heroImg}" class="guide-hero-img" alt="${guide.title}">
       <h1>${guide.title}</h1>
       <p class="guide-subtitle">
-        Difficulty: ${guide.difficulty} • Time: ${guide.time}
+        Difficulty: ${guide.difficulty || "N/A"} • Time: ${guide.time || "Varies"}
       </p>
 
       ${toc}
 
       <h2 id="tools">Tools & Materials</h2>
       <ul class="guide-list">
-        ${guide.tools.map(t => `<li>${t}</li>`).join("")}
+        ${(guide.tools || []).map(t => `<li>${t}</li>`).join("")}
       </ul>
 
       <h2 id="steps">Steps</h2>
@@ -335,31 +366,39 @@ function renderGuide(guide) {
 
       <h2 id="safety">Safety Notes</h2>
       <ul class="guide-list">
-        ${guide.safety.map(s => `<li>${s}</li>`).join("")}
+        ${(guide.safety || []).map(s => `<li>${s}</li>`).join("")}
       </ul>
-
     </div>
   `;
 
   observeReveal(resultsContainer.firstElementChild);
+  wireTocSmoothScroll();
 }
-document.getElementById("back-btn").onclick = () => {
-  document.getElementById("back-btn").classList.add("hidden");
-  runSearch();
-};
-
 
 /* ============================================================
-   INTRO FADE‑OUT
+   TOC SMOOTH SCROLL
 ============================================================ */
-function fadeOutIntro() {
-  if (!introState) return;
-  introState.style.opacity = "0";
-  introState.style.transform = "translateY(-10px)";
-  setTimeout(() => {
-    introState.style.display = "none";
-  }, 300);
+function wireTocSmoothScroll() {
+  const links = document.querySelectorAll(".toc-link");
+  links.forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const targetId = link.getAttribute("href").slice(1);
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
 }
+
+/* ============================================================
+   BACK BUTTON
+============================================================ */
+backBtn.onclick = () => {
+  backBtn.classList.add("hidden");
+  runSearch(currentPage);
+};
 
 /* ============================================================
    MAIN SEARCH FUNCTION
@@ -368,8 +407,11 @@ async function runSearch(page = 1) {
   const query = input.value.trim();
   const category = categoryFilter.value;
 
+  currentQuery = query;
+  currentPage = page;
+
   fadeOutIntro();
-  resultsContainer.innerHTML = "";
+  showLoading("Searching guides...");
 
   const params = new URLSearchParams({
     q: query,
@@ -379,39 +421,52 @@ async function runSearch(page = 1) {
 
   if (category) params.append("category", category);
 
-  const res = await fetch(`${API_BASE}/api/search?${params.toString()}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/api/search?${params.toString()}`);
+    if (!res.ok) {
+      showError("Search failed. Please try again.");
+      return;
+    }
 
-  if (data.results.length === 0) {
-    resultsContainer.innerHTML = `
-      <div class="panel reveal-up">
-        <h3>No results found</h3>
-        <p>Would you like to generate a new guide for "${query}"?</p>
-        <button id="generate-btn" class="btn-primary">Generate Guide</button>
-      </div>
-    `;
+    const data = await res.json();
 
-    observeReveal(resultsContainer.firstElementChild);
+    if (!data.results || data.results.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="panel reveal-up">
+          <h3>No results found</h3>
+          <p>Would you like to generate a new guide for "${query}"?</p>
+          <button id="generate-btn" class="btn-primary">Generate Guide</button>
+        </div>
+      `;
 
-    document.getElementById("generate-btn").onclick = () =>
-      generateGuide(query);
+      observeReveal(resultsContainer.firstElementChild);
 
-    return;
+      const generateBtn = document.getElementById("generate-btn");
+      if (generateBtn) {
+        generateBtn.onclick = () => generateGuide(query);
+      }
+
+      return;
+    }
+
+    resultsContainer.innerHTML = "";
+    data.results.forEach(item => {
+      const card = createCard(item);
+      resultsContainer.appendChild(card);
+    });
+
+    renderPagination(data.page, data.totalPages);
+  } catch (err) {
+    console.error("[SEARCH] Error:", err);
+    showError("Search failed. Please check your connection and try again.");
   }
-
-  data.results.forEach(item => {
-    const card = createCard(item);
-    resultsContainer.appendChild(card);
-  });
-
-  renderPagination(data.page, data.totalPages, query);
 }
 
 /* ============================================================
    PAGINATION UI
 ============================================================ */
 function renderPagination(page, totalPages) {
-  if (totalPages <= 1) return;
+  if (!totalPages || totalPages <= 1) return;
 
   const pagination = document.createElement("div");
   pagination.classList.add("pagination", "reveal-up");
@@ -442,22 +497,49 @@ function renderPagination(page, totalPages) {
    AI GUIDE GENERATION (INLINE RENDER)
 ============================================================ */
 async function generateGuide(query) {
-  const res = await fetch(
-    `${API_BASE}/api/generate-guide?q=${encodeURIComponent(query)}`
-  );
-  const data = await res.json();
+  const q = (query || input.value || "").trim();
+  if (!q) return;
 
-  // If backend returns full guide JSON → render inline
-  if (data.guide) {
-    renderGuide(data.guide);
-    return;
-  }
+  fadeOutIntro();
+  showLoading("Generating your guide...");
 
-  // Fallback: show card only
-  if (data.card) {
-    resultsContainer.innerHTML = "";
-    const card = createCard(data.card);
-    resultsContainer.appendChild(card);
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/generate-guide?q=${encodeURIComponent(q)}`
+    );
+
+    if (!res.ok) {
+      showError("Guide generation failed. Please try again.");
+      return;
+    }
+
+    const data = await res.json();
+
+    // If backend returns full guide JSON → render inline
+    if (data.guide) {
+      // Attach card image to guide and use as first step image
+      if (data.card && data.card.img) {
+        data.guide.img = data.card.img;
+        data.guide.stepImages = data.guide.stepImages || [];
+        data.guide.stepImages[0] = data.card.img;
+      }
+
+      renderGuide(data.guide);
+      return;
+    }
+
+    // Fallback: show card only
+    if (data.card) {
+      resultsContainer.innerHTML = "";
+      const card = createCard(data.card);
+      resultsContainer.appendChild(card);
+      return;
+    }
+
+    showError("Guide generation returned no data.");
+  } catch (err) {
+    console.error("[GENERATE GUIDE] Error:", err);
+    showError("Guide generation failed. Please try again.");
   }
 }
 
@@ -478,37 +560,59 @@ async function showSuggestions() {
     return;
   }
 
-  const res = await fetch(
-    `${API_BASE}/api/search?q=${encodeURIComponent(query)}&limit=5`
-  );
-  const data = await res.json();
-
-  if (data.results.length === 0) {
-    suggestions.style.display = "none";
-    return;
-  }
-
-  suggestions.innerHTML = "";
-  data.results.forEach(item => {
-    const div = document.createElement("div");
-    div.classList.add("suggestion-item");
-    div.textContent = item.name;
-
-    div.onclick = () => {
-      input.value = item.name;
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/search?q=${encodeURIComponent(query)}&limit=5`
+    );
+    if (!res.ok) {
       suggestions.style.display = "none";
-      runSearch();
-    };
+      return;
+    }
 
-    suggestions.appendChild(div);
-  });
+    const data = await res.json();
 
-  suggestions.style.display = "block";
+    if (!data.results || data.results.length === 0) {
+      suggestions.style.display = "none";
+      return;
+    }
+
+    suggestions.innerHTML = "";
+    data.results.forEach(item => {
+      const div = document.createElement("div");
+      div.classList.add("suggestion-item");
+      div.textContent = item.name;
+
+      div.onclick = () => {
+        input.value = item.name;
+        suggestions.style.display = "none";
+        runSearch();
+      };
+
+      suggestions.appendChild(div);
+    });
+
+    suggestions.style.display = "block";
+  } catch (err) {
+    console.error("[SUGGESTIONS] Error:", err);
+    suggestions.style.display = "none";
+  }
 }
 
 document.addEventListener("click", e => {
   if (!suggestions.contains(e.target) && e.target !== input) {
     suggestions.style.display = "none";
+  }
+});
+
+/* ============================================================
+   DELEGATED CLICK HANDLERS
+============================================================ */
+document.addEventListener("click", async e => {
+  if (e.target.classList.contains("open-guide-btn")) {
+    const name = e.target.dataset.name;
+    if (name) {
+      await generateGuide(name);
+    }
   }
 });
 
@@ -524,7 +628,9 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 
+
 </html>
+
 
 
 
