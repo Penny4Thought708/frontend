@@ -280,7 +280,7 @@ img {
 /* Suggestions container */
 #suggestions {
   position: absolute;
- width: fit-content;
+    width: 67vh;
   background: var(--glass-strong);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -771,6 +771,7 @@ footer {
     align-items: flex-start;
   }
 }
+
 
 
 
