@@ -616,6 +616,7 @@ footer {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  width: 80vh;
 }
 
 .guide-full h1 {
@@ -770,6 +771,7 @@ footer {
     align-items: flex-start;
   }
 }
+
 
 
 
