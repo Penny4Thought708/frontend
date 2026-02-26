@@ -259,7 +259,7 @@ function createCard(item) {
   const card = document.createElement("div");
   card.classList.add("result-card", "reveal-up");
 
-  const imgSrc = item.img || "/img/default-guide.jpg";
+  const imgSrc = item.img || "./img/default-guide.jpg";
 
   card.innerHTML = `
     <img src="${imgSrc}" alt="${item.name}" class="product-img">
@@ -303,7 +303,7 @@ function renderGuide(guide) {
   // Build steps with optional images
   const stepsHTML = guide.steps
     .map((s, i) => {
-      const img = guide.stepImages?.[i] || "/img/default-guide.jpg";
+      const img = guide.stepImages?.[i] || "./img/default-guide.jpg";
       return `
         <li id="step-${i}">
           ${s}
@@ -525,6 +525,7 @@ categoryFilter.addEventListener("change", () => runSearch());
 
 
 </html>
+
 
 
 
