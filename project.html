@@ -260,8 +260,9 @@ function updateWeatherUI(data) {
   const iconCode = data.weather[0].icon;
   const temp = Math.round(data.main.temp);
 
-  document.getElementById("weatherIcon").src =
-    `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+document.getElementById("weatherIcon").src =
+  "https://openweathermap.org/img/wn/01d@2x.png";
+
 
   document.getElementById("weatherTemp").textContent = `${temp}°`;
 }
