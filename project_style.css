@@ -212,6 +212,24 @@ img {
 
 
 
+.weather-widget {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+
+.weather-widget:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.weather-widget img {
+  width: 32px;
+  height: 32px;
+}
 
 
 
