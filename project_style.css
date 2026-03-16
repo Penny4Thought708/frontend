@@ -212,23 +212,6 @@ img {
 
 
 
-.weather-widget {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: 0.2s ease;
-    width: 160px;
-    position: relative;
-    /* margin-left: 50px; */
-    right: -140px;
-
-}
-
-
-
 /* -----------------------------------
    WEATHER WIDGET (HEADER MINI DISPLAY)
 ----------------------------------- */
@@ -395,8 +378,6 @@ img {
     font-size: 0.85rem;
   }
 }
-
-
 
 
 
