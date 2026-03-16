@@ -227,13 +227,156 @@ img {
 
 }
 
+/* -----------------------------------
+   WEATHER WIDGET (HEADER MINI DISPLAY)
+----------------------------------- */
+
+.weather-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+
+  transition: 0.25s ease;
+}
+
 .weather-widget:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
 .weather-widget img {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+}
+
+#weatherTemp {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+#weatherCity {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  color: #fff;
+}
+
+
+/* -----------------------------------
+   WEATHER MODAL
+----------------------------------- */
+
+#weatherModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#weatherModal.is-open {
+  display: flex;
+}
+
+.weather-modal-box {
+  background: rgba(20, 20, 20, 0.75);
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 420px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+
+  animation: fadeUp 0.35s ease;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.6rem;
+  cursor: pointer;
+  float: right;
+  margin-top: -10px;
+  margin-right: -5px;
+  opacity: 0.7;
+  transition: 0.2s ease;
+}
+
+.close-modal:hover {
+  opacity: 1;
+}
+
+#weatherModalCity {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #fff;
+}
+
+.weather-modal-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+}
+
+#weatherModalIcon {
+  width: 80px;
+  height: 80px;
+}
+
+.weather-info p {
+  margin: 4px 0;
+  font-size: 0.95rem;
+  color: #eaeaea;
+}
+
+
+/* -----------------------------------
+   RESPONSIVE
+----------------------------------- */
+
+@media (max-width: 480px) {
+  .weather-modal-box {
+    padding: 18px;
+  }
+
+  #weatherModalCity {
+    font-size: 1.4rem;
+  }
+
+  #weatherModalIcon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .weather-info p {
+    font-size: 0.85rem;
+  }
 }
 
 
