@@ -227,6 +227,8 @@ img {
 
 }
 
+
+
 /* -----------------------------------
    WEATHER WIDGET (HEADER MINI DISPLAY)
 ----------------------------------- */
@@ -270,7 +272,7 @@ img {
 
 
 /* -----------------------------------
-   WEATHER MODAL
+   WEATHER MODAL OVERLAY
 ----------------------------------- */
 
 #weatherModal {
@@ -288,7 +290,12 @@ img {
   display: flex;
 }
 
-.weather-modal-box {
+
+/* -----------------------------------
+   WEATHER MODAL CONTENT BOX
+----------------------------------- */
+
+#weatherModal .modal-content {
   background: rgba(20, 20, 20, 0.75);
   border-radius: 16px;
   padding: 24px;
@@ -312,6 +319,11 @@ img {
   }
 }
 
+
+/* -----------------------------------
+   CLOSE BUTTON
+----------------------------------- */
+
 .close-modal {
   background: none;
   border: none;
@@ -329,6 +341,11 @@ img {
   opacity: 1;
 }
 
+
+/* -----------------------------------
+   MODAL TEXT + ICONS
+----------------------------------- */
+
 #weatherModalCity {
   text-align: center;
   font-size: 1.6rem;
@@ -337,7 +354,7 @@ img {
   color: #fff;
 }
 
-.weather-modal-body {
+.weather-details {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -349,7 +366,7 @@ img {
   height: 80px;
 }
 
-.weather-info p {
+.weather-details p {
   margin: 4px 0;
   font-size: 0.95rem;
   color: #eaeaea;
@@ -361,7 +378,7 @@ img {
 ----------------------------------- */
 
 @media (max-width: 480px) {
-  .weather-modal-box {
+  #weatherModal .modal-content {
     padding: 18px;
   }
 
@@ -374,11 +391,10 @@ img {
     height: 70px;
   }
 
-  .weather-info p {
+  .weather-details p {
     font-size: 0.85rem;
   }
 }
-
 
 
 
