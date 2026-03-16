@@ -213,13 +213,16 @@ img {
 
 
 .weather-widget {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
-  transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: 0.2s ease;
+    width: 80px;
+    position: absolute;
+    right: 47px;
 }
 
 .weather-widget:hover {
