@@ -379,6 +379,140 @@ img {
   }
 }
 
+/* -----------------------------------
+   SECTION TITLES
+----------------------------------- */
+
+.section-title {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0.85;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+
+/* -----------------------------------
+   MANUAL LOCATION INPUT
+----------------------------------- */
+
+.location-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 16px;
+}
+
+.location-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: 0.25s ease;
+}
+
+.location-input input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.location-input input:focus {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.location-input button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #4f8dfd, #3dd68c);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  transition: 0.25s ease;
+}
+
+.location-input button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+
+/* -----------------------------------
+   7-DAY FORECAST GRID
+----------------------------------- */
+
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.forecast-card {
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+
+  transition: 0.25s ease;
+}
+
+.forecast-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.forecast-card img {
+  width: 42px;
+  height: 42px;
+  margin: 4px 0;
+}
+
+.forecast-card p {
+  margin: 2px 0;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+
+/* -----------------------------------
+   RADAR MAP
+----------------------------------- */
+
+.radar-frame {
+  width: 100%;
+  height: 260px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+
+  backdrop-filter: blur(6px);
+  margin-top: 10px;
+}
+
+@media (max-width: 480px) {
+  .radar-frame {
+    height: 220px;
+  }
+}
 
 
 
