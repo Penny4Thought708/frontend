@@ -56,11 +56,15 @@
     </div>
 
   </div>
-</header>
-    <div id="weatherWidget" class="weather-widget" onclick="openWeatherDetails()">
+<div id="weatherWidget" class="weather-widget" onclick="openWeatherDetails()">
   <img id="weatherIcon" src="" alt="Weather Icon">
   <span id="weatherTemp"></span>
+  <span id="weatherCity"></span>
 </div>
+
+   
+</header>
+
 
   <!-- ===========================
        SEARCH HERO
@@ -252,20 +256,23 @@ async function getWeatherByIP() {
 function updateWeatherUI(data) {
   if (!data || !data.weather || !data.weather[0]) {
     console.warn("Weather data missing or invalid:", data);
-    document.getElementById("weatherIcon").src = "fallback-icon.png";
+    document.getElementById("weatherIcon").src =
+      "https://openweathermap.org/img/wn/01d@2x.png";
     document.getElementById("weatherTemp").textContent = "--";
+    document.getElementById("weatherCity").textContent = "";
     return;
   }
 
   const iconCode = data.weather[0].icon;
   const temp = Math.round(data.main.temp);
 
-document.getElementById("weatherIcon").src =
-  "https://openweathermap.org/img/wn/01d@2x.png";
-
+  document.getElementById("weatherIcon").src =
+    `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
   document.getElementById("weatherTemp").textContent = `${temp}°`;
+  document.getElementById("weatherCity").textContent = data.name;
 }
+
 
 
 async function loadWeather() {
