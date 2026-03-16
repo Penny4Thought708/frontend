@@ -226,24 +226,46 @@
     <img src="https://img.icons8.com/3d-fluency/94/3d-blue-ai-chatbot-assistant-icon.png" alt="AI Assistant">
   </button>
 <button id="back-btn" class="back-to-results hidden">← Back to Results</button>
-<div id="weatherModal" class="modal">
-  <div class="modal-content">
-    <button class="close-modal" id="closeWeatherModal">&times;</button>
+ <!-- Weather Modal -->
+  <div id="weatherModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" id="closeWeatherModal">&times;</button>
 
-    <h2 id="weatherModalCity"></h2>
-
-    <div class="weather-details">
-      <img id="weatherModalIcon" src="" alt="Weather Icon">
-      <div>
-        <p id="weatherModalTemp"></p>
-        <p id="weatherModalDesc"></p>
-        <p id="weatherModalHumidity"></p>
-        <p id="weatherModalWind"></p>
-        <p id="weatherModalSun"></p>
+      <div class="weather-header">
+        <h2 id="weatherModalCity">Weather</h2>
       </div>
+
+      <div class="weather-details">
+        <img id="weatherModalIcon" src="" alt="Weather Icon" />
+        <div>
+          <p id="weatherModalTemp"></p>
+          <p id="weatherModalDesc"></p>
+          <p id="weatherModalHumidity"></p>
+          <p id="weatherModalWind"></p>
+          <p id="weatherModalSun"></p>
+        </div>
+      </div>
+
+      <!-- Manual Location Input -->
+      <div class="location-input">
+        <input id="manualLocation" type="text" placeholder="Enter city or ZIP (e.g., New York, 10001)" />
+        <button id="setLocationBtn">Set Location</button>
+      </div>
+
+      <!-- Weekly Forecast -->
+      <h3 class="section-title">7‑Day Forecast</h3>
+      <div id="weeklyForecast" class="forecast-grid"></div>
+
+      <!-- Radar -->
+      <h3 class="section-title">Live Radar</h3>
+      <iframe
+        id="weatherRadar"
+        class="radar-frame"
+        src=""
+        loading="lazy"
+      ></iframe>
     </div>
   </div>
-</div>
 
 </body>
 
@@ -258,114 +280,247 @@ const _0x5644c1=_0x2904;(function(_0x3c9c2a,_0x3b0461){const _0x11051f=_0x2904,_
 
 <script>
 
-const API_KEY = "b791f7290cc0c70297864083fe9b6753";
+    const API_KEY = "b791f7290cc0c70297864083fe9b6753";
 
-// Store last weather data so the modal can use it
-let lastWeatherData = null;
+    // Store last weather data so the modal can use it
+    let lastWeatherData = null;
 
-// Fetch weather by coordinates
-async function getWeatherByCoords(lat, lon) {
-  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
-  return fetch(url).then(res => res.json());
-}
-
-// Fallback: fetch weather using IP location
-async function getWeatherByIP() {
-  const ipInfo = await fetch("https://ipapi.co/json/").then(res => res.json());
-  return getWeatherByCoords(ipInfo.latitude, ipInfo.longitude);
-}
-
-// Update the small widget UI
-function updateWeatherUI(data) {
-  if (!data || !data.weather || !data.weather[0]) {
-    console.warn("Weather data missing or invalid:", data);
-    document.getElementById("weatherIcon").src =
-      "https://openweathermap.org/img/wn/01d@2x.png";
-    document.getElementById("weatherTemp").textContent = "--";
-    document.getElementById("weatherCity").textContent = "";
-    return;
-  }
-
-  lastWeatherData = data;
-
-  const iconCode = data.weather[0].icon;
-  const temp = Math.round(data.main.temp);
-
-  document.getElementById("weatherIcon").src =
-    `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-
-  document.getElementById("weatherTemp").textContent = `${temp}°`;
-  document.getElementById("weatherCity").textContent = data.name;
-}
-
-// Load weather using GPS or fallback
-async function loadWeather() {
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      const data = await getWeatherByCoords(latitude, longitude);
-      updateWeatherUI(data);
-    },
-    async () => {
-      const data = await getWeatherByIP();
-      updateWeatherUI(data);
+    // Fetch weather by coordinates
+    async function getWeatherByCoords(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Weather fetch failed");
+      return res.json();
     }
-  );
-}
 
-// Auto-refresh every 10 minutes
-setInterval(loadWeather, 600000);
+    // Fallback: fetch weather using IP location
+    async function getWeatherByIP() {
+      try {
+        const ipInfoRes = await fetch("https://ipapi.co/json/");
+        if (!ipInfoRes.ok) throw new Error("IP lookup failed");
+        const ipInfo = await ipInfoRes.json();
+        if (!ipInfo.latitude || !ipInfo.longitude) throw new Error("IP location missing");
+        return getWeatherByCoords(ipInfo.latitude, ipInfo.longitude);
+      } catch (e) {
+        console.warn("IP-based location failed:", e);
+        return null;
+      }
+    }
 
-// Initial load
-loadWeather();
+    // Fetch 7-day forecast (using 3-hour forecast and sampling daily)
+    async function getWeeklyForecast(lat, lon) {
+      const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Forecast fetch failed");
+      return res.json();
+    }
 
+    // Update the small widget UI
+    function updateWeatherUI(data) {
+      if (!data || !data.weather || !data.weather[0]) {
+        console.warn("Weather data missing or invalid:", data);
+        document.getElementById("weatherIcon").src =
+          "https://openweathermap.org/img/wn/01d@2x.png";
+        document.getElementById("weatherTemp").textContent = "--";
+        document.getElementById("weatherCity").textContent = "Unavailable";
+        return;
+      }
 
-// ------------------------------
-// WEATHER MODAL LOGIC
-// ------------------------------
+      lastWeatherData = data;
 
-function openWeatherDetails() {
-  if (!lastWeatherData) return;
+      const iconCode = data.weather[0].icon;
+      const temp = Math.round(data.main.temp);
 
-  const data = lastWeatherData;
+      document.getElementById("weatherIcon").src =
+        `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
-  document.getElementById("weatherModalCity").textContent = data.name;
+      document.getElementById("weatherTemp").textContent = `${temp}°`;
+      document.getElementById("weatherCity").textContent = data.name || "Current location";
+    }
 
-  document.getElementById("weatherModalIcon").src =
-    `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+    // Render weekly forecast
+    function renderWeeklyForecast(data) {
+      const container = document.getElementById("weeklyForecast");
+      container.innerHTML = "";
 
-  document.getElementById("weatherModalTemp").textContent =
-    `Temperature: ${Math.round(data.main.temp)}°F`;
+      if (!data || !data.list || !Array.isArray(data.list)) {
+        container.innerHTML = "<p style='font-size:0.85rem;color:#9ca3af;'>Forecast unavailable.</p>";
+        return;
+      }
 
-  document.getElementById("weatherModalDesc").textContent =
-    `Conditions: ${data.weather[0].description}`;
+      // Pick entries around midday for each day
+      const byDay = {};
+      data.list.forEach(item => {
+        const date = new Date(item.dt * 1000);
+        const dayKey = date.toISOString().split("T")[0];
+        const hour = date.getHours();
+        if (!byDay[dayKey] || Math.abs(hour - 12) < Math.abs(byDay[dayKey].hour - 12)) {
+          byDay[dayKey] = { item, hour };
+        }
+      });
 
-  document.getElementById("weatherModalHumidity").textContent =
-    `Humidity: ${data.main.humidity}%`;
+      const days = Object.keys(byDay).slice(0, 7);
 
-  document.getElementById("weatherModalWind").textContent =
-    `Wind: ${data.wind.speed} mph`;
+      days.forEach(dayKey => {
+        const entry = byDay[dayKey].item;
+        const date = new Date(entry.dt * 1000).toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric"
+        });
 
-  const sunrise = new Date(data.sys.sunrise * 1000).toLocaleTimeString();
-  const sunset = new Date(data.sys.sunset * 1000).toLocaleTimeString();
+        const icon = entry.weather[0].icon;
+        const temp = Math.round(entry.main.temp);
 
-  document.getElementById("weatherModalSun").textContent =
-    `Sunrise: ${sunrise} | Sunset: ${sunset}`;
+        const card = document.createElement("div");
+        card.className = "forecast-card";
+        card.innerHTML = `
+          <p>${date}</p>
+          <img src="https://openweathermap.org/img/wn/${icon}.png" alt="">
+          <p>${temp}°F</p>
+        `;
+        container.appendChild(card);
+      });
 
-  document.getElementById("weatherModal").classList.add("is-open");
-}
+      if (!days.length) {
+        container.innerHTML = "<p style='font-size:0.85rem;color:#9ca3af;'>Forecast unavailable.</p>";
+      }
+    }
 
-// Close modal button
-document.getElementById("closeWeatherModal").addEventListener("click", () => {
-  document.getElementById("weatherModal").classList.remove("is-open");
-});
+    // Load radar
+    function loadRadar(lat, lon) {
+      if (!lat || !lon) {
+        document.getElementById("weatherRadar").src = "";
+        return;
+      }
+      const radarURL = `https://embed.windy.com/embed2.html?lat=${lat}&lon=${lon}&zoom=6&overlay=radar&level=surface&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates`;
+      document.getElementById("weatherRadar").src = radarURL;
+    }
 
-// Click outside modal to close
-document.getElementById("weatherModal").addEventListener("click", (e) => {
-  if (e.target.id === "weatherModal") {
-    e.target.classList.remove("is-open");
-  }
-});
+    // Load weather using GPS or fallback
+    async function loadWeather() {
+      // Try geolocation first
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const { latitude, longitude } = pos.coords;
+              const data = await getWeatherByCoords(latitude, longitude);
+              updateWeatherUI(data);
+            } catch (e) {
+              console.warn("GPS weather failed:", e);
+              const data = await getWeatherByIP();
+              if (data) updateWeatherUI(data);
+            }
+          },
+          async () => {
+            const data = await getWeatherByIP();
+            if (data) updateWeatherUI(data);
+          },
+          { timeout: 8000 }
+        );
+      } else {
+        const data = await getWeatherByIP();
+        if (data) updateWeatherUI(data);
+      }
+    }
+
+    // WEATHER MODAL LOGIC
+
+    function openWeatherDetails() {
+      if (!lastWeatherData) return;
+
+      const data = lastWeatherData;
+
+      document.getElementById("weatherModalCity").textContent = data.name || "Weather";
+
+      document.getElementById("weatherModalIcon").src =
+        `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+
+      document.getElementById("weatherModalTemp").textContent =
+        `Temperature: ${Math.round(data.main.temp)}°F`;
+
+      document.getElementById("weatherModalDesc").textContent =
+        `Conditions: ${data.weather[0].description}`;
+
+      document.getElementById("weatherModalHumidity").textContent =
+        `Humidity: ${data.main.humidity}%`;
+
+      document.getElementById("weatherModalWind").textContent =
+        `Wind: ${data.wind.speed} mph`;
+
+      const sunrise = new Date(data.sys.sunrise * 1000).toLocaleTimeString();
+      const sunset = new Date(data.sys.sunset * 1000).toLocaleTimeString();
+
+      document.getElementById("weatherModalSun").textContent =
+        `Sunrise: ${sunrise} | Sunset: ${sunset}`;
+
+      // Load weekly forecast
+      if (data.coord && data.coord.lat && data.coord.lon) {
+        getWeeklyForecast(data.coord.lat, data.coord.lon)
+          .then(renderWeeklyForecast)
+          .catch(err => {
+            console.warn("Forecast error:", err);
+            renderWeeklyForecast(null);
+          });
+
+        // Load radar
+        loadRadar(data.coord.lat, data.coord.lon);
+      } else {
+        renderWeeklyForecast(null);
+        loadRadar(null, null);
+      }
+
+      document.getElementById("weatherModal").classList.add("is-open");
+    }
+
+    // Close modal button
+    document.getElementById("closeWeatherModal").addEventListener("click", () => {
+      document.getElementById("weatherModal").classList.remove("is-open");
+    });
+
+    // Click outside modal to close
+    document.getElementById("weatherModal").addEventListener("click", (e) => {
+      if (e.target.id === "weatherModal") {
+        e.target.classList.remove("is-open");
+      }
+    });
+
+    // Open modal when clicking widget
+    document.getElementById("weatherWidget").addEventListener("click", () => {
+      if (!lastWeatherData) return;
+      openWeatherDetails();
+    });
+
+    // Manual Location Override
+    document.getElementById("setLocationBtn").addEventListener("click", async () => {
+      const query = document.getElementById("manualLocation").value.trim();
+      if (!query) return;
+
+      try {
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(query)}&units=imperial&appid=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.cod !== 200) {
+          alert("Location not found. Try a different city or ZIP.");
+          return;
+        }
+
+        lastWeatherData = data;
+        updateWeatherUI(data);
+        openWeatherDetails();
+      } catch (e) {
+        console.warn("Manual location error:", e);
+        alert("Unable to load that location right now.");
+      }
+    });
+
+    // Auto-refresh every 10 minutes
+    setInterval(loadWeather, 600000);
+
+    // Initial load
+    loadWeather();
 
 </script>
 
