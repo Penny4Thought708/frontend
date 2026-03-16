@@ -226,6 +226,24 @@
     <img src="https://img.icons8.com/3d-fluency/94/3d-blue-ai-chatbot-assistant-icon.png" alt="AI Assistant">
   </button>
 <button id="back-btn" class="back-to-results hidden">← Back to Results</button>
+<div id="weatherModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" id="closeWeatherModal">&times;</button>
+
+    <h2 id="weatherModalCity"></h2>
+
+    <div class="weather-details">
+      <img id="weatherModalIcon" src="" alt="Weather Icon">
+      <div>
+        <p id="weatherModalTemp"></p>
+        <p id="weatherModalDesc"></p>
+        <p id="weatherModalHumidity"></p>
+        <p id="weatherModalWind"></p>
+        <p id="weatherModalSun"></p>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 
@@ -240,19 +258,24 @@ const _0x5644c1=_0x2904;(function(_0x3c9c2a,_0x3b0461){const _0x11051f=_0x2904,_
 
 <script>
 
-
 const API_KEY = "b791f7290cc0c70297864083fe9b6753";
 
+// Store last weather data so the modal can use it
+let lastWeatherData = null;
+
+// Fetch weather by coordinates
 async function getWeatherByCoords(lat, lon) {
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
   return fetch(url).then(res => res.json());
 }
 
+// Fallback: fetch weather using IP location
 async function getWeatherByIP() {
   const ipInfo = await fetch("https://ipapi.co/json/").then(res => res.json());
   return getWeatherByCoords(ipInfo.latitude, ipInfo.longitude);
 }
 
+// Update the small widget UI
 function updateWeatherUI(data) {
   if (!data || !data.weather || !data.weather[0]) {
     console.warn("Weather data missing or invalid:", data);
@@ -262,6 +285,8 @@ function updateWeatherUI(data) {
     document.getElementById("weatherCity").textContent = "";
     return;
   }
+
+  lastWeatherData = data;
 
   const iconCode = data.weather[0].icon;
   const temp = Math.round(data.main.temp);
@@ -273,8 +298,7 @@ function updateWeatherUI(data) {
   document.getElementById("weatherCity").textContent = data.name;
 }
 
-
-
+// Load weather using GPS or fallback
 async function loadWeather() {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
@@ -295,11 +319,53 @@ setInterval(loadWeather, 600000);
 // Initial load
 loadWeather();
 
-// Clickable widget action
+
+// ------------------------------
+// WEATHER MODAL LOGIC
+// ------------------------------
+
 function openWeatherDetails() {
-  alert("Open your weather modal or page here.");
+  if (!lastWeatherData) return;
+
+  const data = lastWeatherData;
+
+  document.getElementById("weatherModalCity").textContent = data.name;
+
+  document.getElementById("weatherModalIcon").src =
+    `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+
+  document.getElementById("weatherModalTemp").textContent =
+    `Temperature: ${Math.round(data.main.temp)}°F`;
+
+  document.getElementById("weatherModalDesc").textContent =
+    `Conditions: ${data.weather[0].description}`;
+
+  document.getElementById("weatherModalHumidity").textContent =
+    `Humidity: ${data.main.humidity}%`;
+
+  document.getElementById("weatherModalWind").textContent =
+    `Wind: ${data.wind.speed} mph`;
+
+  const sunrise = new Date(data.sys.sunrise * 1000).toLocaleTimeString();
+  const sunset = new Date(data.sys.sunset * 1000).toLocaleTimeString();
+
+  document.getElementById("weatherModalSun").textContent =
+    `Sunrise: ${sunrise} | Sunset: ${sunset}`;
+
+  document.getElementById("weatherModal").classList.add("is-open");
 }
 
+// Close modal button
+document.getElementById("closeWeatherModal").addEventListener("click", () => {
+  document.getElementById("weatherModal").classList.remove("is-open");
+});
+
+// Click outside modal to close
+document.getElementById("weatherModal").addEventListener("click", (e) => {
+  if (e.target.id === "weatherModal") {
+    e.target.classList.remove("is-open");
+  }
+});
 
 </script>
 
