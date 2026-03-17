@@ -702,8 +702,24 @@ button {
 .section {
   padding: var(--space-2xl) 0;
   position: relative;
+}.section {
+  background: rgba(15, 23, 42, 0.18); /* subtle glass layer */
+  backdrop-filter: blur(6px);
 }
 .section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(79,70,229,0.06),
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/*.section::before {
   content: "";
   position: absolute;
   top: -1px;
@@ -719,7 +735,7 @@ button {
   opacity: 0.35;
   pointer-events: none;
   z-index: -1;
-}
+}*/
 
 /* Cinematic scene divider */
 .section::after {
