@@ -742,24 +742,27 @@ button {
 }
 
 .section-header {
-  margin-bottom: var(--space-xl);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+    margin-bottom: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.4rem;
 }
 
 .section-title {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-size: var(--text-2xl);
-  color: var(--text-primary);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+    font-size: var(--text-2xl);
+    color: var(--text-primary);
 }
 
 .section-subtitle {
-  max-width: 32rem;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+     max-width: 100%;
+    font-size: var(--text-sm);
+    text-align: center;
+    color: var(--text-secondary);
 }
 
 /* Cards grid */
