@@ -225,9 +225,7 @@ img {
     cursor: pointer;
     left: 225px;
     position: relative;
-   
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
     transition: 0.25s ease;
 }
 
