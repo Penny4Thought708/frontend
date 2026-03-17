@@ -703,6 +703,23 @@ button {
   padding: var(--space-2xl) 0;
   position: relative;
 }
+.section::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(79,70,229,0.08),
+    rgba(0,0,0,0.2) 60%,
+    transparent 100%
+  );
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: -1;
+}
 
 /* Cinematic scene divider */
 .section::after {
