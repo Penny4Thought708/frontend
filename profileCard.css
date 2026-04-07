@@ -1,7 +1,7 @@
 /* ——————————————————————————————
    PANEL CONTAINER
 —————————————————————————————— */
-#fullProfileModal {
+#fullProfileModal, #profileWindow {
   width: 28%;
   height: 100%;
   padding: 16px;
