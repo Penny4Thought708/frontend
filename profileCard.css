@@ -78,8 +78,10 @@ select {
   outline: none;
   transition: border 0.2s ease, background 0.2s ease;
 }
-option{
-   background: rgba(255, 255, 255, 0.12);
+#profileWindow option {
+    background: rgb(1 36 67);
+    border: none;
+    border-radius: 15px 50px 30px 5px;
 }
 input:focus,
 textarea:focus,
