@@ -3,16 +3,17 @@
 ============================================================ */
 
 .contact-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-       border: solid 2px #5d5c7985;
-  padding: 12px 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  background: transparent;
-  transition: background .18s ease, transform .15s ease;
-  position: relative;
+display: flex;
+    align-items: center;
+    gap: 14px;
+    border: solid 2px #5d5c7985;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin: 15px 5px;
+    cursor: pointer;
+    background: transparent;
+    transition: background .18s ease, transform .15s ease;
+    position: relative;
 }
 
 /* Hover effect */
