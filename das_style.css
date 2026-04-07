@@ -21,8 +21,17 @@ body {
   color: #e5e7eb;
   background: radial-gradient(circle at top, #151926 0, #050609 55%, #020308 100%);
 }
-.hidden {
-  display: none;
+.floating-window {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition: 0.25s ease;
+}
+
+.floating-window.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
 }
 
 /* ============================================================
