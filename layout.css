@@ -288,16 +288,16 @@ app-main {
    ============================================================ */
 
 .directory-panel {
-  width: 520px;
-  min-width: 320px;
-  max-width: 520px;
-  background: var(--bg-panel);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 8px 0 30px var(--shadow);
-  position: relative;
-  z-index: 10;
+    width: 520px;
+    min-width: 320px;
+    max-width: 520px;
+    /* background: var(--bg-panel); */
+    /* border-right: 1px solid var(--border); */
+    display: flex;
+    flex-direction: column;
+    /* box-shadow: 8px 0 30px var(--shadow); */
+    position: relative;
+    z-index: 10;
 }
 
 .directory-nav {
