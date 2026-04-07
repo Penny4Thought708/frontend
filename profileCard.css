@@ -45,7 +45,13 @@
   font-weight: 600;
   letter-spacing: -0.5px;
 }
-
+#profileAvatar{
+       border-radius: 80px;
+    width: 120px;
+    height: 120px;
+    position: relative;
+    margin-left: 35%;
+}
 /* -------------------------------------------------------
    FORM ELEMENTS
 ------------------------------------------------------- */
