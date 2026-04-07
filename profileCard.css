@@ -78,7 +78,9 @@ select {
   outline: none;
   transition: border 0.2s ease, background 0.2s ease;
 }
-
+option{
+   background: rgba(255, 255, 255, 0.12);
+}
 input:focus,
 textarea:focus,
 select:focus {
