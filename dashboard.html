@@ -1204,13 +1204,12 @@ function updateQualityIndicator(newText, newLevel) {
   }, 350); // match CSS transition duration
 }
 
-const btn_profile = document.getElementById("proBtn");
+const btn_profile = document.getElementById("btn_profile");
 const profileWindow = document.getElementById("profileWindow");
 
 btn_profile.addEventListener("click", () => {
-  profileWindow.classList.toggle("hidden");
+  profileWindow.classList.toggle("is-open");
 });
-
 
 
 </script>
