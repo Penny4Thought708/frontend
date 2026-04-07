@@ -201,12 +201,16 @@ export function renderContactCard(user) {
     ${unreadBadge}
 
     <div class="contact-actions">
-      <button class="info-btn"><span class="material-symbols-outlined">account_circle</span></button>
+      <button class="info-btn"><span class="material-symbols-outlined">
+info_i</span></button>
       <button class="chat-btn">
       <span class="material-symbols-outlined">chat</span>
       </button>
-      <button class="block-btn">🚫</button>
-      <button class="delete-btn">🗑</button>
+      <button class="block-btn"><span class="material-symbols-outlined">
+block
+</span></button>
+      <button class="delete-btn"><span class="material-symbols-outlined">
+delete</span></button>
     </div>
   `;
 
