@@ -668,26 +668,188 @@ function _0x4ab1(){const _0x1e7998=['#profilePreview','3560382tPxdyI','toLowerCa
     <!-- ============================================================
          FLOATING WINDOWS
     ============================================================ -->
-    <app-floating-windows>
+   <app-floating-windows>
 
-      <floating-window id="profileWindow" class="floating-window hidden" data-window-id="profile">
-        <div class="floating-body">
-          <h2>Profile</h2>
-          <form id="profileForm">
-            <label><span>Display Name</span><input id="profileDisplayName" type="text" /></label>
-            <label><span>Status</span><input id="profileStatus" type="text" /></label>
-            <label><span>About</span><textarea id="profileAbout"></textarea></label>
-            <button id="saveProfileBtn" type="button">Save</button>
-          </form>
-        </div>
-      </floating-window>
+  <!-- PROFILE WINDOW -->
+  <floating-window id="profileWindow" class="floating-window hidden" data-window-id="profile">
+    <div class="floating-body profile-body">
 
-      <floating-window id="settingsWindow" class="floating-window hidden" data-window-id="settings">
-        <div class="floating-body">
-          <h2>Settings</h2>
-          <div id="settings_container"></div>
+      <h2>Profile</h2>
+
+      <form id="profileForm">
+
+        <!-- Avatar + Banner -->
+        <div class="profile-media">
+          <label class="banner-upload">
+            <span>Banner</span>
+            <input type="file" id="profileBanner" accept="image/*" />
+          </label>
+
+          <label class="avatar-upload">
+            <span>Avatar</span>
+            <input type="file" id="profileAvatar" accept="image/*" />
+          </label>
         </div>
-      </floating-window>
+
+        <!-- Identity -->
+        <label>
+          <span>Display Name</span>
+          <input id="profileDisplayName" type="text" />
+        </label>
+
+        <label>
+          <span>Username</span>
+          <input id="profileUsername" type="text" />
+        </label>
+
+        <label>
+          <span>Pronouns</span>
+          <input id="profilePronouns" type="text" placeholder="she/her, he/him, they/them" />
+        </label>
+
+        <!-- Status + About -->
+        <label>
+          <span>Status</span>
+          <input id="profileStatus" type="text" />
+        </label>
+
+        <label>
+          <span>About</span>
+          <textarea id="profileAbout"></textarea>
+        </label>
+
+        <!-- Contact -->
+        <label>
+          <span>Email</span>
+          <input id="profileEmail" type="email" />
+        </label>
+
+        <label>
+          <span>Location</span>
+          <input id="profileLocation" type="text" />
+        </label>
+
+        <label>
+          <span>Website</span>
+          <input id="profileWebsite" type="url" />
+        </label>
+
+        <!-- Social Links -->
+        <div class="social-links">
+          <h3>Social Links</h3>
+
+          <label><span>Twitter / X</span><input id="profileX" type="url" /></label>
+          <label><span>Instagram</span><input id="profileInstagram" type="url" /></label>
+          <label><span>GitHub</span><input id="profileGithub" type="url" /></label>
+          <label><span>LinkedIn</span><input id="profileLinkedIn" type="url" /></label>
+          <label><span>YouTube</span><input id="profileYouTube" type="url" /></label>
+        </div>
+
+        <!-- Preferences -->
+        <div class="preferences">
+          <h3>Preferences</h3>
+
+          <label class="toggle">
+            <span>Show Online Status</span>
+            <input id="profileShowStatus" type="checkbox" />
+          </label>
+
+          <label class="toggle">
+            <span>Allow Friend Requests</span>
+            <input id="profileAllowFriends" type="checkbox" />
+          </label>
+
+          <label>
+            <span>Theme</span>
+            <select id="profileTheme">
+              <option value="system">System Default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="neon">Neon Vapor</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="form-actions">
+          <button id="saveProfileBtn" type="button">Save</button>
+          <button id="cancelProfileBtn" type="button" class="secondary">Cancel</button>
+        </div>
+
+      </form>
+    </div>
+  </floating-window>
+
+
+  <!-- SETTINGS WINDOW -->
+  <floating-window id="settingsWindow" class="floating-window hidden" data-window-id="settings">
+    <div class="floating-body settings-body">
+
+      <h2>Settings</h2>
+
+      <div id="settings_container">
+
+        <!-- Account -->
+        <section class="settings-section">
+          <h3>Account</h3>
+          <button data-action="change-email">Change Email</button>
+          <button data-action="change-username">Change Username</button>
+        </section>
+
+        <!-- Security -->
+        <section class="settings-section">
+          <h3>Security</h3>
+          <button data-action="change-password">Change Password</button>
+          <button data-action="2fa">Two-Factor Authentication</button>
+          <button data-action="sessions">Active Sessions</button>
+        </section>
+
+        <!-- Notifications -->
+        <section class="settings-section">
+          <h3>Notifications</h3>
+          <label class="toggle"><span>Push Notifications</span><input type="checkbox" /></label>
+          <label class="toggle"><span>Email Notifications</span><input type="checkbox" /></label>
+          <label class="toggle"><span>Message Alerts</span><input type="checkbox" /></label>
+        </section>
+
+        <!-- Appearance -->
+        <section class="settings-section">
+          <h3>Appearance</h3>
+          <label><span>Theme</span>
+            <select>
+              <option value="system">System Default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="neon">Neon Vapor</option>
+            </select>
+          </label>
+          <label class="toggle"><span>Reduce Motion</span><input type="checkbox" /></label>
+        </section>
+
+        <!-- Accessibility -->
+        <section class="settings-section">
+          <h3>Accessibility</h3>
+          <label class="toggle"><span>High Contrast Mode</span><input type="checkbox" /></label>
+          <label class="toggle"><span>Large Text</span><input type="checkbox" /></label>
+        </section>
+
+        <!-- Connected Apps -->
+        <section class="settings-section">
+          <h3>Connected Apps</h3>
+          <button data-action="manage-integrations">Manage Integrations</button>
+        </section>
+
+        <!-- Danger Zone -->
+        <section class="settings-section danger">
+          <h3>Danger Zone</h3>
+          <button class="danger-btn" data-action="delete-account">Delete Account</button>
+        </section>
+
+      </div>
+    </div>
+  </floating-window>
+
+</app-floating-windows>
 
     
 
