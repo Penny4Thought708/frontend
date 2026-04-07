@@ -4,24 +4,25 @@
 ------------------------------------------------------- */
 
 .floating-window {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  width: min(480px, 90vw);
-  max-height: 85vh;
-  transform: translate(-50%, -50%) scale(0.96);
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.35);
-  opacity: 0;
-  pointer-events: none;
-  overflow: hidden;
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    position: fixed;
+    top: 50%;
+    padding: 28px 5px;
+    left: 50%;
+    width: min(480px, 90vw);
+    height: 790px;
+    max-height: 89vh;
+    transform: translate(-50%, -50%) scale(0.96);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(22px) saturate(180%);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 999999;
+    transition: opacity 0.25s ease, transform 0.25s ease;
 }
 .floating-window.is-open {
   opacity: 1;
