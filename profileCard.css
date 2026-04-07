@@ -23,6 +23,11 @@
     opacity 0.25s ease,
     transform 0.25s ease;
 }
+.floating-window.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
 
 
 .floating-body {
