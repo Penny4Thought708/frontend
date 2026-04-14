@@ -343,8 +343,9 @@ button.secondary {
   position: relative;
   box-shadow: 0 6px 20px var(--shadow);
 }
-.banner-wrapper,#fullProfileBanner{ width: 100%;
-  height: 160px;}
+.banner-wrapper,#fullProfileBanner{   width: 100%;
+  height: 100%;
+  object-fit: contain;}
 /* ——————————————————————————————
    AVATAR
 —————————————————————————————— */
