@@ -280,7 +280,8 @@ button.secondary {
 —————————————————————————————— */
 #fullProfileModal{
     width: 28%;
-    /* height: 100%; */
+   height: -webkit-fill-available;
+    display: initial;
     /* padding: 16px; */
     /* background: linear-gradient(180deg, var(--bg-panel), var(--bg-elevated)); */
     /* border: 1px solid var(--border); */
