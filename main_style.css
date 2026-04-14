@@ -231,7 +231,7 @@ button {
   box-shadow:
     0 0 0 1px rgba(129, 140, 248, 0.4),
     0 12px 30px rgba(15, 23, 42, 0.9);
- animation: bounce 1s ease-in-out infinite;
+ animation: bounce 8s ease-in-out infinite;
 }
 
 @keyframes bounce {
@@ -239,13 +239,13 @@ button {
     transform: translateY(0);
   }
   30% {
-    transform: translateY(-120px);
+    transform: translateY(-60px);
   }
   50% {
     transform: translateY(0);
   }
   70% {
-    transform: translateY(-60px);
+    transform: translateY(-200px);
   }
   100% {
     transform: translateY(0);
