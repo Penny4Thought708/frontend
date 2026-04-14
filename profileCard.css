@@ -34,7 +34,10 @@ img {
   pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
 }
-
+.profileForm{
+   padding:10px;
+  
+}
 
 .floating-body {
   padding: 24px;
