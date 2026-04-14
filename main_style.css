@@ -227,8 +227,9 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 50px;
+   position: absolute;
   background: radial-gradient(circle at 20% 0%, #6366f1 0, #4f46e5 40%, #111827 100%);
-   left:-5px;
+   left:-10px;
   box-shadow:
     0 0 0 1px rgba(129, 140, 248, 0.4),
     0 12px 30px rgba(15, 23, 42, 0.9);
@@ -241,19 +242,19 @@ button {
     transform: translateY(0);
   }
   30% {
-       left:5px;
+       left:5%;
     transform: translateY(-60px);
   }
   50% {
-       left:10px;
+       left:10%;
     transform: translateY(0);
   }
   70% {
-       left:15px;
+       left:15%;
     transform: translateY(-20px);
   }
   100% {
-       left:20px;
+       left:20%;
     transform: translateY(0);
   }
 }
