@@ -99,7 +99,7 @@ export function normalizeContact(raw) {
     if (raw.banner.startsWith("http")) banner = raw.banner;
     else if (raw.banner.startsWith("/uploads")) banner = BACKEND_BASE + raw.banner;
     else banner = `${BACKEND_BASE}/uploads/banners/${raw.banner}`;
-  } else banner = "img/profile-banner.jpg";
+  } else banner = "img/banner.png";
 
   const last = raw.last_message || {};
   const lastMessage = {
