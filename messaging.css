@@ -921,25 +921,6 @@ emoji-picker::part(category-button-active) {
    PICKER BACKDROP
 ============================================================ */
 
-.picker-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(4px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease;
-  z-index: 90;
-}
-
-.picker-backdrop.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.picker-backdrop.hidden {
-  display: none;
-}
 
 /* ============================================================
    MOBILE LAYOUT
