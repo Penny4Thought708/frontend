@@ -663,7 +663,7 @@
   left: 50%;
   transform: translate(-50%, 100%);
   bottom: 0;
-  width: 100%;
+     width: 220px;
   max-width: 420px;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
