@@ -228,6 +228,7 @@ button {
   height: 28px;
   border-radius: 50px;
   background: radial-gradient(circle at 20% 0%, #6366f1 0, #4f46e5 40%, #111827 100%);
+   left:-5px;
   box-shadow:
     0 0 0 1px rgba(129, 140, 248, 0.4),
     0 12px 30px rgba(15, 23, 42, 0.9);
@@ -236,18 +237,23 @@ button {
 
 @keyframes bounce {
   0% {
+     left:0;
     transform: translateY(0);
   }
   30% {
+       left:5px;
     transform: translateY(-60px);
   }
   50% {
+       left:10px;
     transform: translateY(0);
   }
   70% {
-    transform: translateY(-200px);
+       left:15px;
+    transform: translateY(-20px);
   }
   100% {
+       left:20px;
     transform: translateY(0);
   }
 }
