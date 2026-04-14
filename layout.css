@@ -111,7 +111,7 @@ app-header.app-header {
     letter-spacing: 0.04em;
     color: #cfe8ff;
     text-shadow: 0 2px 4px rgba(0, 180, 255, 0.6), 0 0 16px rgba(255, 140, 0, 0.4);
-    background: linear-gradient(90deg, #ffbc00, #ff7b00);
+   background: linear-gradient(90deg, #6469f9, #d9d6d3);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
