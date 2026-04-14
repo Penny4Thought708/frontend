@@ -338,7 +338,8 @@ button.secondary {
   position: relative;
   box-shadow: 0 6px 20px var(--shadow);
 }
-
+#banner-wrapper{ width: 100%;
+  height: 160px;}
 /* ——————————————————————————————
    AVATAR
 —————————————————————————————— */
