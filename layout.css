@@ -109,8 +109,11 @@ app-header.app-header {
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
-  color: var(--accent);
-  text-shadow: var(--glow-soft);
+  color: #cfe8ff; /* soft silver-blue tone */
+  text-shadow: 0 0 8px rgba(0, 180, 255, 0.6), 0 0 16px rgba(255, 140, 0, 0.4);
+  background: linear-gradient(90deg, #00aaff, #ff7b00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .header-nav {
