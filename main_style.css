@@ -227,7 +227,7 @@ button {
   width: 28px;
   height: 28px;
   border-radius: 50px;
-   position: absolute;
+
   background: radial-gradient(circle at 20% 0%, #6366f1 0, #4f46e5 40%, #111827 100%);
 
   box-shadow:
