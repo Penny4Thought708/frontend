@@ -106,14 +106,14 @@ app-header.app-header {
 }
 
 .header-left .brand-logo {
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.04em;
-  color: #cfe8ff; /* soft silver-blue tone */
-  text-shadow: 0 0 8px rgba(0, 180, 255, 0.6), 0 0 16px rgba(255, 140, 0, 0.4);
-  background: linear-gradient(90deg, #00aaff, #ff7b00);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    color: #cfe8ff;
+    text-shadow: 0 2px 4px rgba(0, 180, 255, 0.6), 0 0 16px rgba(255, 140, 0, 0.4);
+    background: linear-gradient(90deg, #ffbc00, #ff7b00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .header-nav {
@@ -274,18 +274,7 @@ app-main {
   flex: 1;
 }
 
-.rail-notifications {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--danger-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--danger);
-  font-size: 12px;
-  margin-bottom: 4px;
-}
+
 
 /* ============================================================
    DIRECTORY PANEL (FIXED, ALWAYS OPEN)
