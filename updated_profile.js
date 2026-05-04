@@ -39,6 +39,8 @@ async function loadProfile() {
   try {
     const me = await apiJson("https://letsee-backend.onrender.com/api/auth/me", {
       method: "GET"
+      console.log("ME RESPONSE:", me);
+
     });
 
     const profile = me.profile || me;
