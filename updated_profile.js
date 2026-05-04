@@ -43,24 +43,54 @@ async function loadProfile() {
 
     const profile = me.profile || me;
 
-    document.getElementById("profileDisplayName").value = profile.displayName || "";
+    // -------------------------
+    // Avatar + Banner
+    // -------------------------
+    if (profile.avatar) {
+      document.querySelector(".avatar-upload").style.backgroundImage =
+        `url(${profile.avatar})`;
+    }
+
+    if (profile.banner) {
+      document.querySelector(".banner-upload").style.backgroundImage =
+        `url(${profile.banner})`;
+    }
+
+    // -------------------------
+    // Identity
+    // -------------------------
+    document.getElementById("profileDisplayName").value = profile.fullname || "";
     document.getElementById("profileUsername").value = profile.username || "";
     document.getElementById("profilePronouns").value = profile.pronouns || "";
+
+    // -------------------------
+    // Status + About
+    // -------------------------
     document.getElementById("profileStatus").value = profile.status || "";
-    document.getElementById("profileAbout").value = profile.about || "";
+    document.getElementById("profileAbout").value = profile.bio || "";
+
+    // -------------------------
+    // Contact
+    // -------------------------
     document.getElementById("profileEmail").value = profile.email || "";
     document.getElementById("profileLocation").value = profile.location || "";
     document.getElementById("profileWebsite").value = profile.website || "";
 
-    document.getElementById("profileX").value = profile.social?.x || "";
-    document.getElementById("profileInstagram").value = profile.social?.instagram || "";
-    document.getElementById("profileGithub").value = profile.social?.github || "";
-    document.getElementById("profileLinkedIn").value = profile.social?.linkedIn || "";
-    document.getElementById("profileYouTube").value = profile.social?.youTube || "";
+    // -------------------------
+    // Social Links
+    // -------------------------
+    document.getElementById("profileX").value = profile.twitter || "";
+    document.getElementById("profileInstagram").value = profile.instagram || "";
+    document.getElementById("profileGithub").value = profile.github || "";
+    document.getElementById("profileLinkedIn").value = profile.linkedin || "";
+    document.getElementById("profileYouTube").value = profile.youtube || "";
 
-    document.getElementById("profileShowStatus").checked = !!profile.preferences?.showStatus;
-    document.getElementById("profileAllowFriends").checked = !!profile.preferences?.allowFriends;
-    document.getElementById("profileTheme").value = profile.preferences?.theme || "system";
+    // -------------------------
+    // Preferences
+    // -------------------------
+    document.getElementById("profileShowStatus").checked = !!profile.show_online;
+    document.getElementById("profileAllowFriends").checked = !!profile.allow_messages;
+    document.getElementById("profileTheme").value = profile.theme || "system";
 
   } catch (err) {
     console.error("Failed to load profile", err);
