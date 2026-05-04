@@ -5,10 +5,7 @@
 // ===============================
 
 // Socket.IO client (with session cookie)
-const socket = io("https://letsee-backend.onrender.com", {
-  withCredentials: true,
-  transports: ["websocket", "polling"]
-});
+import { socket } from "./socket.js";
 
 // Elements
 const profileForm = document.getElementById("profileForm");
