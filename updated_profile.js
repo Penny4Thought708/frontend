@@ -5,7 +5,8 @@
 // ===============================
 
 // Socket.IO client (with session cookie)
-import { socket } from "././socket.js";
+import { socket } from "./public/js/socket.js";
+
 
 // Elements
 const profileForm = document.getElementById("profileForm");
