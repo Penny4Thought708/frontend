@@ -43,7 +43,8 @@ async function loadProfile() {
 
     console.log("ME RESPONSE:", me);
 
-    const profile = me.profile || me;
+   const profile = me.profile || me.user || me;
+
 
     // -------------------------
     // Avatar + Banner
