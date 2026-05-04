@@ -42,7 +42,9 @@ async function loadIdentity() {
     if (!res.ok) throw new Error(`Identity request failed: ${res.status}`);
 
     const data = await res.json();
-    const u = data.user;
+const u = data.profile ?? data.user ?? {};
+
+
 
     window.user_id = u.user_id;
     window.fullname = u.fullname;
