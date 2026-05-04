@@ -57,9 +57,10 @@ img {
   letter-spacing: -0.5px;
 }
 #profileAvatar{
-       border-radius: 80px;
+border-radius: 80px;
     width: 120px;
     height: 120px;
+    visibility: hidden;
     position: relative;
     margin-left: 35%;
 }
@@ -126,6 +127,7 @@ textarea {
 .banner-upload input,
 .avatar-upload input {
   padding: 8px;
+  visibility: hidden;
 }
 
 .banner-upload span,
