@@ -146,7 +146,7 @@ async function saveProfile() {
     // Real-time broadcast
     socket.emit("profile:updated", updated);
 
-    console.log("Profile saved", updated);
+    alert("Profile saved", updated);
   } catch (err) {
     console.error("Failed to save profile", err);
   }
