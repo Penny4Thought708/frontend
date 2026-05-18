@@ -197,6 +197,7 @@ button {
 
 .container {
   width: 100%;
+  
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 var(--space-md);
@@ -241,14 +242,11 @@ button {
   margin-top: 0%;
   top: -15%;
   left: 35%;
-  border-radius: 20px;
+padding: 0%;
   width: 350px;
   height: 320px;
-  background-color: #0055ff;
-  box-shadow:
-    inset 0 0 5px 1px rgb(0, 0, 56),
-    0 0 0 1px rgba(68, 68, 68, 0.479),
-    0 12px 30px rgba(12, 12, 12, 0.9);
+
+
 }
 
 @keyframes bounce {
@@ -274,31 +272,18 @@ button {
   }
 }
 .site-logo-text {
-  padding: 2px 14px;
-  border-radius: 750px;
 
-  /* Glass core */
-  background: rgba(10, 25, 60, 0.35);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-
-  /* Glass edges */
-  border: 2px solid #0055ff67;
-  box-shadow:
-    inset 0 0 6px rgba(2, 69, 255, 0.568),
-    inset 0 0 12px rgba(3, 4, 5, 0.534),
-    0 0 18px rgba(67, 69, 78, 0.829);
 
   /* Text styling */
   font-family: "Splash", Distressed;
   font-size: 30px;
   font-weight: 500;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: #02297c;
 
   text-shadow:
     0 2px 4px rgba(50, 112, 247, 0.884),
-    0 0 6px rgba(9, 9, 10, 0.863);
+    3px 2px 1px rgba(0, 77, 221, 0.692);
 
   transition: all 0.35s ease;
 }
@@ -637,7 +622,10 @@ button {
 
 .hero {
   position: relative;
+    background-color: #503104ab;
+  background-image: url("https://www.transparenttextures.com/patterns/purty-wood.png");
   padding: var(--space-3xl) 0 var(--space-2xl);
+  box-shadow: inset 0 0 5px 2px black;
   overflow: hidden;
 }
 
@@ -843,11 +831,10 @@ button {
 
 /* Alternating left/right background split */
 .section:nth-of-type(odd) {
-  background: linear-gradient(
-    to right,
-    rgba(15, 23, 42, 0.45),
-    rgba(15, 23, 42, 0.1)
-  );
+  box-shadow: inset 0 0 5px 2px black;
+  background-color: #503104ab;
+  background-image: url("https://www.transparenttextures.com/patterns/purty-wood.png");
+
 }
 
 .section:nth-of-type(even) {
@@ -886,8 +873,7 @@ button,
   cursor: pointer;
 
   /* Texture */
-  background-color: #1100ffab;
-  background-image: url("https://www.transparenttextures.com/patterns/purty-wood.png");
+
   /* Depth */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
@@ -1331,25 +1317,31 @@ button,
 .footer-logo-mark {
   width: 26px;
   height: 26px;
-  border-radius: 10px;
+  border-radius: 20px;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 50px;
   background: radial-gradient(
     circle at 20% 0%,
-    #6366f1 0,
-    #4f46e5 40%,
-    #111827 100%
+    #020361 0,
+    #0055ff 40%,
+    #010e29 100%
   );
   box-shadow:
-    0 0 0 1px rgba(129, 140, 248, 0.4),
-    0 10px 26px rgba(15, 23, 42, 0.9);
+    0 0 0 1px rgba(2, 9, 80, 0.541),
+    0 10px 26px rgba(0, 8, 26, 0.9);
 }
 
 .footer-logo-text {
-  font-family: var(--font-heading);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  color: var(--text-accent);
+font-family: "Splash", Distressed;
+    font-size: 20px;
+    font-weight: 500;
+    position: relative;
+    left: 10%;
+    letter-spacing: 0.04em;
+    color: #0055ff;
+    text-shadow: 0 2px 4px rgba(50, 112, 247, 0.884), 0 0 6px rgba(9, 9, 10, 0.863);
+ 
+ 
 }
 
 .footer-description {
@@ -1369,7 +1361,7 @@ button,
   font-size: var(--text-xs);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: #0055ff;
   margin-bottom: 0.7rem;
 }
 
@@ -1472,8 +1464,8 @@ button,
   left: 0;
   width: 100%;
   z-index: 999999;
-  background: #fff;
-  border-top: 1px solid #e5e7eb;
+  background-color: #021335;
+  border-top: 1px solid #7c7e808c;
   box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08);
 
   opacity: 0;
@@ -1493,7 +1485,7 @@ button,
   max-width: 1180px;
   margin: 0 auto;
   padding: 0.9rem 1.2rem;
-
+ 
   display: flex;
   justify-content: space-between;
   align-items: center;
